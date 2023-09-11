@@ -41,6 +41,10 @@
     "typescript": "^5.1.3"
   },
   "dependencies": {
-    "coqlsp-client": "^1.0.4"
+    "coqlsp-client": "^1.0.4",
+    "openai": "^4.6.0",
+    "path": "^0.12.7",
+    "pino": "^8.15.1",
+    "pino-pretty": "^10.2.0"
   }
 }
