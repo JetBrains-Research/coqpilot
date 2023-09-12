@@ -50,7 +50,7 @@ export class EvaluationLogger {
         this.coqFile = coqFilePath;
 
         if (logToFile) {
-            const dateTimeNow = this.formatDate(new Date());
+            const dateTimeNow = EvaluationLogger.formatDate(new Date());
             const dirName = dirname(dirname(__dirname));
             const logFolder = logFolderPath ? logFolderPath : join(dirName, 'logs');     
             
@@ -59,6 +59,11 @@ export class EvaluationLogger {
             }
 
             this.logFilePath = join(logFolder, `log_${dateTimeNow}.v`);
+
+            if (existsSync(this.logFilePath)) {
+                const randomNum = Math.floor(Math.random() * 1000);
+                this.logFilePath = join(logFolder, `log_${dateTimeNow}_${randomNum}.v`);
+            }
 
             const logFileContents = `(*\n Date: ${dateTimeNow}\n Strat: ${runStrategy}\n*)\n\n`;
             writeFileSync(this.logFilePath, logFileContents);
@@ -72,14 +77,13 @@ export class EvaluationLogger {
         this.shots = shots;     
     }
 
-    private formatDate = (date: Date): string => {
+    static formatDate = (date: Date): string => {
         const day = date.getDate();
         const month = date.getMonth() + 1;
         const hour = date.getHours();
         const minute = date.getMinutes();
-        const second = date.getSeconds();
 
-        return `${day}_${month}__${hour}_${minute}_${second}`;
+        return `${day}_${month}__${hour}_${minute}`;
     };
 
     private log2file(message: string) {
@@ -226,13 +230,13 @@ export class EvaluationLogger {
         this.proofLog += `(* ProofView responded with an error: ${errorMsg} *)\n`;
     }
 
-    onTheoremProofEnd(statement: string, correctProof: string) {
+    onTheoremProofEnd(statement: string) {
         if (!this.insideProof) {
             throw new EvalLoggingError("Not in proof");
         }
         if (!this.proofComplete) {
-            this.proofLog += `(* Correct proof was not found. Here is the one from original file. *)\n`;
-            this.proofLog += `${statement}\n${correctProof}\n`;
+            this.proofLog += `(* Correct proof was not found. This theorem will remain Admitted. *)\n`;
+            this.proofLog += `${statement}\nAdmitted.\n`;
             this.proofLog += "(* {THEOREM PROOF LOG END} *)";
         }
         this.insideProof = false;

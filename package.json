@@ -42,6 +42,7 @@
   },
   "dependencies": {
     "coqlsp-client": "^1.0.4",
+    "dedent": "^1.5.1",
     "openai": "^4.6.0",
     "path": "^0.12.7",
     "pino": "^8.15.1",

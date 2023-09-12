@@ -18,7 +18,8 @@ export class Interactor {
         llmPrompt: LlmPromptInterface, 
         llmInterface: LLMInterface, 
         logAttemps: boolean = false, 
-        shots: number = 1
+        shots: number = 1,
+        logFolderPath: string | null = null
     ) {
         this.llmPrompt = llmPrompt;
         this.llmInterface = llmInterface;
@@ -36,7 +37,8 @@ export class Interactor {
             this.llmPrompt.promptStrategy,
             shots, 
             this.llmPrompt.statementsToRanges, 
-            logAttemps
+            logAttemps,
+            logFolderPath
         );
     }
 
@@ -114,7 +116,7 @@ export class Interactor {
             }
         }
 
-        this.runLogger.onTheoremProofEnd(theoremStatement, this.llmPrompt.correctProofs[theoremStatement]);
+        this.runLogger.onTheoremProofEnd(theoremStatement);
 
         if (foundProof) {
             return foundProof;

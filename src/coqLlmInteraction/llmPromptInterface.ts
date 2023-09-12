@@ -16,7 +16,6 @@ export class LlmPromptInterface {
     trainingTheorems: coqlspmodels.Theorem[] = [];
     public statementsToRanges: { [key: string]: lspmodels.Range } = {};
     cachedMessageHistory: { role: string; content: string; }[] | null = null;
-    public correctProofs: { [key: string]: string } = {};
 
     protected constructor(
         pathToCoqFile: string, 
