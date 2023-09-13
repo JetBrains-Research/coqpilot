@@ -26,8 +26,8 @@ export class EvaluationLogger {
     contentsPointer: number = 0;
     statementsToRanges: { [key: string]: lspmodels.Range };
     rangesToText: { [range: string]: string } = {};
-    logToFile: boolean;
     shots: number;
+    logToFile: boolean;
     logger = pino({
         name: 'ts-lsp-client',
         target: 'pino-pretty', // --target 'pino-pretty
@@ -49,6 +49,7 @@ export class EvaluationLogger {
     ) {
         this.coqFile = coqFilePath;
 
+        this.logToFile = logToFile;
         if (logToFile) {
             const dateTimeNow = EvaluationLogger.formatDate(new Date());
             const dirName = dirname(dirname(__dirname));
@@ -72,8 +73,7 @@ export class EvaluationLogger {
         const coqFileContents = readFileSync(this.coqFile, "utf-8");
         this.contents = coqFileContents.split('\n');
 
-        this.statementsToRanges = statements2ranges;
-        this.logToFile = logToFile;   
+        this.statementsToRanges = statements2ranges; 
         this.shots = shots;     
     }
 
@@ -186,11 +186,6 @@ export class EvaluationLogger {
         this.proofLog += "(* {THEOREM PROOF LOG END} *)";
         this.logger.info(`Attempt ${attemptIndex} for theorem ${thrName} successful`);
         this.proofComplete = true;
-
-        if (!this.logToFile) {
-            const neededRange = this.statementsToRanges[statement];
-            this.rangesToText[JSON.stringify(neededRange)] = `${statement}\n${proof}`;
-        }
     }
     
     onFailedAttempt(
@@ -241,10 +236,16 @@ export class EvaluationLogger {
         }
         this.insideProof = false;
 
-        if (this.logToFile) {
-            const neededRange = this.statementsToRanges[statement];
-            this.rangesToText[JSON.stringify(neededRange)] = this.proofLog;
-        }
+        const neededRange = this.statementsToRanges[statement];
+        this.rangesToText[JSON.stringify(neededRange)] = this.proofLog;
+    }
+
+    resetResourses() {
+        this.insideProof = false;
+        this.proofLog = "";
+        this.proofComplete = null;
+        this.contentsPointer = 0;
+        this.rangesToText = {};
     }
 
     onEvaluationFinish() {
@@ -252,5 +253,6 @@ export class EvaluationLogger {
             const newText = this.substituteTextPieces();
             this.log2file(newText);
         }
+        this.resetResourses();
     }
 }

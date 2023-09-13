@@ -37,6 +37,7 @@ export class GPT35 implements LLMInterface {
     }
 
     initHistory(llmPrompt: LlmPromptInterface): void {
+        console.log("Initializing history", llmPrompt.promptStrategy);
         const prompt = llmPrompt.getSystemMessage();
         const messageHistory = llmPrompt.getMessageHistory();
 

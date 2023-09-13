@@ -1,7 +1,7 @@
 import { LlmPromptInterface } from './llmPromptInterface';
 import { LLMInterface } from './llmInterface';
 import { EvaluationLogger } from './evaluationLogger';
-import { coqlspmodels } from 'coqlsp-client';
+import { coqlspmodels, ProgressBar } from 'coqlsp-client';
 
 export class Interactor {
     llmPrompt: LlmPromptInterface;
@@ -13,10 +13,12 @@ export class Interactor {
     timeout: number;
     runLogger: EvaluationLogger;
     shots: number;
+    progressBar: ProgressBar;
 
     constructor(
         llmPrompt: LlmPromptInterface, 
         llmInterface: LLMInterface, 
+        progressBar: ProgressBar,
         logAttemps: boolean = false, 
         shots: number = 1,
         logFolderPath: string | null = null
@@ -24,6 +26,7 @@ export class Interactor {
         this.llmPrompt = llmPrompt;
         this.llmInterface = llmInterface;
         this.logAttemps = logAttemps;
+        this.progressBar = progressBar;
 
         this.llmInterface.initHistory(this.llmPrompt);
         this.logFilePath = null;
@@ -56,15 +59,18 @@ export class Interactor {
      * @param shots The number of attempts to find a proof.
      * @returns The correct proof or undefined if no proof was found.
      */
-    async runProofGeneration(theoremName: string): Promise<string | undefined> {
+    async runProofGeneration(theoremName: string): Promise<[string, string | undefined]> {
+        console.log("runProofGeneration " + theoremName);
         const theoremStatement = this.llmPrompt.getTheoremStatementByName(theoremName);
         this.runLogger.onStartLlmResponseFetch(theoremName);
+        this.progressBar.initialize(1);
 
         let llmResponse = await this.llmInterface.sendMessageWithoutHistoryChange(
             theoremStatement,
             this.shots
         );
 
+        this.progressBar.finish();
         this.runLogger.onEndLlmResponseFetch();
         this.runLogger.onTheoremProofStart();
 
@@ -119,10 +125,10 @@ export class Interactor {
         this.runLogger.onTheoremProofEnd(theoremStatement);
 
         if (foundProof) {
-            return foundProof;
+            return [theoremStatement, foundProof];
         } 
 
-        return undefined;
+        return [theoremStatement, undefined];
     }
 
     stop() {

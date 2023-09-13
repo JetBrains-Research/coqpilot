@@ -4,6 +4,7 @@ import { MockLlmPrompt } from './mockllm';
 import { CoqPromptKShot } from '../../coqLlmInteraction/coqLlmPrompt';
 import { EvaluationLogger } from '../../coqLlmInteraction/evaluationLogger';
 import { readFileSync, unlinkSync } from 'fs';
+import { VsCodeSpinningWheelProgressBar } from '../../extension/vscodeProgressBar';
 import dedent from "dedent";
 
 import * as path from 'path';
@@ -21,7 +22,7 @@ suite('Interactor tests', () => {
         );
         const llmInterface = new MockLlmPrompt();
 
-        const interactor = new Interactor(llmPrompt, llmInterface, false, 2);
+        const interactor = new Interactor(llmPrompt, llmInterface, new VsCodeSpinningWheelProgressBar(), false, 2);
 
         const proof1 = await interactor.runProofGeneration('test');
         assert.strictEqual(proof1, 'Proof. trivial. Qed.');
@@ -52,7 +53,7 @@ suite('Interactor tests', () => {
         const llmInterface = new MockLlmPrompt();
 
         const logFilePath = path.join(resFolder, `log_${dateTimeNow}.v`);
-        const interactor = new Interactor(llmPrompt, llmInterface, true, 2, resFolder);
+        const interactor = new Interactor(llmPrompt, llmInterface, new VsCodeSpinningWheelProgressBar(),  true, 2, resFolder);
         
         await interactor.runProofGeneration('test');
         interactor.stop();
@@ -109,7 +110,7 @@ suite('Interactor tests', () => {
         const llmInterface = new MockLlmPrompt();
 
         const logFilePath = path.join(resFolder, `log_${dateTimeNow}.v`);
-        const interactor = new Interactor(llmPrompt, llmInterface, true, 2, resFolder);
+        const interactor = new Interactor(llmPrompt, llmInterface, new VsCodeSpinningWheelProgressBar(), true, 2, resFolder);
         
         await interactor.runProofGeneration('test');
         await interactor.runProofGeneration('test2');

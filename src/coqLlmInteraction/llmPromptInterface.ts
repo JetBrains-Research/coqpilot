@@ -2,9 +2,15 @@ import { ProofView, coqlspmodels, lspmodels, ProgressBar, CliProgressBar } from 
 import * as assert from "assert";
 import { 
     readFileSync,
-    writeFileSync
 } from "fs";
 import { shuffleArray } from "./utils";
+
+class SeparatedTheorems {
+    constructor(
+        public readonly admittedTheorems: coqlspmodels.Theorem[],
+        public readonly trainingTheorems: coqlspmodels.Theorem[]
+    ) {}
+}
 
 export class LlmPromptInterface {
     proofView: ProofView | undefined;
@@ -14,6 +20,7 @@ export class LlmPromptInterface {
     progressBar: ProgressBar;
     theoremsFromFile: coqlspmodels.Theorem[] = [];
     trainingTheorems: coqlspmodels.Theorem[] = [];
+    admittedTheorems: coqlspmodels.Theorem[] = [];
     public statementsToRanges: { [key: string]: lspmodels.Range } = {};
     cachedMessageHistory: { role: string; content: string; }[] | null = null;
 
@@ -28,12 +35,6 @@ export class LlmPromptInterface {
         this.promptStrategy = this.constructor.name;
         this.progressBar = progressBar;
         this.proofView = proofView;
-    }
-
-    saveSnapshotToDisk(
-        parsedTheoremsPath: string,
-    ) {
-        writeFileSync(parsedTheoremsPath, JSON.stringify(this.theoremsFromFile));
     }
 
     static countTokens = (str: string): number => {
@@ -53,10 +54,11 @@ export class LlmPromptInterface {
      * @param tokenLimit The token limit for the request.
      * @returns List of theorems to use for training.
      */
-    static getTrainingTheorems(theorems: coqlspmodels.Theorem[], tokenLimit: number): coqlspmodels.Theorem[] {
+    static computeTrainingTheorems(theorems: coqlspmodels.Theorem[], tokenLimit: number): SeparatedTheorems {
         let admittedTheoremsMaxTokenCount = 0;
         let theoremsTokensSum = 0;
         let provenTheorems: coqlspmodels.Theorem[] = [];
+        let admittedTheorems: coqlspmodels.Theorem[] = [];
 
         for (const theorem of theorems) {
             if (!theorem.proof) {
@@ -68,6 +70,7 @@ export class LlmPromptInterface {
                     admittedTheoremsMaxTokenCount,
                     this.countTokens(theorem.statement)
                 );
+                admittedTheorems.push(theorem);
             } else {
                 theoremsTokensSum += this.countTokens(theorem.statement) + this.countTokens(theorem.proof.onlyText());
                 provenTheorems.push(theorem);
@@ -88,27 +91,38 @@ export class LlmPromptInterface {
             theoremsTokensSum -= this.countTokens(theorem.statement) + this.countTokens(theorem.proof.onlyText());
         }
 
-        return provenTheorems;
+        return new SeparatedTheorems(admittedTheorems, provenTheorems);
     }
 
-    static async initFromSnapshot(
-        messageHistoryPath: string,
-        pathToCoqFile: string,
-        pathToRootDir: string,
-        tokenLimit: number,
-        proofView: ProofView | undefined = undefined,
-        progressBar: ProgressBar | undefined = new CliProgressBar(),
-    ): Promise<LlmPromptInterface> {
-        const theoremsFromFile = JSON.parse(readFileSync(messageHistoryPath, "utf-8")) as coqlspmodels.Theorem[];
+    getAdmittedTheorems(): string[] {
+        return this.admittedTheorems.map((th) => th.name);
+    }
 
-        return await LlmPromptInterface.init(
-            pathToCoqFile,
-            pathToRootDir,
-            tokenLimit,
-            proofView,
-            progressBar,
-            theoremsFromFile
-        );
+    static async initFromChild(
+        llmPrompt: LlmPromptInterface, 
+        tokenLimit: number,
+        theoremsFromFile: coqlspmodels.Theorem[] | undefined = undefined,
+    ): Promise<LlmPromptInterface> {
+        llmPrompt.theoremsFromFile = theoremsFromFile ? theoremsFromFile : await llmPrompt.proofView.parseFile();
+        const splittedTheorems = LlmPromptInterface.computeTrainingTheorems(llmPrompt.theoremsFromFile, tokenLimit);
+        llmPrompt.trainingTheorems = splittedTheorems.trainingTheorems;
+        llmPrompt.admittedTheorems = splittedTheorems.admittedTheorems;
+
+        try {
+            llmPrompt.statementsToRanges = llmPrompt.theoremsFromFile
+                .reduce((acc: { [key: string]: lspmodels.Range }, th: coqlspmodels.Theorem) => {
+                    acc[th.statement] = {
+                        start: th.statement_range.start,
+                        end: th.proof.end_pos.end
+                    };
+
+                    return acc;
+                }, {});
+        } catch (e) {
+            throw new Error("Some theorems in the file do not have proofs.");
+        }
+
+        return llmPrompt;
     }
 
     static async init(
@@ -129,7 +143,9 @@ export class LlmPromptInterface {
         );
 
         llmPrompt.theoremsFromFile = theoremsFromFile ? theoremsFromFile : await llmPrompt.proofView.parseFile();
-        llmPrompt.trainingTheorems = LlmPromptInterface.getTrainingTheorems(llmPrompt.theoremsFromFile, tokenLimit);
+        const splittedTheorems = LlmPromptInterface.computeTrainingTheorems(llmPrompt.theoremsFromFile, tokenLimit);
+        llmPrompt.trainingTheorems = splittedTheorems.trainingTheorems;
+        llmPrompt.admittedTheorems = splittedTheorems.admittedTheorems;
 
         try {
             llmPrompt.statementsToRanges = llmPrompt.theoremsFromFile
