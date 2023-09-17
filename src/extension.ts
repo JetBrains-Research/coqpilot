@@ -32,6 +32,22 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
+	let solveHolesCommand = vscode.commands.registerCommand('coqpilot.substitute_holes', async () => {
+		if (windowManager === null) {
+			try {
+				windowManager = await VsCodeWindowManager.init();
+				await windowManager.holeSubstitutionInSelection();
+				return;
+			} catch (err) {
+				console.log(err);
+				vscode.window.showErrorMessage("Coqpilot failed to start. Please check the logs.");
+				return;
+			}
+		} else {
+			windowManager.holeSubstitutionInSelection();
+		}
+	});
+
 	let tryProveAllCommand = vscode.commands.registerCommand('coqpilot.prove_all', async () => {
 		if (windowManager === null) {
 			try {
@@ -59,6 +75,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(startCommand);
 	context.subscriptions.push(solveParticularCommand);
+	context.subscriptions.push(solveHolesCommand);
 	context.subscriptions.push(tryProveAllCommand);
 	context.subscriptions.push(finishCommand);
 }

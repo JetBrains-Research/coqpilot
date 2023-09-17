@@ -24,13 +24,13 @@ suite('Interactor tests', () => {
 
         const interactor = new Interactor(llmPrompt, llmInterface, new VsCodeSpinningWheelProgressBar(), false, 2);
 
-        const proof1 = await interactor.runProofGeneration('test');
+        const proof1 = await interactor.runCompleteProofGerenation('test');
         assert.strictEqual(proof1, 'Proof. trivial. Qed.');
 
-        const proof2 = await interactor.runProofGeneration('test2');
+        const proof2 = await interactor.runCompleteProofGerenation('test2');
         assert.strictEqual(proof2, undefined);
 
-        const proof3 = await interactor.runProofGeneration('test3');
+        const proof3 = await interactor.runCompleteProofGerenation('test3');
         assert.strictEqual(proof3, 'Proof. reflexivity. Qed.');
 
         interactor.stop();
@@ -55,7 +55,7 @@ suite('Interactor tests', () => {
         const logFilePath = path.join(resFolder, `log_${dateTimeNow}.v`);
         const interactor = new Interactor(llmPrompt, llmInterface, new VsCodeSpinningWheelProgressBar(),  true, 2, resFolder);
         
-        await interactor.runProofGeneration('test');
+        await interactor.runCompleteProofGerenation('test');
         interactor.stop();
         
         const logContents = readFileSync(logFilePath, 'utf8');
@@ -112,9 +112,9 @@ suite('Interactor tests', () => {
         const logFilePath = path.join(resFolder, `log_${dateTimeNow}.v`);
         const interactor = new Interactor(llmPrompt, llmInterface, new VsCodeSpinningWheelProgressBar(), true, 2, resFolder);
         
-        await interactor.runProofGeneration('test');
-        await interactor.runProofGeneration('test2');
-        await interactor.runProofGeneration('test3');
+        await interactor.runCompleteProofGerenation('test');
+        await interactor.runCompleteProofGerenation('test2');
+        await interactor.runCompleteProofGerenation('test3');
         
         interactor.stop();
         

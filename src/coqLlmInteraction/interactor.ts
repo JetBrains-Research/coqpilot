@@ -1,7 +1,7 @@
 import { LlmPromptInterface } from './llmPromptInterface';
 import { LLMInterface } from './llmInterface';
 import { EvaluationLogger } from './evaluationLogger';
-import { coqlspmodels, ProgressBar } from 'coqlsp-client';
+import { coqlspmodels, lspmodels, ProgressBar } from 'coqlsp-client';
 
 export class Interactor {
     llmPrompt: LlmPromptInterface;
@@ -45,6 +45,24 @@ export class Interactor {
         );
     }
 
+    async runCompleteProofGerenation(theoremName: string): Promise<[string, string | undefined]> {
+        const theoremStatement = this.llmPrompt.getTheoremStatementByName(theoremName);
+        return await this.runProofGeneration(theoremName, theoremStatement);
+    }
+
+    getHolesNum(thrName: string): number {
+        return this.llmPrompt.getHolesNum(thrName);
+    }
+
+    getAuxTheoremApplyTactic(thrName: string, holeIndex: number): [string, lspmodels.Range] {
+        return this.llmPrompt.getAuxTheoremApplyTactic(thrName, holeIndex);
+    }
+
+    async runHoleSubstitution(theoremName: string, holeIndex: number): Promise<[string, string | undefined]>  {
+        const [holeName, holeStatement] = this.llmPrompt.getAuxTheoremStatement(theoremName, holeIndex); 
+        return await this.runProofGeneration(holeName, holeStatement, theoremName);
+    }
+
     /**
      * Retrieves theorems we want to evaluate the LLM on 
      * from the LLMPrompt object, then sends them to the
@@ -56,12 +74,13 @@ export class Interactor {
      * provided for evaluation.
      * 
      * @param theoremName The name of the theorem to evaluate.
-     * @param shots The number of attempts to find a proof.
      * @returns The correct proof or undefined if no proof was found.
      */
-    async runProofGeneration(theoremName: string): Promise<[string, string | undefined]> {
-        console.log("runProofGeneration " + theoremName);
-        const theoremStatement = this.llmPrompt.getTheoremStatementByName(theoremName);
+    async runProofGeneration(
+        theoremName: string, 
+        theoremStatement: string, 
+        originalName: string | null = null
+    ): Promise<[string, string | undefined]> {
         this.runLogger.onStartLlmResponseFetch(theoremName);
         this.progressBar.initialize(1);
 
@@ -79,7 +98,7 @@ export class Interactor {
 
         while(verifyProofsAttempts > 0) {
             try {
-                proofCheckResult = await this.llmPrompt.verifyProofs(theoremStatement, llmResponse);
+                proofCheckResult = await this.llmPrompt.verifyProofs(theoremStatement, llmResponse, originalName);
                 break;
             } catch (e) {
                 verifyProofsAttempts--;

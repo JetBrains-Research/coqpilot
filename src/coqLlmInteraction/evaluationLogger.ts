@@ -157,6 +157,10 @@ export class EvaluationLogger {
         this.logger.info(`Fetching potential proofs for theorem ${thrName}`);
     }
 
+    onStartLlmResponseFetchForHole(thrName: string, holeNum: number) {
+        this.logger.info(`Fetching potential proofs for hole ${holeNum} of theorem ${thrName}`);
+    }
+
     onEndLlmResponseFetch() {
         this.logger.info("Fetching potential proofs finished");
     }

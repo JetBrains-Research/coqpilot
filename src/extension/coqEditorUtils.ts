@@ -58,11 +58,55 @@ export class CoqEditorUtils {
 
         return new vscode.Range(theoremStart, theoremEnd);
     }
+
+    /**
+     * Take a proof as a string and return the proof 
+     * without "Proof." and "Qed.".
+     * @param thrProof The proof of a theorem.
+     * @returns The proof without "Proof." and "Qed.".
+     */
+    extractProofString(thrProof: string): string {
+        let tacticTokens = thrProof.split('.');
+        if (tacticTokens[0].trim() !== "Proof" || tacticTokens[tacticTokens.length - 1].trim() !== "Qed") {
+            throw new Error("Proof does not start with 'Proof.'");
+        }
+        
+        tacticTokens.shift();
+        tacticTokens.pop();
+        return tacticTokens.join('.');
+    }
     
     insertIntoRange(range: vscode.Range, text: string) {
         this.editor.edit((editBuilder) => {
             editBuilder.replace(range, text);
         });
+    }
+
+    async insertAboveTheorem(theoremName: string, text: string) {
+        let theoremRange = this.getTheoremRange(theoremName);
+        if (theoremRange === undefined) {
+            throw new Error("Theorem not found");
+        }
+        let theoremStart = theoremRange.start;
+        let textToInsert = text + "\n\n";
+
+        await this.editor.edit((editBuilder) => {
+            editBuilder.insert(theoremStart, textToInsert);
+        });
+    }
+
+    insertIntoHole(theoremName: string, holeRangeLocal: vscode.Range, text: string) {
+        let theoremRange = this.getTheoremRange(theoremName);
+        if (theoremRange === undefined) {
+            throw new Error("Theorem not found");
+        }
+
+        let holeRange = new vscode.Range(
+            theoremRange.start.line + holeRangeLocal.start.line, holeRangeLocal.start.character,
+            theoremRange.start.line + holeRangeLocal.start.line, holeRangeLocal.end.character
+        );
+
+        this.insertIntoRange(holeRange, text);
     }
 
     getRangeOfSelection(): vscode.Range | undefined {

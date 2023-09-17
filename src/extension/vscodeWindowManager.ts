@@ -90,7 +90,7 @@ export class VsCodeWindowManager {
         }
         assert(this.coqLlmInteractor);
 
-        const [thrStatement, proof] = await this.coqLlmInteractor.runProofGeneration(thrName);
+        const [thrStatement, proof] = await this.coqLlmInteractor.runCompleteProofGerenation(thrName);
         const proofText = `${thrStatement}\n${proof}`;
         if (proof) {
             this.showSearchSucessMessage(thrName, proofText);
@@ -109,6 +109,34 @@ export class VsCodeWindowManager {
         }
 
         this.tryProveTheorem(theoremName);
+    }
+
+    async holeSubstitutionInSelection() {
+        let theoremName = this.coqEditorUtils.findTheoremInSelection();
+        if (!theoremName) {
+            this.noTheoremInSelectionMessage(); return;
+        } 
+        if (!this.coqLlmInteractor) {
+            this.fileSnapshotRequired(); return;
+        }
+
+        const holesNum = this.coqLlmInteractor.getHolesNum(theoremName);
+        for (let i = 0; i < holesNum; i++) {
+            const [thrStatement, proof] = await this.coqLlmInteractor.runHoleSubstitution(theoremName, i);
+            const proofText = `${thrStatement}\n${proof}`;
+
+            if (proof) {
+                const [tactic, holeRange] = this.coqLlmInteractor.getAuxTheoremApplyTactic(theoremName, i);
+                const vscodeHoleRange = new vscode.Range(
+                    holeRange.start.line, holeRange.start.character,
+                    holeRange.end.line, holeRange.end.character
+                );
+                await this.coqEditorUtils.insertAboveTheorem(theoremName, proofText);
+                this.coqEditorUtils.insertIntoHole(theoremName, vscodeHoleRange, tactic);
+            } else {
+                // TODO: show error message   
+            }
+        }
     }
 
     async showApiKeyNotProvidedMessage() {

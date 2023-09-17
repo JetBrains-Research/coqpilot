@@ -28,6 +28,10 @@
       {
         "command": "coqpilot.solve_by_selection",
         "title": "CoqPilot: Try to solve theorem currently selected"
+      },
+      {
+        "command": "coqpilot.substitute_holes",
+        "title": "CoqPilot: Try to substitute holes in selected theorem"
       }
     ],
     "configuration": [
@@ -40,7 +44,7 @@
             "default": "None",
             "markdownDescription": "An `open-ai` api key. Is used to communicate with the open-ai api. You can get one [here](https://platform.openai.com/account/api-keys)."
           },
-          "coqpilot.proofAttemsPerOneTheorem" : {
+          "coqpilot.proofAttemsPerOneTheorem": {
             "type": "number",
             "default": 15,
             "markdownDescription": "How many proof attempts should be generated for one theorem."
@@ -71,7 +75,7 @@
     "typescript": "^5.1.3"
   },
   "dependencies": {
-    "coqlsp-client": "^1.0.4",
+    "coqlsp-client": "^1.0.6",
     "dedent": "^1.5.1",
     "openai": "^4.6.0",
     "path": "^0.12.7",

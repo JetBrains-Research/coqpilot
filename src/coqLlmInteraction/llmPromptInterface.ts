@@ -8,7 +8,8 @@ import { shuffleArray } from "./utils";
 class SeparatedTheorems {
     constructor(
         public readonly admittedTheorems: coqlspmodels.Theorem[],
-        public readonly trainingTheorems: coqlspmodels.Theorem[]
+        public readonly trainingTheorems: coqlspmodels.Theorem[], 
+        public readonly incompleteTheorems: { [thrName: string]: coqlspmodels.Theorem }
     ) {}
 }
 
@@ -21,6 +22,7 @@ export class LlmPromptInterface {
     theoremsFromFile: coqlspmodels.Theorem[] = [];
     trainingTheorems: coqlspmodels.Theorem[] = [];
     admittedTheorems: coqlspmodels.Theorem[] = [];
+    incompleteTheorems: { [thrName: string]: coqlspmodels.Theorem } = {};
     public statementsToRanges: { [key: string]: lspmodels.Range } = {};
     cachedMessageHistory: { role: string; content: string; }[] | null = null;
 
@@ -59,13 +61,17 @@ export class LlmPromptInterface {
         let theoremsTokensSum = 0;
         let provenTheorems: coqlspmodels.Theorem[] = [];
         let admittedTheorems: coqlspmodels.Theorem[] = [];
+        let incompleteTheorems: { [thrName: string]: coqlspmodels.Theorem } = {};
 
         for (const theorem of theorems) {
             if (!theorem.proof) {
                 continue;
             } 
-             
-            if (theorem.proof.is_incomplete) {
+
+            if (theorem.proof.holes.length > 0) {
+                incompleteTheorems[theorem.name] = theorem;
+                continue;
+            } else if (theorem.proof.is_incomplete) {
                 admittedTheoremsMaxTokenCount = Math.max(
                     admittedTheoremsMaxTokenCount,
                     this.countTokens(theorem.statement)
@@ -91,7 +97,53 @@ export class LlmPromptInterface {
             theoremsTokensSum -= this.countTokens(theorem.statement) + this.countTokens(theorem.proof.onlyText());
         }
 
-        return new SeparatedTheorems(admittedTheorems, provenTheorems);
+        return new SeparatedTheorems(admittedTheorems, provenTheorems, incompleteTheorems);
+    }
+
+    getHolesNum(thrName: string): number {
+        const theorem = this.incompleteTheorems[thrName];
+        if (!theorem || !theorem.proof) {
+            return 0;
+        }
+
+        return theorem.proof.holes.length;
+    }
+
+    getAuxTheoremStatement(thrName: string, holeIndex: number): [string, string] | undefined {
+        const theorem = this.incompleteTheorems[thrName];
+        const auxName = ((holeNum: number) => `${thrName}_aux_${holeNum}`)(holeIndex);
+
+        if (!theorem || !theorem.proof || theorem.proof.holes.length <= holeIndex) {
+            return undefined;
+        }
+
+        const hole = theorem.proof.holes[holeIndex];
+        return [auxName, hole.goalAsTheorem(auxName)];
+    }
+
+    getAuxTheoremApplyTactic(thrName: string, holeIndex: number): [string, lspmodels.Range] | undefined {
+        const theorem = this.incompleteTheorems[thrName];
+        const auxName = ((holeNum: number) => `${thrName}_aux_${holeNum}`)(holeIndex);
+        if (!theorem || !theorem.proof || theorem.proof.holes.length <= holeIndex) {
+            return undefined;
+        }
+        const hole = theorem.proof.holes[holeIndex];
+        let tac = `apply ${auxName}.`;
+        if (hole.focused_goal.hyps.length > 0) {
+            tac = `apply (${auxName} ${hole.focused_goal.hyps.map((hyp) => hyp.names.join(" ")).join(" ")}).`;
+        }
+        const rangeGlobal = hole.range;
+        const rangeInsideTheorem = {
+            start: {
+                line: rangeGlobal.start.line - theorem.statement_range.start.line,
+                character: rangeGlobal.start.character
+            },
+            end: {
+                line: rangeGlobal.end.line - theorem.statement_range.start.line,
+                character: rangeGlobal.end.character
+            }
+        };
+        return [tac, rangeInsideTheorem];
     }
 
     getAdmittedTheorems(): string[] {
@@ -107,6 +159,7 @@ export class LlmPromptInterface {
         const splittedTheorems = LlmPromptInterface.computeTrainingTheorems(llmPrompt.theoremsFromFile, tokenLimit);
         llmPrompt.trainingTheorems = splittedTheorems.trainingTheorems;
         llmPrompt.admittedTheorems = splittedTheorems.admittedTheorems;
+        llmPrompt.incompleteTheorems = splittedTheorems.incompleteTheorems;
 
         try {
             llmPrompt.statementsToRanges = llmPrompt.theoremsFromFile
@@ -146,6 +199,7 @@ export class LlmPromptInterface {
         const splittedTheorems = LlmPromptInterface.computeTrainingTheorems(llmPrompt.theoremsFromFile, tokenLimit);
         llmPrompt.trainingTheorems = splittedTheorems.trainingTheorems;
         llmPrompt.admittedTheorems = splittedTheorems.admittedTheorems;
+        llmPrompt.incompleteTheorems = splittedTheorems.incompleteTheorems;
 
         try {
             llmPrompt.statementsToRanges = llmPrompt.theoremsFromFile
@@ -208,12 +262,16 @@ export class LlmPromptInterface {
      * is the result of the verification and the second is
      * the error message if the verification failed.
      */
-    async verifyProofs(thrStatement: string, proofs: string[]): Promise<[boolean, string | null][]> {
+    async verifyProofs(thrStatement: string, proofs: string[], originalName: string | null): Promise<[boolean, string | null][]> {
         assert(this.proofView);
         let context = "";
         if (this.statementsToRanges) {
             context = readFileSync(this.coqFile, "utf-8");
-            const thrLineIndex = this.statementsToRanges[thrStatement].start.line;
+            let statement = thrStatement;
+            if (originalName) {
+                statement = this.getTheoremStatementByName(originalName);
+            }
+            const thrLineIndex = this.statementsToRanges[statement].start.line;
             context = context.split('\n').slice(0, thrLineIndex).join('\n');
         }
 
