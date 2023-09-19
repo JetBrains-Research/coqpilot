@@ -24,13 +24,13 @@ suite('Interactor tests', () => {
 
         const interactor = new Interactor(llmPrompt, llmInterface, new VsCodeSpinningWheelProgressBar(), false, 2);
 
-        const proof1 = await interactor.runCompleteProofGerenation('test');
+        const [_s, proof1] = await interactor.runCompleteProofGerenation('test');
         assert.strictEqual(proof1, 'Proof. trivial. Qed.');
 
-        const proof2 = await interactor.runCompleteProofGerenation('test2');
+        const [_s1, proof2] = await interactor.runCompleteProofGerenation('test2');
         assert.strictEqual(proof2, undefined);
 
-        const proof3 = await interactor.runCompleteProofGerenation('test3');
+        const [_s2, proof3] = await interactor.runCompleteProofGerenation('test3');
         assert.strictEqual(proof3, 'Proof. reflexivity. Qed.');
 
         interactor.stop();
@@ -63,7 +63,7 @@ suite('Interactor tests', () => {
         dedent`
         (*
          Date: ${dateTimeNow}
-         Strat: LlmPromptInterface
+         Strat: CoqPromptKShot
         *)
         
         (* {THEOREM PROOF LOG START} *)
@@ -123,7 +123,7 @@ suite('Interactor tests', () => {
         dedent`
         (*
          Date: ${dateTimeNow}
-         Strat: LlmPromptInterface
+         Strat: CoqPromptKShot
         *)
         
         (* {THEOREM PROOF LOG START} *)

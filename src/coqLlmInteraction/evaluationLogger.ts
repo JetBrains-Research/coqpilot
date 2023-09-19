@@ -28,16 +28,22 @@ export class EvaluationLogger {
     rangesToText: { [range: string]: string } = {};
     shots: number;
     logToFile: boolean;
+    // For test
     logger = pino({
-        name: 'ts-lsp-client',
-        target: 'pino-pretty', // --target 'pino-pretty
-        options: {
-            levelFirst: true, // --levelFirst
-            colorize: true,
-            translateTime: true,
-            ignore: 'pid,hostname' // --ignore
-        }
+        name: 'ts-lsp-client'
     });
+    // For regular use
+    // logger = pino({
+    //     transport: {
+    //         target: 'pino-pretty', // --target 'pino-pretty
+    //         options: {
+    //             levelFirst: true, // --levelFirst
+    //             colorize: true,
+    //             translateTime: true,
+    //             ignore: 'pid,hostname' // --ignore
+    //         }
+    //     }
+    // });
 
     constructor(
         coqFilePath: string, 

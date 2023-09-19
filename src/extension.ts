@@ -1,11 +1,14 @@
 import * as vscode from 'vscode';
 import { VsCodeWindowManager } from './extension/vscodeWindowManager';
 
-let windowManager: VsCodeWindowManager | null = null;
+let windowManager: VsCodeWindowManager | undefined;
 
-// When extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 	console.log('Coqpilot is now active.');
+
+	let test = vscode.commands.registerCommand('coqpilot.test', async () => {
+		
+	});
 
 	let startCommand = vscode.commands.registerCommand('coqpilot.start', async () => {
 		try {
@@ -17,9 +20,9 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	let solveParticularCommand = vscode.commands.registerCommand('coqpilot.solve_by_selection', async () => {
-		if (windowManager === null) {
+		if (!windowManager) {
 			try {
-				windowManager = await VsCodeWindowManager.init();
+				windowManager = await VsCodeWindowManager.init(false);
 				await windowManager.tryProveBySelection();
 				return;
 			} catch (err) {
@@ -28,14 +31,14 @@ export function activate(context: vscode.ExtensionContext) {
 				return;
 			}
 		} else {
-			windowManager.tryProveBySelection();
+			await windowManager.tryProveBySelection();
 		}
 	});
 
 	let solveHolesCommand = vscode.commands.registerCommand('coqpilot.substitute_holes', async () => {
-		if (windowManager === null) {
+		if (!windowManager) {
 			try {
-				windowManager = await VsCodeWindowManager.init();
+				windowManager = await VsCodeWindowManager.init(false);
 				await windowManager.holeSubstitutionInSelection();
 				return;
 			} catch (err) {
@@ -44,15 +47,15 @@ export function activate(context: vscode.ExtensionContext) {
 				return;
 			}
 		} else {
-			windowManager.holeSubstitutionInSelection();
+			await windowManager.holeSubstitutionInSelection();
 		}
 	});
 
 	let tryProveAllCommand = vscode.commands.registerCommand('coqpilot.prove_all', async () => {
-		if (windowManager === null) {
+		if (!windowManager) {
 			try {
-				windowManager = await VsCodeWindowManager.init();
-				await windowManager.tryProveAll();
+				windowManager = await VsCodeWindowManager.init(false);
+				await windowManager.proveAll();
 				return;
 			} catch (err) {
 				console.log(err);
@@ -60,12 +63,12 @@ export function activate(context: vscode.ExtensionContext) {
 				return;
 			}
 		} else {
-			windowManager.tryProveAll();
+			await windowManager.proveAll();
 		}
 	});
 
 	let finishCommand = vscode.commands.registerCommand('coqpilot.finish', async () => {
-		if (windowManager === null) {
+		if (!windowManager) {
 			vscode.window.showErrorMessage("Coqpilot is not running.");
 			return;
 		} else {
@@ -78,11 +81,9 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(solveHolesCommand);
 	context.subscriptions.push(tryProveAllCommand);
 	context.subscriptions.push(finishCommand);
+	context.subscriptions.push(test);
 }
 
-// This method is called when your extension is deactivated
 export function deactivate() {
-	if (windowManager !== null) {
-		windowManager.finish();
-	}
+	windowManager?.finish();
 }

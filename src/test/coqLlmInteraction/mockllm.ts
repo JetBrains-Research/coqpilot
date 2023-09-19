@@ -16,11 +16,15 @@ export class MockLlmPrompt implements LLMInterface {
         assert(llmPrompt);
     }
     async sendMessageForResponse(message: string, choices: number): Promise<string[]> {
-        assert(choices <= this.answers[message].length);
+        if(choices > this.answers[message].length) {
+            return Array(choices).fill(this.answers[message][0]);
+        }
         return this.answers[message];
     }
     async sendMessageWithoutHistoryChange(message: string, choices: number): Promise<string[]> {
-        assert(choices <= this.answers[message].length);
+        if(choices > this.answers[message].length) {
+            return Array(choices).fill(this.answers[message][0]);
+        }
         return this.answers[message];
     }
 }

@@ -32,6 +32,10 @@
       {
         "command": "coqpilot.substitute_holes",
         "title": "CoqPilot: Try to substitute holes in selected theorem"
+      },
+      {
+        "command": "coqpilot.test",
+        "title": "CoqPilot: Test"
       }
     ],
     "configuration": [
@@ -48,6 +52,62 @@
             "type": "number",
             "default": 15,
             "markdownDescription": "How many proof attempts should be generated for one theorem."
+          },
+          "coqpilot.gptModel": {
+            "type": "string",
+            "default": "gpt-3.5-turbo-0301",
+            "enum": [
+              "gpt-4",
+              "gpt-4-0314",
+              "gpt-4-0613",
+              "gpt-4-32k",
+              "gpt-4-32k-0314",
+              "gpt-4-32k-0613",
+              "gpt-3.5-turbo",
+              "gpt-3.5-turbo-16k",
+              "gpt-3.5-turbo-0301",
+              "gpt-3.5-turbo-0613",
+              "gpt-3.5-turbo-16k-0613"
+            ],
+            "markdownEnumDescriptions": [
+              "GPT-4 (175B parameters)",
+              "GPT-4 (175B parameters, 03/14/2021)",
+              "GPT-4 (175B parameters, 06/13/2021)",
+              "GPT-4 (32B parameters)",
+              "GPT-4 (32B parameters, 03/14/2021)",
+              "GPT-4 (32B parameters, 06/13/2021)",
+              "GPT-3.5 Turbo (175B parameters)",
+              "GPT-3.5 Turbo (16B parameters)",
+              "GPT-3.5 Turbo (175B parameters, 03/01/2021)",
+              "GPT-3.5 Turbo (175B parameters, 06/13/2021)",
+              "GPT-3.5 Turbo (16B parameters, 06/13/2021)"
+            ],
+            "markdownDescription": "How many proof attempts should be generated for one theorem."
+          },
+          "coqpilot.maxNumberOfTokens": {
+            "type": "number",
+            "default": 40000,
+            "markdownDescription": "How many tokens is allowed to be passed as a context to the open-ai api. It affects the number of theorems that would be used as the message history."
+          },
+          "coqpilot.logAttempts": {
+            "type": "boolean",
+            "default": false,
+            "markdownDescription": "Whether to log proof attempts."
+          },
+          "coqpilot.logFolderPath": {
+            "type": "string",
+            "default": "None",
+            "markdownDescription": "A path to the folder where logs should be saved. If `None` is specified and logAttemps is `true` then logs will be saved in the `coqpilot` plugin folder in the `logs` subfolder."
+          },
+          "coqpilot.proofHolesCreateAux": {
+            "type": "boolean",
+            "default": true,
+            "markdownDescription": "Whether to create auxiliary lemmas when substituting `admit.`'s inside proofs or to insert proof directly into the hole."
+          },
+          "coqpilot.startProvingAfterInit": {
+            "type": "boolean",
+            "default": false,
+            "markdownDescription": "Whether to start proving all theorems after coqpilot.start command is execution is finished."
           }
         }
       }
@@ -66,6 +126,7 @@
     "@types/mocha": "^10.0.1",
     "@types/node": "20.2.5",
     "@types/vscode": "^1.82.0",
+    "@types/yargs": "^17.0.24",
     "@typescript-eslint/eslint-plugin": "^5.59.8",
     "@typescript-eslint/parser": "^5.59.8",
     "@vscode/test-electron": "^2.3.2",
@@ -80,6 +141,7 @@
     "openai": "^4.6.0",
     "path": "^0.12.7",
     "pino": "^8.15.1",
-    "pino-pretty": "^10.2.0"
+    "pino-pretty": "^10.2.0",
+    "yargs": "^17.7.2"
   }
 }

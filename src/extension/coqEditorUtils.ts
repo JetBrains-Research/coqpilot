@@ -60,24 +60,23 @@ export class CoqEditorUtils {
     }
 
     /**
-     * Take a proof as a string and return the proof 
+     * Take a statement+proof as a string and return the proof 
      * without "Proof." and "Qed.".
+     * This function assumes proof is correct and behaviour is undefined
+     * in case when it is not.
      * @param thrProof The proof of a theorem.
      * @returns The proof without "Proof." and "Qed.".
      */
-    extractProofString(thrProof: string): string {
-        let tacticTokens = thrProof.split('.');
-        if (tacticTokens[0].trim() !== "Proof" || tacticTokens[tacticTokens.length - 1].trim() !== "Qed") {
-            throw new Error("Proof does not start with 'Proof.'");
-        }
-        
-        tacticTokens.shift();
-        tacticTokens.pop();
-        return tacticTokens.join('.');
+    extractProofString(proofString: string): string {
+        const stringWithoutStatement = proofString.split('.').slice(1).join('.');
+        const stringWithoutProof = stringWithoutStatement.replace(/Proof\./g, '');
+        const tokensWithoutQed = stringWithoutProof.replace(/Qed\./g, '').split('.');
+
+        return tokensWithoutQed.map((token) => token.trim()).join('. ');
     }
     
-    insertIntoRange(range: vscode.Range, text: string) {
-        this.editor.edit((editBuilder) => {
+    async insertIntoRange(range: vscode.Range, text: string) {
+        await this.editor.edit((editBuilder) => {
             editBuilder.replace(range, text);
         });
     }
@@ -95,7 +94,7 @@ export class CoqEditorUtils {
         });
     }
 
-    insertIntoHole(theoremName: string, holeRangeLocal: vscode.Range, text: string) {
+    async insertIntoHole(theoremName: string, holeRangeLocal: vscode.Range, text: string) {
         let theoremRange = this.getTheoremRange(theoremName);
         if (theoremRange === undefined) {
             throw new Error("Theorem not found");
@@ -106,7 +105,7 @@ export class CoqEditorUtils {
             theoremRange.start.line + holeRangeLocal.start.line, holeRangeLocal.end.character
         );
 
-        this.insertIntoRange(holeRange, text);
+        await this.insertIntoRange(holeRange, text);
     }
 
     getRangeOfSelection(): vscode.Range | undefined {

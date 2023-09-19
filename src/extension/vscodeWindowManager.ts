@@ -1,142 +1,119 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
 import { CoqEditorUtils } from './coqEditorUtils';
-import { Interactor } from '../coqLlmInteraction/interactor';
-import { CoqPromptKShot } from '../coqLlmInteraction/coqLlmPrompt';
-import { GPT35 } from '../coqLlmInteraction/gpt35';
-import * as assert from 'assert';
-import { VsCodeProgressBar, VsCodeSpinningWheelProgressBar } from './vscodeProgressBar';
+import { CoqpilotState } from './coqpilotState';
+import { CoqpilotConfig } from './config';
+
+let coqPilotState: CoqpilotState | undefined;
 
 export class VsCodeWindowManager {
     private coqEditorUtils: CoqEditorUtils;
-    private coqLlmInteractor: Interactor | undefined;
     private readonly observedFilePath: string; 
-    private admittedTheorems: string[] = [];
+    private readonly config: CoqpilotConfig;
 
-    private constructor() {
+    private constructor(config: CoqpilotConfig) {
         this.coqEditorUtils = new CoqEditorUtils(vscode.window.activeTextEditor);  
         let editor = vscode.window.activeTextEditor;
         if (!editor) {
             return;
         }
         this.observedFilePath = editor.document.uri.path;
+        this.config = config;
     }
 
-    static async init(startProvingOnInit: boolean = false): Promise<VsCodeWindowManager | null> {
-        const manager = new VsCodeWindowManager();
-
+    static async init(proveOnStartup: boolean | undefined = undefined): Promise<VsCodeWindowManager | null> {
         const editor = vscode.window.activeTextEditor; 
-        if (!editor) { 
+        const config = CoqpilotConfig.create(
+            vscode.workspace.getConfiguration('coqpilot'),
+            editor,
+            vscode.workspace.workspaceFolders
+        );
+
+        const manager = new VsCodeWindowManager(config);
+
+        if (!editor || editor.document.languageId !== 'coq') { 
             manager.showIncorrectFileFormatMessage(); return null;
         } else if (manager.observedFilePath !== editor.document.uri.path) { 
             manager.showReloadDueToEditorChange(); return null;
-        } else if (!manager.checkRequirements()) {
+        } else if (config.openaiApiKey === "None") {
             manager.showApiKeyNotProvidedMessage(); return null;
         }
-        
-        const openaiApiKey: string = vscode.workspace.getConfiguration('coqpilot')
-                                                     .get('openaiApiKey') ?? "None";
-		const numberOfShots: string = vscode.workspace.getConfiguration('coqpilot')
-                                                     .get('proofAttemsPerOneTheorem') ?? "15";
-        const numberOfTokens: number = 40000;
-        const logAttempts: boolean = true;
 
-        const coqFilePath = editor.document.uri.path;
-        let coqFileRootDir = path.dirname(coqFilePath);
+        CoqpilotConfig.checkRequirements(config);
         
-        let wsFolders = vscode.workspace.workspaceFolders;
-        if (wsFolders && wsFolders.length > 0) {
-            coqFileRootDir = wsFolders[0].uri.path;
-        }
-        
-        const progressIndicatorPercentage = new VsCodeProgressBar();
-        const progressIndicatorSpinningWheel = new VsCodeSpinningWheelProgressBar();
-        const llmPrompt = await CoqPromptKShot.init(
-            coqFilePath, coqFileRootDir, numberOfTokens,
-            undefined, progressIndicatorPercentage
-        );
-        const llmInterface = new GPT35(openaiApiKey);
-        manager.coqLlmInteractor = new Interactor(
-            llmPrompt, 
-            llmInterface, 
-            progressIndicatorSpinningWheel,
-            logAttempts, 
-            parseInt(numberOfShots)
-        ); 
-        manager.admittedTheorems = llmPrompt.getAdmittedTheorems();
-
+        coqPilotState = await CoqpilotState.init(config);
         manager.showParsingFinishedMessage();
 
-        if (startProvingOnInit) {
-            for (let i = 0; i < manager.admittedTheorems.length; i++) {
-                await manager.tryProveTheorem(manager.admittedTheorems[i]);
-            }
+        if(proveOnStartup ?? config.proveAllOnStartup) {
+            manager.proveAll();
         }
 
         return manager;
     }
 
-    async tryProveAll() {
-        for (let i = 0; i < this.admittedTheorems.length; i++) {
-            await this.tryProveTheorem(this.admittedTheorems[i]);
+    async proveAll() {
+        if (!this.meetsRequirements()) { return; }
+        for (let i = 0; i < coqPilotState?.admitted.length; i++) {
+            const thrName = coqPilotState?.admitted[i];
+            const proof = await coqPilotState?.tryProveTheorem(thrName);
+            if (proof) {
+                this.showSearchSucessMessage(thrName, proof);
+            } else {
+                this.showSearchFailureMessage(thrName);
+            }
         }
     }
 
-    async tryProveTheorem(thrName: string) {
-        console.log("tryProveTheorem " + thrName);
-        const editor = vscode.window.activeTextEditor;
-        if (editor.document.uri.path !== this.observedFilePath) {
-            this.showReloadDueToEditorChange(); return; 
-        }
-        assert(this.coqLlmInteractor);
-
-        const [thrStatement, proof] = await this.coqLlmInteractor.runCompleteProofGerenation(thrName);
-        const proofText = `${thrStatement}\n${proof}`;
+    async proveTheorem(thrName: string) {
+        if (!this.meetsRequirements()) { return; }
+        const proof = await coqPilotState?.tryProveTheorem(thrName);
         if (proof) {
-            this.showSearchSucessMessage(thrName, proofText);
+            this.showSearchSucessMessage(thrName, proof);
         } else {
             this.showSearchFailureMessage(thrName);
         }
     }
 
     async tryProveBySelection() {
+        if (!this.meetsRequirements()) { return; }
         let theoremName = this.coqEditorUtils.findTheoremInSelection();
         if (!theoremName) {
             this.noTheoremInSelectionMessage(); return;
         } 
-        if (!this.coqLlmInteractor) {
-            this.fileSnapshotRequired(); return;
-        }
 
-        this.tryProveTheorem(theoremName);
+        this.proveTheorem(theoremName);
     }
 
     async holeSubstitutionInSelection() {
+        if (!this.meetsRequirements()) { return; }
         let theoremName = this.coqEditorUtils.findTheoremInSelection();
         if (!theoremName) {
             this.noTheoremInSelectionMessage(); return;
         } 
-        if (!this.coqLlmInteractor) {
-            this.fileSnapshotRequired(); return;
-        }
 
-        const holesNum = this.coqLlmInteractor.getHolesNum(theoremName);
+        const holesNum = coqPilotState?.getHolesNum(theoremName);
+        let provenHolesNum = 0;
         for (let i = 0; i < holesNum; i++) {
-            const [thrStatement, proof] = await this.coqLlmInteractor.runHoleSubstitution(theoremName, i);
-            const proofText = `${thrStatement}\n${proof}`;
+            const proofText = await coqPilotState?.tryProveHole(theoremName, i);
 
-            if (proof) {
-                const [tactic, holeRange] = this.coqLlmInteractor.getAuxTheoremApplyTactic(theoremName, i);
+            if (proofText) {
+                provenHolesNum++;
+                const [tactic, holeRange] = coqPilotState?.getHoleApplyTactic(theoremName, i);
                 const vscodeHoleRange = new vscode.Range(
                     holeRange.start.line, holeRange.start.character,
                     holeRange.end.line, holeRange.end.character
                 );
-                await this.coqEditorUtils.insertAboveTheorem(theoremName, proofText);
-                this.coqEditorUtils.insertIntoHole(theoremName, vscodeHoleRange, tactic);
-            } else {
-                // TODO: show error message   
+
+                if (this.config.proofHolesCreateAux) {
+                    await this.coqEditorUtils.insertAboveTheorem(theoremName, proofText);
+                    await this.coqEditorUtils.insertIntoHole(theoremName, vscodeHoleRange, tactic);
+                } else {
+                    const proofCleaned = this.coqEditorUtils.extractProofString(proofText);
+                    await this.coqEditorUtils.insertIntoHole(theoremName, vscodeHoleRange, proofCleaned);
+                }
             }
         }
+
+        this.showHoleSubstitutionSummaryMessage(theoremName, provenHolesNum);
     }
 
     async showApiKeyNotProvidedMessage() {
@@ -182,8 +159,7 @@ export class VsCodeWindowManager {
 
     async fileSnapshotRequired() {
         await vscode.window.showInformationMessage(
-            'Coqpilot requires a snapshot of the current file to be aware of the present theorems. ' +
-            'Coqpilot will firsly analyze the file. Please wait.'
+            'Coqpilot requires a snapshot of the current file to be aware of the present theorems.'
         );
     }
 
@@ -204,25 +180,29 @@ export class VsCodeWindowManager {
 		});
     }
 
-    checkRequirements(): boolean {
-        let editor = vscode.window.activeTextEditor;
+    async showHoleSubstitutionSummaryMessage(
+        theoremName: string, 
+        provenHolesNum: number,
+    ) {
+        await vscode.window.showInformationMessage(
+            'Coqpilot was able to substitute ' + provenHolesNum + ' holes in Theorem ' + theoremName + '.'
+        );
+    }
 
-		if (!editor || editor.document.languageId !== 'coq') {
-            this.showIncorrectFileFormatMessage();
-            return false;
-		} 
-
-        const openaiApiKey: string | undefined = vscode.workspace.getConfiguration('coqpilot')
-                                                                 .get('openaiApiKey');
-        if (openaiApiKey === undefined) {
-            this.showApiKeyNotProvidedMessage();
-            return false;
+    meetsRequirements(): boolean {
+        const editor = vscode.window.activeTextEditor;
+        if (editor.document.uri.path !== this.observedFilePath) {
+            this.showReloadDueToEditorChange(); return false;
+        }
+        if (!coqPilotState) {
+            this.fileSnapshotRequired(); return false;
         }
 
         return true;
     }
 
     finish() {
-        this.coqLlmInteractor?.stop();
+        coqPilotState?.dispose();
+        coqPilotState = undefined;
     }
 }
