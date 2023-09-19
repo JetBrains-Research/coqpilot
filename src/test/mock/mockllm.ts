@@ -15,14 +15,22 @@ export class MockLlmPrompt implements LLMInterface {
     initHistory(llmPrompt: LlmPromptInterface): void {
         assert(llmPrompt);
     }
+
     async sendMessageForResponse(message: string, choices: number): Promise<string[]> {
-        if(choices > this.answers[message].length) {
+        if (this.answers[message] === undefined) { 
+            return Array(choices).fill("Proof.\nauto.\nQed.");
+        }
+        if(choices !== this.answers[message].length) {
             return Array(choices).fill(this.answers[message][0]);
         }
         return this.answers[message];
     }
+    
     async sendMessageWithoutHistoryChange(message: string, choices: number): Promise<string[]> {
-        if(choices > this.answers[message].length) {
+        if (this.answers[message] === undefined) { 
+            return Array(choices).fill("Proof.\nauto.\nQed.");
+        }
+        if(choices !== this.answers[message].length) {
             return Array(choices).fill(this.answers[message][0]);
         }
         return this.answers[message];

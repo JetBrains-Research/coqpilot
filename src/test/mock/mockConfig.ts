@@ -6,7 +6,7 @@ export function mockConfig(coqFilePath: string): CoqpilotConfig | undefined {
         coqFilePath: coqFilePath,
         coqFileRootDir: path.dirname(coqFilePath),
         openaiApiKey: "None",
-        proofAttemsPerOneTheorem: 1,
+        proofAttemsPerOneTheorem: 2,
         maxNumberOfTokens: 1,
         logAttempts: false,
         logFolderPath: "None",

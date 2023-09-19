@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { GPT35 } from '../coqLlmInteraction/gpt35';
-import { MockLlmPrompt } from '../test/coqLlmInteraction/mockllm';
+import { MockLlmPrompt } from '../test/mock/mockllm';
 import { LLMInterface } from '../coqLlmInteraction/llmInterface';
 
 export interface CoqpilotConfig {

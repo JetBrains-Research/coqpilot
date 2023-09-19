@@ -9,9 +9,10 @@ export function run(): Promise<void> {
 		color: true
 	});
 
-	const testsRoot = path.resolve(__dirname, '..');
+	const testsRoot = path.resolve(__dirname);
 
-	const singleFileTest: string | null = "suite/coqpilotState.test.js";
+	// const singleFileTest: string | null = "suite/coqpilotState.test.js";
+	const singleFileTest: string | null = null;
 
 	return new Promise((c, e) => {
 		glob('**/**.test.js', { cwd: testsRoot }, (err, files) => {
@@ -21,7 +22,7 @@ export function run(): Promise<void> {
 
 			// Add files to the test suite
 			files.forEach(f => {
-				if(singleFileTest) {
+				if(singleFileTest !== null) {
 					if(f === singleFileTest) {
 						mocha.addFile(path.resolve(testsRoot, f));
 					}

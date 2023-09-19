@@ -1,8 +1,7 @@
 import * as assert from 'assert';
-import { mockConfig } from "./mockConfig";
+import { mockConfig } from "../mock/mockConfig";
 import * as path from 'path';
 import { CoqpilotState } from '../../extension/coqpilotState';
-// import * as vscode from 'vscode';
 
 const sleep = (ms: number) => {
     return new Promise(resolve => setTimeout(resolve, ms));

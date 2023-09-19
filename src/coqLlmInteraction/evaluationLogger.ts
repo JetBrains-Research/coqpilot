@@ -28,7 +28,8 @@ export class EvaluationLogger {
     rangesToText: { [range: string]: string } = {};
     shots: number;
     logToFile: boolean;
-    // For test
+    holeProofAttemtsLog: string = "";
+    // For tests
     logger = pino({
         name: 'ts-lsp-client'
     });
@@ -125,10 +126,11 @@ export class EvaluationLogger {
      * the ranges from self.ranges_to_text with
      * the corresponding text.
      */
-    private substituteTextPieces() {
+    private substituteTextPieces(): string {
         let newText = "";
         const rangesTextPairs: [lspmodels.Range, string][] = [];
         for (const rangeString in this.rangesToText) {
+            if (!rangeString) { continue; }
             const range = JSON.parse(rangeString) as lspmodels.Range;
             rangesTextPairs.push([range, this.rangesToText[rangeString]]);
         }
@@ -247,7 +249,11 @@ export class EvaluationLogger {
         this.insideProof = false;
 
         const neededRange = this.statementsToRanges[statement];
-        this.rangesToText[JSON.stringify(neededRange)] = this.proofLog;
+        if (neededRange) {
+            this.rangesToText[JSON.stringify(neededRange)] = this.proofLog;
+        } else {
+            this.holeProofAttemtsLog += this.proofLog;
+        }
     }
 
     resetResourses() {
@@ -260,7 +266,13 @@ export class EvaluationLogger {
 
     onEvaluationFinish() {
         if (this.logToFile) {
-            const newText = this.substituteTextPieces();
+            let newText = this.substituteTextPieces();
+            if (this.holeProofAttemtsLog !== "") {
+                newText += "\n\n(* {HOLE PROOF ATTEMPS LOG START} *)\n\n";
+                newText += this.holeProofAttemtsLog;
+                newText += "\n\n(* {HOLE PROOF ATTEMPS LOG END} *)";
+            }
+
             this.log2file(newText);
         }
         this.resetResourses();
