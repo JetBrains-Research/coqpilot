@@ -1,71 +1,68 @@
-# coqpilot README
+# coqpilot <img style="height: 1.3em; float: right" src="./etc/img/jetbrains_logo.png"/>  <!-- omit in toc -->
 
-This is the README for your extension "coqpilot". After writing up a brief description, we recommend including the following sections.
+`Coqpilot` is a [Visual Studio Code](https://code.visualstudio.com/) extension that is designed to help automate writing of Coq proofs. It uses Large Language Models to generate multiple potential proofs and then uses [coq-lsp](https://github.com/ejgallego/coq-lsp) to typecheck them. It substitutes the proof in the editor only if a valid proof is found. 
+
+Now `coqpilot` is in early beta and seeks for feedbacks. Please feel free to open an issue regarding any problem you encounter or any feature you want to see in the future. 
+
+## Brief technical overview
+
+`Coqpilot` now supports fetching proofs from all [open-ai](https://openai.com) gpt models, but is designed to be easily extensible to other models.  
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+`Coqpilot` could be run to analyse the opened `coq` file, fetch proofs of successfully typechecked theorems inside it, parse them and use as a message history to present to LLM.
 
-For example if there is an image subfolder under your extension project workspace:
+Later on, on demand, it could perform a request to an LLM with an admitted theorem and a message history and get a list of potential proofs. It then uses `coq-lsp` to typecheck them and substitute the first valid proof in the editor.
 
-\!\[feature X\]\(images/feature-x.png\)
+Using particular commands user can either: 
+- Run `coqpilot` to try substitute all admitted theorems in the file.
+- Run `coqpilot` to try substitute the theorem currently selected. 
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+<img src="./etc/gif/substitute-proof.gif"/> 
+
+- Run `coqpilot` to try substitute goles that are marked as `admit.` in a theorem currently selected.
+
+<img src="./etc/gif/substitute-holes.gif"/> 
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+* `coq-lsp` version 0.1.7 is currently required to run the extension.
+
+## Coq-lsp installation
+
+To make the extension running you will have to install `coq-lsp` server. You can install it using opam: 
+```bash
+opam install coq-lsp
+```
+For more information on how to install `coq-lsp` please refer to [coq-lsp](https://github.com/ejgallego/coq-lsp). 
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
 This extension contributes the following settings:
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+* `coqpilot.openaiApiKey`: An `open-ai` api key. Is used to communicate with the open-ai api. You can get one [here](https://platform.openai.com/account/api-keys). It is required to run the extension.
+* `coqpilot.proofAttemsPerOneTheorem`: How many proof attempts should be generated for one theorem.
+* `coqpilot.gptModel`: Which `open-ai` model should be used to generate proofs.
+* `coqpilot.maxNumberOfTokens`: What is your token per minute limit for `open-ai` api. It is used to calculate how many proofs could be used as a message history. For more information please refer to [open-ai](https://platform.openai.com/account/rate-limits).
+* `coqpilot.logAttempts`: Whether to log proof attempts. 
+* `coqpilot.logFolderPath`: A path to the folder where logs should be saved. If `None` is specified and logAttemps is `true` then logs will be saved in the `coqpilot` plugin folder in the `logs` subfolder.
+* `coqpilot.proofHolesCreateAux`: Whether to create auxiliary lemmas when substituting `admit.`'s inside proofs or to insert proof directly into the hole.
+* `coqpilot.startProvingAfterInit`: Whether to start proving all theorems after coqpilot.start command is execution is finished.
 
-## Known Issues
+## Contributed Commands
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+* `coqpilot.start`: Start analysing coq files.
+* `coqpilot.prove_all`: Try to prove all theorems.
+* `coqpilot.finish`: Drop the snapshot and save logs.
+* `coqpilot.solve_by_selection`: Try to solve theorem currently selected.
+* `coqpilot.substitute_holes`: Try to substitute holes in selected theorem.
+
+## Planned Features
+
+It is planned to implement a proof repair feature for the proofs which will establish a dialogue between `coq-lsp` and the LLM. When LLM generates an incorrect proof, the error would be sent to LLM as a next message and the process would be repeated until a valid proof is found or the limit of attempts is reached.
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
-
 ### 1.0.0
 
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+Initial release of coqpilot. 

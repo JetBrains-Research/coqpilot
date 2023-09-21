@@ -23,12 +23,7 @@ export class CoqPromptKShot extends LlmPromptInterface {
     }
 
     override getSystemMessage(): string {
-        return `
-            Generate proof of the theorem from user input in Coq. 
-            You should only generate proofs in Coq. Never add special 
-            comments to the proof. Your answer should be a valid Coq proof. 
-            It should start with 'Proof.' and end with 'Qed.'.
-        `;
+        return `Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'.`;
     }
 
     override getMessageHistory(): { role: string; content: string; }[] {
