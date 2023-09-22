@@ -1,7 +1,13 @@
 {
   "name": "coqpilot",
-  "displayName": "coqpilot",
+  "displayName": "Сoqpilot",
   "description": "An ai based completion extension for Coq interactive prover.",
+  "icon": "etc/img/logo.ico",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/K-dizzled/coqpilot"
+  },
+  "publisher": "JbPllab",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.82.0"
@@ -86,7 +92,7 @@
           },
           "coqpilot.maxNumberOfTokens": {
             "type": "number",
-            "default": 40000,
+            "default": 80000,
             "markdownDescription": "How many tokens is allowed to be passed as a context to the open-ai api. It affects the number of theorems that would be used as the message history."
           },
           "coqpilot.logAttempts": {
@@ -108,6 +114,14 @@
             "type": "boolean",
             "default": false,
             "markdownDescription": "Whether to start proving all theorems after coqpilot.start command is execution is finished."
+          }, 
+          "coqpilot.ExtraCommandsList": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "markdownDescription": "A list of tactics that would also be used to try generating proofs. Commands in the list must be valid coq commands available in your environment and must finish with a dot."
           }
         }
       }

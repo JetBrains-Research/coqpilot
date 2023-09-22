@@ -1,4 +1,4 @@
-# coqpilot <img style="height: 1.3em; float: right" src="./etc/img/jetbrains_logo.png"/>  <!-- omit in toc -->
+# coqpilot
 
 `Coqpilot` is a [Visual Studio Code](https://code.visualstudio.com/) extension that is designed to help automate writing of Coq proofs. It uses Large Language Models to generate multiple potential proofs and then uses [coq-lsp](https://github.com/ejgallego/coq-lsp) to typecheck them. It substitutes the proof in the editor only if a valid proof is found. 
 
