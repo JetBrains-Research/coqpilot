@@ -4,6 +4,7 @@ import {
     readFileSync,
 } from "fs";
 import { shuffleArray } from "./utils";
+import * as path from "path";
 
 class SeparatedTheorems {
     constructor(
@@ -24,7 +25,6 @@ export class LlmPromptInterface {
     admittedTheorems: coqlspmodels.Theorem[] = [];
     incompleteTheorems: { [thrName: string]: coqlspmodels.Theorem } = {};
     public statementsToRanges: { [key: string]: lspmodels.Range } = {};
-    cachedMessageHistory: { role: string; content: string; }[] | null = null;
 
     protected constructor(
         pathToCoqFile: string, 
@@ -40,7 +40,12 @@ export class LlmPromptInterface {
     }
 
     static countTokens = (str: string): number => {
-        return str.split(/(\s+)/).filter( e => e.trim().length > 0).length;
+        // Its hard enough to determine how gpt will
+        // tokenize the string. Refer to the following
+        // link for more information:
+        // https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them
+        // One token is approximately 4 characters.
+        return (str.length / 4) >> 0;
     };
 
     /**
@@ -88,7 +93,7 @@ export class LlmPromptInterface {
         // shuffle it and then pop theorems from it until the sum of their tokens + maximum
         // possible statement.size is greater than the token limit.
         shuffleArray(provenTheorems);
-        while (theoremsTokensSum > 0.9 * tokenLimit && provenTheorems.length > 0) {
+        while (theoremsTokensSum > 0.95 * tokenLimit && provenTheorems.length > 0) {
             const theorem = provenTheorems.pop();
             if (!theorem.proof) {
                 continue;

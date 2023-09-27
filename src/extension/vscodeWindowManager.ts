@@ -103,6 +103,7 @@ export class VsCodeWindowManager {
                     holeRange.end.line, holeRange.end.character
                 );
 
+                if (!this.meetsRequirements()) { return; }
                 if (this.config.proofHolesCreateAux) {
                     await this.coqEditorUtils.insertAboveTheorem(theoremName, proofText);
                     await this.coqEditorUtils.insertIntoHole(theoremName, vscodeHoleRange, tactic);
@@ -172,6 +173,7 @@ export class VsCodeWindowManager {
 			'Reject'
 		).then((value) => {
 			if (value === 'Accept' && editor) {
+                if (!this.meetsRequirements()) { return; }
 				let theoremRange = this.coqEditorUtils.getTheoremRange(theoremName);
                 if (theoremRange) {
                     this.coqEditorUtils.insertIntoRange(theoremRange, proof);

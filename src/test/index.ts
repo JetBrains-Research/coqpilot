@@ -10,9 +10,8 @@ export function run(): Promise<void> {
 	});
 
 	const testsRoot = path.resolve(__dirname);
-
-	// const singleFileTest: string | null = "suite/coqpilotState.test.js";
-	const singleFileTest: string | null = null;
+	const singleFileTest: string | undefined = process.env['TEST_ARG-t'];
+	const testPerformance: boolean = (process.env['TEST_ARG-test_performance'] ?? "false") === 'true'; 
 
 	return new Promise((c, e) => {
 		glob('**/**.test.js', { cwd: testsRoot }, (err, files) => {
@@ -22,12 +21,18 @@ export function run(): Promise<void> {
 
 			// Add files to the test suite
 			files.forEach(f => {
-				if(singleFileTest !== null) {
+				if(singleFileTest) {
 					if(f === singleFileTest) {
 						mocha.addFile(path.resolve(testsRoot, f));
 					}
 				} else {
-					mocha.addFile(path.resolve(testsRoot, f));
+					if (f.includes('performance.test.js')) {
+						if(testPerformance) {
+							mocha.addFile(path.resolve(testsRoot, f));
+						}
+					} else {
+						mocha.addFile(path.resolve(testsRoot, f));
+					}
 				}
 			});
 

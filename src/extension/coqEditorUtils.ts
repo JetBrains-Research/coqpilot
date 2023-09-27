@@ -40,7 +40,16 @@ export class CoqEditorUtils {
         this.editor = editor;
     }
 
+    updateEditor() {
+        let editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            throw new Error("Editor is undefined");
+        }
+        this.editor = editor;
+    }
+
     getTheoremRange(theoremName: string): vscode.Range | undefined {
+        this.updateEditor();
         let regexp = CoqTokens.getTheoremRegexp(theoremName);
         let text = this.editor.document.getText();
         let foundIndex = text.search(regexp);
@@ -76,6 +85,7 @@ export class CoqEditorUtils {
     }
     
     async insertIntoRange(range: vscode.Range, text: string) {
+        this.updateEditor();
         await this.editor.edit((editBuilder) => {
             editBuilder.replace(range, text);
         });
@@ -89,6 +99,7 @@ export class CoqEditorUtils {
         let theoremStart = theoremRange.start;
         let textToInsert = text + "\n\n";
 
+        this.updateEditor();
         await this.editor.edit((editBuilder) => {
             editBuilder.insert(theoremStart, textToInsert);
         });
@@ -109,6 +120,7 @@ export class CoqEditorUtils {
     }
 
     getRangeOfSelection(): vscode.Range | undefined {
+        this.updateEditor();
         let selection = this.editor.selection;
         if (selection.isEmpty) {
             return undefined;

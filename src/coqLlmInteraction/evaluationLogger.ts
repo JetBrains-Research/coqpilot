@@ -19,6 +19,7 @@ export class EvalLoggingError extends Error {
 export class EvaluationLogger {
     coqFile: string;
     logFilePath: string;
+    debugLogPath: string;
     contents: string[];
     insideProof: boolean = false;
     proofLog: string = "";
@@ -67,14 +68,17 @@ export class EvaluationLogger {
             }
 
             this.logFilePath = join(logFolder, `log_${dateTimeNow}.v`);
+            this.debugLogPath = join(logFolder, `debug_log_${dateTimeNow}.txt`);
 
-            if (existsSync(this.logFilePath)) {
+            if (existsSync(this.logFilePath) || existsSync(this.debugLogPath)) {
                 const randomNum = Math.floor(Math.random() * 1000);
                 this.logFilePath = join(logFolder, `log_${dateTimeNow}_${randomNum}.v`);
+                this.debugLogPath = join(logFolder, `debug_log_${dateTimeNow}_${randomNum}.txt`);
             }
 
             const logFileContents = `(*\n Date: ${dateTimeNow}\n Strat: ${runStrategy}\n*)\n\n`;
             writeFileSync(this.logFilePath, logFileContents);
+            writeFileSync(this.debugLogPath, logFileContents);
         }
 
         const coqFileContents = readFileSync(this.coqFile, "utf-8");
@@ -230,6 +234,13 @@ export class EvaluationLogger {
         this.logger.info(`Attempt ${attemptIndex} for theorem ${thrName} failed with an exception`);
     }
 
+    onException(errorMsg: string) {
+        this.logger.error(`Exception: ${errorMsg}`);
+        if (this.insideProof) {
+            this.proofLog += `(* Exception: ${errorMsg} *)\n`;
+        }
+    }
+
     onProofCheckFail(errorMsg: string) {
         if (!this.insideProof) {
             throw new EvalLoggingError("Not in proof");
@@ -253,6 +264,10 @@ export class EvaluationLogger {
             this.rangesToText[JSON.stringify(neededRange)] = this.proofLog;
         } else {
             this.holeProofAttemtsLog += this.proofLog;
+        }
+
+        if (this.logToFile) {
+            appendFileSync(this.debugLogPath, `\n${this.proofLog}\n`);
         }
     }
 

@@ -42,7 +42,7 @@ const sleep = (time: number) => {
 
 export class VsCodeSpinningWheelProgressBar extends ProgressBar {
     customCancellationToken: vscode.CancellationTokenSource | null = null;
-    timeout: number = 30; // seconds
+    timeout: number = 300; // seconds
 
     constructor() {
         super(

@@ -13,7 +13,14 @@ async function main() {
 		const extensionTestsPath = path.resolve(__dirname, './index');
 
 		// Download VS Code, unzip it and run the integration test
-		await runTests({ extensionDevelopmentPath, extensionTestsPath });
+		const args = process.argv.slice(2);
+		const envVals = args.reduce((acc, arg) => {
+			const [key, val] = arg.split('=');
+			acc[`TEST_ARG${key}`] = val;
+			return acc;
+		}, {} as { [key: string]: string | undefined });
+
+		await runTests({ extensionDevelopmentPath, extensionTestsPath, extensionTestsEnv: envVals });
 	} catch (err) {
 		console.error('Failed to run tests', err);
 		process.exit(1);

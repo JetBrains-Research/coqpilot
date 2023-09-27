@@ -85,5 +85,6 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
+	console.log('Coqpilot deactivating.');
 	windowManager?.finish();
 }

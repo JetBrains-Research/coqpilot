@@ -10,7 +10,7 @@ export class CoqPromptKShot extends LlmPromptInterface {
         progressBar: ProgressBar | undefined = new CliProgressBar(),
         theoremsFromFile: coqlspmodels.Theorem[] | undefined = undefined,
     ): Promise<CoqPromptKShot> {
-        const proofViewToUse = proofView ? proofView : await ProofView.init(pathToCoqFile, pathToRootDir, progressBar);
+        const proofViewToUse = proofView ?? await ProofView.init(pathToCoqFile, pathToRootDir, progressBar);
 
         const llmPrompt = new CoqPromptKShot(
             pathToCoqFile,

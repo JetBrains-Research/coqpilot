@@ -8,7 +8,7 @@
     "url": "https://github.com/K-dizzled/coqpilot"
   },
   "publisher": "JbPllab",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "engines": {
     "vscode": "^1.82.0"
   },
@@ -92,7 +92,7 @@
           },
           "coqpilot.maxNumberOfTokens": {
             "type": "number",
-            "default": 80000,
+            "default": 2000,
             "markdownDescription": "How many tokens is allowed to be passed as a context to the open-ai api. It affects the number of theorems that would be used as the message history."
           },
           "coqpilot.logAttempts": {

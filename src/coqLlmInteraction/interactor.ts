@@ -87,7 +87,10 @@ export class Interactor {
         let llmResponse = await this.llmInterface.sendMessageWithoutHistoryChange(
             theoremStatement,
             this.shots
-        );
+        ).catch((e) => {
+            this.runLogger.onException(e.message);
+            throw e;
+        });
 
         this.progressBar.finish();
         this.runLogger.onEndLlmResponseFetch();
