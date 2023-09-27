@@ -128,7 +128,25 @@ export class CoqEditorUtils {
         return new vscode.Range(selection.start, selection.end);
     }
 
-    findTheoremInSelection(): string | undefined {
+    getTheoremStatement(thrName: string): string | undefined {
+        this.updateEditor();
+        let regexp = CoqTokens.getTheoremRegexp(thrName);
+        let text = this.editor.document.getText();
+        let theoremText = text.match(regexp);
+    
+        if (theoremText === null) {
+            console.log("Theorem was not found");
+            return undefined;
+        }
+        return theoremText[0].split('.')[0] + '.';;
+    }
+
+    /**
+     * Find the theorem in the selection.
+     * @returns The name of the theorem in the selection and the 
+     * its statement or undefined if no theorem was found.
+     */
+    findTheoremInSelection(): [string, string] | undefined {
         let range = this.getRangeOfSelection();
         if (range === undefined) {
             return undefined;
@@ -136,12 +154,15 @@ export class CoqEditorUtils {
         let text = this.editor.document.getText(range);
 
         const re = CoqTokens.getTheoremRegexpNoName();
-        let theoremName = text.match(re);
-        if (theoremName === null) {
+        let theoremText = text.match(re);
+        if (theoremText === null) {
             console.log("Theorem name not found");
             return undefined;
         }
         
-        return theoremName[0].split(' ')[1];
+        const theoremName = theoremText[0].split(' ')[1];
+        const theoremStatement = theoremText[0].split('.')[0] + '.';
+
+        return [theoremName, theoremStatement];
     }
 }

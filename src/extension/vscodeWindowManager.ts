@@ -54,7 +54,8 @@ export class VsCodeWindowManager {
         if (!this.meetsRequirements()) { return; }
         for (let i = 0; i < coqPilotState?.admitted.length; i++) {
             const thrName = coqPilotState?.admitted[i];
-            const proof = await coqPilotState?.tryProveTheorem(thrName);
+            const thrStatement = this.coqEditorUtils.getTheoremStatement(thrName);
+            const proof = await coqPilotState?.tryProveTheorem(thrName, thrStatement);
             if (proof) {
                 this.showSearchSucessMessage(thrName, proof);
             } else {
@@ -63,9 +64,9 @@ export class VsCodeWindowManager {
         }
     }
 
-    async proveTheorem(thrName: string) {
+    async proveTheorem(thrName: string, thrStatement: string) {
         if (!this.meetsRequirements()) { return; }
-        const proof = await coqPilotState?.tryProveTheorem(thrName);
+        const proof = await coqPilotState?.tryProveTheorem(thrName, thrStatement);
         if (proof) {
             this.showSearchSucessMessage(thrName, proof);
         } else {
@@ -75,17 +76,18 @@ export class VsCodeWindowManager {
 
     async tryProveBySelection() {
         if (!this.meetsRequirements()) { return; }
-        let theoremName = this.coqEditorUtils.findTheoremInSelection();
+        let [theoremName, theoremStatement] = this.coqEditorUtils.findTheoremInSelection();
         if (!theoremName) {
             this.noTheoremInSelectionMessage(); return;
         } 
 
-        this.proveTheorem(theoremName);
+        this.proveTheorem(theoremName, theoremStatement);
     }
 
     async holeSubstitutionInSelection() {
         if (!this.meetsRequirements()) { return; }
-        let theoremName = this.coqEditorUtils.findTheoremInSelection();
+        // TODO: Fix this as well
+        let [theoremName, _] = this.coqEditorUtils.findTheoremInSelection();
         if (!theoremName) {
             this.noTheoremInSelectionMessage(); return;
         } 

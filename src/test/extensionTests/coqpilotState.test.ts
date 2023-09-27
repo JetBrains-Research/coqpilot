@@ -17,21 +17,21 @@ suite('Coqpilot state tests', () => {
         let operationsCompleted = 0;
         const timeSinceStart: number[] = [];
 
-        state.tryProveTheorem('test').then((proof) => {
+        state.tryProveTheorem('test', "Theorem test: True.").then((proof) => {
             const end = performance.now();
             timeSinceStart.push(end - start);
             assert.strictEqual(proof, 'Theorem test: True.\nProof. trivial. Qed.');
             operationsCompleted++;
         });
 
-        state.tryProveTheorem('test2').then((proof) => {
+        state.tryProveTheorem('test2', "Theorem test2: False.").then((proof) => {
             const end = performance.now();
             timeSinceStart.push(end - start);
             assert.strictEqual(proof, undefined);
             operationsCompleted++;
         });
 
-        state.tryProveTheorem('test3').then((proof) => {
+        state.tryProveTheorem('test3', "Theorem test3: 1 = 1.").then((proof) => {
             const end = performance.now();
             timeSinceStart.push(end - start);
             assert.strictEqual(proof, "Theorem test3: 1 = 1.\nProof. reflexivity. Qed.");

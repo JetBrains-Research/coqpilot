@@ -45,8 +45,7 @@ export class Interactor {
         );
     }
 
-    async runCompleteProofGerenation(theoremName: string): Promise<[string, string | undefined]> {
-        const theoremStatement = this.llmPrompt.getTheoremStatementByName(theoremName);
+    async runCompleteProofGerenation(theoremName: string, theoremStatement: string): Promise<string | undefined> {
         return await this.runProofGeneration(theoremName, theoremStatement);
     }
 
@@ -60,7 +59,9 @@ export class Interactor {
 
     async runHoleSubstitution(theoremName: string, holeIndex: number): Promise<[string, string | undefined]>  {
         const [holeName, holeStatement] = this.llmPrompt.getAuxTheoremStatement(theoremName, holeIndex); 
-        return await this.runProofGeneration(holeName, holeStatement, theoremName);
+        const proof = await this.runProofGeneration(holeName, holeStatement, theoremName);
+
+        return [holeStatement, proof];
     }
 
     /**
@@ -74,13 +75,15 @@ export class Interactor {
      * provided for evaluation.
      * 
      * @param theoremName The name of the theorem to evaluate.
+     * @param theoremStatement The statement of the theorem to evaluate.
+     * @param originalName The name of the theorem from which the hole was generated.
      * @returns The correct proof or undefined if no proof was found.
      */
     async runProofGeneration(
         theoremName: string, 
         theoremStatement: string, 
         originalName: string | null = null
-    ): Promise<[string, string | undefined]> {
+    ): Promise<string | undefined> {
         this.runLogger.onStartLlmResponseFetch(theoremName);
         this.progressBar.initialize(1);
 
@@ -147,10 +150,10 @@ export class Interactor {
         this.runLogger.onTheoremProofEnd(theoremStatement);
 
         if (foundProof) {
-            return [theoremStatement, foundProof];
+            return foundProof;
         } 
 
-        return [theoremStatement, undefined];
+        return undefined;
     }
 
     stop() {

@@ -49,9 +49,9 @@ export class CoqpilotState {
         return this.queue.size === 0;
     }
 
-    async tryProveTheorem(thrName: string): Promise<string | undefined> {
+    async tryProveTheorem(thrName: string, thrStatement: string): Promise<string | undefined> {
         return this.queue.enqueue(async () => {
-            const [thrStatement, proof] = await this.coqLlmInteractor.runCompleteProofGerenation(thrName);
+            const proof = await this.coqLlmInteractor.runCompleteProofGerenation(thrName, thrStatement);
             if (proof) {
                 const proofText = `${thrStatement}\n${proof}`;
                 return proofText;

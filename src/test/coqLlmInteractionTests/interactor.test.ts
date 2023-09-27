@@ -24,13 +24,13 @@ suite('Interactor tests', () => {
 
         const interactor = new Interactor(llmPrompt, llmInterface, new VsCodeSpinningWheelProgressBar(), false, 2);
 
-        const [_s, proof1] = await interactor.runCompleteProofGerenation('test');
+        const [_s, proof1] = await interactor.runCompleteProofGerenation('test', "Theorem test: True.");
         assert.strictEqual(proof1, 'Proof. trivial. Qed.');
 
-        const [_s1, proof2] = await interactor.runCompleteProofGerenation('test2');
+        const [_s1, proof2] = await interactor.runCompleteProofGerenation('test2', "Theorem test2: False.");
         assert.strictEqual(proof2, undefined);
 
-        const [_s2, proof3] = await interactor.runCompleteProofGerenation('test3');
+        const [_s2, proof3] = await interactor.runCompleteProofGerenation('test3', "Theorem test3: 1 = 1.");
         assert.strictEqual(proof3, 'Proof. reflexivity. Qed.');
 
         interactor.stop();
@@ -55,7 +55,7 @@ suite('Interactor tests', () => {
         const logFilePath = path.join(resFolder, `log_${dateTimeNow}.v`);
         const interactor = new Interactor(llmPrompt, llmInterface, new VsCodeSpinningWheelProgressBar(),  true, 2, resFolder);
         
-        await interactor.runCompleteProofGerenation('test');
+        await interactor.runCompleteProofGerenation('test', "Theorem test: True.");
         interactor.stop();
         
         const logContents = readFileSync(logFilePath, 'utf8');
@@ -112,9 +112,9 @@ suite('Interactor tests', () => {
         const logFilePath = path.join(resFolder, `log_${dateTimeNow}.v`);
         const interactor = new Interactor(llmPrompt, llmInterface, new VsCodeSpinningWheelProgressBar(), true, 2, resFolder);
         
-        await interactor.runCompleteProofGerenation('test');
-        await interactor.runCompleteProofGerenation('test2');
-        await interactor.runCompleteProofGerenation('test3');
+        await interactor.runCompleteProofGerenation('test', "Theorem test: True.");
+        await interactor.runCompleteProofGerenation('test2', "Theorem test2: False.");
+        await interactor.runCompleteProofGerenation('test3', "Theorem test3: 1 = 1.");
         
         interactor.stop();
         
