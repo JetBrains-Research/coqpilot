@@ -4,7 +4,6 @@ import {
     readFileSync,
 } from "fs";
 import { shuffleArray } from "./utils";
-import * as path from "path";
 
 class SeparatedTheorems {
     constructor(

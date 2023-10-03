@@ -15,33 +15,35 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
-  "main": "./out/extension.js",
+  "activationEvents": [
+    "onLanguage:coq"
+  ],
+  "main": "./out/mainNode.js",
   "contributes": {
     "commands": [
       {
         "command": "coqpilot.start",
-        "title": "CoqPilot: Start analysing coq files"
+        "title": "coqpilot 1"
       },
       {
-        "command": "coqpilot.prove_all",
-        "title": "CoqPilot: Try to prove all theorems"
+        "command": "coqpilot.go",
+        "title": "coqpilot 9"
       },
       {
-        "command": "coqpilot.finish",
-        "title": "CoqPilot: Drop the snapshot and save logs"
+        "command": "coqpilot.get_document",
+        "title": "coqpilot 1488"
       },
       {
-        "command": "coqpilot.solve_by_selection",
-        "title": "CoqPilot: Try to solve theorem currently selected"
+        "command": "coqpilot.restart",
+        "title": "coqpilot 2"
       },
       {
-        "command": "coqpilot.substitute_holes",
-        "title": "CoqPilot: Try to substitute holes in selected theorem"
+        "command": "coqpilot.toggle",
+        "title": "coqpilot 3"
       },
       {
-        "command": "coqpilot.test",
-        "title": "CoqPilot: Test"
+        "command": "coqpilot.stop",
+        "title": "coqpilot 4"
       }
     ],
     "configuration": [
@@ -114,7 +116,7 @@
             "type": "boolean",
             "default": false,
             "markdownDescription": "Whether to start proving all theorems after coqpilot.start command is execution is finished."
-          }, 
+          },
           "coqpilot.ExtraCommandsList": {
             "type": "array",
             "items": {
@@ -150,12 +152,14 @@
     "typescript": "^5.1.3"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.9.1",
     "coqlsp-client": "^1.0.6",
     "dedent": "^1.5.1",
     "openai": "^4.6.0",
     "path": "^0.12.7",
     "pino": "^8.15.1",
     "pino-pretty": "^10.2.0",
+    "vscode-languageclient": "^9.0.1",
     "yargs": "^17.7.2"
   }
 }
