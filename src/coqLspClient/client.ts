@@ -3,8 +3,6 @@ import {
     commands,
     ExtensionContext,
     workspace,
-    TextEditor,
-    TextEditorSelectionChangeEvent,
     StatusBarAlignment,
     StatusBarItem,
     ThemeColor,
@@ -14,32 +12,17 @@ import {
 import {
     BaseLanguageClient,
     LanguageClientOptions,
-    RequestType,
-    RevealOutputChannelOn,
-    VersionedTextDocumentIdentifier,
-    NotificationType,
-    PublishDiagnosticsParams, 
-    LogTraceNotification,
+    RevealOutputChannelOn
 } from "vscode-languageclient";
 
-import {
-    FlecheDocumentParams,
-    FlecheDocument,
-    FlecheSaveParams,
-} from "../lib/types";
-
 import { CoqLspServerConfig } from "./config";
-import { GoalsManager } from "./goals";
 import { FileProgressManager } from "./progress";
 import { ProofView } from "./proofView";
 
 let client: BaseLanguageClient;
 
-let goalsManager: GoalsManager;
 let fileProgress: FileProgressManager;
 let proofView: ProofView;
-
-let pendingOperation: boolean = false;
 
 // Status Bar Button
 let lspStatusItem: StatusBarItem;
@@ -56,15 +39,7 @@ export function activateCoqLSP(
     clientFactory: ClientFactoryType
 ): void {
     function coqCommand(command: string, fn: () => void) {
-        let disposable = commands.registerCommand("coqpilot." + command, fn);
-        context.subscriptions.push(disposable);
-    }
-
-    function coqEditorCommand(command: string, fn: (editor: TextEditor) => void) {
-        let disposable = commands.registerTextEditorCommand(
-            "coqpilot." + command,
-            fn
-        );
+        let disposable = commands.registerCommand("coqpilot.coqlsp." + command, fn);
         context.subscriptions.push(disposable);
     }
 
@@ -83,7 +58,6 @@ export function activateCoqLSP(
             .dispose(2000)
             .then(updateStatusBar)
             .then(() => {
-                goalsManager.dispose();
                 fileProgress.dispose();
                 proofView.dispose();
             });
@@ -118,7 +92,6 @@ export function activateCoqLSP(
             client
                 .start()
                 .then(updateStatusBar)
-                // .then(setListeners)
         ).catch((error) => {
             let emsg = error.toString();
             console.log(`Error in coq-lsp start: ${emsg}`);
@@ -139,77 +112,7 @@ export function activateCoqLSP(
         }
     };
 
-    goalsManager = new GoalsManager();
-    context.subscriptions.push(goalsManager);
-
-    const goals = (editor: TextEditor) => {
-        if (!client.isRunning()) { return; } 
-        let uri = editor.document.uri;
-        let version = editor.document.version;
-        let position = editor.selection.active;
-        console.log(`Goals requested for ${uri} at ${position}`);
-
-        // goalsManager.checkAuxLemma(client, uri, version, position);
-    };
-
-    const goalsCall = (
-        textEditor: TextEditor,
-    ) => {
-
-        if (textEditor.document.languageId !== "coq") {
-            return;
-        }
-
-        goals(textEditor);
-    };
-
-    let goalsHook = window.onDidChangeTextEditorSelection(
-        (_evt: TextEditorSelectionChangeEvent) => {
-            // console.log("Goals hook activated", evt);
-            // goalsCall(evt.textEditor);
-            pendingOperation = true;
-        }
-    );
-
-    context.subscriptions.push(goalsHook);
- 
-    const saveReq = new RequestType<FlecheDocumentParams, void, void>(
-        "coq/saveVo"
-    );
-
-    const coqFileDiags = new NotificationType<PublishDiagnosticsParams>(
-        "textDocument/publishDiagnostics"
-    );
-
-    // const setListeners = () => {
-    //     if (client) {
-    //         // when any notification is sent to the server from the client, set pendingOperation to true
-    //         client.onNotification(LogTraceNotification.type, (params) => {
-    //             pendingOperation = false;
-    //             if (params.message.includes("document fully checked")) {
-    //                 console.log("document fully checked");
-    //             }
-    //         }); 
-    //     }
-    // };
-
-    const saveDocument = (editor: TextEditor) => {
-        let uri = editor.document.uri;
-        let version = editor.document.version;
-        let textDocument = VersionedTextDocumentIdentifier.create(
-            uri.toString(),
-            version
-        );
-        let params: FlecheSaveParams = { textDocument };
-        client
-            .sendRequest(saveReq, params)
-            .then(() => console.log("document saved", uri.toString()))
-            .catch((error) => {
-                let errMessage = error.toString();
-                console.log(`error in save: ${errMessage}`);
-                window.showErrorMessage(errMessage);
-            });
-    };
+    context.subscriptions.push(proofView);
 
     const createEnableButton = () => {
         lspStatusItem = window.createStatusBarItem(
@@ -250,10 +153,6 @@ export function activateCoqLSP(
 
     coqCommand("restart", restart);
     coqCommand("toggle", toggle);
-
-    coqEditorCommand("go", goals);
-    // coqEditorCommand("document", getDocument);
-    coqEditorCommand("save", saveDocument);
 
     createEnableButton();
 

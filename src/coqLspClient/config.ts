@@ -35,7 +35,7 @@ export interface CoqLspClientConfig {}
 
 export namespace CoqLspClientConfig {
     export function create(): CoqLspClientConfig {
-        let obj: CoqLspClientConfig = { };
+        let obj: CoqLspClientConfig = {};
         return obj;
     }
 }

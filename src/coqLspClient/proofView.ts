@@ -4,7 +4,6 @@ import {
     commands,
     Uri,
     Position as VSPos,
-    Range as VSRange,
 } from "vscode";
 
 import {
@@ -22,7 +21,6 @@ import {
     LogTraceNotification,
     ProtocolNotificationType,
     DidChangeTextDocumentParams,
-    TextDocumentContentChangeEvent,
     PublishDiagnosticsNotification,
     DidChangeTextDocumentNotification,
     SetTraceNotification,
