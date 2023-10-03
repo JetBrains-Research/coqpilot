@@ -68,6 +68,15 @@ export function activateCoqLSP(
         context.subscriptions.push(disposable);
     }
 
+    // Hide files generated to check proofs
+    let activationConfig = workspace.getConfiguration();
+    let fexc: any = activationConfig.get("files.exclude");
+    activationConfig.update("files.exclude", {
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        '**/*_cp_aux.v': true,
+        ...fexc,
+    });
+
     const stop = () => {
         if (client && client.isRunning()) {
         client

@@ -37,7 +37,7 @@ import {
     existsSync,
     unlinkSync, 
     writeFileSync, 
-    appendFileSync
+    appendFileSync, 
 } from "fs";
 
 import { GoalRequest, GoalAnswer, PpString, hypToString } from "../lib/types";
@@ -49,14 +49,17 @@ interface ProofViewInterface {
      * @param editor The editor to retrieve goals from
      * @returns The auxiliary theorem and its start position
      */
-    getAuxTheoremAtCurPosition(editor: TextEditor): Promise<[string, Position] | undefined>;
+    getAuxTheoremAtCurPosition(
+        uri: Uri, 
+        version: number, 
+        position: Position
+    ): Promise<string | undefined>;
 
     /**
-     * Takes an array of `${theorem}${proof}` strings, for each theorem,
-     * inserts it into given position, and check for errors.
-     * @param uri The uri of the document
-     * @param precedingContext The context 
-     * @param theoremsWithProofs The array of `${theorem}${proof}` strings
+     * Takes an array of `{ ${proofWithoutProofAndQed} }` strings, for each proof,
+     * inserts it into the end of the file, and check for errors.
+     * @param uri The uri of the aux document
+     * @param theoremsWithProofs The array of proofs
      * @returns An array of tuples, each tuple contains a boolean and an error message, if any.
      * Invariant: the length of the returned array is <= the length of `theoremWithProofs`.
      * The array either contains all `false` or < `theoremWithProofs.length` `false` values 
@@ -64,7 +67,6 @@ interface ProofViewInterface {
      */
     checkTheorems(
         uri: Uri, 
-        precedingContext: string,
         theoremsWithProofs: string[]
     ): Promise<[boolean, string | null][]>;
 }
@@ -84,6 +86,8 @@ export class ProofView implements ProofViewInterface, Disposable {
     constructor(client: BaseLanguageClient, context: ExtensionContext) {
         this.client = client;
 
+        this.setTrace("verbose");
+
         function solverCommand(command: string, fn: (editor: TextEditor) => void) {
             let disposable = commands.registerTextEditorCommand(
                 "coqpilot." + command,
@@ -95,8 +99,7 @@ export class ProofView implements ProofViewInterface, Disposable {
         solverCommand("get_document", this.runGeneration.bind(this));
     }
 
-    async getDocument(editor: TextEditor) {
-        let uri = editor.document.uri;
+    async getDocument(uri: Uri) {
         const params: DocumentSymbolParams = {
             textDocument: {
                 uri: uri.toString()
@@ -106,7 +109,10 @@ export class ProofView implements ProofViewInterface, Disposable {
         return response;
     }
 
-    getTheoremClosestToPosition(position: Position, document: DocumentSymbol[]): [string, Position] | undefined {
+    getTheoremClosestToPosition(
+        position: Position, 
+        document: DocumentSymbol[]
+    ): [string, Position] | undefined {
         function isPositionAfterRangeStart(position: Position, range: Range): boolean {
             return range.start.line <= position.line && range.start.character <= position.character;
         };
@@ -132,11 +138,11 @@ export class ProofView implements ProofViewInterface, Disposable {
         return [closestTheorem.name, closestTheorem.range.start];
     }
 
-    async getAuxTheoremAtCurPosition(editor: TextEditor): Promise<[string, Position] | undefined> {
-        let uri = editor.document.uri;
-        let version = editor.document.version;
-        let position = editor.selection.active;
-
+    async getAuxTheoremAtCurPosition(
+        uri: Uri, 
+        version: number, 
+        position: Position
+    ): Promise<string | undefined> {
         const goals = await this.client.sendRequest(goalReq, {
             textDocument: VersionedTextDocumentIdentifier.create(
                 uri.toString(),
@@ -154,16 +160,16 @@ export class ProofView implements ProofViewInterface, Disposable {
 
         const auxTheoremConcl = goal?.ty;
         const theoremIndeces = goal?.hyps.map(hyp => `(${hypToString(hyp)})`).join(' ');
-        const coqDoc = await this.getDocument(editor);
+        const coqDoc = await this.getDocument(uri);
         const res = this.getTheoremClosestToPosition(position, coqDoc as DocumentSymbol[]); 
         if (!res) {
             return undefined;
         }
 
-        const [thrName, thrPos] = res;
-        const auxTheoremStatement = `Lemma aux_thr_${thrName} ${theoremIndeces} :\n   ${auxTheoremConcl}.`;
+        const [thrName, _] = res;
+        const auxTheoremStatement = `Lemma ${thrName}_aux_thr ${theoremIndeces} :\n   ${auxTheoremConcl}.`;
 
-        return [auxTheoremStatement, thrPos];
+        return auxTheoremStatement;
     }
 
     /**
@@ -200,8 +206,6 @@ export class ProofView implements ProofViewInterface, Disposable {
         this.client.onNotification(LogTraceNotification.type, (params) => {
             if (params.message.includes("document fully checked") && params.message.includes(`l: ${lineNum}`)) {
                 this.pendingProgress = false;
-            } else {
-                console.log(params.message, lineNum);
             }
         }); 
 
@@ -238,7 +242,7 @@ export class ProofView implements ProofViewInterface, Disposable {
      * position or null if there is none
      */
     filterDiagnostics(diagnostics: Diagnostic[], position: Position): string | null {
-        return diagnostics.filter(diag => diag.range.start.line > position.line)
+        return diagnostics.filter(diag => diag.range.start.line >= position.line)
                           .filter(diag => diag.severity === 1) // 1 is error
                           .shift()?.message?.split('\n').shift() ?? null;
     }
@@ -251,90 +255,109 @@ export class ProofView implements ProofViewInterface, Disposable {
     }
 
     private makeAuxfname(uri: Uri): Uri {
-        let auxFilePath = uri.fsPath.replace(/\.v$/, "_aux.v");
+        let auxFilePath = uri.fsPath.replace(/\.v$/, "_cp_aux.v");
         if (existsSync(auxFilePath)) {
             const randomSuffix = Math.floor(Math.random() * 1000000);
-            auxFilePath = auxFilePath.replace(/\.v$/, `_${randomSuffix}.v`);
+            auxFilePath = auxFilePath.replace(/\_cp_aux.v$/, `_${randomSuffix}_cp_aux.v`);
         }
         
         return Uri.file(auxFilePath);
     }
 
-    private async openCurDocument(editor: TextEditor) {
-        this.setTrace("verbose");
+    private async copyAndOpenFile(oldText: string, newUri: Uri, position: VSPos) {
+        // Get the text before the cursor
+        const oldTextBeforeCursorLines = oldText.split("\n").slice(0, position.line + 1);
+        oldTextBeforeCursorLines[position.line] = oldTextBeforeCursorLines[position.line].slice(0, position.character);
+        let docText = oldTextBeforeCursorLines.join("\n");
 
-        const uri = editor.document.uri;
+        // TODO: Not needed anymore? 
+        // docText += " clear. ";
+
+        const lineCount = docText.split("\n").length - 1;
+
+        // Open new one
+        const fd = openSync(newUri.fsPath, "w");
+        // Copy to it the contents of the old file
+        writeFileSync(fd, docText);
+        // Close the file
+        closeSync(fd);
+ 
+        // Request lsp to open the new file
         const params: DidOpenTextDocumentParams = {
             textDocument: {
-                uri: uri.toString(),
+                uri: newUri.toString(),
                 languageId: "coq",
                 version: 1,
-                text: editor.document.getText()
+                text: docText
             }
         };
 
-        await this.updateWithWait(DidOpenTextDocumentNotification.type, params, uri, editor.document.lineCount - 1);
+        await this.updateWithWait(DidOpenTextDocumentNotification.type, params, newUri, lineCount);
+    }
+
+    private thrProofToBullet(proof: string): string {
+        // Remove "Proof." and "Qed."
+        let res = proof.replace(/Proof using\./g, '')
+                       .replace(/Proof\./g, '')
+                       .replace(/Qed\./g, '');
+
+        return `{ ${res} }`;
     }
 
     async runGeneration(editor: TextEditor) {
-        // const auxFile = this.makeAuxfname(editor.document.uri);
-        await this.openCurDocument(editor);
+        const auxFile = this.makeAuxfname(editor.document.uri);
+        const cursorPos = editor.selection.active;
+        await this.copyAndOpenFile(editor.document.getText(), auxFile, cursorPos);
 
-        const res = await this.getAuxTheoremAtCurPosition(editor);
-        // console.log()
-        if (!res) {
+        const thr = await this.getAuxTheoremAtCurPosition(auxFile, 1, cursorPos);
+        if (!thr) {
             console.log("No goal at cursor");
             return;
         }
-        const [thr, pos] = res;
+
+        // Use this aux theorem to generate a proofs .
+        // ... here mock 
         const proofs = [
-            thr + "\nProof. simpl. Qed.",
-            // thr + "\nProof. reflexivity. Qed.",
-            // thr + "\nProof. kek. Qed.",
-            // thr + "\nProof. auto. Qed.",
+            "Proof. simpl. Qed.",
+            "Proof. reflexivity. Qed.",
+            "Proof. kek. Qed.",
+            "Proof. auto. Qed.",
+            "Proof using. destruct n; [left|right]; lia. Qed."
         ];
+        const proofsProcessed = proofs.map(this.thrProofToBullet);
 
-        const uri = editor.document.uri;
-        const endPos = new VSPos(pos.line, pos.character);
-        const precedingContext = editor.document.getText(new VSRange(new VSPos(0, 0), endPos));
-
-        const verdicts = await this.checkTheorems(uri, precedingContext, proofs);
+        const verdicts = await this.checkTheorems(auxFile, proofsProcessed);
 
         console.log("VERDICTS", verdicts);
     }
 
     async checkTheorems(
         uri: Uri, 
-        precedingContext: string, 
         theoremsWithProofs: string[]
     ): Promise<[boolean, string | null][]> {
-        const context = precedingContext + "\n\n";
+        let documentVersion = 1;
+
+        // Open the file and read the context
+        const context = readFileSync(uri.fsPath).toString();
         const lineNumContext = context.split("\n").length - 1;
 
-        const auxUri = this.makeAuxfname(uri);
-
-        const fd = openSync(auxUri.fsPath, "w");
-        writeFileSync(fd, context);
-
-        // Notify coq-lsp about the new aux file
-        const params: DidOpenTextDocumentParams = {
-            textDocument: {
-                uri: auxUri.toString(),
-                languageId: "coq",
-                version: 1,
-                text: context
-            }
-        };
-
-        await this.updateWithWait(DidOpenTextDocumentNotification.type, params, auxUri, lineNumContext);
-        let documentVersion = 1;
         const proofVerdicts: [boolean, string | null][] = [];
 
-        for(const proof of theoremsWithProofs) {
+        for (const proof of theoremsWithProofs) {
+            const prohibitedTactics = ["admit.", "Admitted.", "Abort."];
+            if (prohibitedTactics.some(tactic => proof.includes(tactic))) {
+                proofVerdicts.push([false, "Proof contains 'Abort.' or 'Admitted.'"]);
+                continue;
+            }
+            
             documentVersion += 1;
-            appendFileSync(fd, proof);
+
+            // Append the proof to the end of the file
+            appendFileSync(uri.fsPath, proof);
+
+            // Notify the server about the change
             const versionedDoc = VersionedTextDocumentIdentifier.create(
-                auxUri.toString(),
+                uri.toString(),
                 documentVersion
             );
 
@@ -347,13 +370,25 @@ export class ProofView implements ProofViewInterface, Disposable {
             };
 
             const newLineNum = newText.split("\n").length - 1;
-            const diags = await this.updateWithWait(DidChangeTextDocumentNotification.type, params, auxUri, newLineNum);
+            const diags = await this.updateWithWait(DidChangeTextDocumentNotification.type, params, uri, newLineNum);
+
+            // Filter diagnostics by the line number of the context
             const errorMsg = this.filterDiagnostics(diags, { line: lineNumContext, character: 0 });
 
-            // unlinkSync(auxFilePath); 
+            // Remove the proof from the end of the file
+            writeFileSync(uri.fsPath, context);
 
-            proofVerdicts.push([errorMsg === null, errorMsg]);
+            if (errorMsg === null) {
+                proofVerdicts.push([true, null]);
+                unlinkSync(uri.fsPath);
+                return proofVerdicts;
+            } else {
+                proofVerdicts.push([false, errorMsg]);
+            }
         }
+
+        // Delete aux file
+        unlinkSync(uri.fsPath);
 
         return proofVerdicts;
     }
