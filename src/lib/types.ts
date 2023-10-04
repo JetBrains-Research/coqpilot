@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/naming-convention */
-
 import {
     Position,
     Range,
     VersionedTextDocumentIdentifier,
+    TextDocumentIdentifier,
 } from "vscode-languageserver-types";
 
 export interface Hyp<Pp> {
@@ -113,7 +113,7 @@ export function convertToString(pp: PpString): string {
 }
 
 export interface FlecheDocumentParams {
-    textDocument: VersionedTextDocumentIdentifier;
+    textDocument: TextDocumentIdentifier;
 }
 
 // Status of the document, Yes if fully checked, range contains the last seen lexical token
@@ -125,7 +125,7 @@ interface CompletionStatus {
 // Implementation-specific span information, for now the serialized Ast if present.
 type SpanInfo = any;
 
-interface RangedSpan {
+export interface RangedSpan {
     range: Range;
     span?: SpanInfo;
 }

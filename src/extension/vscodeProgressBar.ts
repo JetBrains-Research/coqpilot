@@ -1,5 +1,6 @@
-import { ProgressBar } from "coqlsp-client";
+import { ProgressBar } from "./progressBar";
 import * as vscode from 'vscode';
+// import { StatusBarButton } from "../editor/enableButton";
 
 export class VsCodeProgressBar extends ProgressBar {
     private progressBar: vscode.StatusBarItem | undefined;

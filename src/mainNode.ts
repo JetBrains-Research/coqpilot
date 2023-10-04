@@ -1,24 +1,27 @@
 import { ExtensionContext } from "vscode";
 import { LanguageClient, ServerOptions } from "vscode-languageclient/node";
-import { activateCoqLSP, ClientFactoryType, deactivateCoqLSP } from "./coqLspClient/client";
+import { Coqpilot, ClientFactoryType } from "./extension";
 
-export function activate(context: ExtensionContext): void {
-    const cf: ClientFactoryType = (_context, clientOptions, wsConfig) => {
-        console.log("KKKKKK", wsConfig.args);
-        const serverOptions: ServerOptions = {
-            command: "coq-lsp",
-            args: wsConfig.args,
-        };
-        return new LanguageClient(
-            "coq-lsp",
-            "Coq LSP Server",
-            serverOptions,
-            clientOptions
-        );
+let extension: Coqpilot;
+
+const cf: ClientFactoryType = (_context, clientOptions, wsConfig) => {
+    const serverOptions: ServerOptions = {
+        command: "coq-lsp",
+        args: wsConfig.args,
     };
-    return activateCoqLSP(context, cf);
+    return new LanguageClient(
+        "coq-lsp",
+        "Coq LSP Server",
+        serverOptions,
+        clientOptions
+    );
+};
+
+export async function activate(context: ExtensionContext): Promise<void> {
+    const extension = await Coqpilot.init(context, cf);
+    context.subscriptions.push(extension);
 }
   
 export function deactivate() {
-    return deactivateCoqLSP();
+    extension.deactivateCoqLSP();
 }

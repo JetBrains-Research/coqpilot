@@ -1,9 +1,12 @@
 import { Disposable, Range } from "vscode";
+
 import {
   NotificationType,
   VersionedTextDocumentIdentifier,
+  BaseLanguageClient
 } from "vscode-languageclient";
-import { BaseLanguageClient } from "vscode-languageclient";
+
+import { ProgressBar } from "../extension/progressBar";
 
 /* eslint-disable @typescript-eslint/naming-convention */
 enum CoqFileProgressKind {
@@ -36,18 +39,38 @@ const coqFileProgress = new NotificationType<CoqFileProgressParams>(
 
 export class FileProgressManager {
     private fileProgress: Disposable;
+    private progressBar: ProgressBar;
 
-    constructor(client: BaseLanguageClient) {
+    constructor(client: BaseLanguageClient, progressBar: ProgressBar) {
+        this.progressBar = progressBar;
         this.fileProgress = client.onNotification(coqFileProgress, (params) => {
             if (params.processing.length === 0) {
-                console.log(`Finished processing file ${params.textDocument.uri}`);
                 return;
             }
-            let ranges = params.processing
+
+            if (!this.progressBar.isInitialized || this.progressBar.identifier !== params.textDocument.uri) {
+                return;
+            }
+
+            const range = params.processing
                 .map((fp) => client.protocol2CodeConverter.asRange(fp.range))
-                .filter((r) => !r.isEmpty);
-            console.log(`Processing file ${params.textDocument.uri}: ${ranges[0].start.line}-${ranges[0].end.line}`);
+                .filter((r) => !r.isEmpty)
+                .shift();
+            
+            if (range === undefined) {
+                return;
+            }
+
+            this.progressBar.updateCount(range.start.line);
         });   
+    }
+
+    subscribeForUpdates(uri: string, total: number) {
+        this.progressBar.initialize(total, uri);
+    }
+
+    stopListening() {
+        this.progressBar.finish();
     }
 
     dispose() {

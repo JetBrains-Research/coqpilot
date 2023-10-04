@@ -1,7 +1,5 @@
 import {
     TextEditor,
-    ExtensionContext,
-    commands,
     Uri,
     Position as VSPos,
 } from "vscode";
@@ -25,7 +23,8 @@ import {
     DidChangeTextDocumentNotification,
     SetTraceNotification,
     SetTraceParams,
-    Diagnostic
+    Diagnostic,
+    TextDocumentIdentifier
 } from "vscode-languageclient";
 
 import { 
@@ -38,20 +37,33 @@ import {
     appendFileSync, 
 } from "fs";
 
-import { GoalRequest, GoalAnswer, PpString, hypToString } from "../lib/types";
+import { 
+    GoalRequest, 
+    GoalAnswer, 
+    PpString, 
+    hypToString, 
+    FlecheDocument, 
+    FlecheDocumentParams,
+} from "../lib/types";
+
+import { FileProgressManager } from "./progress";
+import { VsCodeProgressBar } from "../extension/vscodeProgressBar";
+import { ProgressBar } from "../extension/progressBar";
+import { Theorem } from "../lib/pvTypes";
+import { parseFleche } from "./flecheDocUtils";
 
 interface ProofViewInterface {
     /**
      * Calls coq-lsp at current cursor position to retrieve goals, 
      * formats them as an auxiliary theorem, and returns it.
      * @param editor The editor to retrieve goals from
-     * @returns The auxiliary theorem and its start position
+     * @returns The auxiliary theorem and the name of the theorem that hole is in
      */
     getAuxTheoremAtCurPosition(
         uri: Uri, 
         version: number, 
         position: Position
-    ): Promise<string | undefined>;
+    ): Promise<[string, string] | undefined>;
 
     /**
      * Takes an array of `{ ${proofWithoutProofAndQed} }` strings, for each proof,
@@ -65,8 +77,14 @@ interface ProofViewInterface {
      */
     checkTheorems(
         uri: Uri, 
-        theoremsWithProofs: string[]
+        proofs: string[]
     ): Promise<[boolean, string | null][]>;
+
+    /**
+     * Parses the file and returns a list of theorems.
+     * @param editor The editor to parse
+     */
+    parseFile(editor: TextEditor): Promise<Theorem[]>;
 }
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -74,27 +92,27 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 const goalReq = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
     "proof/goals"
 );
+
+const flecheDocReq = new RequestType<FlecheDocumentParams, FlecheDocument, void>(
+    "coq/getDocument"
+  );
   
 export class ProofView implements ProofViewInterface, Disposable {
     private client: BaseLanguageClient;
     private pendingProgress: boolean;
     private pendingDiagnostic: boolean;
     private awaitedDiagnostic: Diagnostic[] | null;
+    private subscriptions: Disposable[] = [];
+    private fileProgress: FileProgressManager;
+    private progressBar: ProgressBar;
 
-    constructor(client: BaseLanguageClient, context: ExtensionContext) {
+    constructor(client: BaseLanguageClient) {
         this.client = client;
+        const progressBar = new VsCodeProgressBar();
+        this.fileProgress = new FileProgressManager(client, progressBar);
+        this.progressBar = progressBar;
 
         this.setTrace("verbose");
-
-        function solverCommand(command: string, fn: (editor: TextEditor) => void) {
-            let disposable = commands.registerTextEditorCommand(
-                "coqpilot." + command,
-                fn
-            );
-            context.subscriptions.push(disposable);
-        }
-
-        solverCommand("get_document", this.runGeneration.bind(this));
     }
 
     async getDocument(uri: Uri) {
@@ -106,6 +124,16 @@ export class ProofView implements ProofViewInterface, Disposable {
         const response = await this.client.sendRequest(DocumentSymbolRequest.type, params);
         return response;
     }
+
+    async getFlecheDocument(uri: Uri) {
+        let textDocument = TextDocumentIdentifier.create(
+            uri.toString(),
+        );
+        let params: FlecheDocumentParams = { textDocument };
+        const doc = await this.client.sendRequest(flecheDocReq, params);
+        
+        return doc;
+  };
 
     getTheoremClosestToPosition(
         position: Position, 
@@ -140,7 +168,7 @@ export class ProofView implements ProofViewInterface, Disposable {
         uri: Uri, 
         version: number, 
         position: Position
-    ): Promise<string | undefined> {
+    ): Promise<[string, string] | undefined> {
         const goals = await this.client.sendRequest(goalReq, {
             textDocument: VersionedTextDocumentIdentifier.create(
                 uri.toString(),
@@ -167,7 +195,7 @@ export class ProofView implements ProofViewInterface, Disposable {
         const [thrName, _] = res;
         const auxTheoremStatement = `Lemma ${thrName}_aux_thr ${theoremIndeces} :\n   ${auxTheoremConcl}.`;
 
-        return auxTheoremStatement;
+        return [auxTheoremStatement, thrName];
     }
 
     /**
@@ -201,18 +229,20 @@ export class ProofView implements ProofViewInterface, Disposable {
         this.pendingDiagnostic = true;
         this.awaitedDiagnostic = null;
 
-        this.client.onNotification(LogTraceNotification.type, (params) => {
+        this.fileProgress.subscribeForUpdates(uri.toString(), lineNum);
+
+        this.subscriptions.push(this.client.onNotification(LogTraceNotification.type, (params) => {
             if (params.message.includes("document fully checked") && params.message.includes(`l: ${lineNum}`)) {
                 this.pendingProgress = false;
             }
-        }); 
+        })); 
 
-        this.client.onNotification(PublishDiagnosticsNotification.type, (params) => {
+        this.subscriptions.push(this.client.onNotification(PublishDiagnosticsNotification.type, (params) => {
             if (params.uri.toString() === uri.toString()) {
                 this.pendingDiagnostic = false;
                 this.awaitedDiagnostic = params.diagnostics;
             }
-        });
+        }));
 
         while (timeout > 0 && (this.pendingProgress || this.pendingDiagnostic)) {
             await sleep(100);
@@ -227,6 +257,8 @@ export class ProofView implements ProofViewInterface, Disposable {
         ) {
             throw new Error("Coq-lsp did not respond in time");
         }
+
+        this.fileProgress.stopListening();
 
         return this.awaitedDiagnostic;
     }
@@ -252,7 +284,7 @@ export class ProofView implements ProofViewInterface, Disposable {
         this.client.sendNotification(SetTraceNotification.type, params);
     }
 
-    private makeAuxfname(uri: Uri): Uri {
+    makeAuxfname(uri: Uri): Uri {
         let auxFilePath = uri.fsPath.replace(/\.v$/, "_cp_aux.v");
         if (existsSync(auxFilePath)) {
             const randomSuffix = Math.floor(Math.random() * 1000000);
@@ -262,7 +294,7 @@ export class ProofView implements ProofViewInterface, Disposable {
         return Uri.file(auxFilePath);
     }
 
-    private async copyAndOpenFile(oldText: string, newUri: Uri, position: VSPos) {
+    async copyAndOpenFile(oldText: string, newUri: Uri, position: VSPos) {
         // Get the text before the cursor
         const oldTextBeforeCursorLines = oldText.split("\n").slice(0, position.line + 1);
         oldTextBeforeCursorLines[position.line] = oldTextBeforeCursorLines[position.line].slice(0, position.character);
@@ -293,45 +325,30 @@ export class ProofView implements ProofViewInterface, Disposable {
         await this.updateWithWait(DidOpenTextDocumentNotification.type, params, newUri, lineCount);
     }
 
-    private thrProofToBullet(proof: string): string {
-        // Remove "Proof." and "Qed."
-        let res = proof.replace(/Proof using\./g, '')
-                       .replace(/Proof\./g, '')
-                       .replace(/Qed\./g, '');
+    async parseFile(editor: TextEditor): Promise<Theorem[]> {
+        const uri = editor.document.uri;
+        const text = editor.document.getText();
+        const lineNum = editor.document.lineCount - 1;
+        const params: DidOpenTextDocumentParams = {
+            textDocument: {
+                uri: uri.toString(),
+                languageId: "coq",
+                version: 1,
+                text: text,
+            }
+        };
 
-        return `{ ${res} }`;
-    }
+        await this.updateWithWait(DidOpenTextDocumentNotification.type, params, uri, lineNum);
 
-    async runGeneration(editor: TextEditor) {
-        const auxFile = this.makeAuxfname(editor.document.uri);
-        const cursorPos = editor.selection.active;
-        await this.copyAndOpenFile(editor.document.getText(), auxFile, cursorPos);
+        const doc = await this.getFlecheDocument(editor.document.uri);
+        const fd = parseFleche(doc, text.split("\n"));
 
-        const thr = await this.getAuxTheoremAtCurPosition(auxFile, 1, cursorPos);
-        if (!thr) {
-            console.log("No goal at cursor");
-            return;
-        }
-
-        // Use this aux theorem to generate a proofs .
-        // ... here mock 
-        const proofs = [
-            "Proof. simpl. Qed.",
-            "Proof. reflexivity. Qed.",
-            "Proof. kek. Qed.",
-            "Proof. auto. Qed.",
-            "Proof using. destruct n; [left|right]; lia. Qed."
-        ];
-        const proofsProcessed = proofs.map(this.thrProofToBullet);
-
-        const verdicts = await this.checkTheorems(auxFile, proofsProcessed);
-
-        console.log("VERDICTS", verdicts);
+        return fd;
     }
 
     async checkTheorems(
         uri: Uri, 
-        theoremsWithProofs: string[]
+        proofs: string[]
     ): Promise<[boolean, string | null][]> {
         let documentVersion = 1;
 
@@ -341,7 +358,7 @@ export class ProofView implements ProofViewInterface, Disposable {
 
         const proofVerdicts: [boolean, string | null][] = [];
 
-        for (const proof of theoremsWithProofs) {
+        for (const proof of proofs) {
             const prohibitedTactics = ["admit.", "Admitted.", "Abort."];
             if (prohibitedTactics.some(tactic => proof.includes(tactic))) {
                 proofVerdicts.push([false, "Proof contains 'Abort.' or 'Admitted.'"]);
@@ -393,6 +410,6 @@ export class ProofView implements ProofViewInterface, Disposable {
 
     dispose(): void {
         this.client.dispose();
+        this.subscriptions.forEach((d) => d.dispose());
     }
-
 }

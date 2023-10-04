@@ -22,28 +22,24 @@
   "contributes": {
     "commands": [
       {
-        "command": "coqpilot.start",
-        "title": "coqpilot 1"
+        "command": "coqpilot.init_history",
+        "title": "Coqpilot: Parse current file and initialize llm gistory with theorems from it."
       },
       {
-        "command": "coqpilot.go",
-        "title": "coqpilot 9"
+        "command": "coqpilot.run_generation",
+        "title": "Coqpilot: Try to generate proof for the goal under the cursor."
       },
       {
-        "command": "coqpilot.get_document",
-        "title": "coqpilot 1488"
+        "command": "coqpilot.coq-lsp.restart",
+        "title": "Coqpilot: Restart the underlying coq-lsp server."
       },
       {
-        "command": "coqpilot.restart",
-        "title": "coqpilot 2"
+        "command": "coqpilot.coq-lsp.toggle",
+        "title": "Coqpilot: Toggle the underlying coq-lsp server."
       },
       {
-        "command": "coqpilot.toggle",
-        "title": "coqpilot 3"
-      },
-      {
-        "command": "coqpilot.stop",
-        "title": "coqpilot 4"
+        "command": "coqpilot.coq-lsp.stop",
+        "title": "Coqpilot: Stop the coq-lsp server."
       }
     ],
     "configuration": [
@@ -138,6 +134,7 @@
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
+    "@types/cli-progress": "^3.11.3",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "20.2.5",
@@ -153,6 +150,7 @@
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.9.1",
+    "cli-progress": "^3.12.0",
     "coqlsp-client": "^1.0.6",
     "dedent": "^1.5.1",
     "openai": "^4.6.0",
