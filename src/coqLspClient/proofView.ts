@@ -113,7 +113,7 @@ export class ProofView implements ProofViewInterface, Disposable {
         this.fileProgress = new FileProgressManager(client, progressBar);
         // this.progressBar = progressBar;
 
-        this.setTrace("verbose");
+        //this.setTrace("verbose");
     }
 
     async getDocument(uri: Uri) {
