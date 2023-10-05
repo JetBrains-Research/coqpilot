@@ -48,9 +48,10 @@ import {
 
 import { FileProgressManager } from "./progress";
 import { VsCodeProgressBar } from "../extension/vscodeProgressBar";
-import { ProgressBar } from "../extension/progressBar";
+// import { ProgressBar } from "../extension/progressBar";
 import { Theorem } from "../lib/pvTypes";
 import { parseFleche } from "./flecheDocUtils";
+import { StatusBarButton } from "../editor/enableButton";
 
 interface ProofViewInterface {
     /**
@@ -104,13 +105,13 @@ export class ProofView implements ProofViewInterface, Disposable {
     private awaitedDiagnostic: Diagnostic[] | null;
     private subscriptions: Disposable[] = [];
     private fileProgress: FileProgressManager;
-    private progressBar: ProgressBar;
+    // private progressBar: ProgressBar;
 
-    constructor(client: BaseLanguageClient) {
+    constructor(client: BaseLanguageClient, statusItem: StatusBarButton) {
         this.client = client;
-        const progressBar = new VsCodeProgressBar();
+        const progressBar = new VsCodeProgressBar(statusItem);
         this.fileProgress = new FileProgressManager(client, progressBar);
-        this.progressBar = progressBar;
+        // this.progressBar = progressBar;
 
         this.setTrace("verbose");
     }

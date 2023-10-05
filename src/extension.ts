@@ -22,6 +22,7 @@ import { LLMInterface } from "./coqLlmInteraction/llmInterface";
 import { CoqpilotConfig } from "./extension/config";
 import { Interactor } from "./coqLlmInteraction/interactor";
 import * as wm from "./editor/windowManager";
+import { VsCodeSpinningWheelProgressBar } from "./extension/vscodeProgressBar";
 
 export type ClientFactoryType = (
     context: ExtensionContext,
@@ -46,7 +47,6 @@ export class Coqpilot implements Disposable {
 
         this.context = context;
         this.clientFactory = clientFactory;
-        this.statusItem = new StatusBarButton();
 
         const config = CoqpilotConfig.create(
             workspace.getConfiguration('coqpilot')
@@ -119,7 +119,8 @@ export class Coqpilot implements Disposable {
 
         let cP = new Promise<BaseLanguageClient>((resolve) => {
             this.client = this.clientFactory(this.context, clientOptions, wsConfig);
-            this.proofView = new ProofView(this.client);
+            this.statusItem = new StatusBarButton();
+            this.proofView = new ProofView(this.client, this.statusItem);
             resolve(this.client);
         });
 
@@ -157,8 +158,17 @@ export class Coqpilot implements Disposable {
             return;
         }
 
-        const interactor = new Interactor(this.llmPrompt, this.llm, this.config.proofAttemsPerOneTheorem);
+        const progressBar = new VsCodeSpinningWheelProgressBar();
+        const interactor = new Interactor(
+            this.llmPrompt, 
+            this.llm, 
+            progressBar,
+            this.config.logAttempts,
+            this.config.proofAttemsPerOneTheorem, 
+            this.config.logFolderPath
+        );
         const proof = await interactor.runProofGeneration(
+            thrName,
             thrStatement,
             auxFile,
             this.proofView.checkTheorems.bind(this.proofView)

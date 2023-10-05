@@ -1,7 +1,6 @@
 import { LLMPrompt } from './llmPromptInterface';
 import { LLMInterface } from './llmInterface';
-// import { EvaluationLogger } from './evaluationLogger';
-// import { coqlspmodels } from 'coqlsp-client';
+import { EvaluationLogger } from './evaluationLogger';
 import { ProgressBar } from '../extension/progressBar';
 import { ProofViewError } from '../lib/pvTypes';
 import { Uri } from 'vscode';
@@ -14,22 +13,22 @@ export class Interactor {
     contents: string[] | null;
     contentsPointer: number;
     timeout: number;
-    // runLogger: EvaluationLogger;
+    runLogger: EvaluationLogger;
     shots: number;
-    // progressBar: ProgressBar;
+    progressBar: ProgressBar;
 
     constructor(
         llmPrompt: LLMPrompt, 
         llmInterface: LLMInterface, 
-        // progressBar: ProgressBar,
-        // logAttemps: boolean = false, 
+        progressBar: ProgressBar,
+        logAttemps: boolean = false, 
         shots: number = 1,
-        // logFolderPath: string | null = null
+        logFolderPath: string | null = null
     ) {
         this.llmPrompt = llmPrompt;
         this.llmInterface = llmInterface;
-        // this.logAttemps = logAttemps;
-        // this.progressBar = progressBar;
+        this.logAttemps = logAttemps;
+        this.progressBar = progressBar;
 
         this.llmInterface.initHistory(this.llmPrompt);
         this.logFilePath = null;
@@ -38,25 +37,13 @@ export class Interactor {
         this.timeout = 20;
         this.shots = shots;
 
-        // this.runLogger = new EvaluationLogger(
-        //     this.llmPrompt.coqFile,
-        //     this.llmPrompt.promptStrategy,
-        //     shots, 
-        //     this.llmPrompt.statementsToRanges, 
-        //     logAttemps,
-        //     logFolderPath
-        // );
+        this.runLogger = new EvaluationLogger(
+            this.llmPrompt.promptStrategy,
+            shots, 
+            logAttemps,
+            logFolderPath
+        );
     }
-
-    // async runHoleSubstitution(
-    //     theoremName: string, 
-    //     holeIndex: number
-    // ): Promise<[string, string | undefined]>  {
-    //     const [holeName, holeStatement] = this.llmPrompt.getAuxTheoremStatement(theoremName, holeIndex); 
-    //     const proof = await this.runProofGeneration(holeName, holeStatement, theoremName);
-
-    //     return [holeStatement, proof];
-    // }
 
     /**
      * Retrieves theorems we want to evaluate the LLM on 
@@ -74,28 +61,27 @@ export class Interactor {
      * @returns The correct proof or undefined if no proof was found.
      */
     async runProofGeneration(
-        // theoremName: string, 
+        theoremName: string, 
         theoremStatement: string, 
         uri: Uri,
         fnVerifyProofs: (uri: Uri, proofs: string[]) => Promise<[boolean, string | null][]>
-        // originalName: string | null = null
     ): Promise<string | undefined> {
-        // this.runLogger.onStartLlmResponseFetch(theoremName);
-        // this.progressBar.initialize(1, "id");
+        this.runLogger.onStartLlmResponseFetch(theoremName);
+        this.progressBar.initialize(100, "id");
 
         let llmResponse = await this.llmInterface.sendMessageWithoutHistoryChange(
             theoremStatement,
             this.shots
         ).catch((e) => {
-            // this.runLogger.onException(e.message);
+            this.runLogger.onException(e.message);
             throw e;
         });
         // Surround with curly braces and remove Proof. and Qed.
         llmResponse = llmResponse.map(this.llmPrompt.thrProofToBullet);
 
-        // this.progressBar.finish();
-        // this.runLogger.onEndLlmResponseFetch();
-        // this.runLogger.onTheoremProofStart();
+        this.progressBar.finish();
+        this.runLogger.onEndLlmResponseFetch();
+        this.runLogger.onTheoremProofStart();
 
         let verifyProofsAttempts = 1;
         let proofCheckResult: [boolean, string][] = [];
@@ -110,44 +96,43 @@ export class Interactor {
                     throw e;
                 }
 
-                // this.runLogger.onProofCheckFail(e.message);
+                this.runLogger.onProofCheckFail(e.message);
 
-                // this.runLogger.onStartLlmResponseFetch(theoremName);
+                this.runLogger.onStartLlmResponseFetch(theoremName);
                 llmResponse = await this.llmInterface.sendMessageWithoutHistoryChange(
                     theoremStatement,
                     this.shots
                 );
                 // Surround with curly braces and remove Proof. and Qed.
                 llmResponse = llmResponse.map(this.llmPrompt.thrProofToBullet);
-                // this.runLogger.onEndLlmResponseFetch();
+                this.runLogger.onEndLlmResponseFetch();
                 
                 if (e instanceof ProofViewError) {
-                    // this.runLogger.onAttemptException(0, theoremName, `ProofViewError: ${e.message}`);
+                    this.runLogger.onAttemptException(0, theoremName, `ProofViewError: ${e.message}`);
                 } else {
-                    // this.runLogger.onAttemptException(0, theoremName, e.message);
-                    // this.llmPrompt.restartProofView();
+                    this.runLogger.onAttemptException(0, theoremName, e.message);
                 }
             } 
         }
 
         let foundProof: string | undefined = undefined;
         for (let i = 0; i < proofCheckResult.length; i++) {
-            const [proofStatus, _errorMsg] = proofCheckResult[i];
+            const [proofStatus, errorMsg] = proofCheckResult[i];
             if (proofStatus) {
-                // this.runLogger.onSuccessAttempt(
-                //     i + 1, theoremName, 
-                //     theoremStatement, llmResponse[i]
-                // );
+                this.runLogger.onSuccessAttempt(
+                    i + 1, theoremName, 
+                    theoremStatement, llmResponse[i]
+                );
                 foundProof = llmResponse[i];
             } else {
-                // this.runLogger.onFailedAttempt(
-                //     i + 1, theoremName, 
-                //     theoremStatement, llmResponse[i], errorMsg
-                // );
+                this.runLogger.onFailedAttempt(
+                    i + 1, theoremName, 
+                    theoremStatement, llmResponse[i], errorMsg
+                );
             }
         }
 
-        // this.runLogger.onTheoremProofEnd(theoremStatement);
+        this.runLogger.onTheoremProofEnd(theoremStatement);
 
         if (foundProof) {
             return this.llmPrompt.cleanFromBrackets(foundProof);

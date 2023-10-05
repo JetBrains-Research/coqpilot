@@ -1,9 +1,7 @@
-import { lspmodels } from "coqlsp-client";
 import { 
     existsSync, 
     mkdirSync, 
     writeFileSync,
-    readFileSync,
     appendFileSync
 } from "fs";
 import { dirname, join } from "path";
@@ -17,16 +15,11 @@ export class EvalLoggingError extends Error {
 }
 
 export class EvaluationLogger {
-    coqFile: string;
-    logFilePath: string;
     debugLogPath: string;
-    contents: string[];
     insideProof: boolean = false;
     proofLog: string = "";
     proofComplete: boolean | null = null;
     contentsPointer: number = 0;
-    statementsToRanges: { [key: string]: lspmodels.Range };
-    rangesToText: { [range: string]: string } = {};
     shots: number;
     logToFile: boolean;
     holeProofAttemtsLog: string = "";
@@ -48,43 +41,32 @@ export class EvaluationLogger {
     // });
 
     constructor(
-        coqFilePath: string, 
         runStrategy: string, 
         shots: number, 
-        statements2ranges: { [key: string]: lspmodels.Range }, 
         logToFile: boolean = false,
         logFolderPath: string | null = null
     ) {
-        this.coqFile = coqFilePath;
-
         this.logToFile = logToFile;
         if (logToFile) {
             const dateTimeNow = EvaluationLogger.formatDate(new Date());
             const dirName = dirname(dirname(__dirname));
-            const logFolder = logFolderPath ? logFolderPath : join(dirName, 'logs');     
+            const logFolder = logFolderPath ?? join(dirName, 'logs');     
             
             if (!existsSync(logFolder)) {
                 mkdirSync(logFolder);
             }
 
-            this.logFilePath = join(logFolder, `log_${dateTimeNow}.v`);
             this.debugLogPath = join(logFolder, `debug_log_${dateTimeNow}.txt`);
 
-            if (existsSync(this.logFilePath) || existsSync(this.debugLogPath)) {
+            if (existsSync(this.debugLogPath)) {
                 const randomNum = Math.floor(Math.random() * 1000);
-                this.logFilePath = join(logFolder, `log_${dateTimeNow}_${randomNum}.v`);
                 this.debugLogPath = join(logFolder, `debug_log_${dateTimeNow}_${randomNum}.txt`);
             }
 
             const logFileContents = `(*\n Date: ${dateTimeNow}\n Strat: ${runStrategy}\n*)\n\n`;
-            writeFileSync(this.logFilePath, logFileContents);
             writeFileSync(this.debugLogPath, logFileContents);
         }
 
-        const coqFileContents = readFileSync(this.coqFile, "utf-8");
-        this.contents = coqFileContents.split('\n');
-
-        this.statementsToRanges = statements2ranges; 
         this.shots = shots;     
     }
 
@@ -96,74 +78,6 @@ export class EvaluationLogger {
 
         return `${day}_${month}__${hour}_${minute}`;
     };
-
-    private log2file(message: string) {
-        appendFileSync(this.logFilePath, message);
-    }
-
-    private getTextInRange(
-        start: lspmodels.Position, 
-        end: lspmodels.Position, 
-        preserveLineBreaks = true
-    ): string {
-        if (start.line === end.line) {
-            return this.contents[start.line].substring(start.character, end.character);
-        } else {
-            let text = this.contents[start.line].substring(start.character);
-            for (let i = start.line + 1; i < end.line; i++) {
-                if (preserveLineBreaks) {
-                    text += '\n';
-                }
-                text += this.contents[i];
-            }
-            if (preserveLineBreaks) {
-                text += '\n';
-            }
-            text += this.contents[end.line].substring(0, end.character);
-
-            return text;
-        }
-    }
-
-    /**
-     * Iterates over self.contents and substitutes
-     * the ranges from self.ranges_to_text with
-     * the corresponding text.
-     */
-    private substituteTextPieces(): string {
-        let newText = "";
-        const rangesTextPairs: [lspmodels.Range, string][] = [];
-        for (const rangeString in this.rangesToText) {
-            if (!rangeString) { continue; }
-            const range = JSON.parse(rangeString) as lspmodels.Range;
-            rangesTextPairs.push([range, this.rangesToText[rangeString]]);
-        }
-
-        rangesTextPairs.sort((x, y) => {
-            if (x[0].start.line !== y[0].start.line) {
-                return x[0].start.line - y[0].start.line;
-            } else {
-                return x[0].start.character - y[0].start.character;
-            }
-        });
-
-        let lastRangeEndPos: lspmodels.Position = {line: 0, character: 0};
-        for (const [range, textPiece] of rangesTextPairs) {
-            // Add the text between the last range and the start of the current range
-            newText += this.getTextInRange(lastRangeEndPos, range.start);
-            // Add the text of the current range
-            newText += textPiece;
-            lastRangeEndPos = range.end;
-        }
-
-        // Add the text after the last range
-        newText += this.getTextInRange(
-            lastRangeEndPos,
-            {line: this.contents.length - 1, character: this.contents[this.contents.length - 1].length}
-        );
-
-        return newText;
-    }
 
     onStartLlmResponseFetch(thrName: string) {
         this.logger.info(`Fetching potential proofs for theorem ${thrName}`);
@@ -196,7 +110,7 @@ export class EvaluationLogger {
             throw new EvalLoggingError("Not in proof");
         }
         this.proofLog += `(* Attempt ${attemptIndex} for theorem ${thrName} *)\n`;
-        this.proofLog += `${statement}\n${proof}\n`;
+        this.proofLog += `${statement}\nProof.\n${proof}\nQed.\n`;
         
         this.proofLog += `(* Attempt ${attemptIndex} for theorem ${thrName} successful *)\n\n`;
         this.proofLog += "(* {THEOREM PROOF LOG END} *)";
@@ -258,13 +172,7 @@ export class EvaluationLogger {
             this.proofLog += "(* {THEOREM PROOF LOG END} *)";
         }
         this.insideProof = false;
-
-        const neededRange = this.statementsToRanges[statement];
-        if (neededRange) {
-            this.rangesToText[JSON.stringify(neededRange)] = this.proofLog;
-        } else {
-            this.holeProofAttemtsLog += this.proofLog;
-        }
+        this.holeProofAttemtsLog += this.proofLog;
 
         if (this.logToFile) {
             appendFileSync(this.debugLogPath, `\n${this.proofLog}\n`);
@@ -276,20 +184,9 @@ export class EvaluationLogger {
         this.proofLog = "";
         this.proofComplete = null;
         this.contentsPointer = 0;
-        this.rangesToText = {};
     }
 
     onEvaluationFinish() {
-        if (this.logToFile) {
-            let newText = this.substituteTextPieces();
-            if (this.holeProofAttemtsLog !== "") {
-                newText += "\n\n(* {HOLE PROOF ATTEMPS LOG START} *)\n\n";
-                newText += this.holeProofAttemtsLog;
-                newText += "\n\n(* {HOLE PROOF ATTEMPS LOG END} *)";
-            }
-
-            this.log2file(newText);
-        }
         this.resetResourses();
     }
 }

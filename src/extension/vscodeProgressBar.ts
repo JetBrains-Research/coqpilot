@@ -1,35 +1,33 @@
 import { ProgressBar } from "./progressBar";
 import * as vscode from 'vscode';
-// import { StatusBarButton } from "../editor/enableButton";
+import { StatusBarButton } from "../editor/enableButton";
 
 export class VsCodeProgressBar extends ProgressBar {
-    private progressBar: vscode.StatusBarItem | undefined;
+    private statusItem: StatusBarButton;
     private percentage: number = 0;
     private totalLoc: number | undefined = undefined;
 
-    constructor() {
+    constructor(statusItem: StatusBarButton) {
         super(
             (newCount: number) => {
                 let total = this.totalLoc;
-                if (total === undefined || this.progressBar === undefined) {
+                if (total === undefined) {
                     throw new Error("Progress bar is not initialized");
                 }
                 this.percentage = newCount / total * 100;
 
-                this.progressBar.text = `Coqpilot progress: ${this.percentage.toFixed(0)}%`;
+                this.statusItem.updateText(`Coqpilot progress: ${this.percentage.toFixed(0)}%`);
             },
             (total: number) => {
                 this.totalLoc = total;
-                this.progressBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
-                this.progressBar.text = 'Progress: 0%';
-                this.progressBar.show();
+                this.statusItem.updateText('Coqpilot progress: 0%');
             },
             () => {
-                if (this.progressBar !== undefined) {
-                    this.progressBar.dispose();
-                }
+                this.statusItem.finishProgress();
             }
         );
+
+        this.statusItem = statusItem;
     }
 }
 

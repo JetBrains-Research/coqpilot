@@ -34,7 +34,13 @@ export class StatusBarButton implements Disposable {
         }
     }
 
-    // update
+    updateText(text: string) {
+        this.item.text = text;
+    }
+
+    finishProgress() {
+        this.updateClientStatus(true);
+    }
 
     setFailedStatus(emsg: string) {
         this.item.text = "$(circle-slash) coqpilot (failed to start)";
