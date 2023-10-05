@@ -278,7 +278,7 @@ export class ProofView implements ProofViewInterface, Disposable {
                           .shift()?.message?.split('\n').shift() ?? null;
     }
 
-    private setTrace(level: "off" | "messages" | "verbose") {
+    setTrace(level: "off" | "messages" | "verbose") {
         const params: SetTraceParams = {
             value: level
         };
