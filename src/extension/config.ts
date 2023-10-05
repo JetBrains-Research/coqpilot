@@ -8,9 +8,9 @@ export interface CoqpilotConfig {
     maxNumberOfTokens: number;
     logAttempts: boolean;
     logFolderPath: string | null;
-    proofHolesCreateAux: boolean;
     gptModel: string;
-    proveAllOnStartup: boolean;
+    parseFileOnEditorChange: boolean;
+    parseFileOnInit: boolean;
 }
 
 export namespace CoqpilotConfig {
@@ -24,9 +24,9 @@ export namespace CoqpilotConfig {
                 maxNumberOfTokens: wsConfig.maxNumberOfTokens,
                 logAttempts: wsConfig.logAttempts,
                 logFolderPath: wsConfig.logFolderPath === "None" ? null : wsConfig.logFolderPath,
-                proofHolesCreateAux: wsConfig.proofHolesCreateAux, 
                 gptModel: wsConfig.gptModel,
-                proveAllOnStartup: wsConfig.startProvingAfterInit
+                parseFileOnEditorChange: wsConfig.parseFileOnEditorChange,
+                parseFileOnInit: wsConfig.parseFileOnInit
             };
         } catch (error) {
             console.error(error);

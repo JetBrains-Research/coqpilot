@@ -103,15 +103,15 @@
             "default": "None",
             "markdownDescription": "A path to the folder where logs should be saved. If `None` is specified and logAttemps is `true` then logs will be saved in the `coqpilot` plugin folder in the `logs` subfolder."
           },
-          "coqpilot.proofHolesCreateAux": {
+          "coqpilot.parseFileOnInit": {
             "type": "boolean",
             "default": true,
-            "markdownDescription": "Whether to create auxiliary lemmas when substituting `admit.`'s inside proofs or to insert proof directly into the hole."
+            "markdownDescription": "Whether to start parsing the file into message history on extension startup."
           },
-          "coqpilot.startProvingAfterInit": {
+          "coqpilot.parseFileOnEditorChange": {
             "type": "boolean",
             "default": false,
-            "markdownDescription": "Whether to start proving all theorems after coqpilot.start command is execution is finished."
+            "markdownDescription": "Whether to start re-parsing the file each time the editor has changed."
           },
           "coqpilot.ExtraCommandsList": {
             "type": "array",
@@ -119,7 +119,7 @@
               "type": "string"
             },
             "default": [],
-            "markdownDescription": "A list of tactics that would also be used to try generating proofs. Commands in the list must be valid coq commands available in your environment and must finish with a dot."
+            "markdownDescription": "NOT IMPLEMENTED YET. A list of tactics that would also be used to try generating proofs. Commands in the list must be valid coq commands available in your environment and must finish with a dot."
           }
         }
       }

@@ -4,7 +4,8 @@ import {
     workspace,
     WorkspaceConfiguration,
     Disposable,
-    TextEditor
+    TextEditor,
+    window,
 } from "vscode";
 
 import {
@@ -58,6 +59,7 @@ export class Coqpilot implements Disposable {
         this.llm = CoqpilotConfig.getLlm(config);
 
         this.disposables.push(this.statusItem);
+        this.disposables.push(this.textEditorChangeHook);
 
         this.registerCommand("coq-lsp.toggle", this.toggleLspClient);
         this.registerCommand("coq-lsp.restart", this.restartLspClient);
@@ -65,7 +67,31 @@ export class Coqpilot implements Disposable {
 
         this.registerEditorCommand("init_history", this.initHistory.bind(this));
         this.registerEditorCommand("run_generation", this.runGeneration.bind(this));
+
+        this.context.subscriptions.push(this);
     }
+
+    initialHistoryFetch = async (editor: TextEditor | undefined) => {
+        if (!editor) {
+            return;
+        } else if (editor.document.languageId !== "coq" || !this.config.parseFileOnInit) {
+            return;
+        }
+
+        console.log(`Parsing file ${editor.document.fileName}`);
+        await this.initHistory(editor);
+    };
+
+    textEditorChangeHook = window.onDidChangeActiveTextEditor((editor) => {
+        if (!editor) {
+            return;
+        } else if (editor.document.languageId !== "coq" || !this.config.parseFileOnEditorChange) {
+            return;
+        }        
+
+        console.log(`Parsing file ${editor.document.fileName}`);
+        this.initHistory(editor);
+    });
 
     private registerCommand(command: string, fn: () => void) {
         let disposable = commands.registerCommand("coqpilot." + command, fn);
@@ -83,6 +109,7 @@ export class Coqpilot implements Disposable {
     static async init(context: ExtensionContext, clientFactory: ClientFactoryType): Promise<Coqpilot> {
         const coqpilot = new Coqpilot(context, clientFactory);
         await coqpilot.activateCoqLSP();
+        await coqpilot.initialHistoryFetch(window.activeTextEditor);
 
         return coqpilot;
     }
@@ -92,7 +119,6 @@ export class Coqpilot implements Disposable {
         if (!thrs) {
             console.log("No theorems in file");
             throw new Error("Error parsing file");
-            return;
         }
         
         this.llmPrompt = new CoqPromptKShot(thrs, this.config.maxNumberOfTokens);
@@ -140,6 +166,8 @@ export class Coqpilot implements Disposable {
     async runGeneration(editor: TextEditor) {
         if (this.config.openaiApiKey === "None") {
             wm.showApiKeyNotProvidedMessage(); return;
+        } else if (editor.document.languageId !== "coq") {
+            wm.showIncorrectFileFormatMessage(); return;
         }
 
         const auxFile = this.proofView.makeAuxfname(editor.document.uri);
@@ -147,12 +175,13 @@ export class Coqpilot implements Disposable {
 
         await this.proofView.copyAndOpenFile(editor.document.getText(), auxFile, cursorPos);
 
-        const [thrStatement, thrName] = await this.proofView.getAuxTheoremAtCurPosition(auxFile, 1, cursorPos);
-        if (!thrStatement) {
+        const auxThr = await this.proofView.getAuxTheoremAtCurPosition(auxFile, 1, cursorPos);
+        if (!auxThr) {
             wm.showNoGoalMessage();
             return;
         }
 
+        const [thrStatement, thrName] = auxThr;
         if (!this.llmPrompt) {
             wm.fileSnapshotRequired();
             return;

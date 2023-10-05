@@ -7,9 +7,9 @@ export function mockConfig(): CoqpilotConfig {
         maxNumberOfTokens: 1,
         logAttempts: false,
         logFolderPath: "None",
-        proofHolesCreateAux: false,
         gptModel: OtherModels.MOCK, 
-        proveAllOnStartup: false
+        parseFileOnInit: false,
+        parseFileOnEditorChange: false,
     };
 } 
 
@@ -20,8 +20,8 @@ export function mockConfigRealGpt(apikey: string): CoqpilotConfig {
         maxNumberOfTokens: 40000,
         logAttempts: false,
         logFolderPath: "None",
-        proofHolesCreateAux: false,
         gptModel: GptModel.GPT35,
-        proveAllOnStartup: false
+        parseFileOnInit: false,
+        parseFileOnEditorChange: false,
     };
 }
