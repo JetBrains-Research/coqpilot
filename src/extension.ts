@@ -1,90 +1,267 @@
-import * as vscode from 'vscode';
-import { VsCodeWindowManager } from './extension/vscodeWindowManager';
+import {
+    commands,
+    ExtensionContext,
+    workspace,
+    WorkspaceConfiguration,
+    Disposable,
+    TextEditor,
+    window,
+} from "vscode";
 
-let windowManager: VsCodeWindowManager | undefined;
+import {
+    BaseLanguageClient,
+    LanguageClientOptions,
+    RevealOutputChannelOn
+} from "vscode-languageclient";
 
-export function activate(context: vscode.ExtensionContext) {
-	console.log('Coqpilot is now active.');
+import { CoqLspServerConfig } from "./coqLspClient/config";
+import { ProofView } from "./coqLspClient/proofView";
+import { StatusBarButton } from "./editor/enableButton";
+import { LLMPrompt } from "./coqLlmInteraction/llmPromptInterface";
+import { CoqPromptKShot } from "./coqLlmInteraction/coqLlmPrompt";
+import { LLMInterface } from "./coqLlmInteraction/llmInterface";
+import { CoqpilotConfig } from "./extension/config";
+import { Interactor } from "./coqLlmInteraction/interactor";
+import * as wm from "./editor/windowManager";
+import { VsCodeSpinningWheelProgressBar } from "./extension/vscodeProgressBar";
 
-	let test = vscode.commands.registerCommand('coqpilot.test', async () => {
-		
-	});
+export type ClientFactoryType = (
+    context: ExtensionContext,
+    clientOptions: LanguageClientOptions,
+    wsConfig: WorkspaceConfiguration
+) => BaseLanguageClient;
 
-	let startCommand = vscode.commands.registerCommand('coqpilot.start', async () => {
-		try {
-			windowManager = await VsCodeWindowManager.init();
-		} catch (err) {
-			console.log(err);
-			return;
-		}
-	});
+export class Coqpilot implements Disposable {
 
-	let solveParticularCommand = vscode.commands.registerCommand('coqpilot.solve_by_selection', async () => {
-		if (!windowManager) {
-			try {
-				windowManager = await VsCodeWindowManager.init(false);
-				await windowManager.tryProveBySelection();
-				return;
-			} catch (err) {
-				console.log(err);
-				vscode.window.showErrorMessage("Coqpilot failed to start. Please check the logs.");
-				return;
-			}
-		} else {
-			await windowManager.tryProveBySelection();
-		}
-	});
+    private readonly disposables: Disposable[] = [];
+    private readonly context: ExtensionContext;
+    public client: BaseLanguageClient;
+    private proofView: ProofView;
+    private statusItem: StatusBarButton;
+    private clientFactory: ClientFactoryType;
+    private llmPrompt: LLMPrompt | undefined;
+    private llm: LLMInterface; 
+    private config: CoqpilotConfig;
 
-	let solveHolesCommand = vscode.commands.registerCommand('coqpilot.substitute_holes', async () => {
-		if (!windowManager) {
-			try {
-				windowManager = await VsCodeWindowManager.init(false);
-				await windowManager.holeSubstitutionInSelection();
-				return;
-			} catch (err) {
-				console.log(err);
-				vscode.window.showErrorMessage("Coqpilot failed to start. Please check the logs.");
-				return;
-			}
-		} else {
-			await windowManager.holeSubstitutionInSelection();
-		}
-	});
+    private constructor(context: ExtensionContext, clientFactory: ClientFactoryType) {
+        this.excludeAuxFiles();
 
-	let tryProveAllCommand = vscode.commands.registerCommand('coqpilot.prove_all', async () => {
-		if (!windowManager) {
-			try {
-				windowManager = await VsCodeWindowManager.init(false);
-				await windowManager.proveAll();
-				return;
-			} catch (err) {
-				console.log(err);
-				vscode.window.showErrorMessage("Coqpilot failed to start. Please check the logs.");
-				return;
-			}
-		} else {
-			await windowManager.proveAll();
-		}
-	});
+        this.context = context;
+        this.clientFactory = clientFactory;
 
-	let finishCommand = vscode.commands.registerCommand('coqpilot.finish', async () => {
-		if (!windowManager) {
-			vscode.window.showErrorMessage("Coqpilot is not running.");
-			return;
-		} else {
-			windowManager.finish();
-		}
-	});
+        const config = CoqpilotConfig.create(
+            workspace.getConfiguration('coqpilot')
+        );
+        
+        CoqpilotConfig.checkRequirements(config);
+        
+        this.config = config;
+        this.llm = CoqpilotConfig.getLlm(config);
 
-	context.subscriptions.push(startCommand);
-	context.subscriptions.push(solveParticularCommand);
-	context.subscriptions.push(solveHolesCommand);
-	context.subscriptions.push(tryProveAllCommand);
-	context.subscriptions.push(finishCommand);
-	context.subscriptions.push(test);
-}
+        this.disposables.push(this.statusItem);
+        this.disposables.push(this.textEditorChangeHook);
 
-export function deactivate() {
-	console.log('Coqpilot deactivating.');
-	windowManager?.finish();
+        this.registerCommand("coq-lsp.toggle", this.toggleLspClient);
+        this.registerCommand("coq-lsp.restart", this.restartLspClient);
+        this.registerCommand("coq-lsp.stop", this.stopLspClient);
+
+        this.registerEditorCommand("init_history", this.initHistory.bind(this));
+        this.registerEditorCommand("run_generation", this.runGeneration.bind(this));
+
+        this.context.subscriptions.push(this);
+    }
+
+    initialHistoryFetch = async (editor: TextEditor | undefined) => {
+        if (!editor) {
+            return;
+        } else if (editor.document.languageId !== "coq" || !this.config.parseFileOnInit) {
+            return;
+        }
+
+        console.log(`Parsing file ${editor.document.fileName}`);
+        await this.initHistory(editor);
+    };
+
+    textEditorChangeHook = window.onDidChangeActiveTextEditor((editor) => {
+        if (!editor) {
+            return;
+        } else if (editor.document.languageId !== "coq" || !this.config.parseFileOnEditorChange) {
+            return;
+        }        
+
+        console.log(`Parsing file ${editor.document.fileName}`);
+        this.initHistory(editor);
+    });
+
+    private registerCommand(command: string, fn: () => void) {
+        let disposable = commands.registerCommand("coqpilot." + command, fn);
+        this.context.subscriptions.push(disposable);
+    }
+
+    private registerEditorCommand(command: string, fn: (editor: TextEditor) => void) {
+        let disposable = commands.registerTextEditorCommand(
+            "coqpilot." + command,
+            fn
+        );
+        this.context.subscriptions.push(disposable);
+    }
+
+    static async init(context: ExtensionContext, clientFactory: ClientFactoryType): Promise<Coqpilot> {
+        const coqpilot = new Coqpilot(context, clientFactory);
+        await coqpilot.activateCoqLSP();
+        await coqpilot.initialHistoryFetch(window.activeTextEditor);
+
+        return coqpilot;
+    }
+
+    async initHistory(editor: TextEditor) {
+        const thrs = await this.proofView.parseFile(editor);
+        if (!thrs) {
+            console.log("No theorems in file");
+            throw new Error("Error parsing file");
+        }
+        
+        this.llmPrompt = new CoqPromptKShot(thrs, this.config.maxNumberOfTokens);
+    }
+
+    async activateCoqLSP() {
+        if (this.client?.isRunning()) { 
+            return;
+        }
+    
+        const wsConfig = workspace.getConfiguration("coqpilot");
+        const initializationOptions = CoqLspServerConfig.create();
+
+        const clientOptions: LanguageClientOptions = {
+            documentSelector: [
+                { scheme: "file", language: "coq" },
+                { scheme: "file", language: "markdown", pattern: "**/*.mv" },
+            ],
+            outputChannelName: "Coqpilot: coq-lsp events",
+            revealOutputChannelOn: RevealOutputChannelOn.Info,
+            initializationOptions,
+            markdown: { isTrusted: true, supportHtml: true },
+        };
+
+        let cP = new Promise<BaseLanguageClient>((resolve) => {
+            this.client = this.clientFactory(this.context, clientOptions, wsConfig);
+            this.statusItem = new StatusBarButton();
+            this.proofView = new ProofView(this.client, this.statusItem);
+            resolve(this.client);
+        });
+
+        await cP.then((client) =>
+            client
+                .start()
+                .then(this.updateStatusBar)
+        ).catch((error) => {
+            let emsg = error.toString();
+            console.log(`Error in coq-lsp start: ${emsg}`);
+            this.setFailedStatuBar(emsg);
+        });
+    
+        this.context.subscriptions.push(this.proofView);
+    }
+
+    async runGeneration(editor: TextEditor) {
+        if (this.config.openaiApiKey === "None") {
+            wm.showApiKeyNotProvidedMessage(); return;
+        } else if (editor.document.languageId !== "coq") {
+            wm.showIncorrectFileFormatMessage(); return;
+        }
+
+        const auxFile = this.proofView.makeAuxfname(editor.document.uri);
+        const cursorPos = editor.selection.active;
+
+        await this.proofView.copyAndOpenFile(editor.document.getText(), auxFile, cursorPos);
+
+        const auxThr = await this.proofView.getAuxTheoremAtCurPosition(auxFile, 1, cursorPos);
+        if (!auxThr) {
+            wm.showNoGoalMessage();
+            return;
+        }
+
+        const [thrStatement, thrName] = auxThr;
+        if (!this.llmPrompt) {
+            wm.fileSnapshotRequired();
+            return;
+        }
+
+        const progressBar = new VsCodeSpinningWheelProgressBar();
+        const interactor = new Interactor(
+            this.llmPrompt, 
+            this.llm, 
+            progressBar,
+            this.config.logAttempts,
+            this.config.proofAttemsPerOneTheorem, 
+            this.config.logFolderPath
+        );
+        const proof = await interactor.runProofGeneration(
+            thrName,
+            thrStatement,
+            auxFile,
+            this.proofView.checkTheorems.bind(this.proofView)
+        );
+
+        if (!proof) {
+            wm.showSearchFailureMessage(thrName);
+            return;
+        }
+
+        wm.showSearchSucessMessage(editor, proof);
+    }
+
+    private updateStatusBar = () => {
+        this.statusItem.updateClientStatus(this.client && this.client.isRunning());
+    };
+
+    private setFailedStatuBar = (emsg: string) => {
+        this.statusItem.setFailedStatus(emsg);
+    };
+
+    private stopLspClient() {
+        if (this.client && this.client.isRunning()) {
+            this.client
+                .dispose(2000)
+                .then(this.updateStatusBar)
+                .then(() => {
+                    this.proofView.dispose();
+                });
+        }
+    }
+
+    private toggleLspClient() {
+        if (this.client && this.client.isRunning()) {
+            this.stopLspClient();
+        } else {
+            this.activateCoqLSP();
+        }
+    }
+
+    private restartLspClient() {
+        this.stopLspClient();
+        this.activateCoqLSP();
+    }
+
+    deactivateCoqLSP(): Thenable<void> | undefined {
+        if (!this.client) {
+            return undefined;
+        }
+        return this.client.stop();
+    }
+
+    excludeAuxFiles() {
+        // Hide files generated to check proofs
+        let activationConfig = workspace.getConfiguration();
+        let fexc: any = activationConfig.get("files.exclude");
+        activationConfig.update("files.exclude", {
+            // eslint-disable-next-line @typescript-eslint/naming-convention
+            '**/*_cp_aux.v': true,
+            ...fexc,
+        });
+    }
+
+    dispose() {
+        this.disposables.forEach((d) => d.dispose());
+    }   
 }

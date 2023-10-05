@@ -1,6 +1,5 @@
 import * as assert from 'assert';
 import { mockConfigRealGpt } from "../mock/mockConfig";
-import * as path from 'path';
 
 suite('Performance on IMM tests', () => {
 	test('Run completions', async () => {
@@ -12,8 +11,7 @@ suite('Performance on IMM tests', () => {
             assert.fail("key is not defined");
         }
 
-        const coqFilePath = path.join(immRoot, 'src', 'basic', 'Execution.v');
-        const config = mockConfigRealGpt(coqFilePath, immRoot, apiKey);
+        const config = mockConfigRealGpt(apiKey);
 
         console.log("config", config);
 

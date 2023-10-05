@@ -1,51 +1,66 @@
-import { ProofView, coqlspmodels, lspmodels, ProgressBar, CliProgressBar } from "coqlsp-client";
-import * as assert from "assert";
-import { 
-    readFileSync,
-} from "fs";
+import { Theorem } from "../lib/pvTypes";
 import { shuffleArray } from "./utils";
-import * as path from "path";
 
 class SeparatedTheorems {
     constructor(
-        public readonly admittedTheorems: coqlspmodels.Theorem[],
-        public readonly trainingTheorems: coqlspmodels.Theorem[], 
-        public readonly incompleteTheorems: { [thrName: string]: coqlspmodels.Theorem }
+        public readonly admittedTheorems: Theorem[],
+        public readonly trainingTheorems: Theorem[], 
     ) {}
 }
 
-export class LlmPromptInterface {
-    proofView: ProofView | undefined;
-    public readonly coqFile: string;
-    public readonly rootDir: string;
-    public readonly promptStrategy: string;
-    progressBar: ProgressBar;
-    theoremsFromFile: coqlspmodels.Theorem[] = [];
-    trainingTheorems: coqlspmodels.Theorem[] = [];
-    admittedTheorems: coqlspmodels.Theorem[] = [];
-    incompleteTheorems: { [thrName: string]: coqlspmodels.Theorem } = {};
-    public statementsToRanges: { [key: string]: lspmodels.Range } = {};
+export type LLMPrompt = LlmPromptInterface & LlmPromptBase;
 
-    protected constructor(
-        pathToCoqFile: string, 
-        pathToRootDir: string,
-        proofView: ProofView,
-        progressBar: ProgressBar,
+export interface LlmPromptInterface {
+    /**
+     * Gets the system message for the LLM. 
+     * @returns The system message for the LLM.
+     */
+    getSystemMessage(): string;
+
+    /**
+     * Gets the message history for the LLM. 
+     * @returns The message history for the LLM.
+     */
+    getMessageHistory(): { role: string; content: string; }[];
+}    
+
+export class LlmPromptBase {
+    public readonly promptStrategy: string;
+    theoremsFromFile: Theorem[] = [];
+    trainingTheorems: Theorem[] = [];
+    admittedTheorems: Theorem[] = [];
+
+    constructor( 
+        parsedFile: Theorem[],
+        tokenLimit: number,
     ) {
-        this.coqFile = pathToCoqFile;
-        this.rootDir = pathToRootDir;
+        this.theoremsFromFile = parsedFile;
         this.promptStrategy = this.constructor.name;
-        this.progressBar = progressBar;
-        this.proofView = proofView;
+        const separatedTheorems = this.computeTrainingTheorems(this.theoremsFromFile, tokenLimit);
+        this.trainingTheorems = separatedTheorems.trainingTheorems;
+        this.admittedTheorems = separatedTheorems.admittedTheorems;
     }
 
-    static countTokens = (str: string): number => {
+    countTokens = (str: string): number => {
         // Its hard enough to determine how gpt will
         // tokenize the string. Refer to the following
         // link for more information:
         // https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them
         // One token is approximately 4 characters.
         return (str.length / 4) >> 0;
+    };
+
+    thrProofToBullet = (proof: string): string => {
+        // Remove "Proof." and "Qed."
+        let res = proof.replace(/Proof using\./g, '')
+                       .replace(/Proof\./g, '')
+                       .replace(/Qed\./g, '');
+
+        return `{ ${res} }`;
+    };
+
+    cleanFromBrackets = (str: string): string => {
+        return str.slice(1, str.length - 1).trim();
     };
 
     /**
@@ -61,22 +76,18 @@ export class LlmPromptInterface {
      * @param tokenLimit The token limit for the request.
      * @returns List of theorems to use for training.
      */
-    static computeTrainingTheorems(theorems: coqlspmodels.Theorem[], tokenLimit: number): SeparatedTheorems {
+    computeTrainingTheorems(theorems: Theorem[], tokenLimit: number): SeparatedTheorems {
         let admittedTheoremsMaxTokenCount = 0;
         let theoremsTokensSum = 0;
-        let provenTheorems: coqlspmodels.Theorem[] = [];
-        let admittedTheorems: coqlspmodels.Theorem[] = [];
-        let incompleteTheorems: { [thrName: string]: coqlspmodels.Theorem } = {};
+        let provenTheorems: Theorem[] = [];
+        let admittedTheorems: Theorem[] = [];
 
         for (const theorem of theorems) {
             if (!theorem.proof) {
                 continue;
             } 
 
-            if (theorem.proof.holes.length > 0) {
-                incompleteTheorems[theorem.name] = theorem;
-                continue;
-            } else if (theorem.proof.is_incomplete) {
+            if (theorem.proof.is_incomplete) {
                 admittedTheoremsMaxTokenCount = Math.max(
                     admittedTheoremsMaxTokenCount,
                     this.countTokens(theorem.statement)
@@ -102,141 +113,11 @@ export class LlmPromptInterface {
             theoremsTokensSum -= this.countTokens(theorem.statement) + this.countTokens(theorem.proof.onlyText());
         }
 
-        return new SeparatedTheorems(admittedTheorems, provenTheorems, incompleteTheorems);
-    }
-
-    getHolesNum(thrName: string): number {
-        const theorem = this.incompleteTheorems[thrName];
-        if (!theorem || !theorem.proof) {
-            return 0;
-        }
-
-        return theorem.proof.holes.length;
-    }
-
-    getAuxTheoremStatement(thrName: string, holeIndex: number): [string, string] | undefined {
-        const theorem = this.incompleteTheorems[thrName];
-        const auxName = ((holeNum: number) => `${thrName}_aux_${holeNum}`)(holeIndex);
-
-        if (!theorem || !theorem.proof || theorem.proof.holes.length <= holeIndex) {
-            return undefined;
-        }
-
-        const hole = theorem.proof.holes[holeIndex];
-        return [auxName, hole.goalAsTheorem(auxName)];
-    }
-
-    getAuxTheoremApplyTactic(thrName: string, holeIndex: number): [string, lspmodels.Range] | undefined {
-        const theorem = this.incompleteTheorems[thrName];
-        const auxName = ((holeNum: number) => `${thrName}_aux_${holeNum}`)(holeIndex);
-        if (!theorem || !theorem.proof || theorem.proof.holes.length <= holeIndex) {
-            return undefined;
-        }
-        const hole = theorem.proof.holes[holeIndex];
-        let tac = `apply ${auxName}.`;
-        if (hole.focused_goal.hyps.length > 0) {
-            tac = `apply (${auxName} ${hole.focused_goal.hyps.map((hyp) => hyp.names.join(" ")).join(" ")}).`;
-        }
-        const rangeGlobal = hole.range;
-        const rangeInsideTheorem = {
-            start: {
-                line: rangeGlobal.start.line - theorem.statement_range.start.line,
-                character: rangeGlobal.start.character
-            },
-            end: {
-                line: rangeGlobal.end.line - theorem.statement_range.start.line,
-                character: rangeGlobal.end.character
-            }
-        };
-        return [tac, rangeInsideTheorem];
+        return new SeparatedTheorems(admittedTheorems, provenTheorems);
     }
 
     getAdmittedTheorems(): string[] {
         return this.admittedTheorems.map((th) => th.name);
-    }
-
-    static async initFromChild(
-        llmPrompt: LlmPromptInterface, 
-        tokenLimit: number,
-        theoremsFromFile: coqlspmodels.Theorem[] | undefined = undefined,
-    ): Promise<LlmPromptInterface> {
-        llmPrompt.theoremsFromFile = theoremsFromFile ? theoremsFromFile : await llmPrompt.proofView.parseFile();
-        const splittedTheorems = LlmPromptInterface.computeTrainingTheorems(llmPrompt.theoremsFromFile, tokenLimit);
-        llmPrompt.trainingTheorems = splittedTheorems.trainingTheorems;
-        llmPrompt.admittedTheorems = splittedTheorems.admittedTheorems;
-        llmPrompt.incompleteTheorems = splittedTheorems.incompleteTheorems;
-
-        try {
-            llmPrompt.statementsToRanges = llmPrompt.theoremsFromFile
-                .reduce((acc: { [key: string]: lspmodels.Range }, th: coqlspmodels.Theorem) => {
-                    acc[th.statement] = {
-                        start: th.statement_range.start,
-                        end: th.proof.end_pos.end
-                    };
-
-                    return acc;
-                }, {});
-        } catch (e) {
-            throw new Error("Some theorems in the file do not have proofs.");
-        }
-
-        return llmPrompt;
-    }
-
-    static async init(
-        pathToCoqFile: string, 
-        pathToRootDir: string,
-        tokenLimit: number,
-        proofView: ProofView | undefined = undefined,
-        progressBar: ProgressBar | undefined = new CliProgressBar(),
-        theoremsFromFile: coqlspmodels.Theorem[] | undefined = undefined,
-    ): Promise<LlmPromptInterface> {
-        const proofViewToUse = proofView ? proofView : await ProofView.init(pathToCoqFile, pathToRootDir, progressBar);
-
-        const llmPrompt = new LlmPromptInterface(
-            pathToCoqFile,
-            pathToRootDir,
-            proofViewToUse,
-            progressBar
-        );
-
-        llmPrompt.theoremsFromFile = theoremsFromFile ? theoremsFromFile : await llmPrompt.proofView.parseFile();
-        const splittedTheorems = LlmPromptInterface.computeTrainingTheorems(llmPrompt.theoremsFromFile, tokenLimit);
-        llmPrompt.trainingTheorems = splittedTheorems.trainingTheorems;
-        llmPrompt.admittedTheorems = splittedTheorems.admittedTheorems;
-        llmPrompt.incompleteTheorems = splittedTheorems.incompleteTheorems;
-
-        try {
-            llmPrompt.statementsToRanges = llmPrompt.theoremsFromFile
-                .reduce((acc: { [key: string]: lspmodels.Range }, th: coqlspmodels.Theorem) => {
-                    acc[th.statement] = {
-                        start: th.statement_range.start,
-                        end: th.proof.end_pos.end
-                    };
-
-                    return acc;
-                }, {});
-        } catch (e) {
-            throw new Error("Some theorems in the file do not have proofs.");
-        }
-
-        return llmPrompt;
-    }
-
-    /**
-     * Gets the system message for the LLM. 
-     * @returns The system message for the LLM.
-     */
-    getSystemMessage(): string {
-        throw new Error("Inherit from LlmPromptInterface and implement getSystemMessage() method");
-    }
-
-    /**
-     * Gets the message history for the LLM. 
-     * @returns The message history for the LLM.
-     */
-    getMessageHistory(): { role: string; content: string; }[] {
-        throw new Error("Inherit from LlmPromptInterface and implement getMessageHistory() method");
     }
 
     /**
@@ -251,49 +132,5 @@ export class LlmPromptInterface {
         }
 
         return thr.statement;
-    }
-
-    /**
-     * Verifies k proofs using the ProofView class. Return 
-     * a list of tuples (bool, str) where the first element
-     * is the result of the verification and the second is
-     * the error message if the verification failed.
-     * Either verification stops when the first proof is
-     * verified or all proofs are verified and failed.
-     * 
-     * @param thrStatement The statement of the theorem.
-     * @param proofs An array of potential proofs.
-     * @returns A list of tuples (bool, str) where the first element
-     * is the result of the verification and the second is
-     * the error message if the verification failed.
-     */
-    async verifyProofs(thrStatement: string, proofs: string[], originalName: string | null): Promise<[boolean, string | null][]> {
-        assert(this.proofView);
-        let context = "";
-        if (this.statementsToRanges) {
-            context = readFileSync(this.coqFile, "utf-8");
-            let statement = thrStatement;
-            if (originalName) {
-                statement = this.getTheoremStatementByName(originalName);
-            }
-            const thrLineIndex = this.statementsToRanges[statement].start.line;
-            context = context.split('\n').slice(0, thrLineIndex).join('\n');
-        }
-
-        return this.proofView.checkProofs(context, thrStatement, proofs);
-    }
-
-    /**
-     * Restarts the ProofView class.
-     */
-    async restartProofView() {
-        this.proofView = await ProofView.init(this.coqFile, this.rootDir, this.progressBar);
-    }
-
-    /**
-     * Free up resources.
-     */
-    stop() {
-        this.proofView?.exit();
     }
 }

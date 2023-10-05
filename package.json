@@ -15,33 +15,31 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
-  "main": "./out/extension.js",
+  "activationEvents": [
+    "onLanguage:coq"
+  ],
+  "main": "./out/mainNode.js",
   "contributes": {
     "commands": [
       {
-        "command": "coqpilot.start",
-        "title": "CoqPilot: Start analysing coq files"
+        "command": "coqpilot.init_history",
+        "title": "Coqpilot: Parse current file and initialize llm gistory with theorems from it."
       },
       {
-        "command": "coqpilot.prove_all",
-        "title": "CoqPilot: Try to prove all theorems"
+        "command": "coqpilot.run_generation",
+        "title": "Coqpilot: Try to generate proof for the goal under the cursor."
       },
       {
-        "command": "coqpilot.finish",
-        "title": "CoqPilot: Drop the snapshot and save logs"
+        "command": "coqpilot.coq-lsp.restart",
+        "title": "Coqpilot: Restart the underlying coq-lsp server."
       },
       {
-        "command": "coqpilot.solve_by_selection",
-        "title": "CoqPilot: Try to solve theorem currently selected"
+        "command": "coqpilot.coq-lsp.toggle",
+        "title": "Coqpilot: Toggle the underlying coq-lsp server."
       },
       {
-        "command": "coqpilot.substitute_holes",
-        "title": "CoqPilot: Try to substitute holes in selected theorem"
-      },
-      {
-        "command": "coqpilot.test",
-        "title": "CoqPilot: Test"
+        "command": "coqpilot.coq-lsp.stop",
+        "title": "Coqpilot: Stop the coq-lsp server."
       }
     ],
     "configuration": [
@@ -105,23 +103,23 @@
             "default": "None",
             "markdownDescription": "A path to the folder where logs should be saved. If `None` is specified and logAttemps is `true` then logs will be saved in the `coqpilot` plugin folder in the `logs` subfolder."
           },
-          "coqpilot.proofHolesCreateAux": {
+          "coqpilot.parseFileOnInit": {
             "type": "boolean",
             "default": true,
-            "markdownDescription": "Whether to create auxiliary lemmas when substituting `admit.`'s inside proofs or to insert proof directly into the hole."
+            "markdownDescription": "Whether to start parsing the file into message history on extension startup."
           },
-          "coqpilot.startProvingAfterInit": {
+          "coqpilot.parseFileOnEditorChange": {
             "type": "boolean",
             "default": false,
-            "markdownDescription": "Whether to start proving all theorems after coqpilot.start command is execution is finished."
-          }, 
+            "markdownDescription": "Whether to start re-parsing the file each time the editor has changed."
+          },
           "coqpilot.ExtraCommandsList": {
             "type": "array",
             "items": {
               "type": "string"
             },
             "default": [],
-            "markdownDescription": "A list of tactics that would also be used to try generating proofs. Commands in the list must be valid coq commands available in your environment and must finish with a dot."
+            "markdownDescription": "NOT IMPLEMENTED YET. A list of tactics that would also be used to try generating proofs. Commands in the list must be valid coq commands available in your environment and must finish with a dot."
           }
         }
       }
@@ -136,6 +134,7 @@
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
+    "@types/cli-progress": "^3.11.3",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "20.2.5",
@@ -150,12 +149,14 @@
     "typescript": "^5.1.3"
   },
   "dependencies": {
-    "coqlsp-client": "^1.0.6",
+    "@codemirror/autocomplete": "^6.9.1",
+    "cli-progress": "^3.12.0",
     "dedent": "^1.5.1",
     "openai": "^4.6.0",
     "path": "^0.12.7",
     "pino": "^8.15.1",
     "pino-pretty": "^10.2.0",
+    "vscode-languageclient": "^9.0.1",
     "yargs": "^17.7.2"
   }
 }

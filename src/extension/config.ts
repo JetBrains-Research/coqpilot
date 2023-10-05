@@ -1,44 +1,32 @@
-import * as vscode from 'vscode';
-import * as path from 'path';
 import { GPT35 } from '../coqLlmInteraction/gpt35';
 import { MockLlmPrompt } from '../test/mock/mockllm';
 import { LLMInterface } from '../coqLlmInteraction/llmInterface';
 
 export interface CoqpilotConfig {
-    coqFilePath: string;
-    coqFileRootDir: string;
     openaiApiKey: string;
     proofAttemsPerOneTheorem: number;
     maxNumberOfTokens: number;
     logAttempts: boolean;
     logFolderPath: string | null;
-    proofHolesCreateAux: boolean;
     gptModel: string;
-    proveAllOnStartup: boolean;
+    parseFileOnEditorChange: boolean;
+    parseFileOnInit: boolean;
 }
 
 export namespace CoqpilotConfig {
     export function create(
-        wsConfig: any, 
-        editor: vscode.TextEditor, 
-        workspaceFolders: readonly vscode.WorkspaceFolder[] | undefined
+        wsConfig: any
     ): CoqpilotConfig | undefined {
         try {
-            let coqFileRootDir = path.dirname(editor.document.uri.path);
-            if (workspaceFolders && workspaceFolders.length > 0) {
-                coqFileRootDir = workspaceFolders[0].uri.path;
-            }
             return {
-                coqFilePath: editor.document.uri.path,
-                coqFileRootDir: coqFileRootDir,
                 openaiApiKey: wsConfig.openaiApiKey,
                 proofAttemsPerOneTheorem: wsConfig.proofAttemsPerOneTheorem,
                 maxNumberOfTokens: wsConfig.maxNumberOfTokens,
                 logAttempts: wsConfig.logAttempts,
                 logFolderPath: wsConfig.logFolderPath === "None" ? null : wsConfig.logFolderPath,
-                proofHolesCreateAux: wsConfig.proofHolesCreateAux, 
                 gptModel: wsConfig.gptModel,
-                proveAllOnStartup: wsConfig.startProvingAfterInit
+                parseFileOnEditorChange: wsConfig.parseFileOnEditorChange,
+                parseFileOnInit: wsConfig.parseFileOnInit
             };
         } catch (error) {
             console.error(error);

@@ -1,5 +1,5 @@
 import { LLMInterface } from "./llmInterface";
-import { LlmPromptInterface } from "./llmPromptInterface";
+import { LLMPrompt } from "./llmPromptInterface";
 import OpenAI from 'openai';
 
 type GptRole = "function" | "user" | "system" | "assistant";
@@ -36,8 +36,8 @@ export class GPT35 implements LLMInterface {
         return completion.choices.map((choice) => choice.message.content);
     }
 
-    initHistory(llmPrompt: LlmPromptInterface): void {
-        console.log("Initializing history", llmPrompt.promptStrategy);
+    initHistory(llmPrompt: LLMPrompt): void {
+        this.history = [];
         const prompt = llmPrompt.getSystemMessage();
         const messageHistory = llmPrompt.getMessageHistory();
 
