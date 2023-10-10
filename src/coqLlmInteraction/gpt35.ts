@@ -19,23 +19,6 @@ export class GPT35 implements LLMInterface {
         this.openai = new OpenAI({ apiKey: this.apiKey });
     }
 
-    private acceptMessage(message: string) {
-        this.history.push({role: "user", content: message});
-    }
-
-    private async getNextResponses(choices: number = 1): Promise<string[]> {
-        const completion = await this.openai.chat.completions.create({
-            messages: this.history,
-            model: this.model,
-            n: choices
-        });
-
-        const bestResponse = completion.choices[0].message.content;
-        this.history.push({role: "assistant", content: bestResponse});
-
-        return completion.choices.map((choice) => choice.message.content);
-    }
-
     initHistory(llmPrompt: LLMPrompt): void {
         this.history = [];
         const prompt = llmPrompt.getSystemMessage();
@@ -49,32 +32,31 @@ export class GPT35 implements LLMInterface {
         this.history = this.history.concat(gptFormattedHistory);
     }
 
-    async sendMessageForResponse(message: string, choices: number): Promise<string[]> {
-        this.acceptMessage(message);
-        return this.getNextResponses(choices);
-    }
-
     async sendMessageWithoutHistoryChange(message: string, choices: number): Promise<string[]> {
         let attempts = this.requestAttempts;
+        let completion = null;
+        console.log("Start sending message to open-ai");
         while (attempts > 0) {
             try {
-                const completion = await this.openai.chat.completions.create({
+                console.log("Sending request with history: " + JSON.stringify(this.history.concat([{role: "user", content: message}])));
+                completion = await this.openai.chat.completions.create({
                     messages: this.history.concat([{role: "user", content: message}]),
                     model: this.model,
                     n: choices
                 });
-
+                console.log("Request to open-ai succeeded");
                 return completion.choices.map((choice) => choice.message.content);
             } catch (e) {
                 attempts -= 1;
                 if (attempts === 0) {
                     throw e;
                 } else {
+                    console.log("Request to open-ai failed with error " + e + "Retrying..."); 
                     continue;
                 }
             }
         }
 
-        throw new Error("Unreachable code reached. Report an issue.");
+        throw new Error("Unreachable code reached");
     }
 }

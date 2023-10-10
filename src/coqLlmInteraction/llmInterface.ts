@@ -16,7 +16,7 @@ export interface LLMInterface {
      * @param choices The number of choices to return. Defaults to 1.
      * @returns A list of choices.
      */
-    sendMessageForResponse(message: string, choices: number): Promise<string[]>;
+    // sendMessageForResponse(message: string, choices: number): Promise<string[]>;
 
     /**
      * Sends a message to the LLM and returns the response.

@@ -8,6 +8,11 @@ import {
 
 export class StatusBarButton implements Disposable {
     private item: StatusBarItem;
+    private running: boolean;
+
+    get isRunning(): boolean {
+        return this.running;
+    }
 
     constructor() {
         this.item = window.createStatusBarItem(
@@ -17,6 +22,7 @@ export class StatusBarButton implements Disposable {
         );
         this.item.command = "coqpilot.toggle";
         this.item.text = "coqpilot (activating)";
+        this.running = false;
         this.item.show();
     }
 
@@ -25,12 +31,14 @@ export class StatusBarButton implements Disposable {
             this.item.text = "$(check) coqpilot";
             this.item.backgroundColor = undefined;
             this.item.tooltip = "coqpilot is running. Click to disable.";
+            this.running = true;
         } else {
             this.item.text = "$(circle-slash) coqpilot (stopped)";
             this.item.backgroundColor = new ThemeColor(
                 "statusBarItem.warningBackground"
             );
             this.item.tooltip = "coqpilot has been disabled. Click to enable.";
+            this.running = false;
         }
     }
 
@@ -48,6 +56,7 @@ export class StatusBarButton implements Disposable {
             "statusBarItem.errorBackground"
         );
         this.item.tooltip = `coqpilot couldn't start: ${emsg} Click to retry.`;
+        this.running = false;
     }
 
     dispose() {

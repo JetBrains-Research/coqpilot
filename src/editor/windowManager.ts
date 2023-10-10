@@ -35,11 +35,24 @@ export function showSearchFailureMessage(theoremName: string) {
     );
 }
 
+export function showClientNotRunningMessage() {
+    vscode.window.showInformationMessage(
+        'Coqpilot is not running. Use the button in the bottom left corner to start it.'
+    );
+}
+
 export function showReloadDueToEditorChange() {
     vscode.window.showInformationMessage(
         'Active coq file changed. Please reload Coqpilot to continue.'
     );
 }
+
+export function showExceptionMessage(msg: string) {
+    vscode.window.showInformationMessage(
+        'Coqpilot: An exception occured: ' + msg + '.'
+    );
+}
+
 
 export function fileSnapshotRequired() {
     vscode.window.showInformationMessage(

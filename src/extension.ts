@@ -21,7 +21,7 @@ import { LLMPrompt } from "./coqLlmInteraction/llmPromptInterface";
 import { CoqPromptKShot } from "./coqLlmInteraction/coqLlmPrompt";
 import { LLMInterface } from "./coqLlmInteraction/llmInterface";
 import { CoqpilotConfig } from "./extension/config";
-import { Interactor } from "./coqLlmInteraction/interactor";
+import { Interactor, GenerationStatus } from "./coqLlmInteraction/interactor";
 import * as wm from "./editor/windowManager";
 import { VsCodeSpinningWheelProgressBar } from "./extension/vscodeProgressBar";
 
@@ -43,7 +43,10 @@ export class Coqpilot implements Disposable {
     private llm: LLMInterface; 
     private config: CoqpilotConfig;
 
-    private constructor(context: ExtensionContext, clientFactory: ClientFactoryType) {
+    private constructor(
+        context: ExtensionContext, 
+        clientFactory: ClientFactoryType
+    ) {
         this.excludeAuxFiles();
 
         this.context = context;
@@ -60,10 +63,11 @@ export class Coqpilot implements Disposable {
 
         this.disposables.push(this.statusItem);
         this.disposables.push(this.textEditorChangeHook);
+        // this.statusItem = button;
 
-        this.registerCommand("coq-lsp.toggle", this.toggleLspClient);
-        this.registerCommand("coq-lsp.restart", this.restartLspClient);
-        this.registerCommand("coq-lsp.stop", this.stopLspClient);
+        this.registerCommand("toggle", this.toggleLspClient.bind(this));
+        this.registerCommand("coq-lsp.restart", this.restartLspClient.bind(this));
+        this.registerCommand("coq-lsp.stop", this.stopLspClient.bind(this));
 
         this.registerEditorCommand("init_history", this.initHistory.bind(this));
         this.registerEditorCommand("run_generation", this.runGeneration.bind(this));
@@ -106,7 +110,10 @@ export class Coqpilot implements Disposable {
         this.context.subscriptions.push(disposable);
     }
 
-    static async init(context: ExtensionContext, clientFactory: ClientFactoryType): Promise<Coqpilot> {
+    static async init(
+        context: ExtensionContext, 
+        clientFactory: ClientFactoryType, 
+    ): Promise<Coqpilot> {
         const coqpilot = new Coqpilot(context, clientFactory);
         await coqpilot.activateCoqLSP();
         await coqpilot.initialHistoryFetch(window.activeTextEditor);
@@ -115,6 +122,12 @@ export class Coqpilot implements Disposable {
     }
 
     async initHistory(editor: TextEditor) {
+        if (!this.client.isRunning()) {
+            wm.showClientNotRunningMessage(); return;
+        } else if (editor.document.languageId !== "coq") {
+            wm.showIncorrectFileFormatMessage(); return;
+        }
+
         const thrs = await this.proofView.parseFile(editor);
         if (!thrs) {
             console.log("No theorems in file");
@@ -125,6 +138,7 @@ export class Coqpilot implements Disposable {
     }
 
     async activateCoqLSP() {
+        console.log("Start Client");
         if (this.client?.isRunning()) { 
             return;
         }
@@ -168,6 +182,8 @@ export class Coqpilot implements Disposable {
             wm.showApiKeyNotProvidedMessage(); return;
         } else if (editor.document.languageId !== "coq") {
             wm.showIncorrectFileFormatMessage(); return;
+        } else if (!this.client.isRunning()) {
+            wm.showClientNotRunningMessage(); return;
         }
 
         const auxFile = this.proofView.makeAuxfname(editor.document.uri);
@@ -203,12 +219,18 @@ export class Coqpilot implements Disposable {
             this.proofView.checkTheorems.bind(this.proofView)
         );
 
-        if (!proof) {
-            wm.showSearchFailureMessage(thrName);
-            return;
+        switch (proof.status) {
+            case GenerationStatus.success:
+                wm.showSearchSucessMessage(editor, proof.data);
+                break;
+            case GenerationStatus.searchFailed:
+                wm.showSearchFailureMessage(thrName);
+                break; 
+            default:
+                wm.showExceptionMessage(proof.toString());
+                break;
         }
 
-        wm.showSearchSucessMessage(editor, proof);
     }
 
     private updateStatusBar = () => {
@@ -220,6 +242,7 @@ export class Coqpilot implements Disposable {
     };
 
     private stopLspClient() {
+        console.log("Stop Client");
         if (this.client && this.client.isRunning()) {
             this.client
                 .dispose(2000)
@@ -231,6 +254,7 @@ export class Coqpilot implements Disposable {
     }
 
     private toggleLspClient() {
+        console.log("Toggle Extension");
         if (this.client && this.client.isRunning()) {
             this.stopLspClient();
         } else {

@@ -5,6 +5,70 @@ import { ProgressBar } from '../extension/progressBar';
 import { ProofViewError } from '../lib/pvTypes';
 import { Uri } from 'vscode';
 
+export enum GenerationStatus {
+    success,
+    excededTimeout,
+    exception, 
+    searchFailed
+}
+
+export class GenerationResult<T> {
+    readonly status: GenerationStatus;
+    readonly message: string | null;
+    readonly sender: string | null;
+    readonly data: T | null;
+
+    constructor(
+        status: GenerationStatus, 
+        message: string | null, 
+        sender: string | null, 
+        data: T | null = null
+    ) {
+        this.status = status;
+        this.message = message;
+        this.sender = sender;
+        this.data = data;
+    }
+
+    static success<T>(data: T): GenerationResult<T> {
+        return new GenerationResult<T>(GenerationStatus.success, null, null, data);
+    }
+
+    static excededTimeout<T>(): GenerationResult<T> {
+        return new GenerationResult<T>(GenerationStatus.excededTimeout, "Exceded timeout for proof generation.", null);
+    }
+
+    static exception<T>(message: string, sender: string): GenerationResult<T> {
+        return new GenerationResult<T>(GenerationStatus.exception, message, sender);
+    }
+
+    static searchFailed<T>(): GenerationResult<T> {
+        return new GenerationResult<T>(GenerationStatus.searchFailed, "Search failed.", null);
+    }
+
+    isSuccessful(): boolean {
+        return this.status === GenerationStatus.success;
+    }
+
+    couldNotFindProof(): boolean {
+        return this.status === GenerationStatus.searchFailed;
+    }
+
+    toString(): string {
+        switch (this.status) {
+            case GenerationStatus.success:
+                return `Success: ${this.data}`;
+            case GenerationStatus.exception:
+                return `Failed in ${this.sender} with ${this.message}`;
+            case GenerationStatus.excededTimeout:
+                return `Exceded timeout`;
+            case GenerationStatus.searchFailed:
+                return `Search failed`;
+        }
+    }
+
+}
+
 export class Interactor {
     llmPrompt: LLMPrompt;
     llmInterface: LLMInterface;
@@ -65,17 +129,30 @@ export class Interactor {
         theoremStatement: string, 
         uri: Uri,
         fnVerifyProofs: (uri: Uri, proofs: string[]) => Promise<[boolean, string | null][]>
-    ): Promise<string | undefined> {
+    ): Promise<GenerationResult<string>> {
         this.runLogger.onStartLlmResponseFetch(theoremName);
         this.progressBar.initialize(100, "id");
 
-        let llmResponse = await this.llmInterface.sendMessageWithoutHistoryChange(
+        let llmResponse: string[] | Error | null = null;
+        
+        await this.llmInterface.sendMessageWithoutHistoryChange(
             theoremStatement,
             this.shots
-        ).catch((e) => {
+        ).then((response) => {
+            console.log("Response received: " + JSON.stringify(response));
+            llmResponse = response;
+        }).catch((e) => {
+            console.log("Error while generation occured: " + e.message);
             this.runLogger.onException(e.message);
-            throw e;
+            this.progressBar.finish();
+
+            llmResponse = e;
         });
+        
+        if (llmResponse instanceof Error) {
+            return GenerationResult.exception(llmResponse.message, "Open-ai completion request");
+        }
+
         // Surround with curly braces and remove Proof. and Qed.
         llmResponse = llmResponse.map(this.llmPrompt.thrProofToBullet);
 
@@ -83,7 +160,7 @@ export class Interactor {
         this.runLogger.onEndLlmResponseFetch();
         this.runLogger.onTheoremProofStart();
 
-        let verifyProofsAttempts = 1;
+        let verifyProofsAttempts = 3;
         let proofCheckResult: [boolean, string][] = [];
 
         while(verifyProofsAttempts > 0) {
@@ -93,16 +170,28 @@ export class Interactor {
             } catch (e) {
                 verifyProofsAttempts--;
                 if (verifyProofsAttempts === 0) {
-                    throw e;
+                    this.runLogger.onException(e.message);
+                    return GenerationResult.exception(e.message, "Coq-lsp error");
                 }
 
                 this.runLogger.onProofCheckFail(e.message);
 
                 this.runLogger.onStartLlmResponseFetch(theoremName);
-                llmResponse = await this.llmInterface.sendMessageWithoutHistoryChange(
+                await this.llmInterface.sendMessageWithoutHistoryChange(
                     theoremStatement,
                     this.shots
-                );
+                ).then((response) => {
+                    llmResponse = response;
+                }).catch((e) => {
+                    this.runLogger.onException(e.message);
+                    this.progressBar.finish();
+                    llmResponse = e;
+                });
+
+                if (llmResponse instanceof Error) {
+                    return GenerationResult.exception(llmResponse.message, "Open-ai completion request");
+                }
+
                 // Surround with curly braces and remove Proof. and Qed.
                 llmResponse = llmResponse.map(this.llmPrompt.thrProofToBullet);
                 this.runLogger.onEndLlmResponseFetch();
@@ -135,9 +224,10 @@ export class Interactor {
         this.runLogger.onTheoremProofEnd(theoremStatement);
 
         if (foundProof) {
-            return this.llmPrompt.cleanFromBrackets(foundProof);
+            const cleanedProof = this.llmPrompt.cleanFromBrackets(foundProof);
+            return GenerationResult.success(cleanedProof);
         } 
 
-        return undefined;
+        return GenerationResult.searchFailed();
     }
 }

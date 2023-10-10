@@ -40,6 +40,10 @@
       {
         "command": "coqpilot.coq-lsp.stop",
         "title": "Coqpilot: Stop the coq-lsp server."
+      },
+      {
+        "command": "coqpilot.toggle",
+        "title": "Coqpilot: Toggle the plugin"
       }
     ],
     "configuration": [
