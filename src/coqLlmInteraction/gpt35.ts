@@ -1,6 +1,7 @@
 import { LLMInterface } from "./llmInterface";
 import { LLMPrompt } from "./llmPromptInterface";
 import OpenAI from 'openai';
+import logger from "../extension/logger";
 
 type GptRole = "function" | "user" | "system" | "assistant";
 
@@ -35,23 +36,23 @@ export class GPT35 implements LLMInterface {
     async sendMessageWithoutHistoryChange(message: string, choices: number): Promise<string[]> {
         let attempts = this.requestAttempts;
         let completion = null;
-        console.log("Start sending message to open-ai");
+        logger.info("Start sending message to open-ai");
         while (attempts > 0) {
             try {
-                console.log("Sending request with history: " + JSON.stringify(this.history.concat([{role: "user", content: message}])));
+                logger.info("Sending request with history: " + JSON.stringify(this.history.concat([{role: "user", content: message}])));
                 completion = await this.openai.chat.completions.create({
                     messages: this.history.concat([{role: "user", content: message}]),
                     model: this.model,
                     n: choices
                 });
-                console.log("Request to open-ai succeeded");
+                logger.info("Request to open-ai succeeded");
                 return completion.choices.map((choice) => choice.message.content);
             } catch (e) {
                 attempts -= 1;
                 if (attempts === 0) {
                     throw e;
                 } else {
-                    console.log("Request to open-ai failed with error " + e + "Retrying..."); 
+                    logger.info("Request to open-ai failed with error " + e + "Retrying..."); 
                     continue;
                 }
             }

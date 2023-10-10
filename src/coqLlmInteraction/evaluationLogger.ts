@@ -5,7 +5,7 @@ import {
     appendFileSync
 } from "fs";
 import { dirname, join } from "path";
-import pino from 'pino';
+import logger from "../extension/logger";
 
 export class EvalLoggingError extends Error {
     constructor(message: string) {
@@ -23,22 +23,6 @@ export class EvaluationLogger {
     shots: number;
     logToFile: boolean;
     holeProofAttemtsLog: string = "";
-    // For tests
-    logger = pino({
-        name: 'ts-lsp-client'
-    });
-    // For regular use
-    // logger = pino({
-    //     transport: {
-    //         target: 'pino-pretty', // --target 'pino-pretty
-    //         options: {
-    //             levelFirst: true, // --levelFirst
-    //             colorize: true,
-    //             translateTime: true,
-    //             ignore: 'pid,hostname' // --ignore
-    //         }
-    //     }
-    // });
 
     constructor(
         runStrategy: string, 
@@ -80,15 +64,15 @@ export class EvaluationLogger {
     };
 
     onStartLlmResponseFetch(thrName: string) {
-        this.logger.info(`Fetching potential proofs for theorem ${thrName}`);
+        logger.info(`Fetching potential proofs for theorem ${thrName}`);
     }
 
     onStartLlmResponseFetchForHole(thrName: string, holeNum: number) {
-        this.logger.info(`Fetching potential proofs for hole ${holeNum} of theorem ${thrName}`);
+        logger.info(`Fetching potential proofs for hole ${holeNum} of theorem ${thrName}`);
     }
 
     onEndLlmResponseFetch() {
-        this.logger.info("Fetching potential proofs finished");
+        logger.info("Fetching potential proofs finished");
     }
 
     onTheoremProofStart() {
@@ -114,7 +98,7 @@ export class EvaluationLogger {
         
         this.proofLog += `(* Attempt ${attemptIndex} for theorem ${thrName} successful *)\n\n`;
         this.proofLog += "(* {THEOREM PROOF LOG END} *)";
-        this.logger.info(`Attempt ${attemptIndex} for theorem ${thrName} successful`);
+        logger.info(`Attempt ${attemptIndex} for theorem ${thrName} successful`);
         this.proofComplete = true;
     }
     
@@ -145,11 +129,11 @@ export class EvaluationLogger {
         }
         this.proofLog += `(* Attempt ${attemptIndex} for theorem ${thrName} failed with an exception*)\n`;
         this.proofLog += `(* EXCEPTION message: ${errorMsg} *)\n\n`;
-        this.logger.info(`Attempt ${attemptIndex} for theorem ${thrName} failed with an exception`);
+        logger.info(`Attempt ${attemptIndex} for theorem ${thrName} failed with an exception`);
     }
 
     onException(errorMsg: string) {
-        this.logger.error(`Exception: ${errorMsg}`);
+        logger.error(`Exception: ${errorMsg}`);
         if (this.insideProof) {
             this.proofLog += `(* Exception: ${errorMsg} *)\n`;
         }

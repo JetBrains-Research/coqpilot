@@ -4,6 +4,7 @@ import { EvaluationLogger } from './evaluationLogger';
 import { ProgressBar } from '../extension/progressBar';
 import { ProofViewError } from '../lib/pvTypes';
 import { Uri } from 'vscode';
+import logger from '../extension/logger';
 
 export enum GenerationStatus {
     success,
@@ -139,10 +140,10 @@ export class Interactor {
             theoremStatement,
             this.shots
         ).then((response) => {
-            console.log("Response received: " + JSON.stringify(response));
+            logger.info("Response received: " + JSON.stringify(response));
             llmResponse = response;
         }).catch((e) => {
-            console.log("Error while generation occured: " + e.message);
+            logger.info("Error while generation occured: " + e.message);
             this.runLogger.onException(e.message);
             this.progressBar.finish();
 

@@ -24,6 +24,7 @@ import { CoqpilotConfig } from "./extension/config";
 import { Interactor, GenerationStatus } from "./coqLlmInteraction/interactor";
 import * as wm from "./editor/windowManager";
 import { VsCodeSpinningWheelProgressBar } from "./extension/vscodeProgressBar";
+import logger from "./extension/logger";
 
 export type ClientFactoryType = (
     context: ExtensionContext,
@@ -82,7 +83,7 @@ export class Coqpilot implements Disposable {
             return;
         }
 
-        console.log(`Parsing file ${editor.document.fileName}`);
+        logger.info(`Parsing file ${editor.document.fileName}`);
         await this.initHistory(editor);
     };
 
@@ -93,7 +94,7 @@ export class Coqpilot implements Disposable {
             return;
         }        
 
-        console.log(`Parsing file ${editor.document.fileName}`);
+        logger.info(`Parsing file ${editor.document.fileName}`);
         this.initHistory(editor);
     });
 
@@ -130,7 +131,7 @@ export class Coqpilot implements Disposable {
 
         const thrs = await this.proofView.parseFile(editor);
         if (!thrs) {
-            console.log("No theorems in file");
+            logger.info("No theorems in file");
             throw new Error("Error parsing file");
         }
         
@@ -138,7 +139,7 @@ export class Coqpilot implements Disposable {
     }
 
     async activateCoqLSP() {
-        console.log("Start Client");
+        logger.info("Start Client");
         if (this.client?.isRunning()) { 
             return;
         }
@@ -170,7 +171,7 @@ export class Coqpilot implements Disposable {
                 .then(this.updateStatusBar)
         ).catch((error) => {
             let emsg = error.toString();
-            console.log(`Error in coq-lsp start: ${emsg}`);
+            logger.info(`Error in coq-lsp start: ${emsg}`);
             this.setFailedStatuBar(emsg);
         });
     
@@ -242,7 +243,7 @@ export class Coqpilot implements Disposable {
     };
 
     private stopLspClient() {
-        console.log("Stop Client");
+        logger.info("Stop Client");
         if (this.client && this.client.isRunning()) {
             this.client
                 .dispose(2000)
@@ -254,7 +255,7 @@ export class Coqpilot implements Disposable {
     }
 
     private toggleLspClient() {
-        console.log("Toggle Extension");
+        logger.info("Toggle Extension");
         if (this.client && this.client.isRunning()) {
             this.stopLspClient();
         } else {
