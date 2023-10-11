@@ -338,6 +338,8 @@ export class ProofView implements ProofViewInterface, Disposable {
         const doc = await this.getFlecheDocument(auxFile);
         const fd = parseFleche(doc, text.split("\n"));
 
+        unlinkSync(auxFile.fsPath);
+
         return fd;
     }
 
