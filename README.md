@@ -31,6 +31,17 @@ opam install coq-lsp
 ```
 For more information on how to install `coq-lsp` please refer to [coq-lsp](https://github.com/ejgallego/coq-lsp). 
 
+## Important 
+
+As coqpilot is now in beta, moreover, sometimes has issues with correctly cleaning up the aux files (it will get better soon), it is recommended to make the following actions: 
+- Copy the [`set_gitignore.sh`](https://github.com/K-dizzled/coqpilot/blob/main/set_gitignore.sh) file to your computer. Then: 
+```bash 
+chmod +x set_gitignore.sh
+./set_gitignore.sh
+```
+It will add the format of coqpilot aux files to your global gitignore file on the system, so that even if coqpilot forgets to clean files up, they will not be marked as new files in git.
+Comment: Such files are not visible in the vscode explorer, because plugin adds them to the `files.exclude` setting on startup.
+
 ## Extension Settings
 
 This extension contributes the following settings:
