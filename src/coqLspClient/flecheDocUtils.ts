@@ -18,7 +18,7 @@ import {
 
 function getExpr(span: RangedSpan): any[] {
     try {
-        return span.span === null ? null : span.span['v']['expr'];
+        return span.span === null ? null : span.span['v']['expr'][1];
     } catch (error) {
         return null;
     }

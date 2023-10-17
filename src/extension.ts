@@ -123,17 +123,22 @@ export class Coqpilot implements Disposable {
     }
 
     async initHistory(editor: TextEditor) {
+        logger.info("Start initializing history");
         if (!this.client.isRunning()) {
             wm.showClientNotRunningMessage(); return;
         } else if (editor.document.languageId !== "coq") {
             wm.showIncorrectFileFormatMessage(); return;
         }
 
+        logger.info("Conditions satisfied, start parsing file");
+
         const thrs = await this.proofView.parseFile(editor);
         if (!thrs) {
             logger.info("No theorems in file");
             throw new Error("Error parsing file");
         }
+
+        logger.info(`Theorems retrieved:\n${thrs}`);
         
         this.llmPrompt = new CoqPromptKShot(thrs, this.config.maxNumberOfTokens);
     }
