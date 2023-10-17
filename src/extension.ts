@@ -64,7 +64,6 @@ export class Coqpilot implements Disposable {
 
         this.disposables.push(this.statusItem);
         this.disposables.push(this.textEditorChangeHook);
-        // this.statusItem = button;
 
         this.registerCommand("toggle", this.toggleLspClient.bind(this));
         this.registerCommand("coq-lsp.restart", this.restartLspClient.bind(this));

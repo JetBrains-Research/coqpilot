@@ -23,7 +23,7 @@
     "commands": [
       {
         "command": "coqpilot.init_history",
-        "title": "Coqpilot: Parse current file and initialize llm gistory with theorems from it."
+        "title": "Coqpilot: Parse current file and initialize llm history with theorems from it."
       },
       {
         "command": "coqpilot.run_generation",

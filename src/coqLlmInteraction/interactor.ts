@@ -167,6 +167,7 @@ export class Interactor {
         while(verifyProofsAttempts > 0) {
             try {
                 proofCheckResult = await fnVerifyProofs(uri, llmResponse);
+                logger.info("Proof check result: " + JSON.stringify(proofCheckResult));
                 break;
             } catch (e) {
                 verifyProofsAttempts--;

@@ -52,6 +52,7 @@ import { VsCodeProgressBar } from "../extension/vscodeProgressBar";
 import { Theorem } from "../lib/pvTypes";
 import { parseFleche } from "./flecheDocUtils";
 import { StatusBarButton } from "../editor/enableButton";
+import logger from "../extension/logger";
 
 interface ProofViewInterface {
     /**
@@ -343,10 +344,20 @@ export class ProofView implements ProofViewInterface, Disposable {
         return fd;
     }
 
+    private cleanProof(proof: string): string {
+        // remove backticks because apparently everything crashes 
+        // if gpt generates a proof embedded in 3 backticks
+        // I didn't figure out why yet
+        
+        return proof.replace(/`/g, "");
+    }
+
     async checkTheorems(
         uri: Uri, 
         proofs: string[]
     ): Promise<[boolean, string | null][]> {
+        logger.info("Started type-checking proofs");
+
         let documentVersion = 1;
 
         // Open the file and read the context
@@ -354,8 +365,9 @@ export class ProofView implements ProofViewInterface, Disposable {
         const lineNumContext = context.split("\n").length - 1;
 
         const proofVerdicts: [boolean, string | null][] = [];
+        const proofsCleaned = proofs.map(this.cleanProof);
 
-        for (const proof of proofs) {
+        for (const proof of proofsCleaned) {
             const prohibitedTactics = ["admit.", "Admitted.", "Abort."];
             if (prohibitedTactics.some(tactic => proof.includes(tactic))) {
                 proofVerdicts.push([false, "Proof contains 'Abort.' or 'Admitted.'"]);
@@ -382,7 +394,10 @@ export class ProofView implements ProofViewInterface, Disposable {
             };
 
             const newLineNum = newText.split("\n").length - 1;
+
+            logger.info("Started typechecking proof: " + proof);
             const diags = await this.updateWithWait(DidChangeTextDocumentNotification.type, params, uri, newLineNum);
+            logger.info("Finished typechecking proof");
 
             // Filter diagnostics by the line number of the context
             const errorMsg = this.filterDiagnostics(diags, { line: lineNumContext, character: 0 });
