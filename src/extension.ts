@@ -117,6 +117,7 @@ export class Coqpilot implements Disposable {
         const coqpilot = new Coqpilot(context, clientFactory);
         await coqpilot.activateCoqLSP();
         await coqpilot.initialHistoryFetch(window.activeTextEditor);
+        await wm.addAuxFilesToGitIgnore();
 
         return coqpilot;
     }
@@ -296,6 +297,7 @@ export class Coqpilot implements Disposable {
     }
 
     dispose() {
+        wm.cleanAuxFiles();
         this.disposables.forEach((d) => d.dispose());
     }   
 }

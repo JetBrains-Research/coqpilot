@@ -33,7 +33,9 @@ For more information on how to install `coq-lsp` please refer to [coq-lsp](https
 
 ## Important 
 
-As coqpilot is now in beta, moreover, sometimes has issues with correctly cleaning up the aux files (it will get better soon), it is recommended to make the following actions: 
+Coqpilot generates aux files with `_cp_aux.v` suffix. Sometimes when generation fails with exception, it is possible that such file will not be deleted. When a project is open, extension shall show a window that asks if you want to add such files to the local project gitignore. 
+
+Moreover, this repository contains a script for your convenience that adds the format of such files to the global gitignore file on your system.  
 - Copy the [`set_gitignore.sh`](https://github.com/K-dizzled/coqpilot/blob/main/set_gitignore.sh) file to your computer. Then: 
 ```bash 
 chmod +x set_gitignore.sh
