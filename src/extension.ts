@@ -160,6 +160,11 @@ export class Coqpilot implements Disposable {
             revealOutputChannelOn: RevealOutputChannelOn.Info,
             initializationOptions,
             markdown: { isTrusted: true, supportHtml: true },
+            middleware: {
+                handleDiagnostics: (uri, diagnostics, _next) => {
+                    logger.info(`Diagnostics received for file ${uri}: ${diagnostics.map((d) => d.message).join(", ")}`);
+                }
+            }
         };
 
         let cP = new Promise<BaseLanguageClient>((resolve) => {

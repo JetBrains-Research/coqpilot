@@ -286,9 +286,9 @@ export class ProofView implements ProofViewInterface, Disposable {
         this.client.sendNotification(SetTraceNotification.type, params);
     }
 
-    makeAuxfname(uri: Uri): Uri {
+    makeAuxfname(uri: Uri, unique: boolean = false): Uri {
         let auxFilePath = uri.fsPath.replace(/\.v$/, "_cp_aux.v");
-        if (existsSync(auxFilePath)) {
+        if (unique && existsSync(auxFilePath)) {
             const randomSuffix = Math.floor(Math.random() * 1000000);
             auxFilePath = auxFilePath.replace(/\_cp_aux.v$/, `_${randomSuffix}_cp_aux.v`);
         }
@@ -328,18 +328,22 @@ export class ProofView implements ProofViewInterface, Disposable {
     }
 
     async parseFile(editor: TextEditor): Promise<Theorem[]> {
-        const lineNum = editor.document.lineCount - 1;
-        const charNum = editor.document.lineAt(lineNum).text.length;
+        const uri = editor.document.uri;
         const text = editor.document.getText();
-        const pos = new VSPos(lineNum, charNum);
-        
-        const auxFile = this.makeAuxfname(editor.document.uri);
-        await this.copyAndOpenFile(editor.document.getText(), auxFile, pos);        
+        const lineNum = editor.document.lineCount - 1;
+        const params: DidOpenTextDocumentParams = {
+            textDocument: {
+                uri: uri.toString(),
+                languageId: "coq",
+                version: 1,
+                text: text,
+            }
+        };
 
-        const doc = await this.getFlecheDocument(auxFile);
+        await this.updateWithWait(DidOpenTextDocumentNotification.type, params, uri, lineNum);
+
+        const doc = await this.getFlecheDocument(uri);
         const fd = parseFleche(doc, text.split("\n"));
-
-        unlinkSync(auxFile.fsPath);
 
         return fd;
     }
