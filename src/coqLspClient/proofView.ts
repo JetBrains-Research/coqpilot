@@ -31,7 +31,6 @@ import {
     readFileSync, 
     openSync, 
     closeSync, 
-    existsSync,
     unlinkSync, 
     writeFileSync, 
     appendFileSync, 
@@ -54,7 +53,7 @@ import { parseFleche } from "./flecheDocUtils";
 import { StatusBarButton } from "../editor/enableButton";
 import logger from "../extension/logger";
 
-interface ProofViewInterface {
+export interface ProofViewInterface extends Disposable {
     /**
      * Calls coq-lsp at current cursor position to retrieve goals, 
      * formats them as an auxiliary theorem, and returns it.
@@ -87,6 +86,13 @@ interface ProofViewInterface {
      * @param editor The editor to parse
      */
     parseFile(editor: TextEditor): Promise<Theorem[]>;
+
+    /**
+     * Inserts the text into the file and calls an open file request to the server.
+     * @param docText The text to insert
+     * @param newUri The uri of the new file
+     */
+    copyAndOpenFile(docText: string, newUri: Uri): Promise<void>;
 }
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -99,7 +105,7 @@ const flecheDocReq = new RequestType<FlecheDocumentParams, FlecheDocument, void>
     "coq/getDocument"
   );
   
-export class ProofView implements ProofViewInterface, Disposable {
+export class ProofView implements ProofViewInterface {
     private client: BaseLanguageClient;
     private pendingProgress: boolean;
     private pendingDiagnostic: boolean;
@@ -286,28 +292,10 @@ export class ProofView implements ProofViewInterface, Disposable {
         this.client.sendNotification(SetTraceNotification.type, params);
     }
 
-    makeAuxfname(uri: Uri, unique: boolean = false): Uri {
-        let auxFilePath = uri.fsPath.replace(/\.v$/, "_cp_aux.v");
-        if (unique && existsSync(auxFilePath)) {
-            const randomSuffix = Math.floor(Math.random() * 1000000);
-            auxFilePath = auxFilePath.replace(/\_cp_aux.v$/, `_${randomSuffix}_cp_aux.v`);
-        }
-        
-        return Uri.file(auxFilePath);
-    }
-
-    async copyAndOpenFile(oldText: string, newUri: Uri, position: VSPos) {
-        // Get the text before the cursor
-        const oldTextBeforeCursorLines = oldText.split("\n").slice(0, position.line + 1);
-        oldTextBeforeCursorLines[position.line] = oldTextBeforeCursorLines[position.line].slice(0, position.character);
-        let docText = oldTextBeforeCursorLines.join("\n");
-
-        // TODO: Not needed anymore? 
-        // docText += " clear. ";
-
+    async copyAndOpenFile(docText: string, newUri: Uri) {
         const lineCount = docText.split("\n").length - 1;
 
-        // Open new one
+        // Open new file
         const fd = openSync(newUri.fsPath, "w");
         // Copy to it the contents of the old file
         writeFileSync(fd, docText);

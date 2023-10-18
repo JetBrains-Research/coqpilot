@@ -15,7 +15,7 @@ import {
 } from "vscode-languageclient";
 
 import { CoqLspServerConfig } from "./coqLspClient/config";
-import { ProofView } from "./coqLspClient/proofView";
+import { ProofView, ProofViewInterface } from "./coqLspClient/proofView";
 import { StatusBarButton } from "./editor/enableButton";
 import { LLMPrompt } from "./coqLlmInteraction/llmPromptInterface";
 import { CoqPromptKShot } from "./coqLlmInteraction/coqLlmPrompt";
@@ -25,6 +25,7 @@ import { Interactor, GenerationStatus } from "./coqLlmInteraction/interactor";
 import * as wm from "./editor/windowManager";
 import { VsCodeSpinningWheelProgressBar } from "./extension/vscodeProgressBar";
 import logger from "./extension/logger";
+import { makeAuxfname, getTextBeforePosition } from "./coqLspClient/utils";
 
 export type ClientFactoryType = (
     context: ExtensionContext,
@@ -36,8 +37,8 @@ export class Coqpilot implements Disposable {
 
     private readonly disposables: Disposable[] = [];
     private readonly context: ExtensionContext;
-    public client: BaseLanguageClient;
-    private proofView: ProofView;
+    // public client: BaseLanguageClient;
+    private proofView: ProofViewInterface;
     private statusItem: StatusBarButton;
     private clientFactory: ClientFactoryType;
     private llmPrompt: LLMPrompt | undefined;
@@ -46,12 +47,12 @@ export class Coqpilot implements Disposable {
 
     private constructor(
         context: ExtensionContext, 
-        clientFactory: ClientFactoryType
+        // clientFactory: ClientFactoryType
     ) {
         this.excludeAuxFiles();
 
         this.context = context;
-        this.clientFactory = clientFactory;
+        // this.clientFactory = clientFactory;
 
         const config = CoqpilotConfig.create(
             workspace.getConfiguration('coqpilot')
@@ -112,9 +113,9 @@ export class Coqpilot implements Disposable {
 
     static async init(
         context: ExtensionContext, 
-        clientFactory: ClientFactoryType, 
+        // clientFactory: ClientFactoryType, 
     ): Promise<Coqpilot> {
-        const coqpilot = new Coqpilot(context, clientFactory);
+        const coqpilot = new Coqpilot(context);
         await coqpilot.activateCoqLSP();
         await coqpilot.initialHistoryFetch(window.activeTextEditor);
         await wm.addAuxFilesToGitIgnore();
@@ -197,10 +198,11 @@ export class Coqpilot implements Disposable {
             wm.showClientNotRunningMessage(); return;
         }
 
-        const auxFile = this.proofView.makeAuxfname(editor.document.uri);
+        const auxFile = makeAuxfname(editor.document.uri);
         const cursorPos = editor.selection.active;
+        const textBeforePos = getTextBeforePosition(editor.document.getText(), cursorPos);
 
-        await this.proofView.copyAndOpenFile(editor.document.getText(), auxFile, cursorPos);
+        await this.proofView.copyAndOpenFile(textBeforePos, auxFile);
 
         const auxThr = await this.proofView.getAuxTheoremAtCurPosition(auxFile, 1, cursorPos);
         if (!auxThr) {
