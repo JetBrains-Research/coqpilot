@@ -1,7 +1,6 @@
 import {
     TextEditor,
     Uri,
-    Position as VSPos,
 } from "vscode";
 
 import {

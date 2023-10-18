@@ -2,7 +2,6 @@ import {
     commands,
     ExtensionContext,
     workspace,
-    WorkspaceConfiguration,
     Disposable,
     TextEditor,
     window,
@@ -10,11 +9,9 @@ import {
 
 import {
     BaseLanguageClient,
-    LanguageClientOptions,
-    RevealOutputChannelOn
 } from "vscode-languageclient";
 
-import { CoqLspServerConfig } from "./coqLspClient/config";
+import { CoqLspClient } from "./coqLspClient/coqLspClient";
 import { ProofView, ProofViewInterface } from "./coqLspClient/proofView";
 import { StatusBarButton } from "./editor/enableButton";
 import { LLMPrompt } from "./coqLlmInteraction/llmPromptInterface";
@@ -27,32 +24,22 @@ import { VsCodeSpinningWheelProgressBar } from "./extension/vscodeProgressBar";
 import logger from "./extension/logger";
 import { makeAuxfname, getTextBeforePosition } from "./coqLspClient/utils";
 
-export type ClientFactoryType = (
-    context: ExtensionContext,
-    clientOptions: LanguageClientOptions,
-    wsConfig: WorkspaceConfiguration
-) => BaseLanguageClient;
-
 export class Coqpilot implements Disposable {
 
     private readonly disposables: Disposable[] = [];
     private readonly context: ExtensionContext;
-    // public client: BaseLanguageClient;
+    public client: BaseLanguageClient;
     private proofView: ProofViewInterface;
     private statusItem: StatusBarButton;
-    private clientFactory: ClientFactoryType;
     private llmPrompt: LLMPrompt | undefined;
     private llm: LLMInterface; 
     private config: CoqpilotConfig;
 
     private constructor(
         context: ExtensionContext, 
-        // clientFactory: ClientFactoryType
     ) {
         this.excludeAuxFiles();
-
         this.context = context;
-        // this.clientFactory = clientFactory;
 
         const config = CoqpilotConfig.create(
             workspace.getConfiguration('coqpilot')
@@ -67,9 +54,6 @@ export class Coqpilot implements Disposable {
         this.disposables.push(this.textEditorChangeHook);
 
         this.registerCommand("toggle", this.toggleLspClient.bind(this));
-        this.registerCommand("coq-lsp.restart", this.restartLspClient.bind(this));
-        this.registerCommand("coq-lsp.stop", this.stopLspClient.bind(this));
-
         this.registerEditorCommand("init_history", this.initHistory.bind(this));
         this.registerEditorCommand("run_generation", this.runGeneration.bind(this));
 
@@ -112,11 +96,10 @@ export class Coqpilot implements Disposable {
     }
 
     static async init(
-        context: ExtensionContext, 
-        // clientFactory: ClientFactoryType, 
+        context: ExtensionContext
     ): Promise<Coqpilot> {
         const coqpilot = new Coqpilot(context);
-        await coqpilot.activateCoqLSP();
+        await coqpilot.initializeClient();
         await coqpilot.initialHistoryFetch(window.activeTextEditor);
         await wm.addAuxFilesToGitIgnore();
 
@@ -144,47 +127,14 @@ export class Coqpilot implements Disposable {
         this.llmPrompt = new CoqPromptKShot(thrs, this.config.maxNumberOfTokens);
     }
 
-    async activateCoqLSP() {
-        logger.info("Start Client");
-        if (this.client?.isRunning()) { 
-            return;
-        }
-    
+    async initializeClient() {
+        this.statusItem = new StatusBarButton();
         const wsConfig = workspace.getConfiguration("coqpilot");
-        const initializationOptions = CoqLspServerConfig.create();
+        this.client = new CoqLspClient(this.statusItem, wsConfig);
+        this.proofView = new ProofView(this.client, this.statusItem); 
 
-        const clientOptions: LanguageClientOptions = {
-            documentSelector: [
-                { scheme: "file", language: "coq" },
-                { scheme: "file", language: "markdown", pattern: "**/*.mv" },
-            ],
-            outputChannelName: "Coqpilot: coq-lsp events",
-            revealOutputChannelOn: RevealOutputChannelOn.Info,
-            initializationOptions,
-            markdown: { isTrusted: true, supportHtml: true },
-            middleware: {
-                handleDiagnostics: (uri, diagnostics, _next) => {
-                    logger.info(`Diagnostics received for file ${uri}: ${diagnostics.map((d) => d.message).join(", ")}`);
-                }
-            }
-        };
-
-        let cP = new Promise<BaseLanguageClient>((resolve) => {
-            this.client = this.clientFactory(this.context, clientOptions, wsConfig);
-            this.statusItem = new StatusBarButton();
-            this.proofView = new ProofView(this.client, this.statusItem);
-            resolve(this.client);
-        });
-
-        await cP.then((client) =>
-            client
-                .start()
-                .then(this.updateStatusBar)
-        ).catch((error) => {
-            let emsg = error.toString();
-            logger.info(`Error in coq-lsp start: ${emsg}`);
-            this.setFailedStatuBar(emsg);
-        });
+        logger.info("Client prepaired, starting");
+        await this.client.start();
     
         this.context.subscriptions.push(this.proofView);
     }
@@ -246,45 +196,13 @@ export class Coqpilot implements Disposable {
 
     }
 
-    private updateStatusBar = () => {
-        this.statusItem.updateClientStatus(this.client && this.client.isRunning());
-    };
-
-    private setFailedStatuBar = (emsg: string) => {
-        this.statusItem.setFailedStatus(emsg);
-    };
-
-    private stopLspClient() {
-        logger.info("Stop Client");
-        if (this.client && this.client.isRunning()) {
-            this.client
-                .dispose(2000)
-                .then(this.updateStatusBar)
-                .then(() => {
-                    this.proofView.dispose();
-                });
-        }
-    }
-
-    private toggleLspClient() {
+    toggleLspClient() {
         logger.info("Toggle Extension");
-        if (this.client && this.client.isRunning()) {
-            this.stopLspClient();
+        if (this.client?.isRunning()) {
+            this.client?.stop();
         } else {
-            this.activateCoqLSP();
+            this.client?.start();
         }
-    }
-
-    private restartLspClient() {
-        this.stopLspClient();
-        this.activateCoqLSP();
-    }
-
-    deactivateCoqLSP(): Thenable<void> | undefined {
-        if (!this.client) {
-            return undefined;
-        }
-        return this.client.stop();
     }
 
     excludeAuxFiles() {
@@ -300,6 +218,7 @@ export class Coqpilot implements Disposable {
 
     dispose() {
         wm.cleanAuxFiles();
+        this.client?.stop();
         this.disposables.forEach((d) => d.dispose());
     }   
 }
