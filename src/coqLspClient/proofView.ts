@@ -23,7 +23,7 @@ import {
     SetTraceNotification,
     SetTraceParams,
     Diagnostic,
-    TextDocumentIdentifier
+    TextDocumentIdentifier, 
 } from "vscode-languageclient";
 
 import { 
@@ -46,7 +46,7 @@ import {
 
 import { FileProgressManager } from "./progress";
 import { VsCodeProgressBar } from "../extension/vscodeProgressBar";
-// import { ProgressBar } from "../extension/progressBar";
+import { getTextBeforePosition, toVPosition } from "./utils";
 import { Theorem } from "../lib/pvTypes";
 import { parseFleche } from "./flecheDocUtils";
 import { StatusBarButton } from "../editor/enableButton";
@@ -56,18 +56,24 @@ export interface ProofViewInterface extends Disposable {
     /**
      * Calls coq-lsp at current cursor position to retrieve goals, 
      * formats them as an auxiliary theorem, and returns it.
-     * @param editor The editor to retrieve goals from
+     * IS RESPONSIBLE for opening the file located at `uri`. 
+     * IS NOT RESPONSIBLE for deleting the file located at `uri`.
+     * @param uri The uri of the aux document
+     * @param text The text in which request is issued
+     * @param position The position of the cursor
      * @returns The auxiliary theorem and the name of the theorem that hole is in
      */
     getAuxTheoremAtCurPosition(
         uri: Uri, 
-        version: number, 
+        text: string,
         position: Position
     ): Promise<[string, string] | undefined>;
 
     /**
      * Takes an array of `{ ${proofWithoutProofAndQed} }` strings, for each proof,
      * inserts it into the end of the file, and check for errors.
+     * IS NOT RESPONSIBLE for opening the file located at `uri`.
+     * IS RESPONSIBLE for deleting the file located at `uri` after the call.
      * @param uri The uri of the aux document
      * @param theoremsWithProofs The array of proofs
      * @returns An array of tuples, each tuple contains a boolean and an error message, if any.
@@ -83,15 +89,16 @@ export interface ProofViewInterface extends Disposable {
     /**
      * Parses the file and returns a list of theorems.
      * @param editor The editor to parse
+     * IS RESPONSIBLE for opening the file located at `uri`.
+     * IS NOT RESPONSIBLE for deleting the file located at `uri`.
      */
     parseFile(editor: TextEditor): Promise<Theorem[]>;
-
+    
     /**
-     * Inserts the text into the file and calls an open file request to the server.
-     * @param docText The text to insert
-     * @param newUri The uri of the new file
+     * Open the file at the given uri
+     * @param uri The uri of the document to open (send request to coq-lsp)
      */
-    copyAndOpenFile(docText: string, newUri: Uri): Promise<void>;
+    openFile(uri: Uri): Promise<void>;
 }
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -111,13 +118,11 @@ export class ProofView implements ProofViewInterface {
     private awaitedDiagnostic: Diagnostic[] | null;
     private subscriptions: Disposable[] = [];
     private fileProgress: FileProgressManager;
-    // private progressBar: ProgressBar;
 
     constructor(client: BaseLanguageClient, statusItem: StatusBarButton) {
         this.client = client;
         const progressBar = new VsCodeProgressBar(statusItem);
         this.fileProgress = new FileProgressManager(client, progressBar);
-        // this.progressBar = progressBar;
 
         //this.setTrace("verbose");
     }
@@ -140,7 +145,7 @@ export class ProofView implements ProofViewInterface {
         const doc = await this.client.sendRequest(flecheDocReq, params);
         
         return doc;
-  };
+    };
 
     getTheoremClosestToPosition(
         position: Position, 
@@ -173,13 +178,16 @@ export class ProofView implements ProofViewInterface {
 
     async getAuxTheoremAtCurPosition(
         uri: Uri, 
-        version: number, 
+        text: string,
         position: Position
     ): Promise<[string, string] | undefined> {
+        const textBeforePos = getTextBeforePosition(text, toVPosition(position));
+        await this.copyAndOpenFile(textBeforePos, uri);
+
         const goals = await this.client.sendRequest(goalReq, {
             textDocument: VersionedTextDocumentIdentifier.create(
                 uri.toString(),
-                version
+                1
             ),
             position,
             // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -291,7 +299,7 @@ export class ProofView implements ProofViewInterface {
         this.client.sendNotification(SetTraceNotification.type, params);
     }
 
-    async copyAndOpenFile(docText: string, newUri: Uri) {
+    private async copyAndOpenFile(docText: string, newUri: Uri) {
         const lineCount = docText.split("\n").length - 1;
 
         // Open new file
@@ -313,6 +321,23 @@ export class ProofView implements ProofViewInterface {
 
         await this.updateWithWait(DidOpenTextDocumentNotification.type, params, newUri, lineCount);
     }
+
+    async openFile(uri: Uri) {
+        const docText = readFileSync(uri.fsPath).toString();
+        const lineCount = docText.split("\n").length - 1;
+
+        const params: DidOpenTextDocumentParams = {
+            textDocument: {
+                uri: uri.toString(),
+                languageId: "coq",
+                version: 1,
+                text: docText
+            }
+        };
+
+        await this.updateWithWait(DidOpenTextDocumentNotification.type, params, uri, lineCount);
+    }
+
 
     async parseFile(editor: TextEditor): Promise<Theorem[]> {
         const uri = editor.document.uri;

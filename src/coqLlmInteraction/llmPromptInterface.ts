@@ -56,7 +56,7 @@ export class LlmPromptBase {
                        .replace(/Proof\./g, '')
                        .replace(/Qed\./g, '');
 
-        return `{ ${res} }`;
+        return ` { ${res} }`;
     };
 
     cleanFromBrackets = (str: string): string => {

@@ -22,7 +22,7 @@ import { Interactor, GenerationStatus } from "./coqLlmInteraction/interactor";
 import * as wm from "./editor/windowManager";
 import { VsCodeSpinningWheelProgressBar } from "./extension/vscodeProgressBar";
 import logger from "./extension/logger";
-import { makeAuxfname, getTextBeforePosition } from "./coqLspClient/utils";
+import { makeAuxfname } from "./coqLspClient/utils";
 
 export class Coqpilot implements Disposable {
 
@@ -150,11 +150,10 @@ export class Coqpilot implements Disposable {
 
         const auxFile = makeAuxfname(editor.document.uri);
         const cursorPos = editor.selection.active;
-        const textBeforePos = getTextBeforePosition(editor.document.getText(), cursorPos);
+        const auxThr = await this.proofView.getAuxTheoremAtCurPosition(
+            auxFile, editor.document.getText(), cursorPos
+        );
 
-        await this.proofView.copyAndOpenFile(textBeforePos, auxFile);
-
-        const auxThr = await this.proofView.getAuxTheoremAtCurPosition(auxFile, 1, cursorPos);
         if (!auxThr) {
             wm.showNoGoalMessage();
             return;

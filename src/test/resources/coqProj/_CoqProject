@@ -1,0 +1,5 @@
+-Q theories CP
+-arg -w -arg -notation-overridden
+
+theories/A.v
+theories/B.v

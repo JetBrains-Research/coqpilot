@@ -1,7 +1,11 @@
 import {
     Uri,
-    Position,
+    Position as VPosition,
 } from 'vscode';
+
+import {
+    Position,
+} from "vscode-languageclient";
 
 import {
     existsSync,
@@ -17,9 +21,13 @@ export function makeAuxfname(uri: Uri, unique: boolean = false): Uri {
     return Uri.file(auxFilePath);
 }
 
-export function getTextBeforePosition(text: string, position: Position): string {
+export function getTextBeforePosition(text: string, position: VPosition): string {
     // Get the text before the cursor
     const oldTextBeforeCursorLines = text.split("\n").slice(0, position.line + 1);
     oldTextBeforeCursorLines[position.line] = oldTextBeforeCursorLines[position.line].slice(0, position.character);
     return oldTextBeforeCursorLines.join("\n");
+}
+
+export function toVPosition(position: Position): VPosition {
+    return new VPosition(position.line, position.character);
 }

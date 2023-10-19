@@ -7,6 +7,7 @@ import {
 
 import { 
     WorkspaceConfiguration,
+    Uri
 } from "vscode";
 
 import logger from "../extension/logger";
@@ -16,9 +17,9 @@ import { StatusBarButton } from "../editor/enableButton";
 export class CoqLspClient extends LanguageClient {
     private statusItem: StatusBarButton;
 
-    constructor(statusItem: StatusBarButton, wsConfig: WorkspaceConfiguration) {
+    constructor(statusItem: StatusBarButton, wsConfig: WorkspaceConfiguration, path?: Uri) {
         const initializationOptions = CoqLspServerConfig.create();
-        const clientOptions: LanguageClientOptions = {
+        let clientOptions: LanguageClientOptions = {
             documentSelector: [
                 { scheme: "file", language: "coq" },
                 { scheme: "file", language: "markdown", pattern: "**/*.mv" },
@@ -33,6 +34,17 @@ export class CoqLspClient extends LanguageClient {
                 }
             }
         };
+
+        if (path) {
+            clientOptions = {
+                ...clientOptions, 
+                workspaceFolder: {
+                    uri: path,
+                    name: "name",
+                    index: 0,
+                },
+            };
+        }
 
         const serverOptions: ServerOptions = {
             command: "coq-lsp",
@@ -60,7 +72,7 @@ export class CoqLspClient extends LanguageClient {
             .catch((error) => {
                 let emsg = error.toString();
                 logger.info(`Error in coq-lsp start: ${emsg}`);
-                this.setFailedStatuBar(emsg);
+                this.setFailedStatusBar(emsg);
             });
     }
 
@@ -73,7 +85,7 @@ export class CoqLspClient extends LanguageClient {
         this.statusItem.updateClientStatus(this.isRunning());
     };
 
-    private setFailedStatuBar = (emsg: string) => {
+    private setFailedStatusBar = (emsg: string) => {
         this.statusItem.setFailedStatus(emsg);
     };
 

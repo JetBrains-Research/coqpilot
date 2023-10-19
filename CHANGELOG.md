@@ -2,6 +2,8 @@
 
 ### 1.3.1
 - Test coverage increased.
+- Refactoring client and ProofView.  
+- Set up CI. 
 
 ### 1.3.0
 - Fix bug while parsing regarding the updated Fleche doc structure in coq-lsp 0.1.7.
