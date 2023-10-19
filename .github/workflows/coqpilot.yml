@@ -10,7 +10,7 @@ jobs:
   build: 
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [macos-latest, ubuntu-latest]
         ocaml-compiler:
           - "4.14"
     runs-on: ${{ matrix.os }}
@@ -24,10 +24,14 @@ jobs:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
         
     - name: Install opam dependencies
+      env:
+          OPAMYES: true
       run: |
-        opam init --disable-sandboxing --yes
-        eval $(opam env)
         opam install coq-lsp.0.1.7+8.18
+        eval $(opam env)
+    
+    - name: Opam eval 
+      run: eval $(opam env)
 
     - name: Install Node.js
       uses: actions/setup-node@v3
