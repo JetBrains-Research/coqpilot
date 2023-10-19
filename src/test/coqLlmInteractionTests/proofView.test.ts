@@ -107,6 +107,7 @@ suite('ProofView auxTheorem tests', () => {
             }
 
             unlinkSync(auxFile.fsPath);
+            client.stop();
         }
     }).timeout(5000);
 });
@@ -190,6 +191,8 @@ suite('ProofView checkTheorems tests', () => {
                 assert.strictEqual(res[i][0], verdicts[i][0]);
                 assert.strictEqual(res[i][1], verdicts[i][1]);
             }
+
+            client.stop();
         }
     }).timeout(5000);
 });
@@ -314,6 +317,8 @@ suite('ProofView parseFile tests', () => {
                 assert.strictEqual(thrRes.proof.onlyText(), theorem.proof);
                 assert.ok(rangesEqual(thrRes.statement_range, theorem.statementRange));
             }
+
+            client.stop();
         }
     }).timeout(5000);
 });

@@ -13,6 +13,18 @@ jobs:
         os: [macos-latest, ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
+    - name: Use OCaml ${{ matrix.ocaml-compiler }}
+      uses: avsm/setup-ocaml@v2
+      with:
+        ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+    - name: Install vscoq-language-server
+      env:
+        OPAMYES: true
+      run: |
+        opam repo add coq-core-dev https://coq.inria.fr/opam/core-dev
+        opam pin add coq-lsp 0.1.7+8.18
+        opam install coq-lsp
     - name: Checkout
       uses: actions/checkout@v3
     - name: Install Node.js
