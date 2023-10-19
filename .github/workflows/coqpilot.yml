@@ -13,23 +13,29 @@ jobs:
         os: [macos-latest, ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-    - name: Setup OCaml
-      uses: avsm/setup-ocaml@v2
+    - name: Checkout tree
+      uses: actions/checkout@v4
+
+    - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
+      uses: ocaml/setup-ocaml@v2
       with:
-        ocaml-version: 4.13.0
+        ocaml-compiler: ${{ matrix.ocaml-compiler }}
+        
     - name: Install opam dependencies
       run: |
         opam init --disable-sandboxing --yes
         eval $(opam env)
         opam install coq-lsp.0.1.7+8.18
-    - name: Checkout
-      uses: actions/checkout@v3
+
     - name: Install Node.js
       uses: actions/setup-node@v3
       with:
         node-version: 16.x
+
     - run: npm install
+
     - run: xvfb-run -a npm test
       if: runner.os == 'Linux'
+      
     - run: npm test
       if: runner.os != 'Linux'
