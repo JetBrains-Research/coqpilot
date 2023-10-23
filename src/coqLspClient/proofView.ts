@@ -24,6 +24,8 @@ import {
     SetTraceParams,
     Diagnostic,
     TextDocumentIdentifier, 
+    DidCloseTextDocumentNotification,
+    DidCloseTextDocumentParams,
 } from "vscode-languageclient";
 
 import { 
@@ -51,6 +53,7 @@ import { Theorem } from "../lib/pvTypes";
 import { parseFleche } from "./flecheDocUtils";
 import { StatusBarButton } from "../editor/enableButton";
 import logger from "../extension/logger";
+import { NotificationService } from "./timeoutService";
 
 export interface ProofViewInterface extends Disposable {
     /**
@@ -99,6 +102,12 @@ export interface ProofViewInterface extends Disposable {
      * @param uri The uri of the document to open (send request to coq-lsp)
      */
     openFile(uri: Uri): Promise<void>;
+
+    /**
+     * Close the file at the given uri
+     * @param uri The uri of the document to close (send request to coq-lsp)
+     */
+    closeFile(uri: Uri): Promise<void>;
 }
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -246,7 +255,21 @@ export class ProofView implements ProofViewInterface {
 
         this.fileProgress.subscribeForUpdates(uri.toString(), lineNum);
 
+        const timer = new NotificationService(() => {
+            this.pendingProgress = false;
+            this.pendingDiagnostic = false;
+            this.awaitedDiagnostic = [
+                {
+                    range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
+                    message: "Wierd coq-lsp bug. Please report an issue with remark 'coq-lsp no diag'.",
+                    severity: 1,
+                }
+            ];
+        });
+
+        this.subscriptions.push(timer);
         this.subscriptions.push(this.client.onNotification(LogTraceNotification.type, (params) => {
+            timer.onNotificationReceived();
             if (params.message.includes("document fully checked") && params.message.includes(`l: ${lineNum}`)) {
                 this.pendingProgress = false;
             }
@@ -338,6 +361,15 @@ export class ProofView implements ProofViewInterface {
         await this.updateWithWait(DidOpenTextDocumentNotification.type, params, uri, lineCount);
     }
 
+    async closeFile(uri: Uri) {
+        const params: DidCloseTextDocumentParams = {
+            textDocument: {
+                uri: uri.toString(),
+            }
+        };
+
+        await this.client.sendNotification(DidCloseTextDocumentNotification.type, params);
+    }
 
     async parseFile(editor: TextEditor): Promise<Theorem[]> {
         const uri = editor.document.uri;
@@ -437,7 +469,6 @@ export class ProofView implements ProofViewInterface {
     }
 
     dispose(): void {
-        this.client.dispose();
         this.subscriptions.forEach((d) => d.dispose());
     }
 }

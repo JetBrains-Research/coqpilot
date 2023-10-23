@@ -117,6 +117,10 @@ export function cleanAuxFiles() {
 export async function addAuxFilesToGitIgnore() {
     const workspaceFolders = vscode.workspace.workspaceFolders;
 
+    if (!workspaceFolders) {
+        return;
+    }
+
     for (const folder of workspaceFolders) {
         const gitIgnorePath = path.join(folder.uri.fsPath, '.gitignore');
         if (!fs.existsSync(gitIgnorePath)) {

@@ -199,8 +199,12 @@ export class Coqpilot implements Disposable {
         logger.info("Toggle Extension");
         if (this.client?.isRunning()) {
             this.client?.stop();
+            this.client?.dispose();
+            this.proofView?.dispose();
         } else {
             this.client?.start();
+            this.proofView = new ProofView(this.client, this.statusItem);
+            this.context.subscriptions.push(this.proofView);
         }
     }
 
