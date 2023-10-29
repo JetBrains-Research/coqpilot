@@ -53,7 +53,6 @@ import { Theorem } from "../lib/pvTypes";
 import { parseFleche } from "./flecheDocUtils";
 import { StatusBarButton } from "../editor/enableButton";
 import logger from "../extension/logger";
-// import { NotificationService } from "./timeoutService";
 
 export interface ProofViewInterface extends Disposable {
     /**
@@ -205,7 +204,6 @@ export class ProofView implements ProofViewInterface {
         
         const goal = goals?.goals?.goals?.shift() ?? undefined;
         if (!goal) {
-            console.log("DEBUG ", "No goal found");
             return undefined;
         }
 
@@ -214,7 +212,6 @@ export class ProofView implements ProofViewInterface {
         const coqDoc = await this.getDocument(uri);
         const res = this.getTheoremClosestToPosition(position, coqDoc as DocumentSymbol[]); 
         if (!res) {
-            console.log("DEBUG ", "No theorem found");
             return undefined;
         }
 
