@@ -26,11 +26,13 @@ import * as path from 'path';
 import * as assert from 'assert';
 import { makeAuxfname } from '../../coqLspClient/utils';
 import * as common from '../common';
+import { CoqpilotConfig } from "../../extension/config";
 
 suite('ProofView auxTheorem tests', () => {
     const statusItem = new StatusBarButton();
     const wsConfig = workspace.getConfiguration("coqpilot");
     const dirname = path.dirname(path.dirname(path.dirname(__dirname)));
+    const extensionConfig = common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig));
 
     interface TestData {
         fileRoot: string,
@@ -92,7 +94,7 @@ suite('ProofView auxTheorem tests', () => {
             const auxFile = makeAuxfname(uri);
             const rootUri = fileRoot ? Uri.file(fileRoot) : undefined;
 
-            const client = new CoqLspClient(statusItem, wsConfig, rootUri);
+            const client = new CoqLspClient(statusItem, wsConfig, extensionConfig, rootUri);
             await client.start();
             const proofView = new ProofView(client, statusItem); 
 
@@ -117,6 +119,7 @@ suite('ProofView checkTheorems tests', () => {
     const statusItem = new StatusBarButton();
     const wsConfig = workspace.getConfiguration("coqpilot");
     const dirname = path.dirname(path.dirname(path.dirname(__dirname)));
+    const extensionConfig = common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig));
 
     interface TestData {
         context: string, 
@@ -180,7 +183,7 @@ suite('ProofView checkTheorems tests', () => {
             const { context, filePath, proofs, verdicts } = data;
             writeFileSync(filePath, context);
 
-            const client = new CoqLspClient(statusItem, wsConfig);
+            const client = new CoqLspClient(statusItem, wsConfig, extensionConfig);
             await client.start();
             const proofView = new ProofView(client, statusItem); 
             await proofView.openFile(Uri.file(filePath));
@@ -201,6 +204,7 @@ suite('ProofView parseFile tests', () => {
     const statusItem = new StatusBarButton();
     const wsConfig = workspace.getConfiguration("coqpilot");
     const dirname = path.dirname(path.dirname(path.dirname(__dirname)));
+    const extensionConfig = common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig));
 
     interface TheoremData {
         statementRange: Range, 
@@ -298,7 +302,7 @@ suite('ProofView parseFile tests', () => {
             const rootUri = fileRoot ? Uri.file(fileRoot) : undefined;
             await common.openTextFile(uri);
 
-            const client = new CoqLspClient(statusItem, wsConfig, rootUri);
+            const client = new CoqLspClient(statusItem, wsConfig, extensionConfig, rootUri);
             await client.start();
             const proofView = new ProofView(client, statusItem); 
 

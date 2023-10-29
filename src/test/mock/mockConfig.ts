@@ -10,8 +10,9 @@ export function mockConfig(): CoqpilotConfig {
         gptModel: OtherModels.MOCK, 
         parseFileOnInit: false,
         parseFileOnEditorChange: false,
+        coqLspPath: "coq-lsp"
     };
-} 
+}
 
 export function mockConfigRealGpt(apikey: string): CoqpilotConfig {
     return {
@@ -23,5 +24,6 @@ export function mockConfigRealGpt(apikey: string): CoqpilotConfig {
         gptModel: GptModel.GPT35,
         parseFileOnInit: false,
         parseFileOnEditorChange: false,
+        coqLspPath: "coq-lsp"
     };
 }

@@ -13,11 +13,17 @@ import {
 import logger from "../extension/logger";
 import { CoqLspServerConfig } from "./config";
 import { StatusBarButton } from "../editor/enableButton";
+import { CoqpilotConfig } from "../extension/config";
 
 export class CoqLspClient extends LanguageClient {
     private statusItem: StatusBarButton;
 
-    constructor(statusItem: StatusBarButton, wsConfig: WorkspaceConfiguration, path?: Uri) {
+    constructor(
+        statusItem: StatusBarButton, 
+        wsConfig: WorkspaceConfiguration, 
+        extensionConfig: CoqpilotConfig,
+        path?: Uri
+    ) {
         const initializationOptions = CoqLspServerConfig.create();
         let clientOptions: LanguageClientOptions = {
             documentSelector: [
@@ -47,12 +53,12 @@ export class CoqLspClient extends LanguageClient {
         }
 
         const serverOptions: ServerOptions = {
-            command: "coq-lsp",
+            command: extensionConfig.coqLspPath,
             args: wsConfig.args,
         };
 
         super(
-            "coq-lsp",
+            extensionConfig.coqLspPath,
             "Coq LSP Server",
             serverOptions,
             clientOptions

@@ -45,19 +45,25 @@ jobs:
           OPAMYES: true
       run: |
         opam list coq-lsp
+        which coq-lsp
       
     - name: Check if coq-lsp is in PATH 
       run: |
-        which coq-lsp
         if ! command -v coq-lsp &> /dev/null
         then
             echo "coq-lsp could not be found"
-            exit 1
         fi
+        echo "coqlsppath=`which coq-lsp`" >> $GITHUB_ENV
       shell: bash
 
-    - run: xvfb-run -a npm test
+    - name: Test on Linux
+      env:
+          COQ_LSP_PATH: ${{ env.coqlsppath }}
+      run: xvfb-run -a npm test
       if: runner.os == 'Linux'
 
-    - run: npm test
+    - name: Test not on Linux
+      env:
+          COQ_LSP_PATH: ${{ env.coqlsppath }}
+      run: npm test
       if: runner.os != 'Linux'

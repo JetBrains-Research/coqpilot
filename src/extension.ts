@@ -130,7 +130,7 @@ export class Coqpilot implements Disposable {
     async initializeClient() {
         this.statusItem = new StatusBarButton();
         const wsConfig = workspace.getConfiguration("coqpilot");
-        this.client = new CoqLspClient(this.statusItem, wsConfig);
+        this.client = new CoqLspClient(this.statusItem, wsConfig, this.config);
         this.proofView = new ProofView(this.client, this.statusItem); 
 
         logger.info("Client prepaired, starting");

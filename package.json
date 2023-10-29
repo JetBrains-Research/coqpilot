@@ -124,6 +124,11 @@
             },
             "default": [],
             "markdownDescription": "NOT IMPLEMENTED YET. A list of tactics that would also be used to try generating proofs. Commands in the list must be valid coq commands available in your environment and must finish with a dot."
+          },
+          "coqpilot.coqLspPath": {
+            "type": "string",
+            "default": "coq-lsp",
+            "markdownDescription": "Path to the coq-lsp binary, by default, search in PATH."
           }
         }
       }
