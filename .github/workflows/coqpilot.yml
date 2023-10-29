@@ -10,7 +10,7 @@ jobs:
   build: 
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [macos-latest]
         ocaml-compiler:
           - "4.14"
     runs-on: ${{ matrix.os }}
