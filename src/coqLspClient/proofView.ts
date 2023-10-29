@@ -1,7 +1,6 @@
 import {
     TextEditor,
     Uri,
-    Position as VSPos,
 } from "vscode";
 
 import {
@@ -24,14 +23,15 @@ import {
     SetTraceNotification,
     SetTraceParams,
     Diagnostic,
-    TextDocumentIdentifier
+    TextDocumentIdentifier, 
+    DidCloseTextDocumentNotification,
+    DidCloseTextDocumentParams,
 } from "vscode-languageclient";
 
 import { 
     readFileSync, 
     openSync, 
     closeSync, 
-    existsSync,
     unlinkSync, 
     writeFileSync, 
     appendFileSync, 
@@ -48,28 +48,34 @@ import {
 
 import { FileProgressManager } from "./progress";
 import { VsCodeProgressBar } from "../extension/vscodeProgressBar";
-// import { ProgressBar } from "../extension/progressBar";
+import { getTextBeforePosition, toVPosition } from "./utils";
 import { Theorem } from "../lib/pvTypes";
 import { parseFleche } from "./flecheDocUtils";
 import { StatusBarButton } from "../editor/enableButton";
 import logger from "../extension/logger";
 
-interface ProofViewInterface {
+export interface ProofViewInterface extends Disposable {
     /**
      * Calls coq-lsp at current cursor position to retrieve goals, 
      * formats them as an auxiliary theorem, and returns it.
-     * @param editor The editor to retrieve goals from
+     * IS RESPONSIBLE for opening the file located at `uri`. 
+     * IS NOT RESPONSIBLE for deleting the file located at `uri`.
+     * @param uri The uri of the aux document
+     * @param text The text in which request is issued
+     * @param position The position of the cursor
      * @returns The auxiliary theorem and the name of the theorem that hole is in
      */
     getAuxTheoremAtCurPosition(
         uri: Uri, 
-        version: number, 
+        text: string,
         position: Position
     ): Promise<[string, string] | undefined>;
 
     /**
      * Takes an array of `{ ${proofWithoutProofAndQed} }` strings, for each proof,
      * inserts it into the end of the file, and check for errors.
+     * IS NOT RESPONSIBLE for opening the file located at `uri`.
+     * IS RESPONSIBLE for deleting the file located at `uri` after the call.
      * @param uri The uri of the aux document
      * @param theoremsWithProofs The array of proofs
      * @returns An array of tuples, each tuple contains a boolean and an error message, if any.
@@ -85,8 +91,22 @@ interface ProofViewInterface {
     /**
      * Parses the file and returns a list of theorems.
      * @param editor The editor to parse
+     * IS RESPONSIBLE for opening the file located at `uri`.
+     * IS NOT RESPONSIBLE for deleting the file located at `uri`.
      */
     parseFile(editor: TextEditor): Promise<Theorem[]>;
+    
+    /**
+     * Open the file at the given uri
+     * @param uri The uri of the document to open (send request to coq-lsp)
+     */
+    openFile(uri: Uri): Promise<void>;
+
+    /**
+     * Close the file at the given uri
+     * @param uri The uri of the document to close (send request to coq-lsp)
+     */
+    closeFile(uri: Uri): Promise<void>;
 }
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -99,20 +119,18 @@ const flecheDocReq = new RequestType<FlecheDocumentParams, FlecheDocument, void>
     "coq/getDocument"
   );
   
-export class ProofView implements ProofViewInterface, Disposable {
+export class ProofView implements ProofViewInterface {
     private client: BaseLanguageClient;
     private pendingProgress: boolean;
     private pendingDiagnostic: boolean;
     private awaitedDiagnostic: Diagnostic[] | null;
     private subscriptions: Disposable[] = [];
     private fileProgress: FileProgressManager;
-    // private progressBar: ProgressBar;
 
     constructor(client: BaseLanguageClient, statusItem: StatusBarButton) {
         this.client = client;
         const progressBar = new VsCodeProgressBar(statusItem);
         this.fileProgress = new FileProgressManager(client, progressBar);
-        // this.progressBar = progressBar;
 
         //this.setTrace("verbose");
     }
@@ -135,7 +153,7 @@ export class ProofView implements ProofViewInterface, Disposable {
         const doc = await this.client.sendRequest(flecheDocReq, params);
         
         return doc;
-  };
+    };
 
     getTheoremClosestToPosition(
         position: Position, 
@@ -168,13 +186,16 @@ export class ProofView implements ProofViewInterface, Disposable {
 
     async getAuxTheoremAtCurPosition(
         uri: Uri, 
-        version: number, 
+        text: string,
         position: Position
     ): Promise<[string, string] | undefined> {
+        const textBeforePos = getTextBeforePosition(text, toVPosition(position));
+        await this.copyAndOpenFile(textBeforePos, uri);
+
         const goals = await this.client.sendRequest(goalReq, {
             textDocument: VersionedTextDocumentIdentifier.create(
                 uri.toString(),
-                version
+                1
             ),
             position,
             // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -224,6 +245,7 @@ export class ProofView implements ProofViewInterface, Disposable {
         uri: Uri,
         lineNum: number,
         timeout: number = 50000,
+        oldLineCount: number | null = null
     ): Promise<Diagnostic[]> {
         await this.client.sendNotification(requestType, params);
 
@@ -232,7 +254,6 @@ export class ProofView implements ProofViewInterface, Disposable {
         this.awaitedDiagnostic = null;
 
         this.fileProgress.subscribeForUpdates(uri.toString(), lineNum);
-
         this.subscriptions.push(this.client.onNotification(LogTraceNotification.type, (params) => {
             if (params.message.includes("document fully checked") && params.message.includes(`l: ${lineNum}`)) {
                 this.pendingProgress = false;
@@ -243,6 +264,19 @@ export class ProofView implements ProofViewInterface, Disposable {
             if (params.uri.toString() === uri.toString()) {
                 this.pendingDiagnostic = false;
                 this.awaitedDiagnostic = params.diagnostics;
+                // I discovered that sometimes coq-lsp breaks when recieves an 
+                // incorrectly nested proof, e.g. when inside curly braces we start adding 
+                // multiple '-' characters to enumerate goals (whilst there is just one goal), 
+                // coq-lsp breaks and stops serving fileProgress process. Such proofs are obviously incorrect
+                // and we want to reject them. In such cases, coq-lsp sends a publishDiagnostics notification
+                // with errors intil some Point, and then, if the proof continues and it is 
+                // depply incorrect, something happens and coq-lsp breaks. As a workaround,
+                // as we are interested only in the first error occured in the generated proof, 
+                // we check if the last error is after the last line of the original document 
+                // (before the TextDocumentChange request was issued). 
+                if (oldLineCount && this.filterDiagnostics(params.diagnostics, { line: oldLineCount, character: 0 }) !== null) {
+                    this.pendingProgress = false;
+                }
             }
         }));
 
@@ -252,7 +286,7 @@ export class ProofView implements ProofViewInterface, Disposable {
         }
 
         if (
-            timeout <= 0 || 
+            timeout <= 0 ||
             this.pendingProgress || 
             this.pendingDiagnostic || 
             this.awaitedDiagnostic === null
@@ -286,28 +320,10 @@ export class ProofView implements ProofViewInterface, Disposable {
         this.client.sendNotification(SetTraceNotification.type, params);
     }
 
-    makeAuxfname(uri: Uri, unique: boolean = false): Uri {
-        let auxFilePath = uri.fsPath.replace(/\.v$/, "_cp_aux.v");
-        if (unique && existsSync(auxFilePath)) {
-            const randomSuffix = Math.floor(Math.random() * 1000000);
-            auxFilePath = auxFilePath.replace(/\_cp_aux.v$/, `_${randomSuffix}_cp_aux.v`);
-        }
-        
-        return Uri.file(auxFilePath);
-    }
-
-    async copyAndOpenFile(oldText: string, newUri: Uri, position: VSPos) {
-        // Get the text before the cursor
-        const oldTextBeforeCursorLines = oldText.split("\n").slice(0, position.line + 1);
-        oldTextBeforeCursorLines[position.line] = oldTextBeforeCursorLines[position.line].slice(0, position.character);
-        let docText = oldTextBeforeCursorLines.join("\n");
-
-        // TODO: Not needed anymore? 
-        // docText += " clear. ";
-
+    private async copyAndOpenFile(docText: string, newUri: Uri) {
         const lineCount = docText.split("\n").length - 1;
 
-        // Open new one
+        // Open new file
         const fd = openSync(newUri.fsPath, "w");
         // Copy to it the contents of the old file
         writeFileSync(fd, docText);
@@ -325,6 +341,32 @@ export class ProofView implements ProofViewInterface, Disposable {
         };
 
         await this.updateWithWait(DidOpenTextDocumentNotification.type, params, newUri, lineCount);
+    }
+
+    async openFile(uri: Uri) {
+        const docText = readFileSync(uri.fsPath).toString();
+        const lineCount = docText.split("\n").length - 1;
+
+        const params: DidOpenTextDocumentParams = {
+            textDocument: {
+                uri: uri.toString(),
+                languageId: "coq",
+                version: 1,
+                text: docText
+            }
+        };
+
+        await this.updateWithWait(DidOpenTextDocumentNotification.type, params, uri, lineCount);
+    }
+
+    async closeFile(uri: Uri) {
+        const params: DidCloseTextDocumentParams = {
+            textDocument: {
+                uri: uri.toString(),
+            }
+        };
+
+        await this.client.sendNotification(DidCloseTextDocumentNotification.type, params);
     }
 
     async parseFile(editor: TextEditor): Promise<Theorem[]> {
@@ -400,7 +442,10 @@ export class ProofView implements ProofViewInterface, Disposable {
             const newLineNum = newText.split("\n").length - 1;
 
             logger.info("Started typechecking proof: " + proof);
-            const diags = await this.updateWithWait(DidChangeTextDocumentNotification.type, params, uri, newLineNum);
+            const diags = await this.updateWithWait(
+                DidChangeTextDocumentNotification.type, 
+                params, uri, newLineNum, 50000, lineNumContext
+            );
             logger.info("Finished typechecking proof");
 
             // Filter diagnostics by the line number of the context
@@ -425,7 +470,6 @@ export class ProofView implements ProofViewInterface, Disposable {
     }
 
     dispose(): void {
-        this.client.dispose();
         this.subscriptions.forEach((d) => d.dispose());
     }
 }

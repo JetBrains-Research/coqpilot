@@ -67,7 +67,6 @@ export class GenerationResult<T> {
                 return `Search failed`;
         }
     }
-
 }
 
 export class Interactor {

@@ -1,0 +1,71 @@
+name: Build and Test
+
+on: 
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build: 
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        ocaml-compiler:
+          - "4.14"
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Checkout tree
+      uses: actions/checkout@v4
+
+    - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
+      uses: ocaml/setup-ocaml@v2
+      with:
+        ocaml-compiler: ${{ matrix.ocaml-compiler }}
+        
+    - name: Install opam dependencies
+      env:
+          OPAMYES: true
+      run: |
+        opam install coq-lsp.0.1.7+8.18
+        eval $(opam env)
+    
+    - name: Opam eval 
+      run: eval $(opam env)
+
+    - name: Install Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16.x
+
+    - run: npm ci
+
+    - name: Check coq-lsp version
+      env:
+          OPAMYES: true
+      run: |
+        opam list coq-lsp
+        eval $(opam env)
+        which coq-lsp
+      
+    - name: Check if coq-lsp is in PATH 
+      run: |
+        eval $(opam env)
+        if ! command -v coq-lsp &> /dev/null
+        then
+            echo "coq-lsp could not be found"
+        fi
+        echo "coqlsppath=`which coq-lsp`" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Test on Linux
+      env:
+          COQ_LSP_PATH: ${{ env.coqlsppath }}
+      run: xvfb-run -a npm test
+      if: runner.os == 'Linux'
+
+    - name: Test not on Linux
+      env:
+          COQ_LSP_PATH: ${{ env.coqlsppath }}
+      run: npm test
+      if: runner.os != 'Linux'

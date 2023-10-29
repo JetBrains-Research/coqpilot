@@ -52,7 +52,7 @@ export class GPT35 implements LLMInterface {
                 if (attempts === 0) {
                     throw e;
                 } else {
-                    logger.info("Request to open-ai failed with error " + e + "Retrying..."); 
+                    logger.info("Request to open-ai failed with error '" + e + "' Retrying..."); 
                     continue;
                 }
             }

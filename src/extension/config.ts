@@ -11,6 +11,7 @@ export interface CoqpilotConfig {
     gptModel: string;
     parseFileOnEditorChange: boolean;
     parseFileOnInit: boolean;
+    coqLspPath: string;
 }
 
 export namespace CoqpilotConfig {
@@ -26,7 +27,8 @@ export namespace CoqpilotConfig {
                 logFolderPath: wsConfig.logFolderPath === "None" ? null : wsConfig.logFolderPath,
                 gptModel: wsConfig.gptModel,
                 parseFileOnEditorChange: wsConfig.parseFileOnEditorChange,
-                parseFileOnInit: wsConfig.parseFileOnInit
+                parseFileOnInit: wsConfig.parseFileOnInit, 
+                coqLspPath: wsConfig.coqLspPath
             };
         } catch (error) {
             console.error(error);

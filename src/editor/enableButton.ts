@@ -6,12 +6,21 @@ import {
     Disposable
 } from "vscode";
 
+/* eslint-disable @typescript-eslint/naming-convention */
+export enum StatusBarState {
+    Activating,
+    Running,
+    Failed,
+    Stopped
+}
+/* eslint-enable @typescript-eslint/naming-convention */
+
 export class StatusBarButton implements Disposable {
     private item: StatusBarItem;
-    private running: boolean;
+    private status: StatusBarState;
 
-    get isRunning(): boolean {
-        return this.running;
+    get runStatus(): StatusBarState {
+        return this.status;
     }
 
     constructor() {
@@ -22,7 +31,7 @@ export class StatusBarButton implements Disposable {
         );
         this.item.command = "coqpilot.toggle";
         this.item.text = "coqpilot (activating)";
-        this.running = false;
+        this.status = StatusBarState.Activating;
         this.item.show();
     }
 
@@ -31,14 +40,14 @@ export class StatusBarButton implements Disposable {
             this.item.text = "$(check) coqpilot";
             this.item.backgroundColor = undefined;
             this.item.tooltip = "coqpilot is running. Click to disable.";
-            this.running = true;
+            this.status = StatusBarState.Running;
         } else {
             this.item.text = "$(circle-slash) coqpilot (stopped)";
             this.item.backgroundColor = new ThemeColor(
                 "statusBarItem.warningBackground"
             );
             this.item.tooltip = "coqpilot has been disabled. Click to enable.";
-            this.running = false;
+            this.status = StatusBarState.Stopped;
         }
     }
 
@@ -56,7 +65,7 @@ export class StatusBarButton implements Disposable {
             "statusBarItem.errorBackground"
         );
         this.item.tooltip = `coqpilot couldn't start: ${emsg} Click to retry.`;
-        this.running = false;
+        this.status = StatusBarState.Failed;
     }
 
     dispose() {
