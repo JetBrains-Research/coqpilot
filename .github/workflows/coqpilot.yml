@@ -40,6 +40,22 @@ jobs:
 
     - run: npm ci
 
+    - name: Check coq-lsp version
+      env:
+          OPAMYES: true
+      run: |
+        opam list coq-lsp
+      
+    - name: Check if coq-lsp is in PATH 
+      run: |
+        which coq-lsp
+        if ! command -v coq-lsp &> /dev/null
+        then
+            echo "coq-lsp could not be found"
+            exit 1
+        fi
+      shell: bash
+
     - run: xvfb-run -a npm test
       if: runner.os == 'Linux'
 

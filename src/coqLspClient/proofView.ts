@@ -53,7 +53,7 @@ import { Theorem } from "../lib/pvTypes";
 import { parseFleche } from "./flecheDocUtils";
 import { StatusBarButton } from "../editor/enableButton";
 import logger from "../extension/logger";
-import { NotificationService } from "./timeoutService";
+// import { NotificationService } from "./timeoutService";
 
 export interface ProofViewInterface extends Disposable {
     /**
@@ -246,6 +246,7 @@ export class ProofView implements ProofViewInterface {
         uri: Uri,
         lineNum: number,
         timeout: number = 50000,
+        oldLineCount: number | null = null
     ): Promise<Diagnostic[]> {
         await this.client.sendNotification(requestType, params);
 
@@ -254,22 +255,7 @@ export class ProofView implements ProofViewInterface {
         this.awaitedDiagnostic = null;
 
         this.fileProgress.subscribeForUpdates(uri.toString(), lineNum);
-
-        const timer = new NotificationService(() => {
-            this.pendingProgress = false;
-            this.pendingDiagnostic = false;
-            this.awaitedDiagnostic = [
-                {
-                    range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
-                    message: "Wierd coq-lsp bug. Please report an issue with remark 'coq-lsp no diag'.",
-                    severity: 1,
-                }
-            ];
-        });
-
-        this.subscriptions.push(timer);
         this.subscriptions.push(this.client.onNotification(LogTraceNotification.type, (params) => {
-            timer.onNotificationReceived();
             if (params.message.includes("document fully checked") && params.message.includes(`l: ${lineNum}`)) {
                 this.pendingProgress = false;
             }
@@ -279,6 +265,19 @@ export class ProofView implements ProofViewInterface {
             if (params.uri.toString() === uri.toString()) {
                 this.pendingDiagnostic = false;
                 this.awaitedDiagnostic = params.diagnostics;
+                // I discovered that sometimes coq-lsp breaks when recieves an 
+                // incorrectly nested proof, e.g. when inside curly braces we start adding 
+                // multiple '-' characters to enumerate goals (whilst there is just one goal), 
+                // coq-lsp breaks and stops serving fileProgress process. Such proofs are obviously incorrect
+                // and we want to reject them. In such cases, coq-lsp sends a publishDiagnostics notification
+                // with errors intil some Point, and then, if the proof continues and it is 
+                // depply incorrect, something happens and coq-lsp breaks. As a workaround,
+                // as we are interested only in the first error occured in the generated proof, 
+                // we check if the last error is after the last line of the original document 
+                // (before the TextDocumentChange request was issued). 
+                if (oldLineCount && this.filterDiagnostics(params.diagnostics, { line: oldLineCount, character: 0 }) !== null) {
+                    this.pendingProgress = false;
+                }
             }
         }));
 
@@ -288,7 +287,6 @@ export class ProofView implements ProofViewInterface {
         }
 
         if (
-            timeout <= 0 || 
             this.pendingProgress || 
             this.pendingDiagnostic || 
             this.awaitedDiagnostic === null
@@ -444,7 +442,10 @@ export class ProofView implements ProofViewInterface {
             const newLineNum = newText.split("\n").length - 1;
 
             logger.info("Started typechecking proof: " + proof);
-            const diags = await this.updateWithWait(DidChangeTextDocumentNotification.type, params, uri, newLineNum);
+            const diags = await this.updateWithWait(
+                DidChangeTextDocumentNotification.type, 
+                params, uri, newLineNum, lineNumContext
+            );
             logger.info("Finished typechecking proof");
 
             // Filter diagnostics by the line number of the context
