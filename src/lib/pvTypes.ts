@@ -137,7 +137,7 @@ export class TheoremProof {
     public onlyText(): string {
         let text = '';
         for (const step of this.proof_steps) {
-            text += step.text + (step.vernac_type !== Vernacexpr.VernacBullet ? '\n' : ' ');
+            text += step.text.trim() + (step.vernac_type !== Vernacexpr.VernacBullet ? '\n' : ' ');
         }
         return text;
     }

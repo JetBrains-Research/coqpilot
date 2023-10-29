@@ -287,6 +287,7 @@ export class ProofView implements ProofViewInterface {
         }
 
         if (
+            timeout <= 0 ||
             this.pendingProgress || 
             this.pendingDiagnostic || 
             this.awaitedDiagnostic === null
@@ -444,7 +445,7 @@ export class ProofView implements ProofViewInterface {
             logger.info("Started typechecking proof: " + proof);
             const diags = await this.updateWithWait(
                 DidChangeTextDocumentNotification.type, 
-                params, uri, newLineNum, lineNumContext
+                params, uri, newLineNum, 50000, lineNumContext
             );
             logger.info("Finished typechecking proof");
 

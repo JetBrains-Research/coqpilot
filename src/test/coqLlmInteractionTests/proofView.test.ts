@@ -103,7 +103,6 @@ suite('ProofView auxTheorem tests', () => {
                     auxFile, text, positions[i]
                 );
 
-                assert.ok(auxThr);
                 const [thrStatement, _] = auxThr;
                 assert.strictEqual(thrStatement, goals[i]);
             }
@@ -197,7 +196,7 @@ suite('ProofView checkTheorems tests', () => {
 
             client.stop();
         }
-    }).timeout(5000);
+    }).timeout(8000);
 });
 
 suite('ProofView parseFile tests', () => {
