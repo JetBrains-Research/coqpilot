@@ -1,5 +1,9 @@
 # Change Log
 
+### 1.4.0
+- Add command to solve all admitted holes in the file.
+- Fixing bugs with coq-lsp behavior. 
+
 ### 1.3.1
 - Test coverage increased.
 - Refactoring client and ProofView.  
