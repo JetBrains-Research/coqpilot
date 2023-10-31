@@ -99,7 +99,6 @@ suite('ProofView auxTheorem tests', () => {
             const proofView = new ProofView(client, statusItem); 
 
             for (let i = 0; i < goals.length; i++) {
-                console.log("DEBUG: ", auxFile, text, positions[i], i);
                 const auxThr = await proofView.getAuxTheoremAtCurPosition(
                     auxFile, text, positions[i]
                 );

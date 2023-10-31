@@ -60,7 +60,7 @@ export class LlmPromptBase {
     };
 
     cleanFromBrackets = (str: string): string => {
-        return str.slice(1, str.length - 1).trim();
+        return str.slice(2, str.length - 1).trim();
     };
 
     /**
