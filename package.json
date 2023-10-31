@@ -44,6 +44,10 @@
       {
         "command": "coqpilot.toggle",
         "title": "Coqpilot: Toggle the plugin"
+      }, 
+      {
+        "command": "coqpilot.prove_all_holes",
+        "title": "Coqpilot: Try to prove all holes (admitted goals) in the current file."
       }
     ],
     "configuration": [

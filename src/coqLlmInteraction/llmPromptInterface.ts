@@ -1,5 +1,6 @@
 import { Theorem } from "../lib/pvTypes";
 import { shuffleArray } from "./utils";
+import logger from '../extension/logger';
 
 class SeparatedTheorems {
     constructor(
@@ -48,6 +49,10 @@ export class LlmPromptBase {
         // https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them
         // One token is approximately 4 characters.
         return (str.length / 4) >> 0;
+    };
+
+    removeBackticks = (str: string): string => {
+        return str.replace(/`/g, '');
     };
 
     thrProofToBullet = (proof: string): string => {
@@ -113,7 +118,10 @@ export class LlmPromptBase {
             theoremsTokensSum -= this.countTokens(theorem.statement) + this.countTokens(theorem.proof.onlyText());
         }
 
-        return new SeparatedTheorems(admittedTheorems, provenTheorems);
+        const separated = new SeparatedTheorems(admittedTheorems, provenTheorems);
+        logger.info(`Admiited theorems: ${separated.admittedTheorems.map((th) => th.name)}`);
+        logger.info(`Training theorems: ${separated.trainingTheorems.map((th) => th.name)}`);
+        return separated;
     }
 
     getAdmittedTheorems(): string[] {

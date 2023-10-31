@@ -1,10 +1,12 @@
 import {
     Uri,
     Position as VPosition,
+    Range as VRange,
 } from 'vscode';
 
 import {
     Position,
+    Range
 } from "vscode-languageclient";
 
 import {
@@ -30,4 +32,8 @@ export function getTextBeforePosition(text: string, position: VPosition): string
 
 export function toVPosition(position: Position): VPosition {
     return new VPosition(position.line, position.character);
+}
+
+export function toVRange(range: Range): VRange {
+    return new VRange(toVPosition(range.start), toVPosition(range.end));
 }

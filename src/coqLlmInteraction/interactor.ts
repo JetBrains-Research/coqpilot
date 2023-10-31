@@ -31,6 +31,10 @@ export class GenerationResult<T> {
         this.data = data;
     }
 
+    static editorError<T>(message: string | undefined = undefined): GenerationResult<T> {
+        return new GenerationResult<T>(GenerationStatus.exception, message ?? "Editor error.", "Editor");
+    }
+
     static success<T>(data: T): GenerationResult<T> {
         return new GenerationResult<T>(GenerationStatus.success, null, null, data);
     }
@@ -152,6 +156,8 @@ export class Interactor {
         if (llmResponse instanceof Error) {
             return GenerationResult.exception(llmResponse.message, "Open-ai completion request");
         }
+
+        llmResponse = llmResponse.map(this.llmPrompt.removeBackticks);
 
         // Surround with curly braces and remove Proof. and Qed.
         llmResponse = llmResponse.map(this.llmPrompt.thrProofToBullet);

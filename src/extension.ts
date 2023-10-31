@@ -5,6 +5,7 @@ import {
     Disposable,
     TextEditor,
     window,
+    Position,
 } from "vscode";
 
 import {
@@ -18,11 +19,16 @@ import { LLMPrompt } from "./coqLlmInteraction/llmPromptInterface";
 import { CoqPromptKShot } from "./coqLlmInteraction/coqLlmPrompt";
 import { LLMInterface } from "./coqLlmInteraction/llmInterface";
 import { CoqpilotConfig } from "./extension/config";
-import { Interactor, GenerationStatus } from "./coqLlmInteraction/interactor";
+import { 
+    Interactor, 
+    GenerationStatus, 
+    GenerationResult, 
+} from "./coqLlmInteraction/interactor";
 import * as wm from "./editor/windowManager";
 import { VsCodeSpinningWheelProgressBar } from "./extension/vscodeProgressBar";
 import logger from "./extension/logger";
 import { makeAuxfname } from "./coqLspClient/utils";
+import * as lspUtils from "./coqLspClient/utils";
 
 export class Coqpilot implements Disposable {
 
@@ -56,6 +62,7 @@ export class Coqpilot implements Disposable {
         this.registerCommand("toggle", this.toggleLspClient.bind(this));
         this.registerEditorCommand("init_history", this.initHistory.bind(this));
         this.registerEditorCommand("run_generation", this.runGeneration.bind(this));
+        this.registerEditorCommand("prove_all_holes", this.runProveAllAdmitted.bind(this));
 
         this.context.subscriptions.push(this);
     }
@@ -139,30 +146,32 @@ export class Coqpilot implements Disposable {
         this.context.subscriptions.push(this.proofView);
     }
 
-    async runGeneration(editor: TextEditor) {
+    private async generateAtPoint(
+        editor: TextEditor, 
+        position: Position
+    ): Promise<GenerationResult<string>> {
         if (this.config.openaiApiKey === "None") {
-            wm.showApiKeyNotProvidedMessage(); return;
+            wm.showApiKeyNotProvidedMessage(); return GenerationResult.editorError();
         } else if (editor.document.languageId !== "coq") {
-            wm.showIncorrectFileFormatMessage(); return;
+            wm.showIncorrectFileFormatMessage(); return GenerationResult.editorError();
         } else if (!this.client.isRunning()) {
-            wm.showClientNotRunningMessage(); return;
+            wm.showClientNotRunningMessage(); return GenerationResult.editorError();
         }
 
         const auxFile = makeAuxfname(editor.document.uri);
-        const cursorPos = editor.selection.active;
         const auxThr = await this.proofView.getAuxTheoremAtCurPosition(
-            auxFile, editor.document.getText(), cursorPos
+            auxFile, editor.document.getText(), position
         );
 
         if (!auxThr) {
             wm.showNoGoalMessage();
-            return;
+            return GenerationResult.editorError();
         }
 
         const [thrStatement, thrName] = auxThr;
         if (!this.llmPrompt) {
             wm.fileSnapshotRequired();
-            return;
+            return GenerationResult.editorError();
         }
 
         const progressBar = new VsCodeSpinningWheelProgressBar();
@@ -181,18 +190,52 @@ export class Coqpilot implements Disposable {
             this.proofView.checkTheorems.bind(this.proofView)
         );
 
+        return proof;
+    }
+
+    async runGeneration(editor: TextEditor) {
+        const proof = await this.generateAtPoint(editor, editor.selection.active);
         switch (proof.status) {
             case GenerationStatus.success:
-                wm.showSearchSucessMessage(editor, proof.data);
+                wm.showSearchSucessMessage(editor, proof.data, editor.selection.active);
                 break;
             case GenerationStatus.searchFailed:
-                wm.showSearchFailureMessage(thrName);
+                wm.showSearchFailureMessageHole(editor.selection.active);
                 break; 
             default:
                 wm.showExceptionMessage(proof.toString());
                 break;
         }
+    }
 
+    async runProveAllAdmitted(editor: TextEditor) {
+        await this.initHistory(editor);
+        const admittedTheorems = this.llmPrompt?.admittedTheorems;
+        const proofHoles = admittedTheorems.map((thr) => thr.proof.holes).flat();
+        logger.info(`Proof holes: ${proofHoles.map((hole) => `${hole.range.start.line} ${hole.range.start.character}`).join(", ")}`);
+        for (const hole of proofHoles) {
+            // Run proof generation at the start of the hole
+            const position = lspUtils.toVPosition(hole.range.start);
+            const proof = await this.generateAtPoint(editor, position);
+            switch (proof.status) {
+                case GenerationStatus.success:
+                    // Remove the text of the hole from the editor
+                    const range = lspUtils.toVRange(hole.range);
+                    await editor.edit((editBuilder) => {
+                        editBuilder.delete(range);
+                    });
+
+                    const inlinedProof = proof.data.replace(/\n/g, " ");
+                    wm.showSearchSucessMessage(editor, inlinedProof, position);
+                    break;
+                case GenerationStatus.searchFailed:
+                    wm.showSearchFailureMessageHole(position);
+                    break; 
+                default:
+                    wm.showExceptionMessage(proof.toString());
+                    break;
+            }
+        }
     }
 
     toggleLspClient() {
