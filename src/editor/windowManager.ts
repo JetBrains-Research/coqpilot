@@ -40,6 +40,12 @@ export function showSearchFailureMessage(theoremName: string) {
     );
 }
 
+export function showSearchFailureMessageHole(hole: vscode.Position) {
+    vscode.window.showInformationMessage(
+        `Coqpilot failed to find a proof for hole at line ${hole.line + 1}.`
+    );
+}
+
 export function showClientNotRunningMessage() {
     vscode.window.showInformationMessage(
         'Coqpilot is not running. Use the button in the bottom left corner to start it.'
@@ -77,9 +83,9 @@ export function showNoGoalMessage() {
     );
 }
 
-export function showSearchSucessMessage(editor: vscode.TextEditor, proof: string) {
+export function showSearchSucessMessage(editor: vscode.TextEditor, proof: string, position: vscode.Position) {
     editor.edit((editBuilder) => {
-        editBuilder.insert(editor.selection.active, proof);
+        editBuilder.insert(position, proof);
     });
 }
 

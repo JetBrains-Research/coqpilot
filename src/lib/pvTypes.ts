@@ -124,6 +124,7 @@ export class TheoremProof {
         public proof_steps: ProofStep[],
         public end_pos: Range,
         public is_incomplete: boolean, 
+        public holes: ProofStep[], 
     ) { }
 
     public toString(): string {

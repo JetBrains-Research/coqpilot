@@ -91,6 +91,7 @@ function parseProof(
     const proof: ProofStep[] = [];
     let endPos: Range | null = null;
     let proofContainsAdmit = false;
+    let proofHoles: ProofStep[] = [];
 
     while (!proven && index < ast.length) {
         const span = ast[index];
@@ -111,14 +112,19 @@ function parseProof(
                 proofContainsAdmit = true;
             }
         } else {
+            const proofText = getTextInRange(span.range.start, span.range.end, lines);
             const proofStep = new ProofStep(
-                getTextInRange(span.range.start, span.range.end, lines),
+                proofText,
                 vernacType,
                 span.range
             );
 
             proof.push(proofStep);
             index += 1;
+
+            if (proofText.includes('admit')) {
+                proofHoles.push(proofStep);
+            }
         }
     }
 
@@ -126,7 +132,7 @@ function parseProof(
         throw new ProofViewError("Invalid or incomplete proof.");
     }
 
-    const proofObj = new TheoremProof(proof, endPos, proofContainsAdmit);
+    const proofObj = new TheoremProof(proof, endPos, proofContainsAdmit, proofHoles);
     return proofObj;
 }
 

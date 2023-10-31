@@ -8,7 +8,7 @@
     "url": "https://github.com/K-dizzled/coqpilot"
   },
   "publisher": "JetBrains-Research",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "engines": {
     "vscode": "^1.82.0"
   },
@@ -44,6 +44,10 @@
       {
         "command": "coqpilot.toggle",
         "title": "Coqpilot: Toggle the plugin"
+      }, 
+      {
+        "command": "coqpilot.prove_all_holes",
+        "title": "Coqpilot: Try to prove all holes (admitted goals) in the current file."
       }
     ],
     "configuration": [

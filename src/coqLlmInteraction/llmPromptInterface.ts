@@ -1,5 +1,6 @@
 import { Theorem } from "../lib/pvTypes";
 import { shuffleArray } from "./utils";
+import logger from '../extension/logger';
 
 class SeparatedTheorems {
     constructor(
@@ -50,6 +51,10 @@ export class LlmPromptBase {
         return (str.length / 4) >> 0;
     };
 
+    removeBackticks = (str: string): string => {
+        return str.replace(/`/g, '');
+    };
+
     thrProofToBullet = (proof: string): string => {
         // Remove "Proof." and "Qed."
         let res = proof.replace(/Proof using\./g, '')
@@ -60,7 +65,7 @@ export class LlmPromptBase {
     };
 
     cleanFromBrackets = (str: string): string => {
-        return str.slice(1, str.length - 1).trim();
+        return str.slice(2, str.length - 1).trim();
     };
 
     /**
@@ -113,7 +118,10 @@ export class LlmPromptBase {
             theoremsTokensSum -= this.countTokens(theorem.statement) + this.countTokens(theorem.proof.onlyText());
         }
 
-        return new SeparatedTheorems(admittedTheorems, provenTheorems);
+        const separated = new SeparatedTheorems(admittedTheorems, provenTheorems);
+        logger.info(`Admiited theorems: ${separated.admittedTheorems.map((th) => th.name)}`);
+        logger.info(`Training theorems: ${separated.trainingTheorems.map((th) => th.name)}`);
+        return separated;
     }
 
     getAdmittedTheorems(): string[] {
