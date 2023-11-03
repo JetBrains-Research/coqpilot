@@ -1,5 +1,8 @@
 # Change Log
 
+### 1.4.1
+- Add a possibility to configure a single tactic solver.
+
 ### 1.4.0
 - Add command to solve all admitted holes in the file.
 - Fixing bugs with coq-lsp behavior. 
