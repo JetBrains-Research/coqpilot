@@ -48,6 +48,10 @@
       {
         "command": "coqpilot.prove_all_holes",
         "title": "Coqpilot: Try to prove all holes (admitted goals) in the current file."
+      }, 
+      {
+        "command": "coqpilot.reload_config", 
+        "title": "Reload the settings (trigger this if you have changed the settings after plugin start and want to see the updates)."
       }
     ],
     "configuration": [
@@ -121,18 +125,23 @@
             "default": false,
             "markdownDescription": "Whether to start re-parsing the file each time the editor has changed."
           },
-          "coqpilot.ExtraCommandsList": {
+          "coqpilot.extraCommandsList": {
             "type": "array",
             "items": {
               "type": "string"
             },
             "default": [],
-            "markdownDescription": "NOT IMPLEMENTED YET. A list of tactics that would also be used to try generating proofs. Commands in the list must be valid coq commands available in your environment and must finish with a dot."
+            "markdownDescription": "A list of tactics that would also be used to try generating proofs. Commands in the list must be valid coq commands available in your environment and must finish with a dot."
           },
           "coqpilot.coqLspPath": {
             "type": "string",
             "default": "coq-lsp",
             "markdownDescription": "Path to the coq-lsp binary, by default, search in PATH."
+          }, 
+          "coqpilot.useGpt": {
+            "type": "boolean", 
+            "default": true, 
+            "markdownDescription": "Whether to use gpt as one of the used LLMs."
           }
         }
       }

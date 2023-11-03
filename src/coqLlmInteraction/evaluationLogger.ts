@@ -113,7 +113,7 @@ export class EvaluationLogger {
             throw new EvalLoggingError("Not in proof");
         }
         this.proofLog += `(* Attempt ${attemptIndex} for theorem ${thrName} *)\n`;
-        this.proofLog += `(*\n${statement}\n${proof}\n*)\n`;
+        this.proofLog += `(*\n${statement}\nProof.\n${proof}\nQed.\n*)\n`;
         
         this.proofLog += `(* Attempt ${attemptIndex} for theorem ${thrName} unsuccessful *)\n`;
         this.proofLog += `(* ERROR message: ${errorMsg} *)\n\n`;

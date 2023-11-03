@@ -39,7 +39,7 @@ export class Coqpilot implements Disposable {
     private statusItem: StatusBarButton;
     private llmPrompt: LLMPrompt | undefined;
     private llm: LLMInterface; 
-    private config: CoqpilotConfig;
+    public config: CoqpilotConfig;
 
     private constructor(
         context: ExtensionContext, 
@@ -47,19 +47,14 @@ export class Coqpilot implements Disposable {
         this.excludeAuxFiles();
         this.context = context;
 
-        const config = CoqpilotConfig.create(
-            workspace.getConfiguration('coqpilot')
-        );
-        
-        CoqpilotConfig.checkRequirements(config);
-        
-        this.config = config;
-        this.llm = CoqpilotConfig.getLlm(config);
+        this.reloadConfig();
+        this.llm = CoqpilotConfig.getLlm(this.config);
 
         this.disposables.push(this.statusItem);
         this.disposables.push(this.textEditorChangeHook);
 
         this.registerCommand("toggle", this.toggleLspClient.bind(this));
+        this.registerCommand("reload_config", this.reloadConfig.bind(this));
         this.registerEditorCommand("init_history", this.initHistory.bind(this));
         this.registerEditorCommand("run_generation", this.runGeneration.bind(this));
         this.registerEditorCommand("prove_all_holes", this.runProveAllAdmitted.bind(this));
@@ -146,16 +141,31 @@ export class Coqpilot implements Disposable {
         this.context.subscriptions.push(this.proofView);
     }
 
+    private checkConditions(editor: TextEditor) {
+        if (this.config.useGpt && this.config.openaiApiKey === "None") {
+            wm.showApiKeyNotProvidedMessage(); return false;
+        } else if (editor.document.languageId !== "coq") {
+            wm.showIncorrectFileFormatMessage(); return false;
+        } else if (!this.client.isRunning()) {
+            wm.showClientNotRunningMessage(); return false;
+        }
+
+        return true;
+    }
+
+    private reloadConfig() {
+        this.config = CoqpilotConfig.create(
+            workspace.getConfiguration('coqpilot')
+        );
+        CoqpilotConfig.checkRequirements(this.config);
+    }
+
     private async generateAtPoint(
         editor: TextEditor, 
         position: Position
     ): Promise<GenerationResult<string>> {
-        if (this.config.openaiApiKey === "None") {
-            wm.showApiKeyNotProvidedMessage(); return GenerationResult.editorError();
-        } else if (editor.document.languageId !== "coq") {
-            wm.showIncorrectFileFormatMessage(); return GenerationResult.editorError();
-        } else if (!this.client.isRunning()) {
-            wm.showClientNotRunningMessage(); return GenerationResult.editorError();
+        if (!this.checkConditions(editor)) {
+            return GenerationResult.editorError();
         }
 
         const auxFile = makeAuxfname(editor.document.uri);
