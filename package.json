@@ -20,6 +20,20 @@
   ],
   "main": "./out/mainNode.js",
   "contributes": {
+    "languages": [
+      {
+        "id": "coq",
+        "aliases": [
+          "Coq",
+          "coq",
+          "Gallina",
+          "gallina"
+        ],
+        "extensions": [
+          ".v"
+        ]
+      }
+    ],
     "commands": [
       {
         "command": "coqpilot.init_history",
