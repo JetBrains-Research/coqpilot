@@ -11,6 +11,7 @@ export function run(): Promise<void> {
 
 	const testsRoot = path.resolve(__dirname);
 	const singleFileTest: string | undefined = process.env['TEST_ARG-t'];
+	const excludeFiles: string[] | undefined = process.env['TEST_ARG-ex']?.split(',');
 	const testPerformance: boolean = (process.env['TEST_ARG-test_performance'] ?? "false") === 'true'; 
 
 	return new Promise((c, e) => {
@@ -30,7 +31,7 @@ export function run(): Promise<void> {
 						if(testPerformance) {
 							mocha.addFile(path.resolve(testsRoot, f));
 						}
-					} else {
+					} else if (!excludeFiles?.some(ex => f.includes(ex))) {
 						mocha.addFile(path.resolve(testsRoot, f));
 					}
 				}

@@ -32,7 +32,7 @@ export class GenerationResult<T> {
     }
 
     static editorError<T>(message: string | undefined = undefined): GenerationResult<T> {
-        return new GenerationResult<T>(GenerationStatus.exception, message ?? "Editor error.", "Editor");
+        return new GenerationResult<T>(GenerationStatus.exception, message ?? "Editor error", "Editor");
     }
 
     static success<T>(data: T): GenerationResult<T> {

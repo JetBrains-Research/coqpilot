@@ -10,7 +10,9 @@ export function mockConfig(): CoqpilotConfig {
         gptModel: OtherModels.MOCK, 
         parseFileOnInit: false,
         parseFileOnEditorChange: false,
-        coqLspPath: "coq-lsp"
+        coqLspPath: "coq-lsp",
+        useGpt: false, 
+        extraCommandsList: []
     };
 }
 
@@ -24,6 +26,24 @@ export function mockConfigRealGpt(apikey: string): CoqpilotConfig {
         gptModel: GptModel.GPT35,
         parseFileOnInit: false,
         parseFileOnEditorChange: false,
-        coqLspPath: "coq-lsp"
+        coqLspPath: "coq-lsp",
+        useGpt: true, 
+        extraCommandsList: []
+    };
+}
+
+export function simpleSolverMockConfig(tactics: string[]): CoqpilotConfig {
+    return {
+        openaiApiKey: "None",
+        proofAttemsPerOneTheorem: 2,
+        maxNumberOfTokens: 1,
+        logAttempts: false,
+        logFolderPath: "None",
+        gptModel: GptModel.GPT35, 
+        parseFileOnInit: false,
+        parseFileOnEditorChange: false,
+        coqLspPath: "coq-lsp",
+        useGpt: false, 
+        extraCommandsList: tactics
     };
 }

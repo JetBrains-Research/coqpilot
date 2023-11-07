@@ -1,4 +1,6 @@
 import { GPT35 } from '../coqLlmInteraction/gpt35';
+import { SingleTacticSolver } from '../coqLlmInteraction/singleTacticSolver';
+import { LLMAdapter } from '../coqLlmInteraction/llmAdapter';
 import { MockLlmPrompt } from '../test/mock/mockllm';
 import { LLMInterface } from '../coqLlmInteraction/llmInterface';
 
@@ -12,6 +14,8 @@ export interface CoqpilotConfig {
     parseFileOnEditorChange: boolean;
     parseFileOnInit: boolean;
     coqLspPath: string;
+    useGpt: boolean;
+    extraCommandsList: string[];
 }
 
 export namespace CoqpilotConfig {
@@ -28,7 +32,9 @@ export namespace CoqpilotConfig {
                 gptModel: wsConfig.gptModel,
                 parseFileOnEditorChange: wsConfig.parseFileOnEditorChange,
                 parseFileOnInit: wsConfig.parseFileOnInit, 
-                coqLspPath: wsConfig.coqLspPath
+                coqLspPath: wsConfig.coqLspPath, 
+                useGpt: wsConfig.useGpt, 
+                extraCommandsList: wsConfig.extraCommandsList
             };
         } catch (error) {
             console.error(error);
@@ -50,10 +56,23 @@ export namespace CoqpilotConfig {
     export function getLlm(config: CoqpilotConfig): LLMInterface {
         if (config.gptModel === OtherModels.MOCK) {
             return new MockLlmPrompt();
-        } else if (Object.values(GptModel).map(v => v.toString()).includes(config.gptModel)) {
-            return new GPT35(config.openaiApiKey, 3, config.gptModel);
         } else {
-            throw new Error(`Unknown model ${config.gptModel}`);
+            let gptModel: LLMInterface | null = null; 
+            if (config.useGpt) {
+                if (Object.values(GptModel).map(v => v.toString()).includes(config.gptModel)) {
+                    gptModel = new GPT35(config.openaiApiKey, 3, config.gptModel);
+                } else {
+                    throw new Error(`Unknown model ${config.gptModel}`);
+                }
+            }
+            
+            const simplestModel = new SingleTacticSolver(config.extraCommandsList);
+            
+            const allModels = [
+                gptModel, simplestModel
+            ].filter((model) => model !== null);
+            
+            return new LLMAdapter(allModels);
         }
     }
 }

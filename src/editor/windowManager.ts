@@ -64,7 +64,6 @@ export function showExceptionMessage(msg: string) {
     );
 }
 
-
 export function fileSnapshotRequired() {
     vscode.window.showInformationMessage(
         'Coqpilot requires a snapshot of the current file to be aware of the present theorems.',
