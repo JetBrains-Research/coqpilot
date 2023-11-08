@@ -33,7 +33,7 @@ suite('ProofView auxTheorem tests', () => {
     const wsConfig = workspace.getConfiguration("coqpilot");
     const dirname = path.dirname(path.dirname(path.dirname(__dirname)));
     const extensionConfig = new CoqpilotConfigWrapper(
-        common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig))
+        common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig)), false
     );
 
     interface TestData {
@@ -122,7 +122,7 @@ suite('ProofView checkTheorems tests', () => {
     const wsConfig = workspace.getConfiguration("coqpilot");
     const dirname = path.dirname(path.dirname(path.dirname(__dirname)));
     const extensionConfig = new CoqpilotConfigWrapper(
-        common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig))
+        common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig)), false
     );
 
     interface TestData {
@@ -209,7 +209,7 @@ suite('ProofView parseFile tests', () => {
     const wsConfig = workspace.getConfiguration("coqpilot");
     const dirname = path.dirname(path.dirname(path.dirname(__dirname)));
     const extensionConfig = new CoqpilotConfigWrapper(
-        common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig))
+        common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig)), false
     );
 
     interface TheoremData {

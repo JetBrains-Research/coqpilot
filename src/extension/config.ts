@@ -22,7 +22,13 @@ export interface CoqpilotConfig {
 
 export class CoqpilotConfigWrapper {
     private _config: CoqpilotConfig;
+    private autoUpdate: boolean;
+
     get config(): CoqpilotConfig {
+        if (!this.autoUpdate) {
+            return this._config;
+        }
+        
         this._config = CoqpilotConfig.create(
             vscode.workspace.getConfiguration('coqpilot')
         );
@@ -32,10 +38,11 @@ export class CoqpilotConfigWrapper {
         return this._config;
     }
 
-    constructor(conf: CoqpilotConfig | undefined = undefined) {
+    constructor(conf: CoqpilotConfig | undefined = undefined, autoUpdate: boolean = true) {
         this._config = conf ?? CoqpilotConfig.create(
             vscode.workspace.getConfiguration('coqpilot')
         )!;
+        this.autoUpdate = autoUpdate;
         CoqpilotConfig.checkRequirements(this._config);
         logger.info("Successfully created config.");
     }
