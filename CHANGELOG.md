@@ -1,5 +1,12 @@
 # Change Log
 
+### 1.4.2
+- Now no need to add dot in the end of the tactic, when configuring a single tactic solver.
+- Automatic reload settings on change in the settings file. Not all settings are reloaded automatically, 
+but the most ones are. The ones that are not automatically reloaded: `useGpt`, `coqLspPath`, `parseFileOnInit`.
+- Added command that solves admits in selected region. Also added that command to the context menu (right click in the editor).
+
+
 ### 1.4.1
 - Add a possibility to configure a single tactic solver.
 

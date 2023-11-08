@@ -16,7 +16,7 @@ suite('Simple single-tactic solver tests', () => {
 	test('Check prove using simple single-tactic prover', async () => {
         const { filePath, tacticsToTry, solvedAmount } = {
             filePath: path.join(dirname, 'src', 'test', 'resources', 'with_admits_test.v'),
-            tacticsToTry: ['auto.'], 
+            tacticsToTry: ['auto'], 
             solvedAmount: 6, 
         };
 
