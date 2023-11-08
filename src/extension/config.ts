@@ -3,6 +3,8 @@ import { SingleTacticSolver } from '../coqLlmInteraction/singleTacticSolver';
 import { LLMAdapter } from '../coqLlmInteraction/llmAdapter';
 import { MockLlmPrompt } from '../test/mock/mockllm';
 import { LLMInterface } from '../coqLlmInteraction/llmInterface';
+import * as vscode from 'vscode';
+import logger from "./logger";
 
 export interface CoqpilotConfig {
     openaiApiKey: string;
@@ -18,7 +20,39 @@ export interface CoqpilotConfig {
     extraCommandsList: string[];
 }
 
+export class CoqpilotConfigWrapper {
+    private _config: CoqpilotConfig;
+    private autoUpdate: boolean;
+
+    get config(): CoqpilotConfig {
+        if (!this.autoUpdate) {
+            return this._config;
+        }
+        
+        this._config = CoqpilotConfig.create(
+            vscode.workspace.getConfiguration('coqpilot')
+        );
+        CoqpilotConfig.checkRequirements(this._config);
+        logger.info("Successfully updated config: " + JSON.stringify(this._config));
+
+        return this._config;
+    }
+
+    constructor(conf: CoqpilotConfig | undefined = undefined, autoUpdate: boolean = true) {
+        this._config = conf ?? CoqpilotConfig.create(
+            vscode.workspace.getConfiguration('coqpilot')
+        )!;
+        this.autoUpdate = autoUpdate;
+        CoqpilotConfig.checkRequirements(this._config);
+        logger.info("Successfully created config.");
+    }
+}
+
 export namespace CoqpilotConfig {
+    export function getNew() {
+        return new CoqpilotConfigWrapper();
+    }
+
     export function create(
         wsConfig: any
     ): CoqpilotConfig | undefined {
@@ -34,12 +68,23 @@ export namespace CoqpilotConfig {
                 parseFileOnInit: wsConfig.parseFileOnInit, 
                 coqLspPath: wsConfig.coqLspPath, 
                 useGpt: wsConfig.useGpt, 
-                extraCommandsList: wsConfig.extraCommandsList
+                extraCommandsList: preprocessExtraCommands(wsConfig.extraCommandsList)
             };
         } catch (error) {
             console.error(error);
             return undefined;
         }
+    }
+
+    function preprocessExtraCommands(commands: string[]): string[] {
+        // If the command does not end with a dot, add it
+        return commands.map((command) => {
+            if (command.endsWith(".")) {
+                return command;
+            } else {
+                return command + ".";
+            }
+        });
     }
 
     export function checkRequirements(config: CoqpilotConfig): void {
@@ -53,20 +98,21 @@ export namespace CoqpilotConfig {
         }
     }
 
-    export function getLlm(config: CoqpilotConfig): LLMInterface {
+    export function getLlm(configWrapped: CoqpilotConfigWrapper): LLMInterface {
+        const config = configWrapped.config;
         if (config.gptModel === OtherModels.MOCK) {
             return new MockLlmPrompt();
         } else {
             let gptModel: LLMInterface | null = null; 
             if (config.useGpt) {
                 if (Object.values(GptModel).map(v => v.toString()).includes(config.gptModel)) {
-                    gptModel = new GPT35(config.openaiApiKey, 3, config.gptModel);
+                    gptModel = new GPT35(configWrapped, 3);
                 } else {
                     throw new Error(`Unknown model ${config.gptModel}`);
                 }
             }
             
-            const simplestModel = new SingleTacticSolver(config.extraCommandsList);
+            const simplestModel = new SingleTacticSolver(configWrapped);
             
             const allModels = [
                 gptModel, simplestModel

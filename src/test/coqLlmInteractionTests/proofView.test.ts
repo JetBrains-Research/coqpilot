@@ -26,13 +26,15 @@ import * as path from 'path';
 import * as assert from 'assert';
 import { makeAuxfname } from '../../coqLspClient/utils';
 import * as common from '../common';
-import { CoqpilotConfig } from "../../extension/config";
+import { CoqpilotConfig, CoqpilotConfigWrapper } from "../../extension/config";
 
 suite('ProofView auxTheorem tests', () => {
     const statusItem = new StatusBarButton();
     const wsConfig = workspace.getConfiguration("coqpilot");
     const dirname = path.dirname(path.dirname(path.dirname(__dirname)));
-    const extensionConfig = common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig));
+    const extensionConfig = new CoqpilotConfigWrapper(
+        common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig)), false
+    );
 
     interface TestData {
         fileRoot: string,
@@ -119,7 +121,9 @@ suite('ProofView checkTheorems tests', () => {
     const statusItem = new StatusBarButton();
     const wsConfig = workspace.getConfiguration("coqpilot");
     const dirname = path.dirname(path.dirname(path.dirname(__dirname)));
-    const extensionConfig = common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig));
+    const extensionConfig = new CoqpilotConfigWrapper(
+        common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig)), false
+    );
 
     interface TestData {
         context: string, 
@@ -204,7 +208,9 @@ suite('ProofView parseFile tests', () => {
     const statusItem = new StatusBarButton();
     const wsConfig = workspace.getConfiguration("coqpilot");
     const dirname = path.dirname(path.dirname(path.dirname(__dirname)));
-    const extensionConfig = common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig));
+    const extensionConfig = new CoqpilotConfigWrapper(
+        common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig)), false
+    );
 
     interface TheoremData {
         statementRange: Range, 

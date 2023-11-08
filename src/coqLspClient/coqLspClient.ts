@@ -13,7 +13,7 @@ import {
 import logger from "../extension/logger";
 import { CoqLspServerConfig } from "./config";
 import { StatusBarButton } from "../editor/enableButton";
-import { CoqpilotConfig } from "../extension/config";
+import { CoqpilotConfigWrapper } from "../extension/config";
 
 export class CoqLspClient extends LanguageClient {
     private statusItem: StatusBarButton;
@@ -21,7 +21,7 @@ export class CoqLspClient extends LanguageClient {
     constructor(
         statusItem: StatusBarButton, 
         wsConfig: WorkspaceConfiguration, 
-        extensionConfig: CoqpilotConfig,
+        extensionConfig: CoqpilotConfigWrapper,
         path?: Uri
     ) {
         const initializationOptions = CoqLspServerConfig.create();
@@ -36,7 +36,7 @@ export class CoqLspClient extends LanguageClient {
             markdown: { isTrusted: true, supportHtml: true },
             middleware: {
                 handleDiagnostics: (uri, diagnostics, _next) => {
-                    logger.info(`Diagnostics received for file ${uri}: ${diagnostics.map((d) => d.message).join(", ")}`);
+                    logger.debug(`Diagnostics received for file ${uri}: ${diagnostics.map((d) => d.message).join(", ")}`);
                 }
             }
         };
@@ -52,13 +52,14 @@ export class CoqLspClient extends LanguageClient {
             };
         }
 
+        const extConfig = extensionConfig.config;
         const serverOptions: ServerOptions = {
-            command: extensionConfig.coqLspPath,
+            command: extConfig.coqLspPath,
             args: wsConfig.args,
         };
 
         super(
-            extensionConfig.coqLspPath,
+            extConfig.coqLspPath,
             "Coq LSP Server",
             serverOptions,
             clientOptions

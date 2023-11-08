@@ -12,12 +12,18 @@ Now `coqpilot` is in early beta and seeks for feedbacks. Please feel free to ope
 
 `Coqpilot` could be run to analyse the opened `coq` file, fetch proofs of successfully typechecked theorems inside it, parse them and use as a message history to present to LLM.
 
-Later on, on demand, it could perform a request to an LLM with an admitted theorem and a message history and get a list of potential proofs. It then uses `coq-lsp` to typecheck them and substitute the first valid proof in the editor.
+Later on, on demand, it could perform a request to an LLM with an admitted theorem and a message history and get a list of potential proofs. It then uses `coq-lsp` to typecheck them and substitute the first valid proof in the editor. Moreover, coqpilot was designed to fetch multiple LLMs, so that many ways of proof generation could be used at once. Right now, apart from GPT, coqpilot also tries substituting single-line proofs from the `coqpilot.extraCommandsList` setting. 
 
 User can:
 - Run `coqpilot` at a given cursor point inside theorem to try substitute the current goal.
 
 <img src="./etc/gif/prove-goal.gif"/> 
+
+- Run `coqpilot` with some chosen selection to try substitute all admits in this selection.
+
+<img src="./etc/gif/solve-in-selection.gif"/>
+
+- Run `coqpilot` to try substitute all admits in the file.
 
 ## Requirements
 
@@ -56,17 +62,29 @@ This extension contributes the following settings:
 * `coqpilot.logFolderPath`: A path to the folder where logs should be saved. If `None` is specified and logAttemps is `true` then logs will be saved in the `coqpilot` plugin folder in the `logs` subfolder.
 * `coqpilot.parseFileOnInit`: Whether to start parsing the file into message history on extension startup.
 * `coqpilot.parseFileOnEditorChange`: Whether to start re-parsing the file each time the editor has changed.
+* `coqpilot.extraCommandsList`: A list of tactics that would also be used to try generating proofs. Commands in the list must be valid coq commands available in your environment. Might or might not end with a dot, if it does not, then a dot will be added automatically.
+* `coqpilot.coqLspPath`: Path to the coq-lsp binary, by default, search in PATH.
+* `coqpilot.useGpt`: Whether to use gpt as one of the used LLMs. Right now otherwise only single tactics would be used to generate proofs. 
+
+**REMARK**: `useGpt`, `coqLspPath`, `parseFileOnInit` are NOT auto reloaded on setting change, they need plugin restart. 
 
 ## Contributed Commands
 
 * `coqpilot.init_history`: Parse current file and initialize llm gistory with theorems from it.
 * `coqpilot.run_generation`: Try to generate proof for the goal under the cursor.
+* `coqpilot.toggle`: Toggle the plugin.
+* `coqpilot.prove_all_holes`: Try to prove all holes (admitted goals) in the current file.
+* `coqpilot.prove_in_selection`: Try to prove holes in selection.
 
 ## Planned Features
 
-It is planned to implement a proof repair feature for the proofs which will establish a dialogue between `coq-lsp` and the LLM. When LLM generates an incorrect proof, the error would be sent to LLM as a next message and the process would be repeated until a valid proof is found or the limit of attempts is reached.
+### Milestone 2.0.0
+
+It is planned to implement a proof repair feature for the proofs which will establish a dialogue between `coq-lsp` and the LLM. When LLM generates an incorrect proof, the error would be sent to LLM as a next message and the process would be repeated until a valid proof is found or the limit of attempts is reached. Also it is planned to fetch proofs from different LLMs not at once in the beggining, but asynchronously and one by one, if it fails to find a proof in the first LLM, it will try the next one.
 
 ## Release Notes
+
+More detailed release notes could be found in the [CHANGELOG.md](https://github.com/K-dizzled/coqpilot/blob/main/CHANGELOG.md) file.
 
 ### 1.1.0
 

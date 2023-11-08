@@ -18,7 +18,7 @@ import { StatusBarButton } from "./editor/enableButton";
 import { LLMPrompt } from "./coqLlmInteraction/llmPromptInterface";
 import { CoqPromptKShot } from "./coqLlmInteraction/coqLlmPrompt";
 import { LLMInterface } from "./coqLlmInteraction/llmInterface";
-import { CoqpilotConfig } from "./extension/config";
+import { CoqpilotConfig, CoqpilotConfigWrapper } from "./extension/config";
 import { 
     Interactor, 
     GenerationStatus, 
@@ -29,6 +29,8 @@ import { VsCodeSpinningWheelProgressBar } from "./extension/vscodeProgressBar";
 import logger from "./extension/logger";
 import { makeAuxfname } from "./coqLspClient/utils";
 import * as lspUtils from "./coqLspClient/utils";
+import { ProofStep } from "./lib/pvTypes";
+import * as utils from "./coqLspClient/utils";
 
 export class Coqpilot implements Disposable {
 
@@ -39,7 +41,7 @@ export class Coqpilot implements Disposable {
     private statusItem: StatusBarButton;
     private llmPrompt: LLMPrompt | undefined;
     private llm: LLMInterface; 
-    public config: CoqpilotConfig;
+    private config: CoqpilotConfigWrapper = CoqpilotConfig.getNew();
 
     private constructor(
         context: ExtensionContext, 
@@ -47,17 +49,16 @@ export class Coqpilot implements Disposable {
         this.excludeAuxFiles();
         this.context = context;
 
-        this.reloadConfig();
         this.llm = CoqpilotConfig.getLlm(this.config);
 
         this.disposables.push(this.statusItem);
         this.disposables.push(this.textEditorChangeHook);
 
         this.registerCommand("toggle", this.toggleLspClient.bind(this));
-        this.registerCommand("reload_config", this.reloadConfig.bind(this));
         this.registerEditorCommand("init_history", this.initHistory.bind(this));
         this.registerEditorCommand("run_generation", this.runGeneration.bind(this));
         this.registerEditorCommand("prove_all_holes", this.runProveAllAdmitted.bind(this));
+        this.registerEditorCommand("prove_in_selection", this.runProveAdmittedInSelection.bind(this));
 
         this.context.subscriptions.push(this);
     }
@@ -65,7 +66,7 @@ export class Coqpilot implements Disposable {
     initialHistoryFetch = async (editor: TextEditor | undefined) => {
         if (!editor) {
             return;
-        } else if (editor.document.languageId !== "coq" || !this.config.parseFileOnInit) {
+        } else if (editor.document.languageId !== "coq" || !this.config.config.parseFileOnInit) {
             return;
         }
 
@@ -76,7 +77,7 @@ export class Coqpilot implements Disposable {
     textEditorChangeHook = window.onDidChangeActiveTextEditor((editor) => {
         if (!editor) {
             return;
-        } else if (editor.document.languageId !== "coq" || !this.config.parseFileOnEditorChange) {
+        } else if (editor.document.languageId !== "coq" || !this.config.config.parseFileOnEditorChange) {
             return;
         }        
 
@@ -126,7 +127,7 @@ export class Coqpilot implements Disposable {
 
         logger.info(`Theorems retrieved:\n${thrs}`);
         
-        this.llmPrompt = new CoqPromptKShot(thrs, this.config.maxNumberOfTokens);
+        this.llmPrompt = new CoqPromptKShot(thrs, this.config.config.maxNumberOfTokens);
     }
 
     async initializeClient() {
@@ -139,10 +140,11 @@ export class Coqpilot implements Disposable {
         await this.client.start();
     
         this.context.subscriptions.push(this.proofView);
+        this.context.subscriptions.push(this.client);
     }
 
     private checkConditions(editor: TextEditor) {
-        if (this.config.useGpt && this.config.openaiApiKey === "None") {
+        if (this.config.config.useGpt && this.config.config.openaiApiKey === "None") {
             wm.showApiKeyNotProvidedMessage(); return false;
         } else if (editor.document.languageId !== "coq") {
             wm.showIncorrectFileFormatMessage(); return false;
@@ -151,13 +153,6 @@ export class Coqpilot implements Disposable {
         }
 
         return true;
-    }
-
-    private reloadConfig() {
-        this.config = CoqpilotConfig.create(
-            workspace.getConfiguration('coqpilot')
-        );
-        CoqpilotConfig.checkRequirements(this.config);
     }
 
     private async generateAtPoint(
@@ -189,9 +184,9 @@ export class Coqpilot implements Disposable {
             this.llmPrompt, 
             this.llm, 
             progressBar,
-            this.config.logAttempts,
-            this.config.proofAttemsPerOneTheorem, 
-            this.config.logFolderPath
+            this.config.config.logAttempts,
+            this.config.config.proofAttemsPerOneTheorem, 
+            this.config.config.logFolderPath
         );
         const proof = await interactor.runProofGeneration(
             thrName,
@@ -218,12 +213,8 @@ export class Coqpilot implements Disposable {
         }
     }
 
-    async runProveAllAdmitted(editor: TextEditor) {
-        await this.initHistory(editor);
-        const admittedTheorems = this.llmPrompt?.admittedTheorems;
-        const proofHoles = admittedTheorems.map((thr) => thr.proof.holes).flat();
-        logger.info(`Proof holes: ${proofHoles.map((hole) => `${hole.range.start.line} ${hole.range.start.character}`).join(", ")}`);
-        for (const hole of proofHoles) {
+    async proveHoles(editor: TextEditor, holes: ProofStep[]) {
+        for (const hole of holes) {
             // Run proof generation at the start of the hole
             const position = lspUtils.toVPosition(hole.range.start);
             const proof = await this.generateAtPoint(editor, position);
@@ -248,16 +239,32 @@ export class Coqpilot implements Disposable {
         }
     }
 
-    toggleLspClient() {
+    async runProveAllAdmitted(editor: TextEditor) {
+        await this.initHistory(editor);
+        const admittedTheorems = this.llmPrompt?.admittedTheorems;
+        const proofHoles = admittedTheorems.map((thr) => thr.proof.holes).flat();
+        await this.proveHoles(editor, proofHoles);
+    }
+
+    async runProveAdmittedInSelection(editor: TextEditor) {
+        await this.initHistory(editor);
+        const allTheorems = this.llmPrompt?.theoremsFromFile;
+        const proofHoles = allTheorems
+            .map((thr) => thr.proof.holes)
+            .flat()
+            .filter((hole) => editor.selection.contains(
+                utils.toVPosition(hole.range.start)
+            ));
+        await this.proveHoles(editor, proofHoles);
+    }
+
+    async toggleLspClient() {
         logger.info("Toggle Extension");
         if (this.client?.isRunning()) {
-            this.client?.stop();
-            this.client?.dispose();
-            this.proofView?.dispose();
+            this.client?.dispose(2000)
+                .then(() => this.proofView?.dispose());
         } else {
-            this.client?.start();
-            this.proofView = new ProofView(this.client, this.statusItem);
-            this.context.subscriptions.push(this.proofView);
+            await this.initializeClient();
         }
     }
 

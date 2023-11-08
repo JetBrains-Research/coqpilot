@@ -8,7 +8,7 @@
     "url": "https://github.com/K-dizzled/coqpilot"
   },
   "publisher": "JetBrains-Research",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "engines": {
     "vscode": "^1.82.0"
   },
@@ -44,30 +44,27 @@
         "title": "Coqpilot: Try to generate proof for the goal under the cursor."
       },
       {
-        "command": "coqpilot.coq-lsp.restart",
-        "title": "Coqpilot: Restart the underlying coq-lsp server."
-      },
-      {
-        "command": "coqpilot.coq-lsp.toggle",
-        "title": "Coqpilot: Toggle the underlying coq-lsp server."
-      },
-      {
-        "command": "coqpilot.coq-lsp.stop",
-        "title": "Coqpilot: Stop the coq-lsp server."
-      },
-      {
         "command": "coqpilot.toggle",
         "title": "Coqpilot: Toggle the plugin"
       }, 
       {
         "command": "coqpilot.prove_all_holes",
         "title": "Coqpilot: Try to prove all holes (admitted goals) in the current file."
-      }, 
+      },
       {
-        "command": "coqpilot.reload_config", 
-        "title": "Reload the settings (trigger this if you have changed the settings after plugin start and want to see the updates)."
+        "command": "coqpilot.prove_in_selection",
+        "title": "Coqpilot: Try to prove holes in selection."
       }
     ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "coqpilot.prove_in_selection",
+          "when": "editorTextFocus && editorHasSelection && resourceLangId == coq",
+          "group": "queries"
+        }
+      ]
+    },
     "configuration": [
       {
         "type": "object",
@@ -131,7 +128,7 @@
           },
           "coqpilot.parseFileOnInit": {
             "type": "boolean",
-            "default": true,
+            "default": false,
             "markdownDescription": "Whether to start parsing the file into message history on extension startup."
           },
           "coqpilot.parseFileOnEditorChange": {
@@ -145,7 +142,7 @@
               "type": "string"
             },
             "default": [],
-            "markdownDescription": "A list of tactics that would also be used to try generating proofs. Commands in the list must be valid coq commands available in your environment and must finish with a dot."
+            "markdownDescription": "A list of tactics that would also be used to try generating proofs. Commands in the list must be valid coq commands available in your environment."
           },
           "coqpilot.coqLspPath": {
             "type": "string",

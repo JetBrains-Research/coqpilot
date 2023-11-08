@@ -1,11 +1,12 @@
 import { LLMInterface } from "./llmInterface";
 import { LlmPromptInterface } from "./llmPromptInterface";
+import { CoqpilotConfigWrapper } from "../extension/config";
 
 export class SingleTacticSolver implements LLMInterface {
-    private tactics: string[];
+    private configWrapped: CoqpilotConfigWrapper; 
 
-    constructor(tactics: string[]) {
-        this.tactics = tactics;
+    constructor(configWrapped: CoqpilotConfigWrapper) {
+        this.configWrapped = configWrapped;
     }
 
     initHistory(_llmPrompt: LlmPromptInterface): void {
@@ -13,7 +14,7 @@ export class SingleTacticSolver implements LLMInterface {
     }
     
     async sendMessageWithoutHistoryChange(_message: string, _choices: number): Promise<string[]> {
-        return this.tactics.map((tactic) => {
+        return this.configWrapped.config.extraCommandsList.map((tactic) => {
             return `Proof. ${tactic} Qed.`;
         });
     }
