@@ -78,7 +78,7 @@ jobs:
       with:
         pat: stub
         dryRun: true
-        
+
     - name: Upload Extension Package as Artifact
       uses: actions/upload-artifact@v2
       with:
@@ -94,6 +94,22 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 16.x
+      - name: Install Dependencies
+        run: npm ci
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: ubuntu-latest
+      - name: GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
+          body: |
+            # Summary
+            See [changelog](https://github.com/K-dizzled/coqpilot/blob/main/CHANGELOG.md)
+          name: ${{ github.ref_name }}
+          fail_on_unmatched_files: true
+          files: ${{ needs.build-lint-test.outputs.vsixPath }}
       - name: Publish to Visual Studio Marketplace
         uses: HaaLeo/publish-vscode-extension@v1
         with:
