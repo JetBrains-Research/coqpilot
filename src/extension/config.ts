@@ -32,7 +32,7 @@ export class CoqpilotConfigWrapper {
         return this._config;
     }
 
-    constructor(conf?: CoqpilotConfig) {
+    constructor(conf: CoqpilotConfig | undefined = undefined) {
         this._config = conf ?? CoqpilotConfig.create(
             vscode.workspace.getConfiguration('coqpilot')
         )!;
