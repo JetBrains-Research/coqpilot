@@ -100,16 +100,6 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: ubuntu-latest
-      - name: GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          generate_release_notes: true
-          body: |
-            # Summary
-            See [changelog](https://github.com/K-dizzled/coqpilot/blob/main/CHANGELOG.md)
-          name: ${{ github.ref_name }}
-          fail_on_unmatched_files: true
-          files: ${{ needs.build-lint-test.outputs.vsixPath }}
       - name: Publish to Visual Studio Marketplace
         uses: HaaLeo/publish-vscode-extension@v1
         with:
