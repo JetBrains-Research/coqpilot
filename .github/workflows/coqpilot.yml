@@ -69,3 +69,18 @@ jobs:
           COQ_LSP_PATH: ${{ env.coqlsppath }}
       run: npm test -- -ex='simpleSolver.test.js'
       if: runner.os != 'Linux'
+
+  create-release:
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16.x
+      - name: Publish to Visual Studio Marketplace
+        uses: HaaLeo/publish-vscode-extension@v1
+        with:
+          pat: ${{ secrets.VSCE_ACCESS_TOKEN }}
+          registryUrl: https://marketplace.visualstudio.com

@@ -140,6 +140,7 @@ export class Coqpilot implements Disposable {
         await this.client.start();
     
         this.context.subscriptions.push(this.proofView);
+        this.context.subscriptions.push(this.client);
     }
 
     private checkConditions(editor: TextEditor) {
@@ -257,16 +258,13 @@ export class Coqpilot implements Disposable {
         await this.proveHoles(editor, proofHoles);
     }
 
-    toggleLspClient() {
+    async toggleLspClient() {
         logger.info("Toggle Extension");
         if (this.client?.isRunning()) {
-            this.client?.stop();
-            this.client?.dispose();
-            this.proofView?.dispose();
+            this.client?.dispose(2000)
+                .then(() => this.proofView?.dispose());
         } else {
-            this.client?.start();
-            this.proofView = new ProofView(this.client, this.statusItem);
-            this.context.subscriptions.push(this.proofView);
+            await this.initializeClient();
         }
     }
 

@@ -8,7 +8,7 @@
     "url": "https://github.com/K-dizzled/coqpilot"
   },
   "publisher": "JetBrains-Research",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "engines": {
     "vscode": "^1.82.0"
   },
@@ -42,18 +42,6 @@
       {
         "command": "coqpilot.run_generation",
         "title": "Coqpilot: Try to generate proof for the goal under the cursor."
-      },
-      {
-        "command": "coqpilot.coq-lsp.restart",
-        "title": "Coqpilot: Restart the underlying coq-lsp server."
-      },
-      {
-        "command": "coqpilot.coq-lsp.toggle",
-        "title": "Coqpilot: Toggle the underlying coq-lsp server."
-      },
-      {
-        "command": "coqpilot.coq-lsp.stop",
-        "title": "Coqpilot: Stop the coq-lsp server."
       },
       {
         "command": "coqpilot.toggle",
