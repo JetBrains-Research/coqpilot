@@ -3,6 +3,8 @@ name: Build and Test
 on: 
   push:
     branches: [ main ]
+    tags:
+      - "v*"
   pull_request:
     branches: [ main ]
 
@@ -100,6 +102,13 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: ubuntu-latest
+      - name: Create GitHub Release
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          files: ${{ needs.build.outputs.vsixPath }}
+          automatic_release_tag: ${{ github.ref }}
       - name: Publish to Visual Studio Marketplace
         uses: HaaLeo/publish-vscode-extension@v1
         with:
