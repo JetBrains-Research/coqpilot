@@ -44,20 +44,6 @@ suite('ProofView auxTheorem tests', () => {
     }
 
     const testData: TestData[] = [
-        // {
-        //     fileRoot: path.join(dirname, 'src', 'test', 'resources', 'coqProj'),
-        //     filePath: path.join(dirname, 'src', 'test', 'resources', 'coqProj', 'theories', 'B.v'),
-        //     positions: [
-        //         new VPosition(4, 0),
-        //         new VPosition(4, 14),
-        //         new VPosition(4, 21)
-        //     ],
-        //     goals: [
-        //         "Lemma test_aux_thr  :\n   forall n : nat, evenb (S n) = negb (evenb n).", 
-        //         "Lemma test_aux_thr (n : nat) :\n   evenb (S n) = negb (evenb n).", 
-        //         "Lemma test_aux_thr (n : nat) :\n   negb (evenb n) = negb (evenb n)."
-        //     ]
-        // }, 
         {
             fileRoot: undefined, 
             filePath: path.join(dirname, 'src', 'test', 'resources', 'integration_test.v'),

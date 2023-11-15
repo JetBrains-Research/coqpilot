@@ -273,9 +273,9 @@ export class Coqpilot implements Disposable {
         let activationConfig = workspace.getConfiguration();
         let fexc: any = activationConfig.get("files.exclude");
         activationConfig.update("files.exclude", {
+            ...fexc,
             // eslint-disable-next-line @typescript-eslint/naming-convention
             '**/*_cp_aux.v': true,
-            ...fexc,
         });
     }
 

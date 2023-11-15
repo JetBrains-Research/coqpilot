@@ -23,7 +23,7 @@ export function run(): Promise<void> {
 			// Add files to the test suite
 			files.forEach(f => {
 				if(singleFileTest) {
-					if(f === singleFileTest) {
+					if(f.includes(singleFileTest)) {
 						mocha.addFile(path.resolve(testsRoot, f));
 					}
 				} else {

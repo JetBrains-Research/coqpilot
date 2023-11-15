@@ -152,6 +152,10 @@ export class Interactor {
 
             llmResponse = e;
         });
+
+        this.progressBar.finish();
+        this.runLogger.onEndLlmResponseFetch();
+        this.runLogger.onTheoremProofStart();
         
         if (llmResponse instanceof Error) {
             return GenerationResult.exception(llmResponse.message, "Open-ai completion request");
@@ -161,10 +165,6 @@ export class Interactor {
 
         // Surround with curly braces and remove Proof. and Qed.
         llmResponse = llmResponse.map(this.llmPrompt.thrProofToBullet);
-
-        this.progressBar.finish();
-        this.runLogger.onEndLlmResponseFetch();
-        this.runLogger.onTheoremProofStart();
 
         let verifyProofsAttempts = 3;
         let proofCheckResult: [boolean, string][] = [];
