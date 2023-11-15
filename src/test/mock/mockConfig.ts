@@ -12,7 +12,8 @@ export function mockConfig(): CoqpilotConfig {
         parseFileOnEditorChange: false,
         coqLspPath: "coq-lsp",
         useGpt: false, 
-        extraCommandsList: []
+        extraCommandsList: [], 
+        shuffleHoles: false
     };
 }
 
@@ -28,7 +29,8 @@ export function mockConfigRealGpt(apikey: string): CoqpilotConfig {
         parseFileOnEditorChange: false,
         coqLspPath: "coq-lsp",
         useGpt: true, 
-        extraCommandsList: []
+        extraCommandsList: [], 
+        shuffleHoles: false
     };
 }
 
@@ -44,6 +46,7 @@ export function simpleSolverMockConfig(tactics: string[]): CoqpilotConfig {
         parseFileOnEditorChange: false,
         coqLspPath: "coq-lsp",
         useGpt: false, 
-        extraCommandsList: tactics
+        extraCommandsList: tactics, 
+        shuffleHoles: false
     };
 }

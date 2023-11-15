@@ -1,5 +1,8 @@
 # Change Log
 
+### 1.4.3
+- Tiny patch with shuffling of the hole array.
+
 ### 1.4.2
 - Now no need to add dot in the end of the tactic, when configuring a single tactic solver.
 - Automatic reload settings on change in the settings file. Not all settings are reloaded automatically, 

@@ -8,7 +8,7 @@
     "url": "https://github.com/K-dizzled/coqpilot"
   },
   "publisher": "JetBrains-Research",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "engines": {
     "vscode": "^1.82.0"
   },
@@ -153,6 +153,11 @@
             "type": "boolean", 
             "default": true, 
             "markdownDescription": "Whether to use gpt as one of the used LLMs."
+          }, 
+          "coqpilot.shuffleHoles": {
+            "type": "boolean", 
+            "default": false, 
+            "markdownDescription": "Whether to shuffle the order of proving the holes."
           }
         }
       }

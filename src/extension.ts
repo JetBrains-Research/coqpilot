@@ -31,6 +31,7 @@ import { makeAuxfname } from "./coqLspClient/utils";
 import * as lspUtils from "./coqLspClient/utils";
 import { ProofStep } from "./lib/pvTypes";
 import * as utils from "./coqLspClient/utils";
+import { shuffleArray } from "./coqLlmInteraction/utils";
 
 export class Coqpilot implements Disposable {
 
@@ -214,6 +215,10 @@ export class Coqpilot implements Disposable {
     }
 
     async proveHoles(editor: TextEditor, holes: ProofStep[]) {
+        if (this.config.config.shuffleHoles) {
+            shuffleArray(holes);
+        }
+        
         for (const hole of holes) {
             // Run proof generation at the start of the hole
             const position = lspUtils.toVPosition(hole.range.start);
