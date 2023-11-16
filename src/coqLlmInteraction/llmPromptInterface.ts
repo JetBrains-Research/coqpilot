@@ -119,7 +119,7 @@ export class LlmPromptBase {
         }
 
         const separated = new SeparatedTheorems(admittedTheorems, provenTheorems);
-        logger.info(`Admiited theorems: ${separated.admittedTheorems.map((th) => th.name)}`);
+        logger.info(`Admitted theorems: ${separated.admittedTheorems.map((th) => th.name)}`);
         logger.info(`Training theorems: ${separated.trainingTheorems.map((th) => th.name)}`);
         return separated;
     }

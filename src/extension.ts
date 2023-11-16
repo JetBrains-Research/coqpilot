@@ -129,6 +129,9 @@ export class Coqpilot implements Disposable {
         logger.info(`Theorems retrieved:\n${thrs}`);
         
         this.llmPrompt = new CoqPromptKShot(thrs, this.config.config.maxNumberOfTokens);
+
+        logger.info(`Initialized with theorems: ${this.llmPrompt.trainingTheorems.map((thr) => thr.name)}`);
+        logger.info(this.llmPrompt.trainingTheorems.map((thr) => thr.toString()));
     }
 
     async initializeClient() {
@@ -246,8 +249,9 @@ export class Coqpilot implements Disposable {
 
     async runProveAllAdmitted(editor: TextEditor) {
         await this.initHistory(editor);
-        const admittedTheorems = this.llmPrompt?.admittedTheorems;
-        const proofHoles = admittedTheorems.map((thr) => thr.proof.holes).flat();
+        const allTheorems = this.llmPrompt?.theoremsFromFile;
+        console.log(allTheorems);
+        const proofHoles = allTheorems.map((thr) => thr.proof.holes).flat();
         await this.proveHoles(editor, proofHoles);
     }
 
