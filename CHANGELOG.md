@@ -1,5 +1,8 @@
 # Change Log
 
+### 1.4.5
+- Fix formatting issues when inserting the proof into the editor.
+
 ### 1.4.4
 - Do not require a theorem to be `Admitted.` for coqpilot to prove holes in it.
 - Correctly parse theorems that are declared with `Definition` keyword.

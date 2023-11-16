@@ -44,20 +44,6 @@ suite('ProofView auxTheorem tests', () => {
     }
 
     const testData: TestData[] = [
-        // {
-        //     fileRoot: path.join(dirname, 'src', 'test', 'resources', 'coqProj'),
-        //     filePath: path.join(dirname, 'src', 'test', 'resources', 'coqProj', 'theories', 'B.v'),
-        //     positions: [
-        //         new VPosition(4, 0),
-        //         new VPosition(4, 14),
-        //         new VPosition(4, 21)
-        //     ],
-        //     goals: [
-        //         "Lemma test_aux_thr  :\n   forall n : nat, evenb (S n) = negb (evenb n).", 
-        //         "Lemma test_aux_thr (n : nat) :\n   evenb (S n) = negb (evenb n).", 
-        //         "Lemma test_aux_thr (n : nat) :\n   negb (evenb n) = negb (evenb n)."
-        //     ]
-        // }, 
         {
             fileRoot: undefined, 
             filePath: path.join(dirname, 'src', 'test', 'resources', 'integration_test.v'),
@@ -331,4 +317,89 @@ suite('ProofView parseFile tests', () => {
             client.stop();
         }
     }).timeout(5000);
+});
+
+suite('ProofView parseFile with different Theorem defining methods', () => {
+    const statusItem = new StatusBarButton();
+    const wsConfig = workspace.getConfiguration("coqpilot");
+    const dirname = path.dirname(path.dirname(path.dirname(__dirname)));
+    const extensionConfig = new CoqpilotConfigWrapper(
+        common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig)), false
+    );
+
+    interface TheoremData {
+        name: string,
+        isIncomplete: boolean | null
+    }
+
+    interface TestData {
+        filePath: string,
+        theorems: TheoremData[]
+    }
+
+    const testData: TestData[] = [
+        {
+            filePath: path.join(dirname, 'src', 'test', 'resources', 'various_defining.v'),
+            theorems: [
+                {
+                    name: "test_1",
+                    isIncomplete: false,
+                },
+                {
+                    name: "test_2",
+                    isIncomplete: false,
+                },
+                {
+                    name: "test_3",
+                    isIncomplete: false,
+                },
+                {
+                    name: "test_4",
+                    isIncomplete: false,
+                },
+                {
+                    name: "test_5",
+                    isIncomplete: null,
+                },
+                {
+                    name: "test_6",
+                    isIncomplete: true,
+                },
+                {
+                    name: "test_7",
+                    isIncomplete: true,
+                }
+            ]
+        },
+        
+    ];
+
+	test('Test check Definitions/Lemmas/Theorems parsed correctly', async () => {
+        for (const data of testData) {
+            const { filePath, theorems } = data;
+            const uri = Uri.file(filePath);
+            await common.openTextFile(uri);
+
+            const client = new CoqLspClient(statusItem, wsConfig, extensionConfig);
+            await client.start();
+            const proofView = new ProofView(client, statusItem); 
+
+            const res = await proofView.parseFile(window.activeTextEditor);
+    
+            assert.strictEqual(res.length, theorems.length);
+            for (let i = 0; i < res.length; i++) {
+                const theorem = theorems[i];
+                const thrRes = res[i];
+
+                assert.strictEqual(thrRes.name, theorem.name);
+                if (theorem.isIncomplete === null) {
+                    assert.strictEqual(thrRes.proof, null);
+                } else {
+                    assert.strictEqual(thrRes.proof.is_incomplete, theorem.isIncomplete);
+                }
+            }
+
+            client.stop();
+        }
+    });
 });

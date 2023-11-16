@@ -32,6 +32,7 @@ import * as lspUtils from "./coqLspClient/utils";
 import { ProofStep } from "./lib/pvTypes";
 import * as utils from "./coqLspClient/utils";
 import { shuffleArray } from "./coqLlmInteraction/utils";
+import * as editorUtils from "./editor/utils";
 
 export class Coqpilot implements Disposable {
 
@@ -206,7 +207,8 @@ export class Coqpilot implements Disposable {
         const proof = await this.generateAtPoint(editor, editor.selection.active);
         switch (proof.status) {
             case GenerationStatus.success:
-                wm.showSearchSucessMessage(editor, proof.data, editor.selection.active);
+                const proofWithIndent = editorUtils.makeIndent(proof.data, editor.selection.active.character);
+                wm.showSearchSucessMessage(editor, proofWithIndent, editor.selection.active);
                 break;
             case GenerationStatus.searchFailed:
                 wm.showSearchFailureMessageHole(editor.selection.active);
