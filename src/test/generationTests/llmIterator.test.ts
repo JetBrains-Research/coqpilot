@@ -1,10 +1,11 @@
 import { SingleTacticSolver } from '../../coqLlmInteraction/singleTacticSolver';
 import { VsCodeSpinningWheelProgressBar } from '../../extension/vscodeProgressBar';
-import { MockLlmPrompt } from '../mock/mockllm';
+import { MockLlm } from '../mock/mockllm';
 import { CoqpilotConfig, CoqpilotConfigWrapper } from '../../extension/config';
 import { workspace } from 'vscode';
 import { LLMIterator } from '../../coqLlmInteraction/llmIterator';
 import * as assert from 'assert';
+import { LlmPromptBase } from '../../coqLlmInteraction/llmPromptInterface';
 
 suite('LLM Iterator tests', () => {
     const wsConfig = workspace.getConfiguration("coqpilot");
@@ -18,7 +19,7 @@ suite('LLM Iterator tests', () => {
 
         const extensionConfig = new CoqpilotConfigWrapper(config, false);
 
-        const mockLlm = new MockLlmPrompt();
+        const mockLlm = new MockLlm();
         const solver = new SingleTacticSolver(extensionConfig);
         const progressBar = new VsCodeSpinningWheelProgressBar();
 
@@ -37,7 +38,8 @@ suite('LLM Iterator tests', () => {
             if (result.done) {
                 break;
             }
-            assert.strictEqual(answers[index], result.value.toString().replace(/\n/g, " "));
+            const answer = LlmPromptBase.thrProofToBullet(LlmPromptBase.removeBackticks(answers[index]));
+            assert.strictEqual(answer, result.value.toString().replace(/\n/g, " "));
             index += 1;
         }
     });
@@ -52,8 +54,8 @@ suite('LLM Iterator tests', () => {
         const extensionConfig = new CoqpilotConfigWrapper(config, false);
         const delay = 3000;
 
-        const mockLlm = new MockLlmPrompt(delay);
-        const mockLlm1 = new MockLlmPrompt(delay);
+        const mockLlm = new MockLlm(delay);
+        const mockLlm1 = new MockLlm(delay);
         const solver = new SingleTacticSolver(extensionConfig);
         const progressBar = new VsCodeSpinningWheelProgressBar();
 
@@ -75,7 +77,8 @@ suite('LLM Iterator tests', () => {
             if (result.done) {
                 break;
             }
-            assert.strictEqual(answers[index], result.value.toString().replace(/\n/g, " "));
+            const answer = LlmPromptBase.thrProofToBullet(LlmPromptBase.removeBackticks(answers[index]));
+            assert.strictEqual(answer, result.value.toString().replace(/\n/g, " "));
             assert(fetchDelay >= expectedDelays[index] && fetchDelay < expectedDelays[index] + 800);
             index += 1;
         }

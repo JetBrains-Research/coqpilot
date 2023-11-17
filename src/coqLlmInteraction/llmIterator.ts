@@ -1,9 +1,10 @@
 import { LLMInterface } from "./llmInterface";
+import { LLMPrompt, LlmPromptBase } from './llmPromptInterface';
 import { ProgressBar } from "../extension/progressBar";
 import logger from "../extension/logger";
 
-type Proof = string;
-type ProofBatch = Proof[];
+export type Proof = string;
+export type ProofBatch = Proof[];
 
 export class LLMIterator implements AsyncIterator<Proof> {
     private models: LLMInterface[];
@@ -25,6 +26,24 @@ export class LLMIterator implements AsyncIterator<Proof> {
 
     [Symbol.asyncIterator]() {
         return this;
+    }
+
+    restart(): void {
+        this.modelIndex = 0;
+        this.proofIndex = 0;
+        this.fetchedResults = new Array<ProofBatch>(this.models.length);
+    }
+
+    postProcessProof(proof: Proof): Proof {
+        let result = LlmPromptBase.removeBackticks(proof);
+        // Surround with curly braces and remove Proof. and Qed.
+        result = LlmPromptBase.thrProofToBullet(result);
+
+        return result;
+    } 
+
+    initHistory(llmPrompt: LLMPrompt): void {
+        this.models.forEach(model => model.initHistory(llmPrompt));
     }
 
     async next(...args: any[] | [undefined]): Promise<IteratorResult<string, any>> {
@@ -50,7 +69,7 @@ export class LLMIterator implements AsyncIterator<Proof> {
 
         this.proofIndex += 1;
 
-        return { done: false, value: proof };
+        return { done: false, value: this.postProcessProof(proof) };
     }
 
     private async fetchLLM(index: number, message: string): Promise<ProofBatch> {

@@ -53,6 +53,7 @@ import { Theorem } from "../lib/pvTypes";
 import { parseFleche } from "./flecheDocUtils";
 import { StatusBarButton } from "../editor/enableButton";
 import logger from "../extension/logger";
+import { LLMIterator } from "../coqLlmInteraction/llmIterator";
 
 export interface ProofViewInterface extends Disposable {
     /**
@@ -72,21 +73,24 @@ export interface ProofViewInterface extends Disposable {
     ): Promise<[string, string] | undefined>;
 
     /**
-     * Takes an array of `{ ${proofWithoutProofAndQed} }` strings, for each proof,
+     * Takes an iterator over `{ ${proofWithoutProofAndQed} }` strings, for each proof,
      * inserts it into the end of the file, and check for errors.
      * IS NOT RESPONSIBLE for opening the file located at `uri`.
      * IS RESPONSIBLE for deleting the file located at `uri` after the call.
      * @param uri The uri of the aux document
-     * @param theoremsWithProofs The array of proofs
-     * @returns An array of tuples, each tuple contains a boolean and an error message, if any.
+     * @param proofs An iterator over proofs
+     * @param thrStatement The statement of the theorem that is being proved
+     * @returns An array of tuples, each tuple contains a proof, its typecheck result as boolean
+     * and an error message, if any.
      * Invariant: the length of the returned array is <= the length of `theoremWithProofs`.
      * The array either contains all `false` or < `theoremWithProofs.length` `false` values 
      * and one `true` value.
      */
     checkTheorems(
         uri: Uri, 
-        proofs: string[]
-    ): Promise<[boolean, string | null][]>;
+        proofs: LLMIterator, 
+        thrStatement: string
+    ): Promise<[string, boolean, string | null][]>;
 
     /**
      * Parses the file and returns a list of theorems.
@@ -400,8 +404,9 @@ export class ProofView implements ProofViewInterface {
 
     async checkTheorems(
         uri: Uri, 
-        proofs: string[]
-    ): Promise<[boolean, string | null][]> {
+        proofs: LLMIterator, 
+        thrStatement: string
+    ): Promise<[string, boolean, string | null][]> {
         logger.info("Started type-checking proofs");
 
         let documentVersion = 1;
@@ -410,13 +415,26 @@ export class ProofView implements ProofViewInterface {
         const context = readFileSync(uri.fsPath).toString();
         const lineNumContext = context.split("\n").length - 1;
 
-        const proofVerdicts: [boolean, string | null][] = [];
-        const proofsCleaned = proofs.map(this.cleanProof);
+        // const proofVerdicts: [boolean, string | null][] = [];
+        // const proofsCleaned = proofs.map(this.cleanProof);
 
-        for (const proof of proofsCleaned) {
+        proofs.restart();
+        const proofVerdicts: [string, boolean, string | null][] = [];
+
+        while (true) {
+            const result = await proofs.next(thrStatement);
+            if (result.done) {
+                break;
+            }
+
+            const proof = this.cleanProof(result.value);
+            logger.info(proof);
+        // }
+
+        // for (const proof of proofsCleaned) {
             const prohibitedTactics = ["admit.", "Admitted.", "Abort."];
             if (prohibitedTactics.some(tactic => proof.includes(tactic))) {
-                proofVerdicts.push([false, "Proof contains 'Abort.' or 'Admitted.'"]);
+                proofVerdicts.push([proof, false, "Proof contains 'Abort.' or 'Admitted.'"]);
                 continue;
             }
             
@@ -455,11 +473,11 @@ export class ProofView implements ProofViewInterface {
             writeFileSync(uri.fsPath, context);
 
             if (errorMsg === null) {
-                proofVerdicts.push([true, null]);
+                proofVerdicts.push([proof, true, null]);
                 unlinkSync(uri.fsPath);
                 return proofVerdicts;
             } else {
-                proofVerdicts.push([false, errorMsg]);
+                proofVerdicts.push([proof, false, errorMsg]);
             }
         }
 

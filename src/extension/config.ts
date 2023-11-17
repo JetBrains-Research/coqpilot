@@ -1,10 +1,11 @@
 import { GPT35 } from '../coqLlmInteraction/gpt35';
 import { SingleTacticSolver } from '../coqLlmInteraction/singleTacticSolver';
-import { LLMAdapter } from '../coqLlmInteraction/llmAdapter';
-import { MockLlmPrompt } from '../test/mock/mockllm';
+import { MockLlm } from '../test/mock/mockllm';
 import { LLMInterface } from '../coqLlmInteraction/llmInterface';
 import * as vscode from 'vscode';
 import logger from "./logger";
+import { LLMIterator } from '../coqLlmInteraction/llmIterator';
+import { ProgressBar } from './progressBar';
 
 export interface CoqpilotConfig {
     openaiApiKey: string;
@@ -33,7 +34,7 @@ export class CoqpilotConfigWrapper {
             vscode.workspace.getConfiguration('coqpilot')
         );
         CoqpilotConfig.checkRequirements(this._config);
-        logger.info("Successfully updated config: " + JSON.stringify(this._config));
+        // logger.info("Successfully updated config: " + JSON.stringify(this._config));
 
         return this._config;
     }
@@ -98,10 +99,12 @@ export namespace CoqpilotConfig {
         }
     }
 
-    export function getLlm(configWrapped: CoqpilotConfigWrapper): LLMInterface {
+    export function getLlm(configWrapped: CoqpilotConfigWrapper, progressBar: ProgressBar): LLMIterator {
         const config = configWrapped.config;
+        let allModels: LLMInterface[] = [];
+
         if (config.gptModel === OtherModels.MOCK) {
-            return new MockLlmPrompt();
+            allModels.push(new MockLlm());
         } else {
             let gptModel: LLMInterface | null = null; 
             if (config.useGpt) {
@@ -114,12 +117,12 @@ export namespace CoqpilotConfig {
             
             const simplestModel = new SingleTacticSolver(configWrapped);
             
-            const allModels = [
-                gptModel, simplestModel
+            allModels = [
+                simplestModel, gptModel
             ].filter((model) => model !== null);
-            
-            return new LLMAdapter(allModels);
         }
+
+        return new LLMIterator(allModels, config.proofAttemsPerOneTheorem, progressBar);
     }
 }
 

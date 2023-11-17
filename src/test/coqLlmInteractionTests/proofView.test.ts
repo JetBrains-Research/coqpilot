@@ -27,6 +27,10 @@ import * as assert from 'assert';
 import { makeAuxfname } from '../../coqLspClient/utils';
 import * as common from '../common';
 import { CoqpilotConfig, CoqpilotConfigWrapper } from "../../extension/config";
+import { TestLLMPrompt } from "../mock/mockllm";
+import { LLMIterator } from '../../coqLlmInteraction/llmIterator';
+import { VsCodeSpinningWheelProgressBar } from '../../extension/vscodeProgressBar';
+import { LlmPromptBase } from '../../coqLlmInteraction/llmPromptInterface';
 
 suite('ProofView auxTheorem tests', () => {
     const statusItem = new StatusBarButton();
@@ -133,7 +137,7 @@ suite('ProofView checkTheorems tests', () => {
                 "Proof. auto. Qed.",
             ], 
             verdicts: [
-                [false, " (in proof plus_O_n''): Attempt to save an incomplete proof"],
+                [false, "This proof is focused, but cannot be unfocused this way"],
                 [false, "The reference kek was not found in the current"],
                 [false, "The reference lol was not found in the current"],
                 [false, "No such assumption."],
@@ -156,7 +160,7 @@ suite('ProofView checkTheorems tests', () => {
                 "Proof.\nintros n.\nPrint plus.\nsimpl.\nrewrite <- plus_n_O.\nreflexivity.\nQed."
             ],
             verdicts: [
-                [false, "The reference coq was not found in the current"],
+                [false, "Syntax error: [ltac_use_default] expected after [tactic] (in [tactic_command])."],
                 [false, "The variable plus_0_r was not found in the current"],
                 [false, "The variable plus_0_r was not found in the current"],
                 [false, "The variable plus_0_r was not found in the current"],
@@ -177,12 +181,25 @@ suite('ProofView checkTheorems tests', () => {
             await client.start();
             const proofView = new ProofView(client, statusItem); 
             await proofView.openFile(Uri.file(filePath));
-            const res = await proofView.checkTheorems(Uri.file(filePath), proofs);
+
+            const testLlm = new TestLLMPrompt(proofs);
+            const progressBar = new VsCodeSpinningWheelProgressBar();
+            const proofsIter = new LLMIterator([testLlm], 1, progressBar);
+
+            const res = await proofView.checkTheorems(Uri.file(filePath), proofsIter, context);
 
             assert.strictEqual(res.length, verdicts.length);
             for (let i = 0; i < res.length; i++) {
-                assert.strictEqual(res[i][0], verdicts[i][0]);
-                assert.strictEqual(res[i][1], verdicts[i][1]);
+                const [proof, verdict, errorMsg] = res[i];
+                const [expectedVerdict, expectedMessage] = verdicts[i];
+
+                assert.strictEqual(expectedVerdict, verdict);
+                if (expectedMessage) {
+                    assert.strictEqual(expectedMessage, errorMsg);
+                }
+
+                const answer = LlmPromptBase.thrProofToBullet(LlmPromptBase.removeBackticks(proofs[i]));
+                assert.strictEqual(proof, answer);
             }
 
             client.stop();

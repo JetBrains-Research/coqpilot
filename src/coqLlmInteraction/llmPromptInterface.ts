@@ -51,11 +51,11 @@ export class LlmPromptBase {
         return (str.length / 4) >> 0;
     };
 
-    removeBackticks = (str: string): string => {
+    static removeBackticks = (str: string): string => {
         return str.replace(/`/g, '');
     };
 
-    thrProofToBullet = (proof: string): string => {
+    static thrProofToBullet = (proof: string): string => {
         // Remove "Proof." and "Qed."
         let res = proof.replace(/Proof using\./g, '')
                        .replace(/Proof\./g, '')
@@ -119,7 +119,7 @@ export class LlmPromptBase {
         }
 
         const separated = new SeparatedTheorems(admittedTheorems, provenTheorems);
-        logger.info(`Admiited theorems: ${separated.admittedTheorems.map((th) => th.name)}`);
+        logger.info(`Admitted theorems: ${separated.admittedTheorems.map((th) => th.name)}`);
         logger.info(`Training theorems: ${separated.trainingTheorems.map((th) => th.name)}`);
         return separated;
     }

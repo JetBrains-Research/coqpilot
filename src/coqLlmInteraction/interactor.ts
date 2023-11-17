@@ -1,8 +1,6 @@
 import { LLMPrompt } from './llmPromptInterface';
-import { LLMInterface } from './llmInterface';
+import { LLMIterator } from './llmIterator';
 import { EvaluationLogger } from './evaluationLogger';
-import { ProgressBar } from '../extension/progressBar';
-import { ProofViewError } from '../lib/pvTypes';
 import { Uri } from 'vscode';
 import logger from '../extension/logger';
 
@@ -75,7 +73,7 @@ export class GenerationResult<T> {
 
 export class Interactor {
     llmPrompt: LLMPrompt;
-    llmInterface: LLMInterface;
+    llmIterator: LLMIterator;
     logAttemps: boolean;
     logFilePath: string | null;
     contents: string[] | null;
@@ -83,22 +81,19 @@ export class Interactor {
     timeout: number;
     runLogger: EvaluationLogger;
     shots: number;
-    progressBar: ProgressBar;
 
     constructor(
         llmPrompt: LLMPrompt, 
-        llmInterface: LLMInterface, 
-        progressBar: ProgressBar,
+        llmIterator: LLMIterator,
         logAttemps: boolean = false, 
         shots: number = 1,
         logFolderPath: string | null = null
     ) {
         this.llmPrompt = llmPrompt;
-        this.llmInterface = llmInterface;
+        this.llmIterator = llmIterator;
         this.logAttemps = logAttemps;
-        this.progressBar = progressBar;
 
-        this.llmInterface.initHistory(this.llmPrompt);
+        this.llmIterator.initHistory(this.llmPrompt);
         this.logFilePath = null;
         this.contents = null;
         this.contentsPointer = 0;
@@ -132,98 +127,31 @@ export class Interactor {
         theoremName: string, 
         theoremStatement: string, 
         uri: Uri,
-        fnVerifyProofs: (uri: Uri, proofs: string[]) => Promise<[boolean, string | null][]>
+        fnVerifyProofs: (uri: Uri, proofs: LLMIterator, statement: string) => Promise<[string, boolean, string | null][]>
     ): Promise<GenerationResult<string>> {
-        this.runLogger.onStartLlmResponseFetch(theoremName);
-        this.progressBar.initialize(100, "id");
+        let proofCheckResult: [string, boolean, string | null][] | undefined = undefined;
+        try {
+            proofCheckResult = await fnVerifyProofs(uri, this.llmIterator, theoremStatement);
+        } catch (e) {
+            return GenerationResult.exception("Proof verification failed with " + e.message, "Interactor");
+        }
 
-        let llmResponse: string[] | Error | null = null;
-        
-        await this.llmInterface.sendMessageWithoutHistoryChange(
-            theoremStatement,
-            this.shots
-        ).then((response) => {
-            logger.info("Response received: " + JSON.stringify(response));
-            llmResponse = response;
-        }).catch((e) => {
-            logger.info("Error while generation occured: " + e.message);
-            this.runLogger.onException(e.message);
-            this.progressBar.finish();
-
-            llmResponse = e;
-        });
-
-        this.progressBar.finish();
-        this.runLogger.onEndLlmResponseFetch();
+        logger.info("Proof check result: " + JSON.stringify(proofCheckResult));
         this.runLogger.onTheoremProofStart();
-        
-        if (llmResponse instanceof Error) {
-            return GenerationResult.exception(llmResponse.message, "Open-ai completion request");
-        }
-
-        llmResponse = llmResponse.map(this.llmPrompt.removeBackticks);
-
-        // Surround with curly braces and remove Proof. and Qed.
-        llmResponse = llmResponse.map(this.llmPrompt.thrProofToBullet);
-
-        let verifyProofsAttempts = 3;
-        let proofCheckResult: [boolean, string][] = [];
-
-        while(verifyProofsAttempts > 0) {
-            try {
-                proofCheckResult = await fnVerifyProofs(uri, llmResponse);
-                logger.info("Proof check result: " + JSON.stringify(proofCheckResult));
-                break;
-            } catch (e) {
-                verifyProofsAttempts--;
-                if (verifyProofsAttempts === 0) {
-                    this.runLogger.onException(e.message);
-                    return GenerationResult.exception(e.message, "Coq-lsp error");
-                }
-
-                this.runLogger.onProofCheckFail(e.message);
-
-                this.runLogger.onStartLlmResponseFetch(theoremName);
-                await this.llmInterface.sendMessageWithoutHistoryChange(
-                    theoremStatement,
-                    this.shots
-                ).then((response) => {
-                    llmResponse = response;
-                }).catch((e) => {
-                    this.runLogger.onException(e.message);
-                    this.progressBar.finish();
-                    llmResponse = e;
-                });
-
-                if (llmResponse instanceof Error) {
-                    return GenerationResult.exception(llmResponse.message, "Open-ai completion request");
-                }
-
-                // Surround with curly braces and remove Proof. and Qed.
-                llmResponse = llmResponse.map(this.llmPrompt.thrProofToBullet);
-                this.runLogger.onEndLlmResponseFetch();
-                
-                if (e instanceof ProofViewError) {
-                    this.runLogger.onAttemptException(0, theoremName, `ProofViewError: ${e.message}`);
-                } else {
-                    this.runLogger.onAttemptException(0, theoremName, e.message);
-                }
-            } 
-        }
 
         let foundProof: string | undefined = undefined;
         for (let i = 0; i < proofCheckResult.length; i++) {
-            const [proofStatus, errorMsg] = proofCheckResult[i];
+            const [proof, proofStatus, errorMsg] = proofCheckResult[i];
             if (proofStatus) {
                 this.runLogger.onSuccessAttempt(
                     i + 1, theoremName, 
-                    theoremStatement, llmResponse[i]
+                    theoremStatement, proof
                 );
-                foundProof = llmResponse[i];
+                foundProof = proof;
             } else {
                 this.runLogger.onFailedAttempt(
                     i + 1, theoremName, 
-                    theoremStatement, llmResponse[i], errorMsg
+                    theoremStatement, proof, errorMsg
                 );
             }
         }

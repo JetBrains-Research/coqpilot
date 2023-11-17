@@ -17,7 +17,6 @@ import { ProofView, ProofViewInterface } from "./coqLspClient/proofView";
 import { StatusBarButton } from "./editor/enableButton";
 import { LLMPrompt } from "./coqLlmInteraction/llmPromptInterface";
 import { CoqPromptKShot } from "./coqLlmInteraction/coqLlmPrompt";
-import { LLMInterface } from "./coqLlmInteraction/llmInterface";
 import { CoqpilotConfig, CoqpilotConfigWrapper } from "./extension/config";
 import { 
     Interactor, 
@@ -31,6 +30,8 @@ import { makeAuxfname } from "./coqLspClient/utils";
 import * as lspUtils from "./coqLspClient/utils";
 import { ProofStep } from "./lib/pvTypes";
 import * as utils from "./coqLspClient/utils";
+import { LLMIterator } from "./coqLlmInteraction/llmIterator";
+import { ProgressBar } from "./extension/progressBar";
 
 export class Coqpilot implements Disposable {
 
@@ -39,8 +40,9 @@ export class Coqpilot implements Disposable {
     public client: BaseLanguageClient;
     private proofView: ProofViewInterface;
     private statusItem: StatusBarButton;
+    private progressBar: ProgressBar;
     private llmPrompt: LLMPrompt | undefined;
-    private llm: LLMInterface; 
+    private llm: LLMIterator; 
     private config: CoqpilotConfigWrapper = CoqpilotConfig.getNew();
 
     private constructor(
@@ -49,7 +51,8 @@ export class Coqpilot implements Disposable {
         this.excludeAuxFiles();
         this.context = context;
 
-        this.llm = CoqpilotConfig.getLlm(this.config);
+        this.progressBar = new VsCodeSpinningWheelProgressBar();
+        this.llm = CoqpilotConfig.getLlm(this.config, this.progressBar);
 
         this.disposables.push(this.statusItem);
         this.disposables.push(this.textEditorChangeHook);
@@ -179,11 +182,9 @@ export class Coqpilot implements Disposable {
             return GenerationResult.editorError();
         }
 
-        const progressBar = new VsCodeSpinningWheelProgressBar();
         const interactor = new Interactor(
             this.llmPrompt, 
-            this.llm, 
-            progressBar,
+            this.llm,
             this.config.config.logAttempts,
             this.config.config.proofAttemsPerOneTheorem, 
             this.config.config.logFolderPath

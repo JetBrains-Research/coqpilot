@@ -3,7 +3,7 @@ import { LlmPromptInterface } from "../../coqLlmInteraction/llmPromptInterface";
 import * as assert from 'assert';
 import * as common from '../common';
 
-export class MockLlmPrompt implements LLMInterface {
+export class MockLlm implements LLMInterface {
     answers: { [key: string]: string[] };
     delay: number;
 
@@ -28,5 +28,21 @@ export class MockLlmPrompt implements LLMInterface {
             return Array(choices).fill(this.answers[message][0]);
         }
         return this.answers[message];
+    }
+}
+
+export class TestLLMPrompt implements LLMInterface {
+    answers: string[];
+
+    constructor(answers: string[]) {
+        this.answers = answers;
+    }
+
+    initHistory(llmPrompt: LlmPromptInterface): void {
+        assert(llmPrompt);
+    }
+
+    async sendMessageWithoutHistoryChange(_message: string, _choices: number): Promise<string[]> {
+        return this.answers;
     }
 }
