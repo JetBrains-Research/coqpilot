@@ -1,5 +1,8 @@
 # Change Log
 
+### 1.4.6
+- Fix issue with plugin breaking after parsing a file containing theorem without `Proof.` keyword.
+
 ### 1.4.5
 - Fix formatting issues when inserting the proof into the editor.
 

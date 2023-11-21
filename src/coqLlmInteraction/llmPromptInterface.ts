@@ -6,6 +6,7 @@ class SeparatedTheorems {
     constructor(
         public readonly admittedTheorems: Theorem[],
         public readonly trainingTheorems: Theorem[], 
+        public readonly cleanedFileTheorems: Theorem[], 
     ) {}
 }
 
@@ -35,11 +36,11 @@ export class LlmPromptBase {
         parsedFile: Theorem[],
         tokenLimit: number,
     ) {
-        this.theoremsFromFile = parsedFile;
         this.promptStrategy = this.constructor.name;
-        const separatedTheorems = this.computeTrainingTheorems(this.theoremsFromFile, tokenLimit);
+        const separatedTheorems = this.computeTrainingTheorems(parsedFile, tokenLimit);
         this.trainingTheorems = separatedTheorems.trainingTheorems;
         this.admittedTheorems = separatedTheorems.admittedTheorems;
+        this.theoremsFromFile = separatedTheorems.cleanedFileTheorems;
     }
 
     countTokens = (str: string): number => {
@@ -86,12 +87,14 @@ export class LlmPromptBase {
         let theoremsTokensSum = 0;
         let provenTheorems: Theorem[] = [];
         let admittedTheorems: Theorem[] = [];
+        let cleanedFileTheorems: Theorem[] = [];
 
         for (const theorem of theorems) {
             if (!theorem.proof) {
                 continue;
             } 
 
+            cleanedFileTheorems.push(theorem);
             if (theorem.proof.is_incomplete) {
                 admittedTheoremsMaxTokenCount = Math.max(
                     admittedTheoremsMaxTokenCount,
@@ -118,7 +121,7 @@ export class LlmPromptBase {
             theoremsTokensSum -= this.countTokens(theorem.statement) + this.countTokens(theorem.proof.onlyText());
         }
 
-        const separated = new SeparatedTheorems(admittedTheorems, provenTheorems);
+        const separated = new SeparatedTheorems(admittedTheorems, provenTheorems, cleanedFileTheorems);
         logger.info(`Admitted theorems: ${separated.admittedTheorems.map((th) => th.name)}`);
         logger.info(`Training theorems: ${separated.trainingTheorems.map((th) => th.name)}`);
         return separated;
