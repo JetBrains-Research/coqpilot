@@ -111,7 +111,7 @@ export class LlmPromptBase {
         shuffleArray(provenTheorems);
         while (theoremsTokensSum > 0.95 * tokenLimit && provenTheorems.length > 0) {
             const theorem = provenTheorems.pop();
-            if (!theorem.proof) {
+            if (!theorem || !theorem.proof) {
                 continue;
             }
 

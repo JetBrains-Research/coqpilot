@@ -32,7 +32,7 @@ export class CoqpilotConfigWrapper {
         
         this._config = CoqpilotConfig.create(
             vscode.workspace.getConfiguration('coqpilot')
-        );
+        )!;
         CoqpilotConfig.checkRequirements(this._config);
         // logger.info("Successfully updated config: " + JSON.stringify(this._config));
 
@@ -101,10 +101,11 @@ export namespace CoqpilotConfig {
 
     export function getLlm(configWrapped: CoqpilotConfigWrapper, progressBar: ProgressBar): LLMIterator {
         const config = configWrapped.config;
+        let nullableModels: (LLMInterface | null)[] = [];
         let allModels: LLMInterface[] = [];
 
         if (config.gptModel === OtherModels.MOCK) {
-            allModels.push(new MockLlm());
+            nullableModels.push(new MockLlm());
         } else {
             let gptModel: LLMInterface | null = null; 
             if (config.useGpt) {
@@ -117,10 +118,16 @@ export namespace CoqpilotConfig {
             
             const simplestModel = new SingleTacticSolver(configWrapped);
             
-            allModels = [
+            nullableModels = [
                 simplestModel, gptModel
-            ].filter((model) => model !== null);
+            ];
         }
+
+        for(const model of nullableModels) {
+            if (model !== null) {
+                allModels.push(model);
+            } 
+        } 
 
         return new LLMIterator(allModels, config.proofAttemsPerOneTheorem, progressBar);
     }

@@ -107,6 +107,15 @@ export class ProofViewError extends Error {
     }
 }
 
+export class FlecheParsingError extends Error {
+    constructor(
+        public message: string,
+        public data: any | null = null // eslint-disable-line @typescript-eslint/no-explicit-any
+    ) {
+        super(message);
+    }
+}
+
 export class ProofStep {
     constructor(
         public text: string,

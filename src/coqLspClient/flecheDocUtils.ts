@@ -1,7 +1,7 @@
 import { 
     Theorem,
     Vernacexpr, 
-    ProofViewError, 
+    FlecheParsingError, 
     TheoremProof, 
     ProofStep 
 } from "../lib/pvTypes";
@@ -16,7 +16,7 @@ import {
     RangedSpan
 } from "../lib/types";
 
-function getExpr(span: RangedSpan): any[] {
+function getExpr(span: RangedSpan): any[] | null {
     try {
         return span.span === null ? null : span.span['v']['expr'][1];
     } catch (error) {
@@ -24,15 +24,15 @@ function getExpr(span: RangedSpan): any[] {
     }
 }
 
-function getTheoremName(expr: any[]): string {
+function getTheoremName(expr: any): string {
     try {
         return expr[2][0][0][0]['v'][1];
     } catch (error) {
-        throw new ProofViewError("Invalid theorem name");
+        throw new FlecheParsingError("Invalid theorem name");
     }
 }
 
-function getVernacexpr(expr: any[]): Vernacexpr {
+function getVernacexpr(expr: any): Vernacexpr | null {
     try {
         return expr[0] as Vernacexpr;
     } catch (error) {
@@ -40,7 +40,7 @@ function getVernacexpr(expr: any[]): Vernacexpr {
     }
 }
 
-function getProofEndCommand(expr: { [key: string]: any }): string {
+function getProofEndCommand(expr: { [key: string]: any }): string | null {
     try {
         return expr[1][0];
     } catch (error) {
@@ -48,7 +48,7 @@ function getProofEndCommand(expr: { [key: string]: any }): string {
     }
 }
 
-function checkIfExprEAdmit(expr: any[]): boolean {
+function checkIfExprEAdmit(expr: any): boolean {
     try {
         return getProofEndCommand(expr) === 'Admitted';
     } catch (error) {
@@ -97,6 +97,10 @@ function parseProof(
         const span = ast[index];
 
         const vernacType = getVernacexpr(getExpr(span));
+        if (!vernacType) {
+            throw new FlecheParsingError("Unable to derive the vernac type of the sentance");
+        }
+
         if (vernacType === Vernacexpr.VernacEndProof || vernacType === Vernacexpr.VernacAbort) {
             const proofStep = new ProofStep(
                 getTextInRange(span.range.start, span.range.end, lines),
@@ -106,8 +110,7 @@ function parseProof(
             proof.push(proofStep);
             proven = true;
             endPos = span.range;
-            // I assume when proof has some admitted parts it has either Admitted or Abort in the end
-            // Isn't that right?
+           
             if (checkIfExprEAdmit(getExpr(span)) || vernacType === Vernacexpr.VernacAbort) {
                 proofContainsAdmit = true;
             }
@@ -129,7 +132,7 @@ function parseProof(
     }
 
     if (!proven || endPos === null) {
-        throw new ProofViewError("Invalid or incomplete proof.");
+        throw new FlecheParsingError("Invalid or incomplete proof.");
     }
 
     const proofObj = new TheoremProof(proof, endPos, proofContainsAdmit, proofHoles);
@@ -160,6 +163,8 @@ export function parseFleche(
                 const nextExprVernac = getVernacexpr(getExpr(doc.spans[i + 1]));
                 if (i + 1 >= doc.spans.length) {
                     theorems.push(new Theorem(thrName, doc.spans[i].range, thrStatement, null));
+                } else if(!nextExprVernac) {
+                    throw new FlecheParsingError("Unable to parse proof.");
                 } else if (![
                     Vernacexpr.VernacProof, 
                     Vernacexpr.VernacAbort, 

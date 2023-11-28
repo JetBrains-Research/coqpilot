@@ -6,7 +6,7 @@ export class CoqPromptKShot extends LlmPromptBase implements LlmPromptInterface 
     }
 
     getMessageHistory(): { role: string; content: string; }[] {
-        const history = [];
+        const history: { role: string; content: string; }[] = [];
         for (const theorem of this.trainingTheorems) {
             history.push({role: "user", content: theorem.statement});
             const thrProof = theorem.proof ? theorem.proof.onlyText() : "Admitted.";

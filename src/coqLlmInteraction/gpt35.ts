@@ -3,6 +3,7 @@ import { LLMPrompt } from "./llmPromptInterface";
 import OpenAI from 'openai';
 import logger from "../extension/logger";
 import { CoqpilotConfigWrapper } from "../extension/config";
+import * as utils from "./utils";
 
 type GptRole = "function" | "user" | "system" | "assistant";
 
@@ -44,7 +45,7 @@ export class GPT35 implements LLMInterface {
     async sendMessageWithoutHistoryChange(message: string, choices: number): Promise<string[]> {
         this.updateOpenAi();
         let attempts = this.requestAttempts;
-        let completion = null;
+        let completion: any = null;
         logger.info("Start sending message to open-ai");
         while (attempts > 0) {
             try {
@@ -55,13 +56,13 @@ export class GPT35 implements LLMInterface {
                     n: choices
                 });
                 logger.info("Request to open-ai succeeded");
-                return completion.choices.map((choice) => choice.message.content);
-            } catch (e) {
+                return completion.choices.map((choice: any) => choice.message.content);
+            } catch (e : unknown) {
                 attempts -= 1;
                 if (attempts === 0) {
                     throw e;
                 } else {
-                    logger.info("Request to open-ai failed with error '" + e + "' Retrying..."); 
+                    logger.info("Request to open-ai failed with error '" + utils.toErrorWithMessage(e).message + "' Retrying..."); 
                     continue;
                 }
             }

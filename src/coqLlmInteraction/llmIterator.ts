@@ -75,7 +75,7 @@ export class LLMIterator implements AsyncIterator<Proof> {
     private async fetchLLM(index: number, message: string): Promise<ProofBatch> {
         this.progressBar.initialize(100, "id");
 
-        let llmResponse: string[] | Error | null = null;
+        let llmResponse: any = null;
         
         await this.models[index].sendMessageWithoutHistoryChange(
             message,
@@ -96,6 +96,6 @@ export class LLMIterator implements AsyncIterator<Proof> {
             throw llmResponse;
         } else {
             return llmResponse;
-        }
+        } 
     }
 }

@@ -37,11 +37,11 @@ suite('ProofView auxTheorem tests', () => {
     const wsConfig = workspace.getConfiguration("coqpilot");
     const dirname = path.dirname(path.dirname(path.dirname(__dirname)));
     const extensionConfig = new CoqpilotConfigWrapper(
-        common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig)), false
+        common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig)!), false
     );
 
     interface TestData {
-        fileRoot: string,
+        fileRoot: string | undefined,
         filePath: string,
         positions: Position[],
         goals: string[],
@@ -112,14 +112,14 @@ suite('ProofView checkTheorems tests', () => {
     const wsConfig = workspace.getConfiguration("coqpilot");
     const dirname = path.dirname(path.dirname(path.dirname(__dirname)));
     const extensionConfig = new CoqpilotConfigWrapper(
-        common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig)), false
+        common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig)!), false
     );
 
     interface TestData {
         context: string, 
         filePath: string,
         proofs: string[],
-        verdicts: [boolean, string][]
+        verdicts: [boolean, string | null][]
     }
 
     const testData: TestData[] = [
@@ -212,7 +212,7 @@ suite('ProofView parseFile tests', () => {
     const wsConfig = workspace.getConfiguration("coqpilot");
     const dirname = path.dirname(path.dirname(path.dirname(__dirname)));
     const extensionConfig = new CoqpilotConfigWrapper(
-        common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig)), false
+        common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig)!), false
     );
 
     interface TheoremData {
@@ -225,7 +225,7 @@ suite('ProofView parseFile tests', () => {
     }
 
     interface TestData {
-        fileRoot: string,
+        fileRoot: string | undefined,
         filePath: string,
         theorems: TheoremData[]
     }
@@ -315,6 +315,7 @@ suite('ProofView parseFile tests', () => {
             await client.start();
             const proofView = new ProofView(client, statusItem); 
 
+            assert.ok(window.activeTextEditor);
             const res = await proofView.parseFile(window.activeTextEditor);
     
             assert.strictEqual(res.length, theorems.length);
@@ -323,6 +324,7 @@ suite('ProofView parseFile tests', () => {
                 const thrRes = res[i];
 
                 assert.strictEqual(thrRes.name, theorem.name);
+                assert.ok(thrRes.proof);
                 assert.strictEqual(thrRes.proof.proof_steps.length, theorem.numOfSteps);
                 assert.strictEqual(thrRes.proof.is_incomplete, theorem.isIncomplete);
                 assert.strictEqual(thrRes.proof.end_pos.end.line, theorem.endPos.line);
@@ -335,3 +337,79 @@ suite('ProofView parseFile tests', () => {
         }
     }).timeout(5000);
 });
+
+// suite('ProofView parallel requests', () => {
+//     const statusItem = new StatusBarButton();
+//     const wsConfig = workspace.getConfiguration("coqpilot");
+//     const dirname = path.dirname(path.dirname(path.dirname(__dirname)));
+//     const extensionConfig = new CoqpilotConfigWrapper(
+//         common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig)), false
+//     );
+
+//     interface TestData {
+//         filePath: string,
+//         statement: string,
+//         proofs: string[]
+//     }
+
+//     const testData: TestData[] = [
+//         {
+//             filePath: path.join(dirname, 'src', 'test', 'resources', 'aux.v'),
+//             statement: "Theorem plus_O_n'' : forall n:nat, 0 + n = n.\n",
+//             proofs: [
+//                 "Proof. reflexivity. Abort.",
+//                 "Proof. reflexivity. Qed.",
+//                 "Proof. auto. Qed.",
+//             ]
+//         }, 
+//         {
+//             filePath: path.join(dirname, 'src', 'test', 'resources', 'aux1.v'),
+//             statement: "Theorem test_thr1 : forall n:nat, 0 + n + 0 = n.\n", 
+//             proofs: [
+//                 "Proof.\nintros n.\nrewrite <- plus_n_O.\nrewrite <- plus_n_O at 1.\nreflexivity.\nQed.",
+//                 "Proof.\nintros n.\nsimpl.\nrewrite plus_0_r.\nreflexivity.\nQed.",
+//                 "Proof.\nintros n.\nPrint plus.\nsimpl.\nrewrite <- plus_n_O.\nreflexivity.\nQed."
+//             ],
+//         },
+//         {
+//             filePath: path.join(dirname, 'src', 'test', 'resources', 'aux2.v'),
+//             statement: "Theorem test_thr1 : forall n:nat, 0 + n + 0 = n.\n", 
+//             proofs: [
+//                 "Proof.\nkek.\nQed.",
+//                 "Proof.\nauto.\nQed."
+//             ],
+//         },
+//         {
+//             filePath: path.join(dirname, 'src', 'test', 'resources', 'aux3.v'),
+//             statement: "Theorem plus_O_n'' : forall n:nat, 0 + n = n.\n",
+//             proofs: [
+//                 "Proof. auto. Qed.",
+//             ]
+//         }, 
+//     ];
+
+//     enum EventKind {
+//         Started = 1,
+//         Finished = 2,
+//     }
+
+//     type ExecEvent = [EventKind, number];
+
+// 	test('Test check proofs', async () => {
+//         for(const data of testData) {
+//             const { fileRoot, filePath, statement, proofs } = data;
+//             writeFileSync(filePath, statement); 
+//         }
+
+//         const eventQueue: ExecEvent[] = [];
+//         const embedPromise = (f: (v: any) => Promise<any>, fIndex: number, v: any): Promise<any> {
+//             eventQueue.push([EventKind.Started, fIndex]);
+//             f(v).then((_val) => {
+//                 eventQueue.push([EventKind.Finished, fIndex]);
+//             });
+//         }
+
+
+
+//     }).timeout(5000);
+// });

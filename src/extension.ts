@@ -37,9 +37,9 @@ export class Coqpilot implements Disposable {
 
     private readonly disposables: Disposable[] = [];
     private readonly context: ExtensionContext;
-    public client: BaseLanguageClient;
-    private proofView: ProofViewInterface;
-    private statusItem: StatusBarButton;
+    public client: BaseLanguageClient | undefined;
+    private proofView: ProofViewInterface | undefined;
+    private statusItem: StatusBarButton = new StatusBarButton();
     private progressBar: ProgressBar;
     private llmPrompt: LLMPrompt | undefined;
     private llm: LLMIterator; 
@@ -114,7 +114,7 @@ export class Coqpilot implements Disposable {
 
     async initHistory(editor: TextEditor) {
         logger.info("Start initializing history");
-        if (!this.client.isRunning()) {
+        if (!this.client || !this.client.isRunning() || !this.proofView) {
             wm.showClientNotRunningMessage(); return;
         } else if (editor.document.languageId !== "coq") {
             wm.showIncorrectFileFormatMessage(); return;
@@ -134,7 +134,6 @@ export class Coqpilot implements Disposable {
     }
 
     async initializeClient() {
-        this.statusItem = new StatusBarButton();
         const wsConfig = workspace.getConfiguration("coqpilot");
         this.client = new CoqLspClient(this.statusItem, wsConfig, this.config);
         this.proofView = new ProofView(this.client, this.statusItem); 
@@ -151,7 +150,7 @@ export class Coqpilot implements Disposable {
             wm.showApiKeyNotProvidedMessage(); return false;
         } else if (editor.document.languageId !== "coq") {
             wm.showIncorrectFileFormatMessage(); return false;
-        } else if (!this.client.isRunning()) {
+        } else if (!this.client || !this.client.isRunning() || !this.proofView) {
             wm.showClientNotRunningMessage(); return false;
         }
 
@@ -162,7 +161,7 @@ export class Coqpilot implements Disposable {
         editor: TextEditor, 
         position: Position
     ): Promise<GenerationResult<string>> {
-        if (!this.checkConditions(editor)) {
+        if (!this.checkConditions(editor) || !this.proofView) {
             return GenerationResult.editorError();
         }
 
@@ -203,7 +202,11 @@ export class Coqpilot implements Disposable {
         const proof = await this.generateAtPoint(editor, editor.selection.active);
         switch (proof.status) {
             case GenerationStatus.success:
-                wm.showSearchSucessMessage(editor, proof.data, editor.selection.active);
+                if (!proof.data) {
+                    wm.showSearchFailureMessageHole(editor.selection.active);    
+                } else {
+                    wm.showSearchSucessMessage(editor, proof.data, editor.selection.active);
+                }
                 break;
             case GenerationStatus.searchFailed:
                 wm.showSearchFailureMessageHole(editor.selection.active);
@@ -221,6 +224,11 @@ export class Coqpilot implements Disposable {
             const proof = await this.generateAtPoint(editor, position);
             switch (proof.status) {
                 case GenerationStatus.success:
+                    if (!proof.data) {
+                        wm.showSearchFailureMessageHole(position);
+                        break; 
+                    }
+
                     // Remove the text of the hole from the editor
                     const range = lspUtils.toVRange(hole.range);
                     await editor.edit((editBuilder) => {
@@ -242,16 +250,24 @@ export class Coqpilot implements Disposable {
 
     async runProveAllAdmitted(editor: TextEditor) {
         await this.initHistory(editor);
-        const admittedTheorems = this.llmPrompt?.admittedTheorems;
-        const proofHoles = admittedTheorems.map((thr) => thr.proof.holes).flat();
+        if (!this.llmPrompt) {
+            throw new Error("Please report an issue: Trying to run completion until plugin prepared.");
+        }
+
+        const admittedTheorems = this.llmPrompt.admittedTheorems;
+        const proofHoles = admittedTheorems.map((thr) => thr.proof!.holes).flat();
         await this.proveHoles(editor, proofHoles);
     }
 
     async runProveAdmittedInSelection(editor: TextEditor) {
         await this.initHistory(editor);
-        const allTheorems = this.llmPrompt?.theoremsFromFile;
+        if (!this.llmPrompt) {
+            throw new Error("Please report an issue: Trying to run completion until plugin prepared.");
+        }
+
+        const allTheorems = this.llmPrompt.theoremsFromFile;
         const proofHoles = allTheorems
-            .map((thr) => thr.proof.holes)
+            .map((thr) => thr.proof!.holes)
             .flat()
             .filter((hole) => editor.selection.contains(
                 utils.toVPosition(hole.range.start)

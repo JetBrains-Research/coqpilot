@@ -85,6 +85,11 @@ export interface ProofViewInterface extends Disposable {
      * Invariant: the length of the returned array is <= the length of `theoremWithProofs`.
      * The array either contains all `false` or < `theoremWithProofs.length` `false` values 
      * and one `true` value.
+     * 
+     * Concurrency invariants: CheckTheorems is yet not assumed to be run from different 
+     * threads simultaniously. However, as it is used in parallelized hole completion, it
+     * becomes a synchronization point and requires mutexes, attached to this class. 
+     * tl;dr: We use a mutex in this class to prevent data races when asynchroniously substituting holes. 
      */
     checkTheorems(
         uri: Uri, 
@@ -125,9 +130,9 @@ const flecheDocReq = new RequestType<FlecheDocumentParams, FlecheDocument, void>
   
 export class ProofView implements ProofViewInterface {
     private client: BaseLanguageClient;
-    private pendingProgress: boolean;
-    private pendingDiagnostic: boolean;
-    private awaitedDiagnostic: Diagnostic[] | null;
+    private pendingProgress: boolean = false;
+    private pendingDiagnostic: boolean = false;
+    private awaitedDiagnostic: Diagnostic[] | null = null;
     private subscriptions: Disposable[] = [];
     private fileProgress: FileProgressManager;
 
@@ -135,8 +140,6 @@ export class ProofView implements ProofViewInterface {
         this.client = client;
         const progressBar = new VsCodeProgressBar(statusItem);
         this.fileProgress = new FileProgressManager(client, progressBar);
-
-        //this.setTrace("verbose");
     }
 
     async getDocument(uri: Uri) {
@@ -415,9 +418,6 @@ export class ProofView implements ProofViewInterface {
         const context = readFileSync(uri.fsPath).toString();
         const lineNumContext = context.split("\n").length - 1;
 
-        // const proofVerdicts: [boolean, string | null][] = [];
-        // const proofsCleaned = proofs.map(this.cleanProof);
-
         proofs.restart();
         const proofVerdicts: [string, boolean, string | null][] = [];
 
@@ -429,9 +429,7 @@ export class ProofView implements ProofViewInterface {
 
             const proof = this.cleanProof(result.value);
             logger.info(proof);
-        // }
 
-        // for (const proof of proofsCleaned) {
             const prohibitedTactics = ["admit.", "Admitted.", "Abort."];
             if (prohibitedTactics.some(tactic => proof.includes(tactic))) {
                 proofVerdicts.push([proof, false, "Proof contains 'Abort.' or 'Admitted.'"]);

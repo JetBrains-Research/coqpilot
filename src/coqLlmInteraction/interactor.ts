@@ -3,6 +3,7 @@ import { LLMIterator } from './llmIterator';
 import { EvaluationLogger } from './evaluationLogger';
 import { Uri } from 'vscode';
 import logger from '../extension/logger';
+import * as utils from './utils';
 
 export enum GenerationStatus {
     success,
@@ -132,8 +133,8 @@ export class Interactor {
         let proofCheckResult: [string, boolean, string | null][] | undefined = undefined;
         try {
             proofCheckResult = await fnVerifyProofs(uri, this.llmIterator, theoremStatement);
-        } catch (e) {
-            return GenerationResult.exception("Proof verification failed with " + e.message, "Interactor");
+        } catch (e : unknown) {
+            return GenerationResult.exception("Proof verification failed with " + utils.toErrorWithMessage(e).message, "Interactor");
         }
 
         logger.info("Proof check result: " + JSON.stringify(proofCheckResult));
@@ -151,7 +152,7 @@ export class Interactor {
             } else {
                 this.runLogger.onFailedAttempt(
                     i + 1, theoremName, 
-                    theoremStatement, proof, errorMsg
+                    theoremStatement, proof, errorMsg ?? "Error not specified"
                 );
             }
         }

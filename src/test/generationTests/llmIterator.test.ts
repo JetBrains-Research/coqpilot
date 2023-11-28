@@ -11,7 +11,7 @@ suite('LLM Iterator tests', () => {
     const wsConfig = workspace.getConfiguration("coqpilot");
 
 	test('Check iterator fetches all the values', async () => {
-        const baseConf = CoqpilotConfig.create(wsConfig);
+        const baseConf = CoqpilotConfig.create(wsConfig)!;
         const config: CoqpilotConfig = {
             ...baseConf,
             extraCommandsList: ['constructor.', 'kek.'],
@@ -45,7 +45,7 @@ suite('LLM Iterator tests', () => {
     });
 
     test('Check llm starts fetch only after step into its block', async () => {
-        const baseConf = CoqpilotConfig.create(wsConfig);
+        const baseConf = CoqpilotConfig.create(wsConfig)!;
         const config: CoqpilotConfig = {
             ...baseConf,
             extraCommandsList: ['auto.', 'ins.', 'desf.', 'trivial.'],

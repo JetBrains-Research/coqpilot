@@ -15,7 +15,7 @@ export class EvalLoggingError extends Error {
 }
 
 export class EvaluationLogger {
-    debugLogPath: string;
+    debugLogPath: string | null = null;
     insideProof: boolean = false;
     proofLog: string = "";
     proofComplete: boolean | null = null;
@@ -158,7 +158,7 @@ export class EvaluationLogger {
         this.insideProof = false;
         this.holeProofAttemtsLog += this.proofLog;
 
-        if (this.logToFile) {
+        if (this.logToFile && this.debugLogPath) {
             appendFileSync(this.debugLogPath, `\n${this.proofLog}\n`);
         }
     }
