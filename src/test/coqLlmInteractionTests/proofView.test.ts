@@ -322,6 +322,9 @@ suite('ProofView parseFile tests', () => {
                 const theorem = theorems[i];
                 const thrRes = res[i];
 
+                console.log("DEBUG 1", thrRes);
+                console.log("DEBUG 2", theorem);
+
                 assert.strictEqual(thrRes.name, theorem.name);
                 assert.strictEqual(thrRes.proof!.proof_steps.length, theorem.numOfSteps);
                 assert.strictEqual(thrRes.proof!.is_incomplete, theorem.isIncomplete);
