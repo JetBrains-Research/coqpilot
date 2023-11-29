@@ -1,5 +1,9 @@
 # Change Log
 
+### 1.5.0
+- Now when the hole can be solved by a single tactic solver, using predefined tactics, gpt will not be called, LLMs are now fetched consequently. 
+- Parallel hole completion is unfortunately postponed due to the implementation complexity. Yet, hopefully, will still be implemented in milestone `2.0.0`.
+
 ### 1.4.6
 - Fix issue with plugin breaking after parsing a file containing theorem without `Proof.` keyword.
 

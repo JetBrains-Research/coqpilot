@@ -1,7 +1,7 @@
 import { 
     Theorem,
     Vernacexpr, 
-    FlecheParsingError, 
+    ProofViewError, 
     TheoremProof, 
     ProofStep 
 } from "../lib/pvTypes";
@@ -28,11 +28,11 @@ function getTheoremName(expr: any): string {
     try {
         return expr[2][0][0][0]['v'][1];
     } catch (error) {
-        throw new FlecheParsingError("Invalid theorem name");
+        throw new ProofViewError("Invalid theorem name");
     }
 }
 
-function getDefinitionName(expr: any[]): string {
+function getDefinitionName(expr: any): string {
     try {
         return expr[2][0]['v'][1][1];
     } catch (error) {
@@ -40,7 +40,7 @@ function getDefinitionName(expr: any[]): string {
     }
 }
 
-function getName(expr: any[]): string {
+function getName(expr: any): string {
     switch (getVernacexpr(expr)) {
         case Vernacexpr.VernacDefinition:
             return getDefinitionName(expr);
@@ -51,7 +51,7 @@ function getName(expr: any[]): string {
     }
 }
 
-function getVernacexpr(expr: any[]): Vernacexpr {
+function getVernacexpr(expr: any): Vernacexpr | null {
     try {
         return expr[0] as Vernacexpr;
     } catch (error) {
@@ -117,7 +117,7 @@ function parseProof(
 
         const vernacType = getVernacexpr(getExpr(span));
         if (!vernacType) {
-            throw new FlecheParsingError("Unable to derive the vernac type of the sentance");
+            throw new ProofViewError("Unable to derive the vernac type of the sentance");
         }
 
         if (vernacType === Vernacexpr.VernacEndProof || vernacType === Vernacexpr.VernacAbort) {
@@ -151,7 +151,7 @@ function parseProof(
     }
 
     if (!proven || endPos === null) {
-        throw new FlecheParsingError("Invalid or incomplete proof.");
+        throw new ProofViewError("Invalid or incomplete proof.");
     }
 
     const proofObj = new TheoremProof(proof, endPos, proofContainsAdmit, proofHoles);
@@ -171,7 +171,8 @@ export function parseFleche(
         const span = doc.spans[i];
         try {
             const vernacType = getVernacexpr(getExpr(span));
-            if ([
+            if (vernacType &&
+            [
                 Vernacexpr.VernacDefinition,
                 Vernacexpr.VernacStartTheoremProof
             ].includes(vernacType)) {
@@ -187,7 +188,7 @@ export function parseFleche(
                 if (i + 1 >= doc.spans.length) {
                     theorems.push(new Theorem(thrName, doc.spans[i].range, thrStatement, null));
                 } else if(!nextExprVernac) {
-                    throw new FlecheParsingError("Unable to parse proof.");
+                    throw new ProofViewError("Unable to parse proof.");
                 } else if (![
                     Vernacexpr.VernacProof, 
                     Vernacexpr.VernacAbort, 

@@ -12,7 +12,6 @@ suite('CoqLspClient tests', () => {
         const extensionConfig = new CoqpilotConfigWrapper(
             updateCoqpilotConfig(CoqpilotConfig.create(wsConfig)!), false
         );
-        console.log("EXTCONFIG", extensionConfig);
         const client = new CoqLspClient(statusItem, wsConfig, extensionConfig);
         
         assert.strictEqual(statusItem.runStatus, StatusBarState.Activating);

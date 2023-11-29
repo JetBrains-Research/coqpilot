@@ -343,7 +343,7 @@ suite('ProofView parseFile with different Theorem defining methods', () => {
     const wsConfig = workspace.getConfiguration("coqpilot");
     const dirname = path.dirname(path.dirname(path.dirname(__dirname)));
     const extensionConfig = new CoqpilotConfigWrapper(
-        common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig)), false
+        common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig)!), false
     );
 
     interface TheoremData {
@@ -403,6 +403,7 @@ suite('ProofView parseFile with different Theorem defining methods', () => {
             await client.start();
             const proofView = new ProofView(client, statusItem); 
 
+            assert.ok(window.activeTextEditor);
             const res = await proofView.parseFile(window.activeTextEditor);
     
             assert.strictEqual(res.length, theorems.length);
@@ -414,6 +415,7 @@ suite('ProofView parseFile with different Theorem defining methods', () => {
                 if (theorem.isIncomplete === null) {
                     assert.strictEqual(thrRes.proof, null);
                 } else {
+                    assert.ok(thrRes.proof);
                     assert.strictEqual(thrRes.proof.is_incomplete, theorem.isIncomplete);
                 }
             }
