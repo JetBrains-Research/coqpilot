@@ -32,6 +32,8 @@ import { ProofStep } from "./lib/pvTypes";
 import * as utils from "./coqLspClient/utils";
 import { LLMIterator } from "./coqLlmInteraction/llmIterator";
 import { ProgressBar } from "./extension/progressBar";
+import { shuffleArray } from "./coqLlmInteraction/utils";
+import * as editorUtils from "./editor/utils";
 
 export class Coqpilot implements Disposable {
 
@@ -131,6 +133,9 @@ export class Coqpilot implements Disposable {
         logger.info(`Theorems retrieved:\n${thrs}`);
         
         this.llmPrompt = new CoqPromptKShot(thrs, this.config.config.maxNumberOfTokens);
+
+        logger.info(`Initialized with theorems: ${this.llmPrompt.trainingTheorems.map((thr) => thr.name)}`);
+        logger.info(this.llmPrompt.trainingTheorems.map((thr) => thr.toString()));
     }
 
     async initializeClient() {
@@ -205,7 +210,8 @@ export class Coqpilot implements Disposable {
                 if (!proof.data) {
                     wm.showSearchFailureMessageHole(editor.selection.active);    
                 } else {
-                    wm.showSearchSucessMessage(editor, proof.data, editor.selection.active);
+                    const proofWithIndent = editorUtils.makeIndent(proof.data, editor.selection.active.character);
+                    wm.showSearchSucessMessage(editor, proofWithIndent, editor.selection.active);
                 }
                 break;
             case GenerationStatus.searchFailed:
@@ -218,6 +224,10 @@ export class Coqpilot implements Disposable {
     }
 
     async proveHoles(editor: TextEditor, holes: ProofStep[]) {
+        if (this.config.config.shuffleHoles) {
+            shuffleArray(holes);
+        }
+        
         for (const hole of holes) {
             // Run proof generation at the start of the hole
             const position = lspUtils.toVPosition(hole.range.start);
@@ -254,8 +264,9 @@ export class Coqpilot implements Disposable {
             throw new Error("Please report an issue: Trying to run completion until plugin prepared.");
         }
 
-        const admittedTheorems = this.llmPrompt.admittedTheorems;
-        const proofHoles = admittedTheorems.map((thr) => thr.proof!.holes).flat();
+        const allTheorems = this.llmPrompt.theoremsFromFile;
+        console.log(allTheorems);
+        const proofHoles = allTheorems.map((thr) => thr.proof!.holes).flat();
         await this.proveHoles(editor, proofHoles);
     }
 

@@ -32,7 +32,26 @@ function getTheoremName(expr: any): string {
     }
 }
 
-function getVernacexpr(expr: any): Vernacexpr | null {
+function getDefinitionName(expr: any[]): string {
+    try {
+        return expr[2][0]['v'][1][1];
+    } catch (error) {
+        throw new ProofViewError("Invalid definition name");
+    }
+}
+
+function getName(expr: any[]): string {
+    switch (getVernacexpr(expr)) {
+        case Vernacexpr.VernacDefinition:
+            return getDefinitionName(expr);
+        case Vernacexpr.VernacStartTheoremProof:
+            return getTheoremName(expr);
+        default:
+            throw new ProofViewError("Invalid name");
+    }
+}
+
+function getVernacexpr(expr: any[]): Vernacexpr {
     try {
         return expr[0] as Vernacexpr;
     } catch (error) {
@@ -151,8 +170,12 @@ export function parseFleche(
     for (let i = 0; i < doc.spans.length; i++) {
         const span = doc.spans[i];
         try {
-            if (getVernacexpr(getExpr(span)) === Vernacexpr.VernacStartTheoremProof) {
-                const thrName = getTheoremName(getExpr(span));
+            const vernacType = getVernacexpr(getExpr(span));
+            if ([
+                Vernacexpr.VernacDefinition,
+                Vernacexpr.VernacStartTheoremProof
+            ].includes(vernacType)) {
+                const thrName = getName(getExpr(span));
                 const thrStatement = getTextInRange(
                     doc.spans[i].range.start, 
                     doc.spans[i].range.end, 

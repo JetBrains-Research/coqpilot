@@ -19,6 +19,7 @@ export interface CoqpilotConfig {
     coqLspPath: string;
     useGpt: boolean;
     extraCommandsList: string[];
+    shuffleHoles: boolean;
 }
 
 export class CoqpilotConfigWrapper {
@@ -69,7 +70,8 @@ export namespace CoqpilotConfig {
                 parseFileOnInit: wsConfig.parseFileOnInit, 
                 coqLspPath: wsConfig.coqLspPath, 
                 useGpt: wsConfig.useGpt, 
-                extraCommandsList: preprocessExtraCommands(wsConfig.extraCommandsList)
+                extraCommandsList: preprocessExtraCommands(wsConfig.extraCommandsList),
+                shuffleHoles: wsConfig.shuffleHoles
             };
         } catch (error) {
             console.error(error);
