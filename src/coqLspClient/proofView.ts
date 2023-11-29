@@ -54,6 +54,7 @@ import { parseFleche } from "./flecheDocUtils";
 import { StatusBarButton } from "../editor/enableButton";
 import logger from "../extension/logger";
 import { LLMIterator } from "../coqLlmInteraction/llmIterator";
+import { sleep } from "./utils";
 
 export interface ProofViewInterface extends Disposable {
     /**
@@ -118,7 +119,6 @@ export interface ProofViewInterface extends Disposable {
     closeFile(uri: Uri): Promise<void>;
 }
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const goalReq = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
     "proof/goals"

@@ -165,7 +165,7 @@ export class Coqpilot implements Disposable {
             return GenerationResult.editorError();
         }
 
-        const auxFile = makeAuxfname(editor.document.uri);
+        const auxFile = makeAuxfname(editor.document.uri, true);
         const auxThr = await this.proofView.getAuxTheoremAtCurPosition(
             auxFile, editor.document.getText(), position
         );

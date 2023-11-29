@@ -343,7 +343,7 @@ suite('ProofView parseFile tests', () => {
 //     const wsConfig = workspace.getConfiguration("coqpilot");
 //     const dirname = path.dirname(path.dirname(path.dirname(__dirname)));
 //     const extensionConfig = new CoqpilotConfigWrapper(
-//         common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig)), false
+//         common.updateCoqpilotConfig(CoqpilotConfig.create(wsConfig)!), false
 //     );
 
 //     interface TestData {
@@ -389,27 +389,54 @@ suite('ProofView parseFile tests', () => {
 //     ];
 
 //     enum EventKind {
-//         Started = 1,
-//         Finished = 2,
+//         started = 1,
+//         finished = 2,
 //     }
 
 //     type ExecEvent = [EventKind, number];
 
 // 	test('Test check proofs', async () => {
 //         for(const data of testData) {
-//             const { fileRoot, filePath, statement, proofs } = data;
+//             const { filePath, statement } = data;
 //             writeFileSync(filePath, statement); 
 //         }
 
 //         const eventQueue: ExecEvent[] = [];
-//         const embedPromise = (f: (v: any) => Promise<any>, fIndex: number, v: any): Promise<any> {
-//             eventQueue.push([EventKind.Started, fIndex]);
-//             f(v).then((_val) => {
-//                 eventQueue.push([EventKind.Finished, fIndex]);
-//             });
+
+//         // Wraps a function call into two events: Started and Finished
+//         const embedPromise = async (f: () => Promise<void>, index: number): Promise<void> => {
+//             eventQueue.push([EventKind.started, index]);
+//             await f();
+//             eventQueue.push([EventKind.finished, index]);
+//         };
+
+//         const client = new CoqLspClient(statusItem, wsConfig, extensionConfig);
+//         await client.start();
+//         const proofView = new ProofView(client, statusItem);
+
+//         const promises = testData.map(async data => {
+//             const { filePath, statement, proofs } = data;
+//             await proofView.openFile(Uri.file(filePath));
+//             const testLlm = new TestLLMPrompt(proofs);
+//             const progressBar = new VsCodeSpinningWheelProgressBar();
+//             const proofsIter = new LLMIterator([testLlm], 1, progressBar);
+
+//             return embedPromise(async () => {
+//                 await proofView.checkTheorems(Uri.file(filePath), proofsIter, statement);
+//             }, testData.indexOf(data));
+//         });
+
+//         await Promise.all(promises);
+
+//         assert.strictEqual(eventQueue.length, 2 * testData.length);
+
+//         // Check that finish events are indexed in the same order as the data
+//         let prevIndex = -1;
+//         for (const [kind, index] of eventQueue) {
+//             if (kind === EventKind.finished) {
+//                 assert.ok(index > prevIndex);
+//                 prevIndex = index;
+//             }
 //         }
-
-
-
-//     }).timeout(5000);
+//     }).timeout(3000);
 // });
