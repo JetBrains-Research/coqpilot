@@ -315,8 +315,7 @@ suite('ProofView parseFile tests', () => {
             await client.start();
             const proofView = new ProofView(client, statusItem); 
 
-            assert.ok(window.activeTextEditor);
-            const res = await proofView.parseFile(window.activeTextEditor);
+            const res = await proofView.parseFile(window.activeTextEditor!);
     
             assert.strictEqual(res.length, theorems.length);
             for (let i = 0; i < res.length; i++) {
@@ -324,12 +323,11 @@ suite('ProofView parseFile tests', () => {
                 const thrRes = res[i];
 
                 assert.strictEqual(thrRes.name, theorem.name);
-                assert.ok(thrRes.proof);
-                assert.strictEqual(thrRes.proof.proof_steps.length, theorem.numOfSteps);
-                assert.strictEqual(thrRes.proof.is_incomplete, theorem.isIncomplete);
-                assert.strictEqual(thrRes.proof.end_pos.end.line, theorem.endPos.line);
-                assert.strictEqual(thrRes.proof.end_pos.end.character, theorem.endPos.character);
-                assert.strictEqual(thrRes.proof.onlyText(), theorem.proof);
+                assert.strictEqual(thrRes.proof!.proof_steps.length, theorem.numOfSteps);
+                assert.strictEqual(thrRes.proof!.is_incomplete, theorem.isIncomplete);
+                assert.strictEqual(thrRes.proof!.end_pos.end.line, theorem.endPos.line);
+                assert.strictEqual(thrRes.proof!.end_pos.end.character, theorem.endPos.character);
+                assert.strictEqual(thrRes.proof!.onlyText(), theorem.proof);
                 assert.ok(rangesEqual(thrRes.statement_range, theorem.statementRange));
             }
 
