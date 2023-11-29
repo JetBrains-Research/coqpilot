@@ -1,32 +1,40 @@
 {
 	"compilerOptions": {
+		/* Basic Options */
 		"module": "commonjs",
 		"target": "ES2020",
 		"outDir": "out",
 		"lib": [
 			"ES2020", "DOM"
 		],
-		"sourceMap": true,
+		"sourceMap": true,				 				 /* Generates corresponding '.map' file. */
 		"rootDir": "src",
 		"allowSyntheticDefaultImports": true,
 		"allowJs": true,
 		"importHelpers": true,
 		"jsx": "react",
+
+		/* Strict Type-Checking Options */
 		"alwaysStrict": true,
 		"forceConsistentCasingInFileNames": true,
-		"noFallthroughCasesInSwitch": true,
-		"noImplicitReturns": true,
-		"noUnusedLocals": true,
-		"noUnusedParameters": true,
-		"noImplicitAny": false,
-		"noImplicitThis": false,
-		"strictNullChecks": false,
-		"declaration": true,
-		"experimentalDecorators": true
+		"noFallthroughCasesInSwitch": true,				/* Report errors for fallthrough cases in switch statement. */
+		"noImplicitReturns": true,						/* Report error when not all code paths in function return a value. */
+		"noImplicitAny": true,							/* Raise error on expressions and declarations with an implied 'any' type. */
+		"strictNullChecks": true,						/* Enable strict null checks. */
+		"strict": true,                           		/* Enable all strict type-checking options. */
+
 		/* Additional Checks */
-		// "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
-		// "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
-		// "noUnusedParameters": true,  /* Report errors on unused parameters. */
+		"noUnusedLocals": true,							/* Report errors on unused locals. */
+		"noUnusedParameters": true,						/* Report errors on unused parameters. */
+		"strictFunctionTypes": true,           			/* Enable strict checking of function types. */
+		"strictPropertyInitialization": true,  			/* Enable strict checking of property initialization in classes. */
+		"noImplicitThis": true,							/* Raise error on 'this' expressions with an implied 'any' type. */
+		
+		/* Module Resolution Options */
+		"declaration": true,
+
+		/* To Create decorators */
+		"experimentalDecorators": true,
 	},
 	"exclude": [
 		"./_opam/**/*",

@@ -17,7 +17,6 @@ import { ProofView, ProofViewInterface } from "./coqLspClient/proofView";
 import { StatusBarButton } from "./editor/enableButton";
 import { LLMPrompt } from "./coqLlmInteraction/llmPromptInterface";
 import { CoqPromptKShot } from "./coqLlmInteraction/coqLlmPrompt";
-import { LLMInterface } from "./coqLlmInteraction/llmInterface";
 import { CoqpilotConfig, CoqpilotConfigWrapper } from "./extension/config";
 import { 
     Interactor, 
@@ -31,6 +30,8 @@ import { makeAuxfname } from "./coqLspClient/utils";
 import * as lspUtils from "./coqLspClient/utils";
 import { ProofStep } from "./lib/pvTypes";
 import * as utils from "./coqLspClient/utils";
+import { LLMIterator } from "./coqLlmInteraction/llmIterator";
+import { ProgressBar } from "./extension/progressBar";
 import { shuffleArray } from "./coqLlmInteraction/utils";
 import * as editorUtils from "./editor/utils";
 
@@ -38,11 +39,12 @@ export class Coqpilot implements Disposable {
 
     private readonly disposables: Disposable[] = [];
     private readonly context: ExtensionContext;
-    public client: BaseLanguageClient;
-    private proofView: ProofViewInterface;
-    private statusItem: StatusBarButton;
+    public client: BaseLanguageClient | undefined;
+    private proofView: ProofViewInterface | undefined;
+    private statusItem: StatusBarButton = new StatusBarButton();
+    private progressBar: ProgressBar;
     private llmPrompt: LLMPrompt | undefined;
-    private llm: LLMInterface; 
+    private llm: LLMIterator; 
     private config: CoqpilotConfigWrapper = CoqpilotConfig.getNew();
 
     private constructor(
@@ -51,7 +53,8 @@ export class Coqpilot implements Disposable {
         this.excludeAuxFiles();
         this.context = context;
 
-        this.llm = CoqpilotConfig.getLlm(this.config);
+        this.progressBar = new VsCodeSpinningWheelProgressBar();
+        this.llm = CoqpilotConfig.getLlm(this.config, this.progressBar);
 
         this.disposables.push(this.statusItem);
         this.disposables.push(this.textEditorChangeHook);
@@ -113,7 +116,7 @@ export class Coqpilot implements Disposable {
 
     async initHistory(editor: TextEditor) {
         logger.info("Start initializing history");
-        if (!this.client.isRunning()) {
+        if (!this.client || !this.client.isRunning() || !this.proofView) {
             wm.showClientNotRunningMessage(); return;
         } else if (editor.document.languageId !== "coq") {
             wm.showIncorrectFileFormatMessage(); return;
@@ -136,7 +139,6 @@ export class Coqpilot implements Disposable {
     }
 
     async initializeClient() {
-        this.statusItem = new StatusBarButton();
         const wsConfig = workspace.getConfiguration("coqpilot");
         this.client = new CoqLspClient(this.statusItem, wsConfig, this.config);
         this.proofView = new ProofView(this.client, this.statusItem); 
@@ -153,7 +155,7 @@ export class Coqpilot implements Disposable {
             wm.showApiKeyNotProvidedMessage(); return false;
         } else if (editor.document.languageId !== "coq") {
             wm.showIncorrectFileFormatMessage(); return false;
-        } else if (!this.client.isRunning()) {
+        } else if (!this.client || !this.client.isRunning() || !this.proofView) {
             wm.showClientNotRunningMessage(); return false;
         }
 
@@ -164,11 +166,11 @@ export class Coqpilot implements Disposable {
         editor: TextEditor, 
         position: Position
     ): Promise<GenerationResult<string>> {
-        if (!this.checkConditions(editor)) {
+        if (!this.checkConditions(editor) || !this.proofView) {
             return GenerationResult.editorError();
         }
 
-        const auxFile = makeAuxfname(editor.document.uri);
+        const auxFile = makeAuxfname(editor.document.uri, true);
         const auxThr = await this.proofView.getAuxTheoremAtCurPosition(
             auxFile, editor.document.getText(), position
         );
@@ -184,11 +186,9 @@ export class Coqpilot implements Disposable {
             return GenerationResult.editorError();
         }
 
-        const progressBar = new VsCodeSpinningWheelProgressBar();
         const interactor = new Interactor(
             this.llmPrompt, 
-            this.llm, 
-            progressBar,
+            this.llm,
             this.config.config.logAttempts,
             this.config.config.proofAttemsPerOneTheorem, 
             this.config.config.logFolderPath
@@ -207,8 +207,12 @@ export class Coqpilot implements Disposable {
         const proof = await this.generateAtPoint(editor, editor.selection.active);
         switch (proof.status) {
             case GenerationStatus.success:
-                const proofWithIndent = editorUtils.makeIndent(proof.data, editor.selection.active.character);
-                wm.showSearchSucessMessage(editor, proofWithIndent, editor.selection.active);
+                if (!proof.data) {
+                    wm.showSearchFailureMessageHole(editor.selection.active);    
+                } else {
+                    const proofWithIndent = editorUtils.makeIndent(proof.data, editor.selection.active.character);
+                    wm.showSearchSucessMessage(editor, proofWithIndent, editor.selection.active);
+                }
                 break;
             case GenerationStatus.searchFailed:
                 wm.showSearchFailureMessageHole(editor.selection.active);
@@ -230,6 +234,11 @@ export class Coqpilot implements Disposable {
             const proof = await this.generateAtPoint(editor, position);
             switch (proof.status) {
                 case GenerationStatus.success:
+                    if (!proof.data) {
+                        wm.showSearchFailureMessageHole(position);
+                        break; 
+                    }
+
                     // Remove the text of the hole from the editor
                     const range = lspUtils.toVRange(hole.range);
                     await editor.edit((editBuilder) => {
@@ -251,17 +260,25 @@ export class Coqpilot implements Disposable {
 
     async runProveAllAdmitted(editor: TextEditor) {
         await this.initHistory(editor);
-        const allTheorems = this.llmPrompt?.theoremsFromFile;
+        if (!this.llmPrompt) {
+            throw new Error("Please report an issue: Trying to run completion until plugin prepared.");
+        }
+
+        const allTheorems = this.llmPrompt.theoremsFromFile;
         console.log(allTheorems);
-        const proofHoles = allTheorems.map((thr) => thr.proof.holes).flat();
+        const proofHoles = allTheorems.map((thr) => thr.proof!.holes).flat();
         await this.proveHoles(editor, proofHoles);
     }
 
     async runProveAdmittedInSelection(editor: TextEditor) {
         await this.initHistory(editor);
-        const allTheorems = this.llmPrompt?.theoremsFromFile;
+        if (!this.llmPrompt) {
+            throw new Error("Please report an issue: Trying to run completion until plugin prepared.");
+        }
+
+        const allTheorems = this.llmPrompt.theoremsFromFile;
         const proofHoles = allTheorems
-            .map((thr) => thr.proof.holes)
+            .map((thr) => thr.proof!.holes)
             .flat()
             .filter((hole) => editor.selection.contains(
                 utils.toVPosition(hole.range.start)
@@ -284,9 +301,9 @@ export class Coqpilot implements Disposable {
         let activationConfig = workspace.getConfiguration();
         let fexc: any = activationConfig.get("files.exclude");
         activationConfig.update("files.exclude", {
+            ...fexc,
             // eslint-disable-next-line @typescript-eslint/naming-convention
             '**/*_cp_aux.v': true,
-            ...fexc,
         });
     }
 

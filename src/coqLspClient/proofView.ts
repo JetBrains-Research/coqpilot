@@ -53,6 +53,8 @@ import { Theorem } from "../lib/pvTypes";
 import { parseFleche } from "./flecheDocUtils";
 import { StatusBarButton } from "../editor/enableButton";
 import logger from "../extension/logger";
+import { LLMIterator } from "../coqLlmInteraction/llmIterator";
+import { sleep } from "./utils";
 
 export interface ProofViewInterface extends Disposable {
     /**
@@ -72,21 +74,29 @@ export interface ProofViewInterface extends Disposable {
     ): Promise<[string, string] | undefined>;
 
     /**
-     * Takes an array of `{ ${proofWithoutProofAndQed} }` strings, for each proof,
+     * Takes an iterator over `{ ${proofWithoutProofAndQed} }` strings, for each proof,
      * inserts it into the end of the file, and check for errors.
      * IS NOT RESPONSIBLE for opening the file located at `uri`.
      * IS RESPONSIBLE for deleting the file located at `uri` after the call.
      * @param uri The uri of the aux document
-     * @param theoremsWithProofs The array of proofs
-     * @returns An array of tuples, each tuple contains a boolean and an error message, if any.
+     * @param proofs An iterator over proofs
+     * @param thrStatement The statement of the theorem that is being proved
+     * @returns An array of tuples, each tuple contains a proof, its typecheck result as boolean
+     * and an error message, if any.
      * Invariant: the length of the returned array is <= the length of `theoremWithProofs`.
      * The array either contains all `false` or < `theoremWithProofs.length` `false` values 
      * and one `true` value.
+     * 
+     * Concurrency invariants: CheckTheorems is yet not assumed to be run from different 
+     * threads simultaniously. However, as it is used in parallelized hole completion, it
+     * becomes a synchronization point and requires mutexes, attached to this class. 
+     * tl;dr: We use a mutex in this class to prevent data races when asynchroniously substituting holes. 
      */
     checkTheorems(
         uri: Uri, 
-        proofs: string[]
-    ): Promise<[boolean, string | null][]>;
+        proofs: LLMIterator, 
+        thrStatement: string
+    ): Promise<[string, boolean, string | null][]>;
 
     /**
      * Parses the file and returns a list of theorems.
@@ -109,7 +119,6 @@ export interface ProofViewInterface extends Disposable {
     closeFile(uri: Uri): Promise<void>;
 }
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const goalReq = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
     "proof/goals"
@@ -121,9 +130,9 @@ const flecheDocReq = new RequestType<FlecheDocumentParams, FlecheDocument, void>
   
 export class ProofView implements ProofViewInterface {
     private client: BaseLanguageClient;
-    private pendingProgress: boolean;
-    private pendingDiagnostic: boolean;
-    private awaitedDiagnostic: Diagnostic[] | null;
+    private pendingProgress: boolean = false;
+    private pendingDiagnostic: boolean = false;
+    private awaitedDiagnostic: Diagnostic[] | null = null;
     private subscriptions: Disposable[] = [];
     private fileProgress: FileProgressManager;
 
@@ -131,8 +140,6 @@ export class ProofView implements ProofViewInterface {
         this.client = client;
         const progressBar = new VsCodeProgressBar(statusItem);
         this.fileProgress = new FileProgressManager(client, progressBar);
-
-        //this.setTrace("verbose");
     }
 
     async getDocument(uri: Uri) {
@@ -400,8 +407,9 @@ export class ProofView implements ProofViewInterface {
 
     async checkTheorems(
         uri: Uri, 
-        proofs: string[]
-    ): Promise<[boolean, string | null][]> {
+        proofs: LLMIterator, 
+        thrStatement: string
+    ): Promise<[string, boolean, string | null][]> {
         logger.info("Started type-checking proofs");
 
         let documentVersion = 1;
@@ -410,13 +418,21 @@ export class ProofView implements ProofViewInterface {
         const context = readFileSync(uri.fsPath).toString();
         const lineNumContext = context.split("\n").length - 1;
 
-        const proofVerdicts: [boolean, string | null][] = [];
-        const proofsCleaned = proofs.map(this.cleanProof);
+        proofs.restart();
+        const proofVerdicts: [string, boolean, string | null][] = [];
 
-        for (const proof of proofsCleaned) {
+        while (true) {
+            const result = await proofs.next(thrStatement);
+            if (result.done) {
+                break;
+            }
+
+            const proof = this.cleanProof(result.value);
+            logger.info(proof);
+
             const prohibitedTactics = ["admit.", "Admitted.", "Abort."];
             if (prohibitedTactics.some(tactic => proof.includes(tactic))) {
-                proofVerdicts.push([false, "Proof contains 'Abort.' or 'Admitted.'"]);
+                proofVerdicts.push([proof, false, "Proof contains 'Abort.' or 'Admitted.'"]);
                 continue;
             }
             
@@ -455,11 +471,11 @@ export class ProofView implements ProofViewInterface {
             writeFileSync(uri.fsPath, context);
 
             if (errorMsg === null) {
-                proofVerdicts.push([true, null]);
+                proofVerdicts.push([proof, true, null]);
                 unlinkSync(uri.fsPath);
                 return proofVerdicts;
             } else {
-                proofVerdicts.push([false, errorMsg]);
+                proofVerdicts.push([proof, false, errorMsg]);
             }
         }
 

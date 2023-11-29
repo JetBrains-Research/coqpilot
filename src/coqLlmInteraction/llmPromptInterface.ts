@@ -52,11 +52,11 @@ export class LlmPromptBase {
         return (str.length / 4) >> 0;
     };
 
-    removeBackticks = (str: string): string => {
+    static removeBackticks = (str: string): string => {
         return str.replace(/`/g, '');
     };
 
-    thrProofToBullet = (proof: string): string => {
+    static thrProofToBullet = (proof: string): string => {
         // Remove "Proof." and "Qed."
         let res = proof.replace(/Proof using\./g, '')
                        .replace(/Proof\./g, '')
@@ -114,7 +114,7 @@ export class LlmPromptBase {
         shuffleArray(provenTheorems);
         while (theoremsTokensSum > 0.95 * tokenLimit && provenTheorems.length > 0) {
             const theorem = provenTheorems.pop();
-            if (!theorem.proof) {
+            if (!theorem || !theorem.proof) {
                 continue;
             }
 

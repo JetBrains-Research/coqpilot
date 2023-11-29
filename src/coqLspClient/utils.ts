@@ -13,7 +13,7 @@ import {
     existsSync,
 } from 'fs';
 
-export function makeAuxfname(uri: Uri, unique: boolean = false): Uri {
+export function makeAuxfname(uri: Uri, unique: boolean = true): Uri {
     let auxFilePath = uri.fsPath.replace(/\.v$/, "_cp_aux.v");
     if (unique && existsSync(auxFilePath)) {
         const randomSuffix = Math.floor(Math.random() * 1000000);
@@ -37,3 +37,5 @@ export function toVPosition(position: Position): VPosition {
 export function toVRange(range: Range): VRange {
     return new VRange(toVPosition(range.start), toVPosition(range.end));
 }
+
+export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

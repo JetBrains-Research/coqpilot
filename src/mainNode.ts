@@ -9,5 +9,5 @@ export async function activate(context: ExtensionContext): Promise<void> {
 }
   
 export function deactivate() {
-    extension.dispose();
+    extension?.dispose();
 }
