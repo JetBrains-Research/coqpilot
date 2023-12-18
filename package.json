@@ -46,7 +46,7 @@
       {
         "command": "coqpilot.toggle",
         "title": "Coqpilot: Toggle the plugin"
-      }, 
+      },
       {
         "command": "coqpilot.prove_all_holes",
         "title": "Coqpilot: Try to prove all holes (admitted goals) in the current file."
@@ -75,6 +75,36 @@
             "default": "None",
             "markdownDescription": "An `open-ai` api key. Is used to communicate with the open-ai api. You can get one [here](https://platform.openai.com/account/api-keys)."
           },
+          "coqpilot.grazieApiKey": {
+            "type": "string",
+            "default": "None",
+            "markdownDescription": "`Grazie` api key. Now available for JetBrains employees only."
+          },
+          "coqpilot.grazieModel": {
+            "type": "string",
+            "default": "None",
+            "enum": [
+              "None", 
+              "openai-gpt-4",
+              "openai-chat-gpt",
+              "grazie-chat-llama-v2-7b", 
+              "grazie-chat-llama-v2-13b",
+              "grazie-chat-zephyr-7b",
+              "qwen-turbo", 
+              "qwen-plus"
+            ],
+            "markdownEnumDescriptions": [
+              "None",
+              "OpenAI GPT-4 (175B parameters)",
+              "OpenAI Chat GPT (175B parameters)",
+              "Llama v2 (7B parameters)",
+              "Llama v2 (13B parameters)",
+              "Zephyr",
+              "Alibaba Qwen Turbo",
+              "Alibaba Qwen Plus"
+            ],
+            "markdownDescription": "Which model to use from the `Grazie` platform. To turn off this completion method set it to `None`."
+          },
           "coqpilot.proofAttemsPerOneTheorem": {
             "type": "number",
             "default": 15,
@@ -84,6 +114,7 @@
             "type": "string",
             "default": "gpt-3.5-turbo-0301",
             "enum": [
+              "None",
               "gpt-4",
               "gpt-4-0314",
               "gpt-4-0613",
@@ -109,7 +140,7 @@
               "GPT-3.5 Turbo (175B parameters, 06/13/2021)",
               "GPT-3.5 Turbo (16B parameters, 06/13/2021)"
             ],
-            "markdownDescription": "How many proof attempts should be generated for one theorem."
+            "markdownDescription": "How many proof attempts should be generated for one theorem. To turn off this completion method set it to `None`."
           },
           "coqpilot.maxNumberOfTokens": {
             "type": "number",
@@ -148,15 +179,10 @@
             "type": "string",
             "default": "coq-lsp",
             "markdownDescription": "Path to the coq-lsp binary, by default, search in PATH."
-          }, 
-          "coqpilot.useGpt": {
-            "type": "boolean", 
-            "default": true, 
-            "markdownDescription": "Whether to use gpt as one of the used LLMs."
-          }, 
+          },
           "coqpilot.shuffleHoles": {
-            "type": "boolean", 
-            "default": false, 
+            "type": "boolean",
+            "default": false,
             "markdownDescription": "Whether to shuffle the order of proving the holes."
           }
         }
@@ -173,6 +199,7 @@
   },
   "devDependencies": {
     "@types/cli-progress": "^3.11.3",
+    "@types/event-source-polyfill": "^1.0.5",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "20.2.5",
@@ -188,13 +215,16 @@
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.9.1",
+    "axios": "^1.6.2",
     "cli-progress": "^3.12.0",
     "dedent": "^1.5.1",
+    "event-source-polyfill": "^1.0.31",
     "mocha-param": "^2.0.1",
     "openai": "^4.6.0",
     "path": "^0.12.7",
     "pino": "^8.15.1",
     "pino-pretty": "^10.2.0",
+    "toml": "^3.0.0",
     "vscode-languageclient": "^9.0.1",
     "yargs": "^17.7.2"
   }

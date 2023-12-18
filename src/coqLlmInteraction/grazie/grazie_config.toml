@@ -1,0 +1,4 @@
+base-url = "https://api.app.stgn.grazie.aws.intellij.net/"
+
+[chat]
+    chat-url = "user/v5/llm/chat/stream/v3"

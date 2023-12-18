@@ -34,6 +34,8 @@ import { LLMIterator } from "./coqLlmInteraction/llmIterator";
 import { ProgressBar } from "./extension/progressBar";
 import { shuffleArray } from "./coqLlmInteraction/utils";
 import * as editorUtils from "./editor/utils";
+import { GptModel } from "./extension/config";
+import { Profile } from "./coqLlmInteraction/grazie/chatInstance";
 
 export class Coqpilot implements Disposable {
 
@@ -151,8 +153,10 @@ export class Coqpilot implements Disposable {
     }
 
     private checkConditions(editor: TextEditor) {
-        if (this.config.config.useGpt && this.config.config.openaiApiKey === "None") {
+        if (this.config.config.gptModel !== GptModel.NONE && this.config.config.openaiApiKey === "None") {
             wm.showApiKeyNotProvidedMessage(); return false;
+        } else if (this.config.config.grazieModel !== Profile.NONE && this.config.config.grazieApiKey === "None") { 
+            wm.showGrazieApiKeyNotProvidedMessage(); return false;
         } else if (editor.document.languageId !== "coq") {
             wm.showIncorrectFileFormatMessage(); return false;
         } else if (!this.client || !this.client.isRunning() || !this.proofView) {

@@ -6,18 +6,21 @@ import * as vscode from 'vscode';
 import logger from "./logger";
 import { LLMIterator } from '../coqLlmInteraction/llmIterator';
 import { ProgressBar } from './progressBar';
+import { Profile } from '../coqLlmInteraction/grazie/chatInstance';
+import { Grazie } from '../coqLlmInteraction/grazie/grazie';
 
 export interface CoqpilotConfig {
     openaiApiKey: string;
+    grazieApiKey: string;
     proofAttemsPerOneTheorem: number;
     maxNumberOfTokens: number;
     logAttempts: boolean;
     logFolderPath: string | null;
     gptModel: string;
+    grazieModel: string;
     parseFileOnEditorChange: boolean;
     parseFileOnInit: boolean;
     coqLspPath: string;
-    useGpt: boolean;
     extraCommandsList: string[];
     shuffleHoles: boolean;
 }
@@ -61,15 +64,16 @@ export namespace CoqpilotConfig {
         try {
             return {
                 openaiApiKey: wsConfig.openaiApiKey,
+                grazieApiKey: wsConfig.grazieApiKey,
                 proofAttemsPerOneTheorem: wsConfig.proofAttemsPerOneTheorem,
                 maxNumberOfTokens: wsConfig.maxNumberOfTokens,
                 logAttempts: wsConfig.logAttempts,
                 logFolderPath: wsConfig.logFolderPath === "None" ? null : wsConfig.logFolderPath,
+                grazieModel: wsConfig.grazieModel,
                 gptModel: wsConfig.gptModel,
                 parseFileOnEditorChange: wsConfig.parseFileOnEditorChange,
                 parseFileOnInit: wsConfig.parseFileOnInit, 
                 coqLspPath: wsConfig.coqLspPath, 
-                useGpt: wsConfig.useGpt, 
                 extraCommandsList: preprocessExtraCommands(wsConfig.extraCommandsList),
                 shuffleHoles: wsConfig.shuffleHoles
             };
@@ -110,18 +114,22 @@ export namespace CoqpilotConfig {
             nullableModels.push(new MockLlm());
         } else {
             let gptModel: LLMInterface | null = null; 
-            if (config.useGpt) {
+            let grazieModel: LLMInterface | null = null;
+            if (config.gptModel !== GptModel.NONE) {
                 if (Object.values(GptModel).map(v => v.toString()).includes(config.gptModel)) {
                     gptModel = new GPT35(configWrapped, 3);
                 } else {
                     throw new Error(`Unknown model ${config.gptModel}`);
                 }
             }
+            if (config.grazieModel !== Profile.NONE) {
+                grazieModel = new Grazie(configWrapped, 3);
+            }
             
             const simplestModel = new SingleTacticSolver(configWrapped);
             
             nullableModels = [
-                simplestModel, gptModel
+                simplestModel, gptModel, grazieModel
             ];
         }
 
@@ -137,6 +145,7 @@ export namespace CoqpilotConfig {
 
 /* eslint-disable @typescript-eslint/naming-convention */
 export enum GptModel {
+    NONE = 'None',
     GPT35 = 'gpt-3.5-turbo-0301',
     GPT4 = 'gpt-4',
     GPT4_0314 = 'gpt-4-0314',
