@@ -25,7 +25,11 @@ export interface CoqpilotConfig {
     shuffleHoles: boolean;
 }
 
-export class CoqpilotConfigWrapper {
+export interface ConfigWrapperInterface {
+    config: CoqpilotConfig;
+}
+
+export class CoqpilotConfigWrapper implements ConfigWrapperInterface {
     private _config: CoqpilotConfig;
     private autoUpdate: boolean;
 
@@ -139,7 +143,7 @@ export namespace CoqpilotConfig {
             } 
         } 
 
-        return new LLMIterator(allModels, config.proofAttemsPerOneTheorem, progressBar);
+        return new LLMIterator(allModels, configWrapped, progressBar);
     }
 }
 

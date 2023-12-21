@@ -40,6 +40,7 @@ export class Grazie implements LLMInterface {
     }
 
     async sendMessageWithoutHistoryChange(message: string, choices: number): Promise<string[]> {
+        console.log("Grazie request sent");
         if (this.config.config.grazieModel === Profile.NONE) {
             throw new Error("Grazie model is not set");
         }

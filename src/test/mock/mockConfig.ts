@@ -1,5 +1,15 @@
 import { CoqpilotConfig, OtherModels, GptModel } from "../../extension/config";
 import { Profile } from "../../coqLlmInteraction/grazie/chatInstance";
+import { ConfigWrapperInterface } from "../../extension/config";
+
+
+export class MockConfigWrapper implements ConfigWrapperInterface {
+    config: CoqpilotConfig;
+
+    constructor(config: CoqpilotConfig) {
+        this.config = config;
+    }
+}
 
 export function mockConfig(): CoqpilotConfig {
     return {
@@ -13,7 +23,7 @@ export function mockConfig(): CoqpilotConfig {
         grazieModel: Profile.NONE,
         parseFileOnInit: false,
         parseFileOnEditorChange: false,
-        coqLspPath: "coq-lsp",
+        coqLspPath: process.env.COQ_LSP_PATH || "coq-lsp",
         extraCommandsList: [], 
         shuffleHoles: false
     };

@@ -6,22 +6,22 @@ import {
 } from "vscode-languageclient/node";
 
 import { 
-    WorkspaceConfiguration,
+    // WorkspaceConfiguration,
     Uri
 } from "vscode";
 
 import logger from "../extension/logger";
 import { CoqLspServerConfig } from "./config";
 import { StatusBarButton } from "../editor/enableButton";
-import { CoqpilotConfigWrapper } from "../extension/config";
+import { ConfigWrapperInterface } from "../extension/config";
 
 export class CoqLspClient extends LanguageClient {
     private statusItem: StatusBarButton;
 
     constructor(
         statusItem: StatusBarButton, 
-        wsConfig: WorkspaceConfiguration, 
-        extensionConfig: CoqpilotConfigWrapper,
+        // wsConfig: WorkspaceConfiguration, 
+        extensionConfig: ConfigWrapperInterface,
         path?: Uri
     ) {
         const initializationOptions = CoqLspServerConfig.create();
@@ -55,7 +55,7 @@ export class CoqLspClient extends LanguageClient {
         const extConfig = extensionConfig.config;
         const serverOptions: ServerOptions = {
             command: extConfig.coqLspPath,
-            args: wsConfig.args,
+            // args: wsConfig.args,
         };
 
         super(

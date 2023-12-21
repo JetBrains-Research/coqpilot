@@ -2,6 +2,7 @@ import { LLMInterface } from "./llmInterface";
 import { LLMPrompt, LlmPromptBase } from './llmPromptInterface';
 import { ProgressBar } from "../extension/progressBar";
 import logger from "../extension/logger";
+import { ConfigWrapperInterface } from "../extension/config";
 
 export type Proof = string;
 export type ProofBatch = Proof[];
@@ -12,15 +13,15 @@ export class LLMIterator implements AsyncIterator<Proof> {
 
     private modelIndex: number;
     private proofIndex: number;
-    private shots: number;
+    private config: ConfigWrapperInterface;
     private progressBar: ProgressBar;
 
-    constructor(models: LLMInterface[], shots: number, progressBar: ProgressBar) {
+    constructor(models: LLMInterface[], config: ConfigWrapperInterface, progressBar: ProgressBar) {
         this.models = models;
         this.fetchedResults = new Array<ProofBatch>(models.length);
         this.modelIndex = 0;
         this.proofIndex = 0;
-        this.shots = shots;
+        this.config = config;
         this.progressBar = progressBar;
     }
 
@@ -79,7 +80,7 @@ export class LLMIterator implements AsyncIterator<Proof> {
         
         await this.models[index].sendMessageWithoutHistoryChange(
             message,
-            this.shots
+            this.config.config.proofAttemsPerOneTheorem
         ).then((response) => {
             logger.info("Response received: " + JSON.stringify(response));
             llmResponse = response;

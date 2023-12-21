@@ -128,6 +128,7 @@
               "gpt-3.5-turbo-16k-0613"
             ],
             "markdownEnumDescriptions": [
+              "No open-ai model", 
               "GPT-4 (175B parameters)",
               "GPT-4 (175B parameters, 03/14/2021)",
               "GPT-4 (175B parameters, 06/13/2021)",

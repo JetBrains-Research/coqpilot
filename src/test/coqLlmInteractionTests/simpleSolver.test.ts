@@ -21,7 +21,7 @@ suite('Simple single-tactic solver tests', () => {
         };
 
         // change the setting of useGpt to false
-        await workspace.getConfiguration("coqpilot").update('useGpt', false);
+        await workspace.getConfiguration("coqpilot").update('gptModel', 'None');
         await workspace.getConfiguration("coqpilot").update('extraCommandsList', tacticsToTry);
         
         // vscode open filePath

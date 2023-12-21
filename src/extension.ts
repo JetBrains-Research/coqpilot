@@ -141,8 +141,8 @@ export class Coqpilot implements Disposable {
     }
 
     async initializeClient() {
-        const wsConfig = workspace.getConfiguration("coqpilot");
-        this.client = new CoqLspClient(this.statusItem, wsConfig, this.config);
+        // const wsConfig = workspace.getConfiguration("coqpilot");
+        this.client = new CoqLspClient(this.statusItem, this.config);
         this.proofView = new ProofView(this.client, this.statusItem); 
 
         logger.info("Client prepaired, starting");
@@ -190,6 +190,7 @@ export class Coqpilot implements Disposable {
             return GenerationResult.editorError();
         }
 
+        console.log("Initialized interactor");
         const interactor = new Interactor(
             this.llmPrompt, 
             this.llm,
@@ -228,6 +229,7 @@ export class Coqpilot implements Disposable {
     }
 
     async proveHoles(editor: TextEditor, holes: ProofStep[]) {
+        console.log("Prove holes");
         if (this.config.config.shuffleHoles) {
             shuffleArray(holes);
         }
