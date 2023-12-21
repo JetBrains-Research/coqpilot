@@ -1,5 +1,8 @@
 # Change Log
 
+### 1.5.1
+- Add support of the Grazie platform as an llm provider.  
+
 ### 1.5.0
 - Now when the hole can be solved by a single tactic solver, using predefined tactics, gpt will not be called, LLMs are now fetched consequently. 
 - Parallel hole completion is unfortunately postponed due to the implementation complexity. Yet, hopefully, will still be implemented in milestone `2.0.0`.
