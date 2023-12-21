@@ -6,6 +6,7 @@ import { workspace } from 'vscode';
 import { LLMIterator } from '../../coqLlmInteraction/llmIterator';
 import * as assert from 'assert';
 import { LlmPromptBase } from '../../coqLlmInteraction/llmPromptInterface';
+import { MockConfigWrapper, mockConfig } from '../mock/mockConfig';
 
 suite('LLM Iterator tests', () => {
     const wsConfig = workspace.getConfiguration("coqpilot");
@@ -23,7 +24,8 @@ suite('LLM Iterator tests', () => {
         const solver = new SingleTacticSolver(extensionConfig);
         const progressBar = new VsCodeSpinningWheelProgressBar();
 
-        const iterator = new LLMIterator([solver, mockLlm], 2, progressBar);
+        const mockConf = new MockConfigWrapper(mockConfig());
+        const iterator = new LLMIterator([solver, mockLlm], mockConf, progressBar);
         const thrStatement = "Theorem test: True.";
         const answers = [
             "Proof. constructor. Qed.",
@@ -59,7 +61,8 @@ suite('LLM Iterator tests', () => {
         const solver = new SingleTacticSolver(extensionConfig);
         const progressBar = new VsCodeSpinningWheelProgressBar();
 
-        const iterator = new LLMIterator([solver, mockLlm, mockLlm1], 2, progressBar);
+        const mockConf = new MockConfigWrapper(mockConfig());
+        const iterator = new LLMIterator([solver, mockLlm, mockLlm1], mockConf, progressBar);
         const thrStatement = "Theorem test3: 1 = 1.";
         const answers = [
             "Proof. auto. Qed.", "Proof. ins. Qed.", "Proof. desf. Qed.", 

@@ -1,5 +1,5 @@
 import { LLMInterface } from "./llmInterface";
-import { LLMPrompt } from "./llmPromptInterface";
+import { LlmPromptInterface } from "./llmPromptInterface";
 import OpenAI from 'openai';
 import logger from "../extension/logger";
 import { CoqpilotConfigWrapper } from "../extension/config";
@@ -29,7 +29,7 @@ export class GPT35 implements LLMInterface {
         }
     }
 
-    initHistory(llmPrompt: LLMPrompt): void {
+    initHistory(llmPrompt: LlmPromptInterface): void {
         this.history = [];
         const prompt = llmPrompt.getSystemMessage();
         const messageHistory = llmPrompt.getMessageHistory();
@@ -43,6 +43,10 @@ export class GPT35 implements LLMInterface {
     }
 
     async sendMessageWithoutHistoryChange(message: string, choices: number): Promise<string[]> {
+        if (this.config.config.gptModel === "None") {
+            throw new Error("GPT model is not set");
+        } 
+        
         this.updateOpenAi();
         let attempts = this.requestAttempts;
         let completion: any = null;

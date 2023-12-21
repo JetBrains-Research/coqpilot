@@ -16,6 +16,17 @@ export function showApiKeyNotProvidedMessage() {
     });
 }
 
+export function showGrazieApiKeyNotProvidedMessage() {
+    vscode.window.showInformationMessage(
+        'Please set your Grazie API key in the settings.', 
+        'Open settings'
+    ).then((value) => {
+        if (value === 'Open settings') {
+            vscode.commands.executeCommand('workbench.action.openSettings', 'coqpilot.grazieApiKey');
+        }
+    });
+}
+
 export function showParsingFinishedMessage() {
     vscode.window.showInformationMessage(
         'File analysis finished successfully.'
