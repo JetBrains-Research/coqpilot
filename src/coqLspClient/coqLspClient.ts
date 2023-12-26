@@ -6,7 +6,6 @@ import {
 } from "vscode-languageclient/node";
 
 import { 
-    // WorkspaceConfiguration,
     Uri
 } from "vscode";
 
@@ -20,7 +19,6 @@ export class CoqLspClient extends LanguageClient {
 
     constructor(
         statusItem: StatusBarButton, 
-        // wsConfig: WorkspaceConfiguration, 
         extensionConfig: ConfigWrapperInterface,
         path?: Uri
     ) {
@@ -55,7 +53,6 @@ export class CoqLspClient extends LanguageClient {
         const extConfig = extensionConfig.config;
         const serverOptions: ServerOptions = {
             command: extConfig.coqLspPath,
-            // args: wsConfig.args,
         };
 
         super(
@@ -69,7 +66,6 @@ export class CoqLspClient extends LanguageClient {
     }
 
     override async start(): Promise<void> {
-        // Something wierd going on here I need an explanation for.
         // Somewhy start() method is called literally all the time,
         // it doesnt make anything bad, as in super.start() it checks
         // if the client is already running, but it's still weird.

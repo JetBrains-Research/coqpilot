@@ -40,9 +40,16 @@ export class Grazie implements LLMInterface {
     }
 
     async sendMessageWithoutHistoryChange(message: string, choices: number): Promise<string[]> {
-        console.log("Grazie request sent");
         if (this.config.config.grazieModel === Profile.NONE) {
-            throw new Error("Grazie model is not set");
+            // In general, I want settings to have effect immediately 
+            // after change. Mostly, it works well. However, it is
+            // not obvious how to remove eg grazie llm interface
+            // instance from the iterator, if the iterator is constructed in 
+            // the very beginning. To solve this issue, when user turns off 
+            // Grazie completion DURING the work of the plugin, I return 
+            // an empty completion array result for it. It must not  
+            // affect the correctness.
+            return [];
         }
 
         let attempts = this.requestAttempts;

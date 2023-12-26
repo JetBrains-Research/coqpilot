@@ -161,6 +161,8 @@ export class Coqpilot implements Disposable {
             wm.showIncorrectFileFormatMessage(); return false;
         } else if (!this.client || !this.client.isRunning() || !this.proofView) {
             wm.showClientNotRunningMessage(); return false;
+        } else if (this.config.config.useLmStudio === true && this.config.config.lmStudioPort === "None") {
+            wm.showSpecifyPortMessage(); return false;
         }
 
         return true;

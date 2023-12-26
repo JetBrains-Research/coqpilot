@@ -44,7 +44,11 @@ export class GPT35 implements LLMInterface {
 
     async sendMessageWithoutHistoryChange(message: string, choices: number): Promise<string[]> {
         if (this.config.config.gptModel === "None") {
-            throw new Error("GPT model is not set");
+            // Same comment as in `./grazie/grazie.ts`. 
+            // When the setting config.gptModel is changed
+            // during plugin's work, we keep a dummy of a 
+            // GptLlm inside the iterator, but do not use it.
+            return [];
         } 
         
         this.updateOpenAi();

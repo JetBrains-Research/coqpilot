@@ -185,6 +185,16 @@
             "type": "boolean",
             "default": false,
             "markdownDescription": "Whether to shuffle the order of proving the holes."
+          }, 
+          "coqpilot.lmStudioPort": {
+            "type": "string",
+            "default": "None",
+            "markdownDescription": "A port on which you have launched the LM studio."
+          }, 
+          "coqpilot.useLmStudio": {
+            "type": "boolean",
+            "default": false,
+            "markdownDescription": "Whether to try fetch completions from locally running LLM inside the [LM studio](https://lmstudio.ai)."
           }
         }
       }

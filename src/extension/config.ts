@@ -8,6 +8,7 @@ import { LLMIterator } from '../coqLlmInteraction/llmIterator';
 import { ProgressBar } from './progressBar';
 import { Profile } from '../coqLlmInteraction/grazie/chatInstance';
 import { Grazie } from '../coqLlmInteraction/grazie/grazie';
+import { LMStudio } from "../coqLlmInteraction/lmStudio"; 
 
 export interface CoqpilotConfig {
     openaiApiKey: string;
@@ -23,6 +24,8 @@ export interface CoqpilotConfig {
     coqLspPath: string;
     extraCommandsList: string[];
     shuffleHoles: boolean;
+    lmStudioPort: string; 
+    useLmStudio: boolean;
 }
 
 export interface ConfigWrapperInterface {
@@ -42,7 +45,6 @@ export class CoqpilotConfigWrapper implements ConfigWrapperInterface {
             vscode.workspace.getConfiguration('coqpilot')
         )!;
         CoqpilotConfig.checkRequirements(this._config);
-        // logger.info("Successfully updated config: " + JSON.stringify(this._config));
 
         return this._config;
     }
@@ -79,7 +81,9 @@ export namespace CoqpilotConfig {
                 parseFileOnInit: wsConfig.parseFileOnInit, 
                 coqLspPath: wsConfig.coqLspPath, 
                 extraCommandsList: preprocessExtraCommands(wsConfig.extraCommandsList),
-                shuffleHoles: wsConfig.shuffleHoles
+                shuffleHoles: wsConfig.shuffleHoles,
+                lmStudioPort: wsConfig.lmStudioPort,
+                useLmStudio: wsConfig.useLmStudio
             };
         } catch (error) {
             console.error(error);
@@ -111,39 +115,24 @@ export namespace CoqpilotConfig {
 
     export function getLlm(configWrapped: CoqpilotConfigWrapper, progressBar: ProgressBar): LLMIterator {
         const config = configWrapped.config;
-        let nullableModels: (LLMInterface | null)[] = [];
-        let allModels: LLMInterface[] = [];
+        let models: LLMInterface[] = [];
 
         if (config.gptModel === OtherModels.MOCK) {
-            nullableModels.push(new MockLlm());
+            models.push(new MockLlm());
         } else {
-            let gptModel: LLMInterface | null = null; 
-            let grazieModel: LLMInterface | null = null;
+            models.push(new SingleTacticSolver(configWrapped));
             if (config.gptModel !== GptModel.NONE) {
-                if (Object.values(GptModel).map(v => v.toString()).includes(config.gptModel)) {
-                    gptModel = new GPT35(configWrapped, 3);
-                } else {
-                    throw new Error(`Unknown model ${config.gptModel}`);
-                }
+                models.push(new GPT35(configWrapped, 3));
             }
             if (config.grazieModel !== Profile.NONE) {
-                grazieModel = new Grazie(configWrapped, 3);
+                models.push(new Grazie(configWrapped, 3));
             }
-            
-            const simplestModel = new SingleTacticSolver(configWrapped);
-            
-            nullableModels = [
-                simplestModel, gptModel, grazieModel
-            ];
+            if (config.useLmStudio) {
+                models.push(new LMStudio(configWrapped));
+            }
         }
 
-        for(const model of nullableModels) {
-            if (model !== null) {
-                allModels.push(model);
-            } 
-        } 
-
-        return new LLMIterator(allModels, configWrapped, progressBar);
+        return new LLMIterator(models, configWrapped, progressBar);
     }
 }
 

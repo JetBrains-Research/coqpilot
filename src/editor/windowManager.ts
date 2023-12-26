@@ -108,6 +108,17 @@ export function showHoleSubstitutionSummaryMessage(
     );
 }
 
+export function showSpecifyPortMessage() {
+    vscode.window.showInformationMessage(
+        'Please specify the port where LM Studio is running.', 
+        'Open settings'
+    ).then((value) => {
+        if (value === 'Open settings') {
+            vscode.commands.executeCommand('workbench.action.openSettings', 'coqpilot.lmStudioPort');
+        }
+    });
+}
+
 export function cleanAuxFiles() {
     // Glob *_cp_aux.v files and delete them
     const workspaceFolders = vscode.workspace.workspaceFolders;
