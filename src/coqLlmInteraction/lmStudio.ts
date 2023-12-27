@@ -60,9 +60,13 @@ export class LMStudio implements LLMInterface {
                     headers: this.headers, 
                     body: this.body(updatedHistory)
                 });
-                const response = await completion.text();
-                completions.push(response);
-                logger.info("Request to LM studio succeeded");
+                const response = await completion.json();
+                const completionText = response.choices[0].message.content;
+                if (completionText === undefined) {
+                    throw new Error("Completion text is undefined");
+                }
+                logger.info("Completion text from local LM: " + completionText);
+                completions.push(completionText);
             } catch (e : unknown) {
                 logger.info("Request to LM studio failed with error '" + utils.toErrorWithMessage(e).message); 
                 throw e;
