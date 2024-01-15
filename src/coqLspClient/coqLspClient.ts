@@ -37,6 +37,10 @@ export class CoqLspClient extends LanguageClient {
             middleware: {
                 handleDiagnostics: (uri, diagnostics, _next) => {
                     logger.debug(`Diagnostics received for file ${uri}: ${diagnostics.map((d) => d.message).join(", ")}`);
+                },
+                provideDocumentSymbols: (document, _token, _next) => {
+                    logger.debug(`provideDocumentSymbols called for file ${document.uri}`);
+                    return [];
                 }
             }
         };
