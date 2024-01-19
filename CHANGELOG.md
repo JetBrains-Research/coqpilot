@@ -1,5 +1,8 @@
 # Change Log
 
+### 1.5.3
+- Fix Grazie service request headers and endpoint. 
+
 ### 1.5.2
 - Fix issue with double document symbol provider registration (@Alizter, [#9](https://github.com/JetBrains-Research/coqpilot/issues/9))
 

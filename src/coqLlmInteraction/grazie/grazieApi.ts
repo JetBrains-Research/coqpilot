@@ -20,9 +20,7 @@ export class GrazieApi implements GrazieApiInterface {
             "Accept": "*/*",
             "Content-Type": "application/json",
             "Grazie-Authenticate-Jwt": token,
-            "Grazie-Original-User-Jwt": token,
-            // "Grazie-Authenticate-Jwt": this.config.jwtToken,
-            // "Grazie-Original-Service-JWT": this.config.jwtToken,
+            "Grazie-Original-Service-JWT": token,
         };
     }
 
