@@ -6,8 +6,10 @@ import {
 import { GrazieApiInterface } from "./grazieApiInterface";
 import axios from 'axios';
 import { ResponseType } from 'axios';
-import { GrazieRequestParams } from "../serviceParams";
-import { capitalize } from "../../../utils/general";
+import { GrazieModelParams } from "../modelParamsInterfaces";
+
+export type GrazieChatRole = "User" | "System" | "Assistant";
+export type GrazieFormattedHistory = { role: GrazieChatRole; text: string; }[];
 
 export class GrazieApi implements GrazieApiInterface {
     private readonly config: GrazieConfig;
@@ -26,21 +28,12 @@ export class GrazieApi implements GrazieApiInterface {
     }
 
     private createRequestBody(
-        requestParams: GrazieRequestParams
+        history: GrazieFormattedHistory,
+        params: GrazieModelParams
     ): string {
-        const historyWithGrazieSpecificRoles = requestParams.history.map((message) => {
-            return {
-                role: capitalize(message.role),
-                text: message.content
-            };
-        });
-        const completeHistory = [
-            {role: "System", text: requestParams.modelParams.prompt},
-            ...historyWithGrazieSpecificRoles
-        ];
         return JSON.stringify({
-            chat: completeHistory,
-            profile: requestParams.modelParams.model,
+            chat: history,
+            profile: params.model,
         });
     }
 
@@ -111,8 +104,8 @@ export class GrazieApi implements GrazieApiInterface {
         return response;
     }
 
-    async chatCompletionRequest(params: GrazieRequestParams): Promise<string> {
-        const body = this.createRequestBody(params);
-        return this.post(this.config.chatUrl, body, params.modelParams.apiKey);
+    async chatCompletionRequest(params: GrazieModelParams, history: GrazieFormattedHistory): Promise<string> {
+        const body = this.createRequestBody(history, params);
+        return this.post(this.config.chatUrl, body, params.apiKey);
     }
 }

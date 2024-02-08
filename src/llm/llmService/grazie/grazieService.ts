@@ -1,51 +1,47 @@
 import { 
-    GrazieModelParams, 
-    GrazieServiceParams,
-    GrazieRequestParams,
-} from '../serviceParams';
+    CompletionContext,
+    GrazieModelParams,
+} from '../modelParamsInterfaces';
 import { GrazieApiInterface } from './grazieApiInterface';
-import { History } from '../../types';
-import { LLM } from '../../llmInterface';
+import { LLMServiceInterface } from '../llmServiceInterface';
+import { GrazieFormattedHistory } from './grazieApi';
 
-export class GrazieService {
-    api: GrazieApiInterface; 
+export class GrazieService implements LLMServiceInterface {
+    private api: GrazieApiInterface; 
 
     constructor(api: GrazieApiInterface) {
         this.api = api;
     }
 
-    private async requestCompletion(params: GrazieRequestParams): Promise<string[]> {
-        const choices = params.serviceParams.choices;
+    private createHistory = (completionContext: CompletionContext, systemMessage: string): GrazieFormattedHistory => {
+        const formattedHistory: GrazieFormattedHistory = [];
+        for (const theorem of completionContext.sameFileTheorems) {
+            formattedHistory.push({ role: 'User', text: theorem.statement });
+            formattedHistory.push({ role: 'Assistant', text: theorem.proof?.onlyText() ?? "Admitted." });
+        }
+        formattedHistory.push({ role: 'User', text: completionContext.admitCompletionTarget });
+
+        return [{role: 'System', text: systemMessage}, ...formattedHistory];
+    };
+
+    async requestCompletion(
+        completionContext: CompletionContext, 
+        params: GrazieModelParams
+    ): Promise<string[]> {
+        const choices = params.choices;
         let attempts = choices * 2;
         const completions: Promise<string>[] = [];
+        const grazieFormattedHistory = this.createHistory(completionContext, params.prompt);
 
         while (completions.length < choices && attempts > 0) {
-            completions.push(this.api.chatCompletionRequest(params));
+            completions.push(this.api.chatCompletionRequest(params, grazieFormattedHistory));
             attempts--;
         }
 
         return Promise.all(completions);
     }
 
-    public createModel(modelParams: GrazieModelParams, serviceParams: GrazieServiceParams): LLM {
-        return new class implements LLM {
-            constructor(
-                public superThis: GrazieService, 
-                public modelParams: GrazieModelParams, 
-                public serviceParams: GrazieServiceParams
-            ) {}
-            
-            async fetchMessage(history: History): Promise<string[]> {
-                return this.superThis.requestCompletion({
-                    serviceParams: this.serviceParams,
-                    modelParams: this.modelParams,
-                    history: history
-                });
-            }
-            
-            dispose(): void {
-                return;
-            }
-        }(this, modelParams, serviceParams);
-    } 
+    dispose(): void {
+        return;
+    }
 }

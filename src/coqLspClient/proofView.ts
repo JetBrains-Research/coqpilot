@@ -405,6 +405,15 @@ export class ProofView implements ProofViewInterface {
         return proof.replace(/`/g, "");
     }
 
+    // TODO: kekkekkekekkekekkkek
+    postProcessProof(proof: Proof): Proof {
+        let result = LlmPromptBase.removeBackticks(proof);
+        // Surround with curly braces and remove Proof. and Qed.
+        result = LlmPromptBase.thrProofToBullet(result);
+
+        return result;
+    } 
+
     async checkTheorems(
         uri: Uri, 
         proofs: LLMIterator, 

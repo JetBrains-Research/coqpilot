@@ -1,5 +1,6 @@
-import { GrazieRequestParams } from "../serviceParams";
+import { GrazieModelParams } from "../modelParamsInterfaces";
+import { GrazieFormattedHistory } from "./grazieApi";
 
 export interface GrazieApiInterface {
-    chatCompletionRequest(params: GrazieRequestParams): Promise<string>;
+    chatCompletionRequest(params: GrazieModelParams, history: GrazieFormattedHistory): Promise<string>;
 }
