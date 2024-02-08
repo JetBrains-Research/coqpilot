@@ -9,6 +9,8 @@ import { OpenAiService } from "./llmService/openai/openAiService";
 import { 
     PredefinedCompletionService 
 } from "./llmService/predefinedCompletion/predefinedCompletionService";
+import { EventLogger } from "../logging/eventLogger";
+
 
 export type Proof = string;
 export type ProofBatch = Proof[];
@@ -38,6 +40,7 @@ export class LLMSequentialIterator implements AsyncIterator<Proof> {
         completionContext: CompletionContext, 
         modelsParams: ModelsParams,
         services: LLMServices,
+        public eventLogger: EventLogger | undefined = undefined
     ) {
         this.completionHookIndex = 0;
         this.proofIndex = 0;
@@ -57,28 +60,37 @@ export class LLMSequentialIterator implements AsyncIterator<Proof> {
         const completionHooks: CompletionHook[] = [];
         for (const params of modelsParams.predefinedCompletionParams) {
             completionHooks.push(
-                () => services.predefinedCompletionService.requestCompletion(
-                    completionContext, 
-                    params
-                )
+                () => {
+                    this.eventLogger?.log("predefined-completion-fetch-started", JSON.stringify(params));
+                    return services.predefinedCompletionService.requestCompletion(
+                        completionContext, 
+                        params
+                    );
+                }
             );
         }
 
         for (const params of modelsParams.openAiParams) {
             completionHooks.push(
-                () => services.openAiService.requestCompletion(
-                    completionContext, 
-                    params
-                )
+                () => {
+                    this.eventLogger?.log("openai-fetch-started", JSON.stringify(params));
+                    return services.openAiService.requestCompletion(
+                        completionContext, 
+                        params
+                    );
+                }
             );
         }
 
         for (const params of modelsParams.grazieParams) {
             completionHooks.push(
-                () => services.grazieService.requestCompletion(
-                    completionContext, 
-                    params
-                )
+                () => {
+                    this.eventLogger?.log("grazie-fetch-started", JSON.stringify(params));
+                    return services.grazieService.requestCompletion(
+                        completionContext, 
+                        params
+                    );
+                }
             );
         }
 
