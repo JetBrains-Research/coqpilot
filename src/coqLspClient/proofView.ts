@@ -406,13 +406,13 @@ export class ProofView implements ProofViewInterface {
     }
 
     // TODO: kekkekkekekkekekkkek
-    postProcessProof(proof: Proof): Proof {
-        let result = LlmPromptBase.removeBackticks(proof);
-        // Surround with curly braces and remove Proof. and Qed.
-        result = LlmPromptBase.thrProofToBullet(result);
+    // postProcessProof(proof: Proof): Proof {
+    //     let result = LlmPromptBase.removeBackticks(proof);
+    //     // Surround with curly braces and remove Proof. and Qed.
+    //     result = LlmPromptBase.thrProofToBullet(result);
 
-        return result;
-    } 
+    //     return result;
+    // } 
 
     async checkTheorems(
         uri: Uri, 

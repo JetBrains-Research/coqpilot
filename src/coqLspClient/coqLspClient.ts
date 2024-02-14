@@ -6,7 +6,6 @@ import {
 } from "vscode-languageclient/node";
 
 import { 
-    // WorkspaceConfiguration,
     Uri
 } from "vscode";
 
@@ -59,7 +58,6 @@ export class CoqLspClient extends LanguageClient {
         const extConfig = extensionConfig.config;
         const serverOptions: ServerOptions = {
             command: extConfig.coqLspPath,
-            // args: wsConfig.args,
         };
 
         super(

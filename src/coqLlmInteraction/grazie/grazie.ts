@@ -17,7 +17,7 @@ export class Grazie implements LLMInterface {
     private readonly config: CoqpilotConfigWrapper;
     private readonly requestAttempts: number;
     private readonly api: GrazieApi;
-    private history: ChatInstance | undefined = undefined;
+    private history?: ChatInstance;
 
     constructor(config: CoqpilotConfigWrapper, requestAttempts: number = 3) {
         this.config = config;

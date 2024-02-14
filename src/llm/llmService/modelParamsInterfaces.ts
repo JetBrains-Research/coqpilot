@@ -1,6 +1,6 @@
 import { Theorem } from "../../lib/pvTypes";
 
-export interface CompletionContext {
+export interface ProofGenerationContext {
     sameFileTheorems: Theorem[];
     admitCompletionTarget: string; 
 }
@@ -23,7 +23,7 @@ export interface GrazieModelParams extends ModelParams {
     choices: number;
 }
 
-export interface PredefinedCompletionModelParams extends ModelParams {
+export interface PredefinedProofsModelParams extends ModelParams {
     // A list of tactics to try to solve the goal with.
     tactics: string[];
 }

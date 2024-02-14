@@ -1,14 +1,14 @@
 import { 
-    CompletionContext, 
+    ProofGenerationContext, 
     OpenAiModelParams,
     GrazieModelParams,
-    PredefinedCompletionModelParams
+    PredefinedProofsModelParams
 } from "./llmService/modelParamsInterfaces";
 import { GrazieService } from "./llmService/grazie/grazieService";
 import { OpenAiService } from "./llmService/openai/openAiService";
 import { 
-    PredefinedCompletionService 
-} from "./llmService/predefinedCompletion/predefinedCompletionService";
+    PredefinedProofsService 
+} from "./llmService/predefinedProofs/predefinedProofsService";
 import { EventLogger } from "../logging/eventLogger";
 
 
@@ -18,52 +18,52 @@ export type ProofBatch = Proof[];
 export interface LLMServices {
     openAiService: OpenAiService;
     grazieService: GrazieService;
-    predefinedCompletionService: PredefinedCompletionService;
+    predefinedProofsService: PredefinedProofsService;
 }
 
 export interface ModelsParams {
     openAiParams: OpenAiModelParams[];
     grazieParams: GrazieModelParams[];
-    predefinedCompletionParams: PredefinedCompletionModelParams[];
+    predefinedProofsModelParams: PredefinedProofsModelParams[];
 }
 
-type CompletionHook = () => Promise<string[]>;
+type ProofsGenerationHook = () => Promise<string[]>;
 
-export class LLMSequentialIterator implements AsyncIterator<Proof> {
-    private completionHooks: CompletionHook[];
+export class LLMSequentialIterator implements AsyncIterator<ProofBatch> {
+    private proofsGenerationHook: ProofsGenerationHook[];
     private fetchedResults: ProofBatch[];
 
-    private completionHookIndex: number;
-    private proofIndex: number;
+    private hooksIndex: number;
+    private insideBatchIndex: number;
     
     constructor(
-        completionContext: CompletionContext, 
+        proofGenerationContext: ProofGenerationContext, 
         modelsParams: ModelsParams,
         services: LLMServices,
-        public eventLogger: EventLogger | undefined = undefined
+        private eventLogger?: EventLogger
     ) {
-        this.completionHookIndex = 0;
-        this.proofIndex = 0;
-        this.completionHooks = this.createCompletionHooks(
-            completionContext, 
+        this.hooksIndex = 0;
+        this.insideBatchIndex = 0;
+        this.proofsGenerationHook = this.createHooks(
+            proofGenerationContext, 
             modelsParams, 
             services
         );
-        this.fetchedResults = new Array<ProofBatch>(this.completionHooks.length);
+        this.fetchedResults = new Array<ProofBatch>(this.proofsGenerationHook.length);
     }
 
-    private createCompletionHooks(
-        completionContext: CompletionContext, 
+    private createHooks(
+        proofGenerationContext: ProofGenerationContext, 
         modelsParams: ModelsParams,
         services: LLMServices
-    ): CompletionHook[] {
-        const completionHooks: CompletionHook[] = [];
-        for (const params of modelsParams.predefinedCompletionParams) {
-            completionHooks.push(
+    ): ProofsGenerationHook[] {
+        const proofsGenerationHooks: ProofsGenerationHook[] = [];
+        for (const params of modelsParams.predefinedProofsModelParams) {
+            proofsGenerationHooks.push(
                 () => {
-                    this.eventLogger?.log("predefined-completion-fetch-started", JSON.stringify(params));
-                    return services.predefinedCompletionService.requestCompletion(
-                        completionContext, 
+                    this.eventLogger?.log("predefined-proofs-fetch-started", JSON.stringify(params));
+                    return services.predefinedProofsService.generateProof(
+                        proofGenerationContext, 
                         params
                     );
                 }
@@ -71,11 +71,11 @@ export class LLMSequentialIterator implements AsyncIterator<Proof> {
         }
 
         for (const params of modelsParams.openAiParams) {
-            completionHooks.push(
+            proofsGenerationHooks.push(
                 () => {
                     this.eventLogger?.log("openai-fetch-started", JSON.stringify(params));
-                    return services.openAiService.requestCompletion(
-                        completionContext, 
+                    return services.openAiService.generateProof(
+                        proofGenerationContext, 
                         params
                     );
                 }
@@ -83,42 +83,62 @@ export class LLMSequentialIterator implements AsyncIterator<Proof> {
         }
 
         for (const params of modelsParams.grazieParams) {
-            completionHooks.push(
+            proofsGenerationHooks.push(
                 () => {
                     this.eventLogger?.log("grazie-fetch-started", JSON.stringify(params));
-                    return services.grazieService.requestCompletion(
-                        completionContext, 
+                    return services.grazieService.generateProof(
+                        proofGenerationContext, 
                         params
                     );
                 }
             );
         }
 
-        return completionHooks;
+        return proofsGenerationHooks;
     }
 
     [Symbol.asyncIterator]() {
         return this;
     }
 
-    async next(): Promise<IteratorResult<string, any>> {
-        if (this.completionHookIndex >= this.completionHooks.length) {
+    private async prepareFetched(): Promise<boolean> {
+        if (this.hooksIndex >= this.proofsGenerationHook.length) {
+            return true;
+        }
+
+        if (this.insideBatchIndex >= this.fetchedResults[this.hooksIndex].length) {
+            this.hooksIndex += 1;
+            this.insideBatchIndex = 0;
+            return this.prepareFetched();
+        }
+
+        if (this.fetchedResults[this.hooksIndex] === undefined) {
+            this.fetchedResults[this.hooksIndex] = await this.proofsGenerationHook[this.hooksIndex]();
+        }
+
+        return false;
+    }
+
+    async next(): Promise<IteratorResult<ProofBatch, any>> {
+        const finished = await this.prepareFetched();
+        if (finished) {
             return { done: true, value: undefined };
         }
 
-        if (this.fetchedResults[this.completionHookIndex] === undefined) {
-            this.fetchedResults[this.completionHookIndex] = await this.completionHooks[this.completionHookIndex]();
+        const proofs = this.fetchedResults[this.hooksIndex].slice(this.insideBatchIndex);
+        this.insideBatchIndex = this.fetchedResults[this.hooksIndex].length;
+
+        return { done: false, value: proofs };
+    }
+
+    async nextProof(): Promise<IteratorResult<Proof, any>> {
+        const finished = await this.prepareFetched();
+        if (finished) {
+            return { done: true, value: undefined };
         }
 
-        if (this.proofIndex >= this.fetchedResults[this.completionHookIndex].length) {
-            this.completionHookIndex += 1;
-            this.proofIndex = 0;
-            return this.next();
-        }
-
-        const proof = this.fetchedResults[this.completionHookIndex][this.proofIndex];
-
-        this.proofIndex += 1;
+        const proof = this.fetchedResults[this.hooksIndex][this.insideBatchIndex];
+        this.insideBatchIndex += 1;
 
         return { done: false, value: proof };
     }

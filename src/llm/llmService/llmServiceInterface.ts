@@ -1,12 +1,12 @@
 import {
-    CompletionContext,
+    ProofGenerationContext,
     ModelParams
 } from "./modelParamsInterfaces";
 
 export type LlmServiceId = string;
 
 export interface LLMServiceInterface {
-    requestCompletion(completionContext: CompletionContext, params: ModelParams): Promise<string[]>;
+    generateProof(proofGenerationContext: ProofGenerationContext, params: ModelParams): Promise<string[]>;
 
     dispose(): void;
 }

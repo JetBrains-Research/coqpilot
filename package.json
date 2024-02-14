@@ -84,13 +84,13 @@
             "type": "string",
             "default": "None",
             "enum": [
-              "None", 
+              "None",
               "openai-gpt-4",
               "openai-chat-gpt",
-              "grazie-chat-llama-v2-7b", 
+              "grazie-chat-llama-v2-7b",
               "grazie-chat-llama-v2-13b",
               "grazie-chat-zephyr-7b",
-              "qwen-turbo", 
+              "qwen-turbo",
               "qwen-plus"
             ],
             "markdownEnumDescriptions": [
@@ -128,7 +128,7 @@
               "gpt-3.5-turbo-16k-0613"
             ],
             "markdownEnumDescriptions": [
-              "No open-ai model", 
+              "No open-ai model",
               "GPT-4 (175B parameters)",
               "GPT-4 (175B parameters, 03/14/2021)",
               "GPT-4 (175B parameters, 06/13/2021)",
@@ -216,11 +216,14 @@
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.9.1",
+    "async-mutex": "^0.4.1",
     "axios": "^1.6.2",
     "cli-progress": "^3.12.0",
     "dedent": "^1.5.1",
     "event-source-polyfill": "^1.0.31",
+    "i": "^0.3.7",
     "mocha-param": "^2.0.1",
+    "npm": "^10.4.0",
     "openai": "^4.6.0",
     "path": "^0.12.7",
     "pino": "^8.15.1",

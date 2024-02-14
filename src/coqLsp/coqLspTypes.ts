@@ -4,16 +4,12 @@ import {
     Range,
     VersionedTextDocumentIdentifier,
     TextDocumentIdentifier,
-} from "vscode-languageserver-types";
+} from "vscode-languageclient";
 
 export interface Hyp<Pp> {
     names: Pp[];
     def?: Pp;
     ty: Pp;
-}
-
-export function hypToString(hyp: Hyp<PpString>): string {
-    return `${hyp.names.join(' ')} : ${hyp.ty}`;
 }
 
 export interface Goal<Pp> {
@@ -149,4 +145,11 @@ export interface SentencePerfParams {
 export interface DocumentPerfParams {
     summary: string;
     timings: SentencePerfParams[];
+}
+
+export class CoqLspError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "CoqLspError";
+    }
 }

@@ -1,13 +1,13 @@
 import { 
-    PredefinedCompletionModelParams,
-    CompletionContext
+    PredefinedProofsModelParams,
+    ProofGenerationContext
 } from '../modelParamsInterfaces';
 import { LLMServiceInterface } from '../llmServiceInterface';
 
-export class PredefinedCompletionService implements LLMServiceInterface {
-    async requestCompletion(
-        _completionContext: CompletionContext,
-        params: PredefinedCompletionModelParams
+export class PredefinedProofsService implements LLMServiceInterface {
+    async generateProof(
+        _proofGenerationContext: ProofGenerationContext,
+        params: PredefinedProofsModelParams
     ): Promise<string[]> {
         return this.formatCoqSentences(params.tactics).map((tactic) => {
             return `Proof. ${tactic} Qed.`;
