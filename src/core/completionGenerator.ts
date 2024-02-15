@@ -1,8 +1,8 @@
-import { 
-    LLMSequentialIterator, 
+import { LLMSequentialIterator } from "../llm/llmIterator";
+import {
     ModelsParams, 
     LLMServices
-} from "../llm/llmIterator";
+} from "../llm/configurations";
 
 import { 
     CoqProofChecker,
@@ -23,8 +23,9 @@ import {
 import { Theorem } from "../coqParser/parsedTypes";
 
 export interface CompletionContext {
-    proofGoal: Goal<PpString>; 
+    proofGoal: Goal<PpString>;
     prefixEndPosition: Position;
+    admitEndPosition: Position;
 }
 
 export interface SourceFileEnvironment {

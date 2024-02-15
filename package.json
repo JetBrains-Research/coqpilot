@@ -36,30 +36,22 @@
     ],
     "commands": [
       {
-        "command": "coqpilot.init_history",
-        "title": "Coqpilot: Parse current file and initialize llm history with theorems from it."
-      },
-      {
-        "command": "coqpilot.run_generation",
+        "command": "coqpilot.perform_completion_under_cursor",
         "title": "Coqpilot: Try to generate proof for the goal under the cursor."
       },
       {
-        "command": "coqpilot.toggle",
-        "title": "Coqpilot: Toggle the plugin"
-      },
-      {
-        "command": "coqpilot.prove_all_holes",
+        "command": "coqpilot.perform_completion_for_all_admits",
         "title": "Coqpilot: Try to prove all holes (admitted goals) in the current file."
       },
       {
-        "command": "coqpilot.prove_in_selection",
+        "command": "coqpilot.perform_completion_in_selection",
         "title": "Coqpilot: Try to prove holes in selection."
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "command": "coqpilot.prove_in_selection",
+          "command": "coqpilot.perform_completion_in_selection",
           "when": "editorTextFocus && editorHasSelection && resourceLangId == coq",
           "group": "queries"
         }
@@ -105,7 +97,7 @@
             ],
             "markdownDescription": "Which model to use from the `Grazie` platform. To turn off this completion method set it to `None`."
           },
-          "coqpilot.proofAttemsPerOneTheorem": {
+          "coqpilot.proofAttemptsPerOneTheorem": {
             "type": "number",
             "default": 15,
             "markdownDescription": "How many proof attempts should be generated for one theorem."

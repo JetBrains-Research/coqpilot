@@ -13,7 +13,7 @@ import {
     SourceFileEnvironment
 } from "./completionGenerator";
 
-type AnalyzedFile = [SourceFileEnvironment, CompletionContext[]]; 
+type AnalyzedFile = [CompletionContext[], SourceFileEnvironment]; 
 
 export async function inspectSourceFile(
     fileVersion: number,
@@ -30,7 +30,7 @@ export async function inspectSourceFile(
         client
     );
 
-    return [sourceFileEnvironment, completionContexts];
+    return [completionContexts, sourceFileEnvironment];
 }
 
 async function createCompletionContexts(
@@ -56,7 +56,8 @@ async function createCompletionContexts(
         if (!(goal instanceof Error)) {
             completionContexts.push({
                 proofGoal: goal,
-                prefixEndPosition: hole.range.start
+                prefixEndPosition: hole.range.start, 
+                admitEndPosition: hole.range.end
             });
         }
     }

@@ -4,13 +4,13 @@ import {
 } from '../modelParamsInterfaces';
 import { GrazieApiInterface } from './grazieApiInterface';
 import { LLMServiceInterface } from '../llmServiceInterface';
-import { GrazieFormattedHistory } from './grazieApi';
+import { GrazieApi, GrazieFormattedHistory } from './grazieApi';
 
 export class GrazieService implements LLMServiceInterface {
     private api: GrazieApiInterface; 
 
-    constructor(api: GrazieApiInterface) {
-        this.api = api;
+    constructor() {
+        this.api = new GrazieApi();
     }
 
     private createHistory = (proofGenerationContext: ProofGenerationContext, systemMessage: string): GrazieFormattedHistory => {

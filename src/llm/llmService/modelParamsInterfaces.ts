@@ -1,4 +1,4 @@
-import { Theorem } from "../../legacy_lib/pvTypes";
+import { Theorem } from "../../coqParser/parsedTypes";
 
 export interface ProofGenerationContext {
     sameFileTheorems: Theorem[];

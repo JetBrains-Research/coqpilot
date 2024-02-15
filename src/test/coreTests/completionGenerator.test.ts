@@ -7,7 +7,6 @@ import { CoqProofChecker } from "../../core/coqProofChecker";
 import { OpenAiService } from "../../llm/llmService/openai/openAiService";
 import { GrazieService } from "../../llm/llmService/grazie/grazieService";
 import { PredefinedProofsService } from "../../llm/llmService/predefinedProofs/predefinedProofsService";
-import { GrazieApi } from "../../llm/llmService/grazie/grazieApi";
 import { ProcessEnvironment } from "../../core/completionGenerator";
 import { Uri } from "../../utils/uri";
 
@@ -29,7 +28,7 @@ suite('GigaSuite', () => {
 
         const coqProofChecker = new CoqProofChecker(client);
         await client.openTextDocument(fileUri);
-        const [sourceFileEnvironment, completionContexts] = await inspectSourceFile(
+        const [completionContexts, sourceFileEnvironment] = await inspectSourceFile(
             1,
             (_hole) => true,
             fileUri,
@@ -40,29 +39,15 @@ suite('GigaSuite', () => {
         console.log("completionContexts: ", completionContexts);
 
         const openAiService = new OpenAiService();
-        const grazieApi = new GrazieApi();
-        const grazieService = new GrazieService(grazieApi);
+        const grazieService = new GrazieService();
         const predefinedProofsService = new PredefinedProofsService();
 
         const processEnvironment: ProcessEnvironment = {
             coqProofChecker: coqProofChecker,
             modelsParams: {
-                openAiParams: [
-                    {
-                        prompt: `Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'.`,
-                        maxTokens: 5000,
-                        temperature: 1.0,
-                        model: 'gpt-4',
-                        apiKey: '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',
-                        choices: 8,
-                    }
-                ],
+                openAiParams: [],
                 grazieParams: [],
-                predefinedProofsModelParams: [
-                    // {
-                    //     tactics: [ 'simpl.', 'govno.', 'reflexivity.', 'auto.' ],
-                    // }
-                ]
+                predefinedProofsModelParams: []
             },
             services: {
                 openAiService,

@@ -1,31 +1,9 @@
-import { 
-    ProofGenerationContext, 
-    OpenAiModelParams,
-    GrazieModelParams,
-    PredefinedProofsModelParams
-} from "./llmService/modelParamsInterfaces";
-import { GrazieService } from "./llmService/grazie/grazieService";
-import { OpenAiService } from "./llmService/openai/openAiService";
-import { 
-    PredefinedProofsService 
-} from "./llmService/predefinedProofs/predefinedProofsService";
+import { ProofGenerationContext } from "./llmService/modelParamsInterfaces";
 import { EventLogger } from "../logging/eventLogger";
-
+import { ModelsParams, LLMServices } from "./configurations";
 
 export type Proof = string;
 export type ProofBatch = Proof[];
-
-export interface LLMServices {
-    openAiService: OpenAiService;
-    grazieService: GrazieService;
-    predefinedProofsService: PredefinedProofsService;
-}
-
-export interface ModelsParams {
-    openAiParams: OpenAiModelParams[];
-    grazieParams: GrazieModelParams[];
-    predefinedProofsModelParams: PredefinedProofsModelParams[];
-}
 
 type ProofsGenerationHook = () => Promise<string[]>;
 

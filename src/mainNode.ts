@@ -1,10 +1,10 @@
 import { ExtensionContext } from "vscode";
-import { Coqpilot } from "./extension";
+import { CoqPilot } from "./extension/coqPilot";
 
-export let extension: Coqpilot | undefined;
+export let extension: CoqPilot | undefined;
 
 export async function activate(context: ExtensionContext): Promise<void> {
-    extension = await Coqpilot.init(context);
+    extension = new CoqPilot(context);
     context.subscriptions.push(extension);
 }
   

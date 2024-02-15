@@ -8,8 +8,7 @@ Theorem test2nat : forall n : nat, n = 0 \/ n <> 0.
 Proof.
   intros n.
   destruct n.
-  - left.
-  reflexivity.
+  - admit.
   - right.
   discriminate.
-Qed.
+Admitted.
