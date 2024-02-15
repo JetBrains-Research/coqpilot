@@ -1,7 +1,7 @@
-import { DocumentUri } from "vscode-languageclient";
 import { parseCoqFile } from "../coqParser/parseCoqFile";
 import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { readFileSync } from "fs";
+import { Uri } from "../utils/uri";
 import { 
     ProofStep,
     Theorem
@@ -16,12 +16,14 @@ import {
 type AnalyzedFile = [SourceFileEnvironment, CompletionContext[]]; 
 
 export async function inspectSourceFile(
+    fileVersion: number,
     shouldCompleteHole: (hole: ProofStep) => boolean,
-    fileUri: DocumentUri, 
+    fileUri: Uri, 
     client: CoqLspClient,
 ): Promise<AnalyzedFile> {
-    const sourceFileEnvironment = await createSourceFileEnvironment(fileUri, client);
+    const sourceFileEnvironment = await createSourceFileEnvironment(fileVersion, fileUri, client);
     const completionContexts = await createCompletionContexts(
+        fileVersion,
         shouldCompleteHole, 
         sourceFileEnvironment.fileTheorems,
         fileUri,
@@ -32,9 +34,10 @@ export async function inspectSourceFile(
 }
 
 async function createCompletionContexts(
+    fileVersion: number,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileTheorems: Theorem[],
-    fileUri: DocumentUri,
+    fileUri: Uri,
     client: CoqLspClient
 ): Promise<CompletionContext[]> {
     const holesToComplete = fileTheorems
@@ -43,13 +46,12 @@ async function createCompletionContexts(
         .flat()
         .filter(shouldCompleteHole);
 
-    // TODO: Figure out if we need the correct version here
     let completionContexts: CompletionContext[] = [];
     for (const hole of holesToComplete) {
         const goal = await client.getFirstGoalAtPoint(
             hole.range.start,
             fileUri,
-            65
+            fileVersion
         );
         if (!(goal instanceof Error)) {
             completionContexts.push({
@@ -63,11 +65,12 @@ async function createCompletionContexts(
 }
 
 async function createSourceFileEnvironment(
-    fileUri: DocumentUri, 
+    fileVersion: number,
+    fileUri: Uri, 
     client: CoqLspClient
 ): Promise<SourceFileEnvironment> {
     const fileTheorems = await parseCoqFile(fileUri, client);
-    const fileText = readFileSync(fileUri);
+    const fileText = readFileSync(fileUri.fsPath);
     const dirPath = getSourceFolderPath(fileUri);
     if (!dirPath) {
         throw new Error("Unable to get source folder path");
@@ -76,20 +79,14 @@ async function createSourceFileEnvironment(
     return {
         fileTheorems: fileTheorems,
         fileLines: fileText.toString().split('\n'),
+        fileVersion: fileVersion,
         dirPath: dirPath
     };
 }
 
-function getSourceFolderPath(documentUri: string): string | undefined {
+function getSourceFolderPath(documentUri: Uri): string | undefined {
     try {
-        if (documentUri.startsWith('file:///')) {
-            const fsPath = decodeURI(documentUri.substring('file:///'.length));
-            const sourceFolderPath = path.dirname(fsPath);
-
-            return sourceFolderPath;
-        } else {
-            return undefined;
-        }
+        return path.dirname(documentUri.fsPath);
     } catch (error) {
         return undefined;
     }

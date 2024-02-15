@@ -1,5 +1,5 @@
-import { LLMInterface } from "../../coqLlmInteraction/llmInterface";
-import { LlmPromptInterface } from "../../coqLlmInteraction/llmPromptInterface";
+import { LLMInterface } from "../../legacy_coqLlmInteraction/llmInterface";
+import { LlmPromptInterface } from "../../legacy_coqLlmInteraction/llmPromptInterface";
 import * as assert from 'assert';
 import * as common from '../common';
 

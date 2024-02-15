@@ -1,6 +1,6 @@
 import { LLMInterface } from "./llmInterface";
 import { LlmPromptInterface } from "./llmPromptInterface";
-import { CoqpilotConfigWrapper } from "../extension/config";
+import { CoqpilotConfigWrapper } from "../legacy_extension/config";
 
 export class SingleTacticSolver implements LLMInterface {
     private configWrapped: CoqpilotConfigWrapper; 

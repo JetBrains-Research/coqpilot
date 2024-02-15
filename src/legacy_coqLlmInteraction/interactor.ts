@@ -2,7 +2,7 @@ import { LLMPrompt } from './llmPromptInterface';
 import { LLMIterator } from './llmIterator';
 import { EvaluationLogger } from './evaluationLogger';
 import { Uri } from 'vscode';
-import logger from '../extension/logger';
+import logger from '../legacy_extension/logger';
 import * as utils from './utils';
 
 export enum GenerationStatus {

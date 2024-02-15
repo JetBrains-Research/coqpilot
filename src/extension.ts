@@ -12,30 +12,30 @@ import {
     BaseLanguageClient,
 } from "vscode-languageclient";
 
-import { CoqLspClient } from "./coqLspClient/coqLspClient";
-import { ProofView, ProofViewInterface } from "./coqLspClient/proofView";
-import { StatusBarButton } from "./editor/enableButton";
-import { LLMPrompt } from "./coqLlmInteraction/llmPromptInterface";
-import { CoqPromptKShot } from "./coqLlmInteraction/coqLlmPrompt";
-import { CoqpilotConfig, CoqpilotConfigWrapper } from "./extension/config";
+import { CoqLspClient } from "./legacy_coqLspClient/coqLspClient";
+import { ProofView, ProofViewInterface } from "./legacy_coqLspClient/proofView";
+import { StatusBarButton } from "./legacy_editor/enableButton";
+import { LLMPrompt } from "./legacy_coqLlmInteraction/llmPromptInterface";
+import { CoqPromptKShot } from "./legacy_coqLlmInteraction/coqLlmPrompt";
+import { CoqpilotConfig, CoqpilotConfigWrapper } from "./legacy_extension/config";
 import { 
     Interactor, 
     GenerationStatus, 
     GenerationResult, 
-} from "./coqLlmInteraction/interactor";
-import * as wm from "./editor/windowManager";
-import { VsCodeSpinningWheelProgressBar } from "./extension/vscodeProgressBar";
-import logger from "./extension/logger";
-import { makeAuxfname } from "./coqLspClient/utils";
-import * as lspUtils from "./coqLspClient/utils";
-import { ProofStep } from "./lib/pvTypes";
-import * as utils from "./coqLspClient/utils";
-import { LLMIterator } from "./coqLlmInteraction/llmIterator";
-import { ProgressBar } from "./extension/progressBar";
-import { shuffleArray } from "./coqLlmInteraction/utils";
-import * as editorUtils from "./editor/utils";
-import { GptModel } from "./extension/config";
-import { Profile } from "./coqLlmInteraction/grazie/chatInstance";
+} from "./legacy_coqLlmInteraction/interactor";
+import * as wm from "./legacy_editor/windowManager";
+import { VsCodeSpinningWheelProgressBar } from "./legacy_extension/vscodeProgressBar";
+import logger from "./legacy_extension/logger";
+import { makeAuxfname } from "./legacy_coqLspClient/utils";
+import * as lspUtils from "./legacy_coqLspClient/utils";
+import { ProofStep } from "./legacy_lib/pvTypes";
+import * as utils from "./legacy_coqLspClient/utils";
+import { LLMIterator } from "./legacy_coqLlmInteraction/llmIterator";
+import { ProgressBar } from "./legacy_extension/progressBar";
+import { shuffleArray } from "./legacy_coqLlmInteraction/utils";
+import * as editorUtils from "./legacy_editor/utils";
+import { GptModel } from "./legacy_extension/config";
+import { Profile } from "./legacy_coqLlmInteraction/grazie/chatInstance";
 
 export class Coqpilot implements Disposable {
 

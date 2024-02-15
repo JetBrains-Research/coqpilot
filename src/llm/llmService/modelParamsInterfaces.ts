@@ -1,4 +1,4 @@
-import { Theorem } from "../../lib/pvTypes";
+import { Theorem } from "../../legacy_lib/pvTypes";
 
 export interface ProofGenerationContext {
     sameFileTheorems: Theorem[];

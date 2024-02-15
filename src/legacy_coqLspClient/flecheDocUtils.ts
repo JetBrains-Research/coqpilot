@@ -4,7 +4,7 @@ import {
     ProofViewError, 
     TheoremProof, 
     ProofStep 
-} from "../lib/pvTypes";
+} from "../legacy_lib/pvTypes";
 
 import {
     Position,
@@ -14,7 +14,7 @@ import {
 import { 
     FlecheDocument,
     RangedSpan
-} from "../lib/types";
+} from "../legacy_lib/types";
 
 function getExpr(span: RangedSpan): any[] | null {
     try {

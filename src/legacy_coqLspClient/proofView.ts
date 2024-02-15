@@ -44,16 +44,16 @@ import {
     hypToString, 
     FlecheDocument, 
     FlecheDocumentParams,
-} from "../lib/types";
+} from "../legacy_lib/types";
 
 import { FileProgressManager } from "./progress";
-import { VsCodeProgressBar } from "../extension/vscodeProgressBar";
+import { VsCodeProgressBar } from "../legacy_extension/vscodeProgressBar";
 import { getTextBeforePosition, toVPosition } from "./utils";
-import { Theorem } from "../lib/pvTypes";
+import { Theorem } from "../legacy_lib/pvTypes";
 import { parseFleche } from "./flecheDocUtils";
-import { StatusBarButton } from "../editor/enableButton";
-import logger from "../extension/logger";
-import { LLMIterator } from "../coqLlmInteraction/llmIterator";
+import { StatusBarButton } from "../legacy_editor/enableButton";
+import logger from "../legacy_extension/logger";
+import { LLMIterator } from "../legacy_coqLlmInteraction/llmIterator";
 import { sleep } from "./utils";
 
 export interface ProofViewInterface extends Disposable {

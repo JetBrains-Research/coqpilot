@@ -1,6 +1,6 @@
-import { Theorem } from "../lib/pvTypes";
+import { Theorem } from "../legacy_lib/pvTypes";
 import { shuffleArray } from "./utils";
-import logger from '../extension/logger';
+import logger from '../legacy_extension/logger';
 
 class SeparatedTheorems {
     constructor(

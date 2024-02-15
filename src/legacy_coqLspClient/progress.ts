@@ -6,7 +6,7 @@ import {
   BaseLanguageClient
 } from "vscode-languageclient";
 
-import { ProgressBar } from "../extension/progressBar";
+import { ProgressBar } from "../legacy_extension/progressBar";
 
 /* eslint-disable @typescript-eslint/naming-convention */
 enum CoqFileProgressKind {

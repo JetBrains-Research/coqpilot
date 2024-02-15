@@ -15,16 +15,16 @@ import {
     RangedSpan
 } from "../coqLsp/coqLspTypes";
 
-import { DocumentUri } from "vscode-languageclient";
 import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { readFileSync } from "fs";
+import { Uri } from "../utils/uri";
 
-export async function parseCoqFile(uri: DocumentUri, client: CoqLspClient): Promise<Theorem[]> {
-    return client.openAndGetFlecheDocument(uri).then((doc) => {
-        const documentText = readFileSync(uri).toString().split('\n');
+export async function parseCoqFile(uri: Uri, client: CoqLspClient): Promise<Theorem[]> {
+    return client.getFlecheDocument(uri).then((doc) => {
+        const documentText = readFileSync(uri.fsPath).toString().split('\n');
         return parseFlecheDocument(doc, documentText);
     }).catch((error) => {
-        throw new CoqParsingError("Unable to parse file", error);
+        throw new CoqParsingError(`Failed to parse file with Error: ${error.message}`);
     });
 }
 

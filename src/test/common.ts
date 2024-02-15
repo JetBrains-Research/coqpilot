@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { CoqpilotConfig } from "../extension/config";
+import { CoqpilotConfig } from "../legacy_extension/config";
 
 export async function openTextFile(docUri : vscode.Uri) : Promise<vscode.Uri> {
     const doc = await vscode.workspace.openTextDocument(docUri);

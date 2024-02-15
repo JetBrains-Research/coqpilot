@@ -1,6 +1,6 @@
 import { ProgressBar } from "./progressBar";
 import * as vscode from 'vscode';
-import { StatusBarButton } from "../editor/enableButton";
+import { StatusBarButton } from "../legacy_editor/enableButton";
 
 export class VsCodeProgressBar extends ProgressBar {
     private statusItem: StatusBarButton;

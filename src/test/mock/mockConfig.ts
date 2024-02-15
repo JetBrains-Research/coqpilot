@@ -1,6 +1,6 @@
-import { CoqpilotConfig, OtherModels, GptModel } from "../../extension/config";
-import { Profile } from "../../coqLlmInteraction/grazie/chatInstance";
-import { ConfigWrapperInterface } from "../../extension/config";
+import { CoqpilotConfig, OtherModels, GptModel } from "../../legacy_extension/config";
+import { Profile } from "../../legacy_coqLlmInteraction/grazie/chatInstance";
+import { ConfigWrapperInterface } from "../../legacy_extension/config";
 
 
 export class MockConfigWrapper implements ConfigWrapperInterface {

@@ -5,7 +5,7 @@ import {
     appendFileSync
 } from "fs";
 import { dirname, join } from "path";
-import logger from "../extension/logger";
+import logger from "../legacy_extension/logger";
 
 export class EvalLoggingError extends Error {
     constructor(message: string) {

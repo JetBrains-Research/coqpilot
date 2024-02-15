@@ -1,13 +1,13 @@
-import { GPT35 } from '../coqLlmInteraction/gpt35';
-import { SingleTacticSolver } from '../coqLlmInteraction/singleTacticSolver';
+import { GPT35 } from '../legacy_coqLlmInteraction/gpt35';
+import { SingleTacticSolver } from '../legacy_coqLlmInteraction/singleTacticSolver';
 import { MockLlm } from '../test/mock/mockllm';
-import { LLMInterface } from '../coqLlmInteraction/llmInterface';
+import { LLMInterface } from '../legacy_coqLlmInteraction/llmInterface';
 import * as vscode from 'vscode';
 import logger from "./logger";
-import { LLMIterator } from '../coqLlmInteraction/llmIterator';
+import { LLMIterator } from '../legacy_coqLlmInteraction/llmIterator';
 import { ProgressBar } from './progressBar';
-import { Profile } from '../coqLlmInteraction/grazie/chatInstance';
-import { Grazie } from '../coqLlmInteraction/grazie/grazie';
+import { Profile } from '../legacy_coqLlmInteraction/grazie/chatInstance';
+import { Grazie } from '../legacy_coqLlmInteraction/grazie/grazie';
 
 export interface CoqpilotConfig {
     openaiApiKey: string;

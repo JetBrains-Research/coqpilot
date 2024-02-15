@@ -1,18 +1,15 @@
-import { 
-    DocumentUri, 
-    Position 
-} from "vscode-languageclient";
+import { Position } from "vscode-languageclient";
 
 import { CoqLspClient } from "../coqLsp/coqLspClient"; 
 import * as path from "path";
+import { Uri } from "../utils/uri";
 
 import { 
     existsSync,
     writeFileSync,
     unlinkSync,
+    appendFileSync
 } from "fs";
-// P.S. mothods from fs 
-// accepts fileUri as well as file path
 
 import { Mutex } from "async-mutex";
 
@@ -67,16 +64,16 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
         sourceDirPath: string, 
         holePosition: Position,
         unique: boolean = true, 
-    ): DocumentUri {
+    ): Uri {
         const holeIdentifier = `${holePosition.line}_${holePosition.character}`;
-        const defaultAuxFileName = `${holeIdentifier}_cp_aux.v`;
+        const defaultAuxFileName = `hole_${holeIdentifier}_cp_aux.v`;
         let auxFilePath = path.join(sourceDirPath, defaultAuxFileName);
         if (unique && existsSync(auxFilePath)) {
             const randomSuffix = Math.floor(Math.random() * 1000000);
             auxFilePath = auxFilePath.replace(/\_cp_aux.v$/, `_${randomSuffix}_cp_aux.v`);
         }
         
-        return auxFilePath;
+        return Uri.fromPath(auxFilePath);
     }
 
     private async checkProofsUnsafe(
@@ -87,7 +84,8 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
     ): Promise<ProofCheckResult[]> {
         // 1. Write the text to the aux file
         const auxFileUri = this.makeAuxFileName(sourceDirPath, prefixEndPosition);
-        writeFileSync(auxFileUri, sourceFileContentPrefix.join("\n"));
+        const sourceFileContent = sourceFileContentPrefix.join("\n");
+        writeFileSync(auxFileUri.fsPath, sourceFileContent);
         
         const results: ProofCheckResult[] = [];
         try {
@@ -99,21 +97,29 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
             // pretac = proof
             for (const proof of proofs) {
                 auxFileVersion += 1;
-                const goal = await this.coqLspClient.getFirstGoalAtPoint(
-                    prefixEndPosition, 
-                    auxFileUri, 
-                    auxFileVersion, 
-                    proof
+                // 4. Append the proof the end of the aux file
+                appendFileSync(auxFileUri.fsPath, proof);
+
+                // 5. Issue update text request
+                const diagnosticMessage = await this.coqLspClient.updateTextDocument(
+                    sourceFileContentPrefix, 
+                    proof, 
+                    auxFileUri,
+                    auxFileVersion
                 );
-                console.log("DEBUG: ", goal); 
-                results.push([proof, goal instanceof Error, goal instanceof Error ? goal.message : null]);
+
+                // 6. Check diagnostics
+                results.push([proof, diagnosticMessage === undefined, diagnosticMessage ?? null]);
+
+                // 7. Bring file to the previous state
+                writeFileSync(auxFileUri.fsPath, sourceFileContent);
             }
         } finally {
             // 4. Issue close text document request
             await this.coqLspClient.closeTextDocument(auxFileUri);
 
             // 5. Remove the aux file
-            unlinkSync(auxFileUri);
+            unlinkSync(auxFileUri.fsPath);
         }
 
         return results;

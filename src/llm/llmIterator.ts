@@ -106,14 +106,14 @@ export class LLMSequentialIterator implements AsyncIterator<ProofBatch> {
             return true;
         }
 
+        if (this.fetchedResults[this.hooksIndex] === undefined) {
+            this.fetchedResults[this.hooksIndex] = await this.proofsGenerationHook[this.hooksIndex]();
+        }
+
         if (this.insideBatchIndex >= this.fetchedResults[this.hooksIndex].length) {
             this.hooksIndex += 1;
             this.insideBatchIndex = 0;
             return this.prepareFetched();
-        }
-
-        if (this.fetchedResults[this.hooksIndex] === undefined) {
-            this.fetchedResults[this.hooksIndex] = await this.proofsGenerationHook[this.hooksIndex]();
         }
 
         return false;

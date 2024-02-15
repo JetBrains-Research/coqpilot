@@ -1,7 +1,7 @@
 import { LLMInterface } from "../llmInterface";
 import { GrazieApi } from "./grazieApi";
-import logger from "../../extension/logger";
-import { CoqpilotConfigWrapper } from "../../extension/config";
+import logger from "../../legacy_extension/logger";
+import { CoqpilotConfigWrapper } from "../../legacy_extension/config";
 import * as utils from "../utils";
 import { 
     grazieRoleFromString, 

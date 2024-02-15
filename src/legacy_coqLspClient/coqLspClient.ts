@@ -9,10 +9,10 @@ import {
     Uri
 } from "vscode";
 
-import logger from "../extension/logger";
+import logger from "../legacy_extension/logger";
 import { CoqLspServerConfig } from "./config";
-import { StatusBarButton } from "../editor/enableButton";
-import { ConfigWrapperInterface } from "../extension/config";
+import { StatusBarButton } from "../legacy_editor/enableButton";
+import { ConfigWrapperInterface } from "../legacy_extension/config";
 
 export class CoqLspClient extends LanguageClient {
     private statusItem: StatusBarButton;

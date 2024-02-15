@@ -1,8 +1,8 @@
 import { LLMInterface } from "./llmInterface";
 import { LlmPromptInterface } from "./llmPromptInterface";
 import OpenAI from 'openai';
-import logger from "../extension/logger";
-import { CoqpilotConfigWrapper } from "../extension/config";
+import logger from "../legacy_extension/logger";
+import { CoqpilotConfigWrapper } from "../legacy_extension/config";
 import * as utils from "./utils";
 
 type GptRole = "function" | "user" | "system" | "assistant";

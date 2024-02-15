@@ -1,8 +1,8 @@
 import { LLMInterface } from "./llmInterface";
 import { LLMPrompt, LlmPromptBase } from './llmPromptInterface';
-import { ProgressBar } from "../extension/progressBar";
-import logger from "../extension/logger";
-import { ConfigWrapperInterface } from "../extension/config";
+import { ProgressBar } from "../legacy_extension/progressBar";
+import logger from "../legacy_extension/logger";
+import { ConfigWrapperInterface } from "../legacy_extension/config";
 
 export type Proof = string;
 export type ProofBatch = Proof[];

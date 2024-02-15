@@ -30,6 +30,7 @@ export interface CompletionContext {
 export interface SourceFileEnvironment {
     fileTheorems: Theorem[];
     fileLines: string[];
+    fileVersion: number;
     dirPath: string;
 }
 
@@ -73,17 +74,17 @@ export async function generateCompletion(
             } 
         }
 
-        return new FailGenerationResult(
+        return new FailureGenerationResult(
             FailureGenerationStatus.searchFailed, 
             "No valid completions found"
         );
     } catch (e: any) {
         if (e instanceof CoqLspTimeoutError) {
-            return new FailGenerationResult(
+            return new FailureGenerationResult(
                 FailureGenerationStatus.excededTimeout, e.message
             );
         } else {
-            return new FailGenerationResult(
+            return new FailureGenerationResult(
                 FailureGenerationStatus.exception, e.message
             );
         }  
@@ -96,7 +97,7 @@ export class SuccessGenerationResult implements GenerationResult {
     constructor(public data: any) {}
 }
 
-export class FailGenerationResult implements GenerationResult {
+export class FailureGenerationResult implements GenerationResult {
     constructor(public status: FailureGenerationStatus, public message: string) {}
 }
 
