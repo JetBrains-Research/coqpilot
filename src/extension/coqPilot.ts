@@ -8,18 +8,26 @@ import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { inspectSourceFile } from "../core/inspectSourceFile";
 import { CoqProofChecker } from "../core/coqProofChecker";
 import { Uri } from "../utils/uri";
+
+import {
+    hideAuxFiles,
+    cleanAuxFiles
+} from "./tmpFileCleanup";
+
 import { 
     positionInRange,
     toVSCodePosition, 
     toVSCodeRange
 } from "../utils/editor";
+
 import { generateCompletion } from "../core/completionGenerator";
 import * as messages from "./documentEditor";
 import Ajv, { JSONSchemaType } from "ajv";
 
 import { 
     SuccessGenerationResult, 
-    FailureGenerationResult
+    FailureGenerationResult,
+    FailureGenerationStatus
 } from "../core/completionGenerator";
 
 import { 
@@ -49,6 +57,13 @@ import {
     predefinedProofsModelParamsSchema
 } from "../llm/llmService/modelParamsInterfaces";
 
+import {
+    addAuxFilesToGitIgnore,
+    EditorMessages,
+    showMessageToUser,
+    showApiKeyNotProvidedMessage
+} from './editorMessages';
+
 export class GlobalExtensionState {
     constructor(
         public readonly llmServices: LLMServices,
@@ -69,7 +84,9 @@ export class CoqPilot {
     private readonly jsonSchemaValidator: Ajv;
 
     constructor(vscodeExtensionContext: ExtensionContext) {
-        this.excludeAuxFiles();
+        hideAuxFiles();
+        addAuxFilesToGitIgnore();
+
         this.vscodeExtensionContext = vscodeExtensionContext;
         this.globalExtensionState = new GlobalExtensionState({
             openAiService: new OpenAiService(),
@@ -115,6 +132,18 @@ export class CoqPilot {
         );
     }
 
+    private checkUserProvidedApiKeys(processEnvironment: ProcessEnvironment): boolean {
+        if (processEnvironment.modelsParams.openAiParams.some((params) => params.apiKey === "None")) {
+            showApiKeyNotProvidedMessage("openai", this.pluginId);
+            return false;
+        } else if (processEnvironment.modelsParams.grazieParams.some((params) => params.apiKey === "None")) {
+            showApiKeyNotProvidedMessage("grazie", this.pluginId);
+            return false;
+        } 
+
+        return true;
+    }
+
     private async performSpecificCompletions(
         shouldCompleteHole: (hole: ProofStep) => boolean,
         editor: TextEditor
@@ -124,6 +153,10 @@ export class CoqPilot {
             editor.document.version,
             editor.document.uri.fsPath
         );
+
+        if (!this.checkUserProvidedApiKeys(processEnvironment)) {
+            return;
+        }
 
         for (const completionContext of completionContexts) {
             await this.performSingleCompletion(
@@ -160,16 +193,18 @@ export class CoqPilot {
                 editor, proofWithIndent, toVSCodePosition(completionContext.prefixEndPosition)
             );
         } else if (result instanceof FailureGenerationResult) {
-            const status = (function() {
-                switch (result.status) {
-                    case 0: return "timeout";
-                    case 1: return "exception";
-                    case 2: return "searchFailed";
-                    default: return "unknown";
-                }
-            })();
-
-            console.log("Failed with: ", result.message, status);
+            switch (result.status) {
+                case FailureGenerationStatus.excededTimeout:
+                    showMessageToUser(EditorMessages.timeoutError, "info");
+                    break;
+                case FailureGenerationStatus.exception:
+                    showMessageToUser(EditorMessages.exceptionError(result.message), "error");
+                    break;
+                case FailureGenerationStatus.searchFailed:
+                    const holeLine = completionContext.prefixEndPosition.line + 1;
+                    showMessageToUser(EditorMessages.noProofsForAdmit(holeLine), "info");
+                    break;
+            }
         }
     }
 
@@ -236,25 +271,14 @@ export class CoqPilot {
 
     private registerEditorCommand(command: string, fn: (editor: TextEditor) => void) {
         let disposable = commands.registerTextEditorCommand(
-            "coqpilot." + command,
+            `${this.pluginId}.` + command,
             fn
         );
         this.vscodeExtensionContext.subscriptions.push(disposable);
     }
 
-    excludeAuxFiles() {
-        // Hide files generated to check proofs
-        let activationConfig = workspace.getConfiguration();
-        let fexc: any = activationConfig.get("files.exclude");
-        activationConfig.update("files.exclude", {
-            ...fexc,
-            // eslint-disable-next-line @typescript-eslint/naming-convention
-            '**/*_cp_aux.v': true,
-        });
-    }
-
     dispose(): void {
+        cleanAuxFiles();
         this.globalExtensionState.dispose();
     }
-
 }
