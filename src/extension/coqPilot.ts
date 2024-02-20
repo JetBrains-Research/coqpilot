@@ -21,7 +21,11 @@ import {
 } from "../utils/editor";
 
 import { generateCompletion } from "../core/completionGenerator";
-import * as messages from "./documentEditor";
+import {
+    deleteTextFromRange, 
+    insertCompletion, 
+    highlightTextInEditor
+} from "./documentEditor";
 import Ajv, { JSONSchemaType } from "ajv";
 
 import { 
@@ -47,7 +51,7 @@ import {
     workspace,
     TextEditor,
     ProgressLocation,
-    window
+    window,
 } from "vscode";
 import { ProofStep } from "../coqParser/parsedTypes";
 import { 
@@ -196,16 +200,16 @@ export class CoqPilot {
 
         if (result instanceof SuccessGenerationResult) {
             const proofWithIndent = this.prepareCompletionForInsertion(result.data);
-            await messages.deleteTextFromRange(
-                editor, toVSCodeRange({
-                    start: completionContext.prefixEndPosition,
-                    end: completionContext.admitEndPosition
-                })
-            );
+            const vsCodeRange = toVSCodeRange({
+                start: completionContext.prefixEndPosition,
+                end: completionContext.admitEndPosition
+            });
 
-            await messages.insertCompletion(
+            await deleteTextFromRange(editor, vsCodeRange);
+            await insertCompletion(
                 editor, proofWithIndent, toVSCodePosition(completionContext.prefixEndPosition)
             );
+            highlightTextInEditor(vsCodeRange);
         } else if (result instanceof FailureGenerationResult) {
             switch (result.status) {
                 case FailureGenerationStatus.excededTimeout:
