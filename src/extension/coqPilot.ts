@@ -199,17 +199,24 @@ export class CoqPilot {
         );
 
         if (result instanceof SuccessGenerationResult) {
-            const proofWithIndent = this.prepareCompletionForInsertion(result.data);
-            const vsCodeRange = toVSCodeRange({
+            const flatProof = this.prepareCompletionForInsertion(result.data);
+            const vsCodeHoleRange = toVSCodeRange({
                 start: completionContext.prefixEndPosition,
                 end: completionContext.admitEndPosition
             });
+            const completionRange = toVSCodeRange({
+                start: completionContext.prefixEndPosition,
+                end: {
+                    line: completionContext.prefixEndPosition.line,
+                    character: completionContext.prefixEndPosition.character + flatProof.length
+                } 
+            });
 
-            await deleteTextFromRange(editor, vsCodeRange);
+            await deleteTextFromRange(editor, vsCodeHoleRange);
             await insertCompletion(
-                editor, proofWithIndent, toVSCodePosition(completionContext.prefixEndPosition)
+                editor, flatProof, toVSCodePosition(completionContext.prefixEndPosition)
             );
-            highlightTextInEditor(vsCodeRange);
+            highlightTextInEditor(completionRange);
         } else if (result instanceof FailureGenerationResult) {
             switch (result.status) {
                 case FailureGenerationStatus.excededTimeout:
