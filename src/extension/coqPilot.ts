@@ -46,6 +46,8 @@ import {
     ExtensionContext,
     workspace,
     TextEditor,
+    ProgressLocation,
+    window
 } from "vscode";
 import { ProofStep } from "../coqParser/parsedTypes";
 import { 
@@ -107,7 +109,7 @@ export class CoqPilot {
         editor: TextEditor
     ) {
         const cursorPosition = editor.selection.active;
-        this.performSpecificCompletions(
+        this.performSpecificCompletionsWithProgress(
             (hole) => positionInRange(cursorPosition, hole.range),
             editor
         );
@@ -117,7 +119,7 @@ export class CoqPilot {
         editor: TextEditor
     ) {
         const selection = editor.selection;
-        this.performSpecificCompletions(
+        this.performSpecificCompletionsWithProgress(
             (hole) => selection.contains(toVSCodePosition(hole.range.start)),
             editor
         );
@@ -126,7 +128,7 @@ export class CoqPilot {
     async performCompletionForAllAdmits(
         editor: TextEditor
     ) {
-        this.performSpecificCompletions(
+        this.performSpecificCompletionsWithProgress(
             (_hole) => true,
             editor
         );
@@ -142,6 +144,18 @@ export class CoqPilot {
         } 
 
         return true;
+    }
+
+    private async performSpecificCompletionsWithProgress(
+        shouldCompleteHole: (hole: ProofStep) => boolean,
+        editor: TextEditor
+    ) {
+        await window.withProgress({
+            location: ProgressLocation.Window,
+            title: `${this.pluginId}: In progress`
+        }, async () => {
+            await this.performSpecificCompletions(shouldCompleteHole, editor);
+        });
     }
 
     private async performSpecificCompletions(
