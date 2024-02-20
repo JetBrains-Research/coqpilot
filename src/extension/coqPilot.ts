@@ -66,7 +66,7 @@ export class CoqPilot {
     private readonly vscodeExtensionContext: ExtensionContext;
     private readonly pluginId = "coqpilot";
 
-    private jsonSchemaValidator: Ajv;
+    private readonly jsonSchemaValidator: Ajv;
 
     constructor(vscodeExtensionContext: ExtensionContext) {
         this.excludeAuxFiles();
@@ -216,7 +216,7 @@ export class CoqPilot {
 
     private buildModelsParamsFromConfig(): ModelsParams {
         const workspaceConfig = workspace.getConfiguration(this.pluginId);
-        
+
         const openAiParams: OpenAiModelParams[] = workspaceConfig.openAiModelsParameters.map(
             (params: any) => this.jsonValidateAndParse(params, openAiModelParamsSchema)
         );

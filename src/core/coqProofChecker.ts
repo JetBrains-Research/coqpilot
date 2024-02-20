@@ -76,6 +76,11 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
         return Uri.fromPath(auxFilePath);
     }
 
+    private checkIfProofContainsAdmit(proof: Proof): boolean {
+        const forbiddenTactics = ["admit.", "Admitted.", "Abort."];
+        return forbiddenTactics.some(tactic => proof.includes(tactic));
+    }
+
     private async checkProofsUnsafe(
         sourceDirPath: string,
         sourceFileContentPrefix: string[], 
@@ -96,6 +101,12 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
             // 3. Iterate over the proofs and issue getFirstGoalAtPoint request with 
             // pretac = proof
             for (const proof of proofs) {
+                // 3.1. Check if the proof contains admit
+                if (this.checkIfProofContainsAdmit(proof)) {
+                    results.push([proof, false, "Proof contains admit"]);
+                    continue;
+                }
+
                 auxFileVersion += 1;
                 // 4. Append the proof the end of the aux file
                 appendFileSync(auxFileUri.fsPath, proof);
