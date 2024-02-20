@@ -15,6 +15,7 @@ import {
 } from "../utils/editor";
 import { generateCompletion } from "../core/completionGenerator";
 import * as messages from "./documentEditor";
+import Ajv, { JSONSchemaType } from "ajv";
 
 import { 
     SuccessGenerationResult, 
@@ -39,6 +40,14 @@ import {
     TextEditor,
 } from "vscode";
 import { ProofStep } from "../coqParser/parsedTypes";
+import { 
+    GrazieModelParams, 
+    OpenAiModelParams, 
+    PredefinedProofsModelParams,
+    openAiModelParamsSchema,
+    grazieModelParamsSchema,
+    predefinedProofsModelParamsSchema
+} from "../llm/llmService/modelParamsInterfaces";
 
 export class GlobalExtensionState {
     constructor(
@@ -57,6 +66,8 @@ export class CoqPilot {
     private readonly vscodeExtensionContext: ExtensionContext;
     private readonly pluginId = "coqpilot";
 
+    private jsonSchemaValidator: Ajv;
+
     constructor(vscodeExtensionContext: ExtensionContext) {
         this.excludeAuxFiles();
         this.vscodeExtensionContext = vscodeExtensionContext;
@@ -69,6 +80,8 @@ export class CoqPilot {
         this.registerEditorCommand("perform_completion_under_cursor", this.performCompletionUnderCursor.bind(this));
         this.registerEditorCommand("perform_completion_in_selection", this.performCompletionInSelection.bind(this));
         this.registerEditorCommand("perform_completion_for_all_admits", this.performCompletionForAllAdmits.bind(this));
+
+        this.jsonSchemaValidator = new Ajv();
 
         this.vscodeExtensionContext.subscriptions.push(this);
     }
@@ -191,31 +204,34 @@ export class CoqPilot {
         return [completionContexts, sourceFileEnvironment, processEnvironment];
     }
 
+    private jsonValidateAndParse<T>(json: any, targetClassSchema: JSONSchemaType<T>): T {
+        const instance: T = json as T;
+        const validate = this.jsonSchemaValidator.compile(targetClassSchema);
+        if (!validate(instance)) {
+            throw new Error(`Unable to validate json against the class: ${JSON.stringify(validate.errors)}`);
+        }
+
+        return instance;
+    }
+
     private buildModelsParamsFromConfig(): ModelsParams {
         const workspaceConfig = workspace.getConfiguration(this.pluginId);
-        try {
-            return {
-                openAiParams: [
-                    {
-                        prompt: `Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'.`,
-                        maxTokens: workspaceConfig.maxNumberOfTokens,
-                        temperature: 1.0,
-                        model: workspaceConfig.gptModel,
-                        apiKey: workspaceConfig.openAiApiKey,
-                        choices: workspaceConfig.proofAttemptsPerOneTheorem
-                    }
-                ],
-                grazieParams: [],
-                predefinedProofsModelParams: [
-                    {
-                        tactics: workspaceConfig.extraCommandsList
-                    }
-                ]
-            };
-        } catch (error: any) {
-            console.error(error);
-            throw new Error(`Failed to build models params with Error: ${error.message}`);
-        }
+        
+        const openAiParams: OpenAiModelParams[] = workspaceConfig.openAiModelsParameters.map(
+            (params: any) => this.jsonValidateAndParse(params, openAiModelParamsSchema)
+        );
+        const grazieParams: GrazieModelParams[] = workspaceConfig.grazieModelsParameters.map(
+            (params: any) => this.jsonValidateAndParse(params, grazieModelParamsSchema)
+        );
+        const predefinedProofsParams: PredefinedProofsModelParams[] = workspaceConfig.predefinedProofsModelsParameters.map(
+            (params: any) => this.jsonValidateAndParse(params, predefinedProofsModelParamsSchema)
+        );
+
+        return {
+            openAiParams: openAiParams,
+            grazieParams: grazieParams,
+            predefinedProofsModelParams: predefinedProofsParams
+        };
     }
 
     private registerEditorCommand(command: string, fn: (editor: TextEditor) => void) {
