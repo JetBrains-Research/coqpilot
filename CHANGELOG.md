@@ -1,5 +1,8 @@
 # Change Log
 
+### 1.9.0 
+- Huge refactoring done. Project re organized.
+
 ### 1.5.3
 - Fix Grazie service request headers and endpoint. 
 

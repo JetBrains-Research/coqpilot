@@ -8,7 +8,7 @@
     "url": "https://github.com/K-dizzled/coqpilot"
   },
   "publisher": "JetBrains-Research",
-  "version": "1.5.3",
+  "version": "1.9.0",
   "engines": {
     "vscode": "^1.82.0"
   },
@@ -36,30 +36,22 @@
     ],
     "commands": [
       {
-        "command": "coqpilot.init_history",
-        "title": "Coqpilot: Parse current file and initialize llm history with theorems from it."
-      },
-      {
-        "command": "coqpilot.run_generation",
+        "command": "coqpilot.perform_completion_under_cursor",
         "title": "Coqpilot: Try to generate proof for the goal under the cursor."
       },
       {
-        "command": "coqpilot.toggle",
-        "title": "Coqpilot: Toggle the plugin"
-      },
-      {
-        "command": "coqpilot.prove_all_holes",
+        "command": "coqpilot.perform_completion_for_all_admits",
         "title": "Coqpilot: Try to prove all holes (admitted goals) in the current file."
       },
       {
-        "command": "coqpilot.prove_in_selection",
-        "title": "Coqpilot: Try to prove holes in selection."
+        "command": "coqpilot.perform_completion_in_selection",
+        "title": "Coqpilot: Try to prove holes (admitted goals) in selection."
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "command": "coqpilot.prove_in_selection",
+          "command": "coqpilot.perform_completion_in_selection",
           "when": "editorTextFocus && editorHasSelection && resourceLangId == coq",
           "group": "queries"
         }
@@ -70,121 +62,110 @@
         "type": "object",
         "title": "CoqPilot",
         "properties": {
-          "coqpilot.openaiApiKey": {
-            "type": "string",
-            "default": "None",
-            "markdownDescription": "An `open-ai` api key. Is used to communicate with the open-ai api. You can get one [here](https://platform.openai.com/account/api-keys)."
-          },
-          "coqpilot.grazieApiKey": {
-            "type": "string",
-            "default": "None",
-            "markdownDescription": "`Grazie` api key. Now available for JetBrains employees only."
-          },
-          "coqpilot.grazieModel": {
-            "type": "string",
-            "default": "None",
-            "enum": [
-              "None", 
-              "openai-gpt-4",
-              "openai-chat-gpt",
-              "grazie-chat-llama-v2-7b", 
-              "grazie-chat-llama-v2-13b",
-              "grazie-chat-zephyr-7b",
-              "qwen-turbo", 
-              "qwen-plus"
-            ],
-            "markdownEnumDescriptions": [
-              "None",
-              "OpenAI GPT-4 (175B parameters)",
-              "OpenAI Chat GPT (175B parameters)",
-              "Llama v2 (7B parameters)",
-              "Llama v2 (13B parameters)",
-              "Zephyr",
-              "Alibaba Qwen Turbo",
-              "Alibaba Qwen Plus"
-            ],
-            "markdownDescription": "Which model to use from the `Grazie` platform. To turn off this completion method set it to `None`."
-          },
-          "coqpilot.proofAttemsPerOneTheorem": {
-            "type": "number",
-            "default": 15,
-            "markdownDescription": "How many proof attempts should be generated for one theorem."
-          },
-          "coqpilot.gptModel": {
-            "type": "string",
-            "default": "gpt-3.5-turbo-0301",
-            "enum": [
-              "None",
-              "gpt-4",
-              "gpt-4-0314",
-              "gpt-4-0613",
-              "gpt-4-32k",
-              "gpt-4-32k-0314",
-              "gpt-4-32k-0613",
-              "gpt-3.5-turbo",
-              "gpt-3.5-turbo-16k",
-              "gpt-3.5-turbo-0301",
-              "gpt-3.5-turbo-0613",
-              "gpt-3.5-turbo-16k-0613"
-            ],
-            "markdownEnumDescriptions": [
-              "No open-ai model", 
-              "GPT-4 (175B parameters)",
-              "GPT-4 (175B parameters, 03/14/2021)",
-              "GPT-4 (175B parameters, 06/13/2021)",
-              "GPT-4 (32B parameters)",
-              "GPT-4 (32B parameters, 03/14/2021)",
-              "GPT-4 (32B parameters, 06/13/2021)",
-              "GPT-3.5 Turbo (175B parameters)",
-              "GPT-3.5 Turbo (16B parameters)",
-              "GPT-3.5 Turbo (175B parameters, 03/01/2021)",
-              "GPT-3.5 Turbo (175B parameters, 06/13/2021)",
-              "GPT-3.5 Turbo (16B parameters, 06/13/2021)"
-            ],
-            "markdownDescription": "How many proof attempts should be generated for one theorem. To turn off this completion method set it to `None`."
-          },
-          "coqpilot.maxNumberOfTokens": {
-            "type": "number",
-            "default": 2000,
-            "markdownDescription": "How many tokens is allowed to be passed as a context to the open-ai api. It affects the number of theorems that would be used as the message history."
-          },
-          "coqpilot.logAttempts": {
-            "type": "boolean",
-            "default": false,
-            "markdownDescription": "Whether to log proof attempts."
-          },
-          "coqpilot.logFolderPath": {
-            "type": "string",
-            "default": "None",
-            "markdownDescription": "A path to the folder where logs should be saved. If `None` is specified and logAttemps is `true` then logs will be saved in the `coqpilot` plugin folder in the `logs` subfolder."
-          },
-          "coqpilot.parseFileOnInit": {
-            "type": "boolean",
-            "default": false,
-            "markdownDescription": "Whether to start parsing the file into message history on extension startup."
-          },
-          "coqpilot.parseFileOnEditorChange": {
-            "type": "boolean",
-            "default": false,
-            "markdownDescription": "Whether to start re-parsing the file each time the editor has changed."
-          },
-          "coqpilot.extraCommandsList": {
+          "coqpilot.openAiModelsParameters": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "object",
+              "properties": {
+                "prompt": {
+                  "type": "string",
+                  "description": "A prompt for the open-ai model.",
+                  "default": "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'."
+                },
+                "maxTokens": {
+                  "type": "number",
+                  "description": "How many tokens is allowed to be generated by the open-ai model.",
+                  "default": 2000
+                },
+                "temperature": {
+                  "type": "number",
+                  "description": "The temperature of the open-ai model.",
+                  "default": 1
+                },
+                "model": {
+                  "type": "string",
+                  "description": "The model to use from the open-ai platform.",
+                  "default": "gpt-3.5-turbo-0301"
+                },
+                "apiKey": {
+                  "type": "string",
+                  "description": "An `open-ai` api key. Is used to communicate with the open-ai api. You can get one [here](https://platform.openai.com/account/api-keys).",
+                  "default": "None"
+                },
+                "choices": {
+                  "type": "number",
+                  "description": "How many proof attempts should be generated for one theorem.",
+                  "default": 15
+                }
+              }
+            },
+            "default": [
+              {
+                "prompt": "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'.",
+                "maxTokens": 2000,
+                "temperature": 1,
+                "model": "gpt-3.5-turbo-0301",
+                "apiKey": "None",
+                "choices": 15
+              }
+            ],
+            "markdownDescription": "A list of parameters for open-ai models. Each object represents a single model's configuration. Each model will be fetched for completion independently in the order they are listed."
+          },
+          "coqpilot.grazieModelsParameters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "prompt": {
+                  "type": "string",
+                  "description": "A prompt for the grazie model.",
+                  "default": "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'."
+                },
+                "model": {
+                  "type": "string",
+                  "description": "The model to use from the grazie platform.",
+                  "default": "openai-gpt-4"
+                },
+                "apiKey": {
+                  "type": "string",
+                  "description": "`Grazie` api key. Now available for JetBrains employees only.",
+                  "default": "None"
+                },
+                "choices": {
+                  "type": "number",
+                  "description": "How many proof attempts should be generated for one theorem.",
+                  "default": 15
+                }
+              }
             },
             "default": [],
-            "markdownDescription": "A list of tactics that would also be used to try generating proofs. Commands in the list must be valid coq commands available in your environment."
+            "markdownDescription": "Now only available in beta for JetBrains employees. A list of parameters for grazie models. Each object represents a single model's configuration. Each model will be fetched for completion independently in the order they are listed."
           },
-          "coqpilot.coqLspPath": {
-            "type": "string",
-            "default": "coq-lsp",
-            "markdownDescription": "Path to the coq-lsp binary, by default, search in PATH."
-          },
-          "coqpilot.shuffleHoles": {
-            "type": "boolean",
-            "default": false,
-            "markdownDescription": "Whether to shuffle the order of proving the holes."
+          "coqpilot.predefinedProofsModelsParameters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "tactics": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "A list of tactics that would also be used to try generating proofs. Commands in the list must be valid coq commands available in your environment.",
+                  "default": [
+                    "auto."
+                  ]
+                }
+              }
+            },
+            "default": [
+              {
+                "tactics": [
+                  "auto."
+                ]
+              }
+            ],
+            "markdownDescription": "A list where each object represents a single model configuration. Here each model is configured with a set of predefined proofs, which coqpilot should try when searching for completion."
           }
         }
       }
@@ -194,8 +175,9 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
+    "lint": "eslint \"src/**/*.{ts,js}\" --ext .ts",
+    "format": "prettier --write \"src/**/*.{ts,js}\" && eslint \"src/**/*.{ts,js}\" --ext .ts --fix",
     "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
@@ -206,21 +188,28 @@
     "@types/node": "20.2.5",
     "@types/vscode": "^1.82.0",
     "@types/yargs": "^17.0.24",
-    "@typescript-eslint/eslint-plugin": "^5.59.8",
-    "@typescript-eslint/parser": "^5.59.8",
+    "@typescript-eslint/eslint-plugin": "^5.62.0",
+    "@typescript-eslint/parser": "^5.62.0",
     "@vscode/test-electron": "^2.3.2",
-    "eslint": "^8.41.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
     "glob": "^8.1.0",
     "mocha": "^10.2.0",
-    "typescript": "^5.1.3"
+    "prettier": "^3.2.5",
+    "typescript": "^5.3.3"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.9.1",
+    "ajv": "^8.12.0",
+    "async-mutex": "^0.4.1",
     "axios": "^1.6.2",
     "cli-progress": "^3.12.0",
     "dedent": "^1.5.1",
     "event-source-polyfill": "^1.0.31",
+    "i": "^0.3.7",
     "mocha-param": "^2.0.1",
+    "npm": "^10.4.0",
     "openai": "^4.6.0",
     "path": "^0.12.7",
     "pino": "^8.15.1",

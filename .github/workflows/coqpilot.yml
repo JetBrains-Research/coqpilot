@@ -29,7 +29,7 @@ jobs:
       env:
           OPAMYES: true
       run: |
-        opam install coq-lsp.0.1.7+8.18
+        opam install coq-lsp.0.1.8+8.19
         eval $(opam env)
     
     - name: Opam eval 
