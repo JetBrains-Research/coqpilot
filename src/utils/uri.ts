@@ -20,8 +20,8 @@ export class Uri {
 
     private constructor(uri: string) {
         this.uriString = uri;
-        this.path = this.uriString.startsWith('file://')
-            ? decodeURI(this.uriString.substring('file://'.length))
+        this.path = this.uriString.startsWith("file://")
+            ? decodeURI(this.uriString.substring("file://".length))
             : this.uriString;
     }
 }

@@ -1,24 +1,17 @@
 import { LLMSequentialIterator } from "../llm/llmIterator";
-import {
-    ModelsParams, 
-    LLMServices
-} from "../llm/configurations";
+import { ModelsParams, LLMServices } from "../llm/configurations";
 
-import { 
+import {
     CoqProofChecker,
-    ProofCheckResult, 
-    CoqLspTimeoutError
-} from "./coqProofChecker"; 
+    ProofCheckResult,
+    CoqLspTimeoutError,
+} from "./coqProofChecker";
 
 import { ProofGenerationContext } from "../llm/llmServices/modelParamsInterfaces";
 import { EventLogger } from "../logging/eventLogger";
 import { Position } from "vscode-languageclient";
 
-import { 
-    Hyp,
-    Goal, 
-    PpString 
-} from "../coqLsp/coqLspTypes";
+import { Hyp, Goal, PpString } from "../coqLsp/coqLspTypes";
 
 import { Theorem } from "../coqParser/parsedTypes";
 
@@ -45,9 +38,12 @@ export async function generateCompletion(
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
-    eventLogger?: EventLogger,
+    eventLogger?: EventLogger
 ): Promise<GenerationResult> {
-    const context = buildProofGenerationContext(completionContext, sourceFileEnvironment);
+    const context = buildProofGenerationContext(
+        completionContext,
+        sourceFileEnvironment
+    );
     const iterator = new LLMSequentialIterator(
         context,
         processEnvironment.modelsParams,
@@ -55,40 +51,45 @@ export async function generateCompletion(
         eventLogger
     );
     const sourceFileContentPrefix = getTextBeforePosition(
-        sourceFileEnvironment.fileLines, 
+        sourceFileEnvironment.fileLines,
         completionContext.prefixEndPosition
     );
-    
+
     try {
         for await (const proofBatch of iterator) {
-            const praparedProofBatch = proofBatch.map((proof: string) => prepareProofToCheck(proof)); 
-            const proofCheckResults = await processEnvironment.coqProofChecker.checkProofs(
-                sourceFileEnvironment.dirPath,
-                sourceFileContentPrefix,
-                completionContext.prefixEndPosition,
-                praparedProofBatch
+            const praparedProofBatch = proofBatch.map((proof: string) =>
+                prepareProofToCheck(proof)
             );
+            const proofCheckResults =
+                await processEnvironment.coqProofChecker.checkProofs(
+                    sourceFileEnvironment.dirPath,
+                    sourceFileContentPrefix,
+                    completionContext.prefixEndPosition,
+                    praparedProofBatch
+                );
 
             const completion = getFirstValidProof(proofCheckResults);
             if (completion) {
                 return new SuccessGenerationResult(completion);
-            } 
+            }
         }
 
         return new FailureGenerationResult(
-            FailureGenerationStatus.searchFailed, 
+            FailureGenerationStatus.searchFailed,
             "No valid completions found"
         );
     } catch (e: any) {
         if (e instanceof CoqLspTimeoutError) {
             return new FailureGenerationResult(
-                FailureGenerationStatus.excededTimeout, e.message
+                FailureGenerationStatus.excededTimeout,
+                e.message
             );
         } else {
             return new FailureGenerationResult(
-                FailureGenerationStatus.exception, e.message
+                FailureGenerationStatus.exception,
+                e.message
             );
-        }  
+        }
     }
 }
 
@@ -99,16 +100,21 @@ export class SuccessGenerationResult implements GenerationResult {
 }
 
 export class FailureGenerationResult implements GenerationResult {
-    constructor(public status: FailureGenerationStatus, public message: string) {}
+    constructor(
+        public status: FailureGenerationStatus,
+        public message: string
+    ) {}
 }
 
 export enum FailureGenerationStatus {
     excededTimeout,
     exception,
-    searchFailed
+    searchFailed,
 }
 
-function getFirstValidProof(proofCheckResults: ProofCheckResult[]): string | undefined {
+function getFirstValidProof(
+    proofCheckResults: ProofCheckResult[]
+): string | undefined {
     for (const [proof, isValid, _message] of proofCheckResults) {
         if (isValid) {
             return proof;
@@ -123,27 +129,30 @@ function prepareProofToCheck(proof: string) {
     let preparedProof = proof.replace(/`/g, "");
 
     // 2. Remove Proof. and Qed.
-    preparedProof = preparedProof.replace(/Proof using\./g, '')
-                                 .replace(/Proof\./g, '')
-                                 .replace(/Qed\./g, '');
+    preparedProof = preparedProof
+        .replace(/Proof using\./g, "")
+        .replace(/Proof\./g, "")
+        .replace(/Qed\./g, "");
 
     // 3. Wrap proof into { }
     return ` { ${preparedProof} }`;
 }
 
 function hypToString(hyp: Hyp<PpString>): string {
-    return `${hyp.names.join(' ')} : ${hyp.ty}`;
+    return `${hyp.names.join(" ")} : ${hyp.ty}`;
 }
 
-function goalToTargetLemma(proofGoal: Goal<PpString>): string { 
+function goalToTargetLemma(proofGoal: Goal<PpString>): string {
     const auxTheoremConcl = proofGoal?.ty;
-    const theoremIndeces = proofGoal?.hyps.map(hyp => `(${hypToString(hyp)})`).join(' ');
+    const theoremIndeces = proofGoal?.hyps
+        .map((hyp) => `(${hypToString(hyp)})`)
+        .join(" ");
     return `Lemma helper_theorem ${theoremIndeces} :\n   ${auxTheoremConcl}.`;
 }
 
 function buildProofGenerationContext(
-    completionContext: CompletionContext, 
-    sourceFileEnvironment: SourceFileEnvironment,
+    completionContext: CompletionContext,
+    sourceFileEnvironment: SourceFileEnvironment
 ): ProofGenerationContext {
     return {
         sameFileTheorems: sourceFileEnvironment.fileTheorems,
@@ -151,8 +160,14 @@ function buildProofGenerationContext(
     };
 }
 
-function getTextBeforePosition(textLines: string[], position: Position): string[] {
+function getTextBeforePosition(
+    textLines: string[],
+    position: Position
+): string[] {
     const textPrefix = textLines.slice(0, position.line + 1);
-    textPrefix[position.line] = textPrefix[position.line].slice(0, position.character);
+    textPrefix[position.line] = textPrefix[position.line].slice(
+        0,
+        position.character
+    );
     return textPrefix;
 }

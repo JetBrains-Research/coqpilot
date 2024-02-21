@@ -1,23 +1,35 @@
-import OpenAI from 'openai';
-import { 
+import OpenAI from "openai";
+import {
     ProofGenerationContext,
-    OpenAiModelParams 
-} from '../modelParamsInterfaces';
-import { LLMServiceInterface } from '../llmServiceInterface';
+    OpenAiModelParams,
+} from "../modelParamsInterfaces";
+import { LLMServiceInterface } from "../llmServiceInterface";
 
 type GptRole = "function" | "user" | "system" | "assistant";
-type History = { role: GptRole; content: string; }[];
+type History = { role: GptRole; content: string }[];
 
-export class OpenAiService implements LLMServiceInterface { 
-    private createHistory = (proofGenerationContext: ProofGenerationContext, systemMessage: string): History => {
+export class OpenAiService implements LLMServiceInterface {
+    private createHistory = (
+        proofGenerationContext: ProofGenerationContext,
+        systemMessage: string
+    ): History => {
         const formattedHistory: History = [];
         for (const theorem of proofGenerationContext.sameFileTheorems) {
-            formattedHistory.push({ role: 'user', content: theorem.statement });
-            formattedHistory.push({ role: 'assistant', content: theorem.proof?.onlyText() ?? "Admitted." });
+            formattedHistory.push({ role: "user", content: theorem.statement });
+            formattedHistory.push({
+                role: "assistant",
+                content: theorem.proof?.onlyText() ?? "Admitted.",
+            });
         }
-        formattedHistory.push({ role: 'user', content: proofGenerationContext.admitCompletionTarget });
+        formattedHistory.push({
+            role: "user",
+            content: proofGenerationContext.admitCompletionTarget,
+        });
 
-        return [{role: 'system', content: systemMessage}, ...formattedHistory];
+        return [
+            { role: "system", content: systemMessage },
+            ...formattedHistory,
+        ];
     };
 
     async generateProof(
@@ -32,9 +44,9 @@ export class OpenAiService implements LLMServiceInterface {
             n: params.choices,
             temperature: params.temperature,
             // eslint-disable-next-line @typescript-eslint/naming-convention
-            max_tokens: params.maxTokens, 
+            max_tokens: params.maxTokens,
         });
-        
+
         return completion.choices.map((choice: any) => choice.message.content);
     }
 

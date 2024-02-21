@@ -1,9 +1,9 @@
 import { Theorem } from "../../coqParser/parsedTypes";
-import {JSONSchemaType} from "ajv";
+import { JSONSchemaType } from "ajv";
 
 export interface ProofGenerationContext {
     sameFileTheorems: Theorem[];
-    admitCompletionTarget: string; 
+    admitCompletionTarget: string;
 }
 
 export interface ModelParams {}
@@ -32,34 +32,42 @@ export interface PredefinedProofsModelParams extends ModelParams {
 export const openAiModelParamsSchema: JSONSchemaType<OpenAiModelParams> = {
     type: "object",
     properties: {
-        prompt: {type: "string"},
-        maxTokens: {type: "number"},
-        temperature: {type: "number"},
-        model: {type: "string"},
-        apiKey: {type: "string"},
-        choices: {type: "number"}
+        prompt: { type: "string" },
+        maxTokens: { type: "number" },
+        temperature: { type: "number" },
+        model: { type: "string" },
+        apiKey: { type: "string" },
+        choices: { type: "number" },
     },
-    required: ["prompt", "maxTokens", "temperature", "model", "apiKey", "choices"]
+    required: [
+        "prompt",
+        "maxTokens",
+        "temperature",
+        "model",
+        "apiKey",
+        "choices",
+    ],
 };
 
 export const grazieModelParamsSchema: JSONSchemaType<GrazieModelParams> = {
     type: "object",
     properties: {
-        prompt: {type: "string"},
-        model: {type: "string"},
-        apiKey: {type: "string"},
-        choices: {type: "number"}
+        prompt: { type: "string" },
+        model: { type: "string" },
+        apiKey: { type: "string" },
+        choices: { type: "number" },
     },
-    required: ["prompt", "model", "apiKey", "choices"]
+    required: ["prompt", "model", "apiKey", "choices"],
 };
 
-export const predefinedProofsModelParamsSchema: JSONSchemaType<PredefinedProofsModelParams> = {
-    type: "object",
-    properties: {
-        tactics: {
-            type: "array",
-            items: {type: "string"}
-        }
-    },
-    required: ["tactics"]
-};
+export const predefinedProofsModelParamsSchema: JSONSchemaType<PredefinedProofsModelParams> =
+    {
+        type: "object",
+        properties: {
+            tactics: {
+                type: "array",
+                items: { type: "string" },
+            },
+        },
+        required: ["tactics"],
+    };

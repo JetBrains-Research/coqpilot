@@ -1,12 +1,6 @@
-import {
-    Range,
-    Position
-} from "vscode-languageclient";
+import { Range, Position } from "vscode-languageclient";
 
-import {
-    Range as VSRange, 
-    Position as VSPosition
-} from "vscode";
+import { Range as VSRange, Position as VSPosition } from "vscode";
 
 export function toVSCodeRange(range: Range): VSRange {
     return new VSRange(
@@ -16,10 +10,7 @@ export function toVSCodeRange(range: Range): VSRange {
 }
 
 export function toVSCodePosition(position: Position): VSPosition {
-    return new VSPosition(
-        position.line,
-        position.character
-    );
+    return new VSPosition(position.line, position.character);
 }
 
 export function positionInRange(position: Position, range: Range): boolean {

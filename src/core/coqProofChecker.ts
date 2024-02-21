@@ -1,27 +1,22 @@
 import { Position } from "vscode-languageclient";
 
-import { CoqLspClient } from "../coqLsp/coqLspClient"; 
+import { CoqLspClient } from "../coqLsp/coqLspClient";
 import * as path from "path";
 import { Uri } from "../utils/uri";
 
-import { 
-    existsSync,
-    writeFileSync,
-    unlinkSync,
-    appendFileSync
-} from "fs";
+import { existsSync, writeFileSync, unlinkSync, appendFileSync } from "fs";
 
 import { Mutex } from "async-mutex";
 
 export type ProofCheckResult = [string, boolean, string | null];
-type Proof = string; 
+type Proof = string;
 
 export interface CoqProofCheckerInterface {
     checkProofs(
         sourceDirPath: string,
-        sourceFileContentPrefix: string[], 
+        sourceFileContentPrefix: string[],
         prefixEndPosition: Position,
-        proofs: Proof[], 
+        proofs: Proof[]
     ): Promise<[string, boolean, string | null][]>;
 }
 
@@ -39,65 +34,80 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
 
     async checkProofs(
         sourceDirPath: string,
-        sourceFileContentPrefix: string[], 
+        sourceFileContentPrefix: string[],
         prefixEndPosition: Position,
-        proofs: Proof[], 
+        proofs: Proof[],
         coqLspTimeoutMillis: number = 60000
     ): Promise<ProofCheckResult[]> {
         return await this.mutex.runExclusive(async () => {
-            const timeoutPromise = new Promise<ProofCheckResult[]>((_, reject) => {
-                setTimeout(() => {
-                    reject(new CoqLspTimeoutError(`checkProofs timed out after ${coqLspTimeoutMillis} milliseconds`));
-                }, coqLspTimeoutMillis);
-            });
+            const timeoutPromise = new Promise<ProofCheckResult[]>(
+                (_, reject) => {
+                    setTimeout(() => {
+                        reject(
+                            new CoqLspTimeoutError(
+                                `checkProofs timed out after ${coqLspTimeoutMillis} milliseconds`
+                            )
+                        );
+                    }, coqLspTimeoutMillis);
+                }
+            );
 
             return Promise.race([
                 this.checkProofsUnsafe(
-                    sourceDirPath, sourceFileContentPrefix, prefixEndPosition, proofs
+                    sourceDirPath,
+                    sourceFileContentPrefix,
+                    prefixEndPosition,
+                    proofs
                 ),
-                timeoutPromise
+                timeoutPromise,
             ]);
         });
     }
 
     private makeAuxFileName(
-        sourceDirPath: string, 
+        sourceDirPath: string,
         holePosition: Position,
-        unique: boolean = true, 
+        unique: boolean = true
     ): Uri {
         const holeIdentifier = `${holePosition.line}_${holePosition.character}`;
         const defaultAuxFileName = `hole_${holeIdentifier}_cp_aux.v`;
         let auxFilePath = path.join(sourceDirPath, defaultAuxFileName);
         if (unique && existsSync(auxFilePath)) {
             const randomSuffix = Math.floor(Math.random() * 1000000);
-            auxFilePath = auxFilePath.replace(/\_cp_aux.v$/, `_${randomSuffix}_cp_aux.v`);
+            auxFilePath = auxFilePath.replace(
+                /\_cp_aux.v$/,
+                `_${randomSuffix}_cp_aux.v`
+            );
         }
-        
+
         return Uri.fromPath(auxFilePath);
     }
 
     private checkIfProofContainsAdmit(proof: Proof): boolean {
-        return forbiddenAdmitTactics.some(tactic => proof.includes(tactic));
+        return forbiddenAdmitTactics.some((tactic) => proof.includes(tactic));
     }
 
     private async checkProofsUnsafe(
         sourceDirPath: string,
-        sourceFileContentPrefix: string[], 
+        sourceFileContentPrefix: string[],
         prefixEndPosition: Position,
-        proofs: Proof[], 
+        proofs: Proof[]
     ): Promise<ProofCheckResult[]> {
         // 1. Write the text to the aux file
-        const auxFileUri = this.makeAuxFileName(sourceDirPath, prefixEndPosition);
+        const auxFileUri = this.makeAuxFileName(
+            sourceDirPath,
+            prefixEndPosition
+        );
         const sourceFileContent = sourceFileContentPrefix.join("\n");
         writeFileSync(auxFileUri.fsPath, sourceFileContent);
-        
+
         const results: ProofCheckResult[] = [];
         try {
             // 2. Issue open text document request
             await this.coqLspClient.openTextDocument(auxFileUri);
-            let auxFileVersion = 1; 
+            let auxFileVersion = 1;
 
-            // 3. Iterate over the proofs and issue getFirstGoalAtPoint request with 
+            // 3. Iterate over the proofs and issue getFirstGoalAtPoint request with
             // pretac = proof
             for (const proof of proofs) {
                 // 3.1. Check if the proof contains admit
@@ -111,15 +121,20 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
                 appendFileSync(auxFileUri.fsPath, proof);
 
                 // 5. Issue update text request
-                const diagnosticMessage = await this.coqLspClient.updateTextDocument(
-                    sourceFileContentPrefix, 
-                    proof, 
-                    auxFileUri,
-                    auxFileVersion
-                );
+                const diagnosticMessage =
+                    await this.coqLspClient.updateTextDocument(
+                        sourceFileContentPrefix,
+                        proof,
+                        auxFileUri,
+                        auxFileVersion
+                    );
 
                 // 6. Check diagnostics
-                results.push([proof, diagnosticMessage === undefined, diagnosticMessage ?? null]);
+                results.push([
+                    proof,
+                    diagnosticMessage === undefined,
+                    diagnosticMessage ?? null,
+                ]);
 
                 // 7. Bring file to the previous state
                 writeFileSync(auxFileUri.fsPath, sourceFileContent);

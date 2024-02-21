@@ -30,13 +30,15 @@ export namespace CoqLspConfig {
             unicode_completion: "normal",
             max_errors: 1500000,
             pp_type: 1,
-            show_stats_on_hover: false
+            show_stats_on_hover: false,
         };
     }
 
-    export function createClientConfig(coqLspServerPath: string = "coq-lsp"): CoqLspClientConfig {
+    export function createClientConfig(
+        coqLspServerPath: string = "coq-lsp"
+    ): CoqLspClientConfig {
         let obj: CoqLspClientConfig = {
-            coq_lsp_server_path: coqLspServerPath
+            coq_lsp_server_path: coqLspServerPath,
         };
         return obj;
     }

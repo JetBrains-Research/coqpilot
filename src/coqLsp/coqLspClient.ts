@@ -1,15 +1,15 @@
-import { 
+import {
     RequestType,
     BaseLanguageClient,
     Position,
     VersionedTextDocumentIdentifier,
     Diagnostic,
-    ProtocolNotificationType, 
+    ProtocolNotificationType,
     Disposable,
-    TextDocumentIdentifier
-} from 'vscode-languageclient';
+    TextDocumentIdentifier,
+} from "vscode-languageclient";
 
-import { Uri } from '../utils/uri';
+import { Uri } from "../utils/uri";
 
 import {
     DidCloseTextDocumentNotification,
@@ -18,62 +18,54 @@ import {
     DidOpenTextDocumentNotification,
     DidChangeTextDocumentNotification,
     DidChangeTextDocumentParams,
-    LogTraceNotification, 
-    PublishDiagnosticsNotification
-} from 'vscode-languageclient';
+    LogTraceNotification,
+    PublishDiagnosticsNotification,
+} from "vscode-languageclient";
 
-import { 
-    GoalRequest, 
-    GoalAnswer, 
-    PpString, 
-    Goal
-} from "./coqLspTypes";
+import { GoalRequest, GoalAnswer, PpString, Goal } from "./coqLspTypes";
 
-import { readFileSync } from 'fs';
+import { readFileSync } from "fs";
 
-import { 
-    CoqLspServerConfig, 
-    CoqLspClientConfig 
-} from './coqLspConfig';
+import { CoqLspServerConfig, CoqLspClientConfig } from "./coqLspConfig";
 
-import { CoqLspConnector } from './coqLspConnector';
+import { CoqLspConnector } from "./coqLspConnector";
 import { Mutex } from "async-mutex";
 
-import { 
-    FlecheDocument,
-    FlecheDocumentParams
-} from './coqLspTypes';
+import { FlecheDocument, FlecheDocumentParams } from "./coqLspTypes";
 
-import { 
-    CoqLspError
-} from './coqLspTypes';
+import { CoqLspError } from "./coqLspTypes";
 
 export interface CoqLspClientInterface extends Disposable {
     getFirstGoalAtPoint(
-        position: Position, 
+        position: Position,
         documentUri: Uri,
-        version: number, 
+        version: number,
         pretac: string
-    ): Promise<Goal<PpString> | Error>
+    ): Promise<Goal<PpString> | Error>;
 
-    openTextDocument(uri: Uri, version: number): Promise<DiagnosticMessage>
+    openTextDocument(uri: Uri, version: number): Promise<DiagnosticMessage>;
 
     updateTextDocument(
-        oldDocumentText: string[], appendedSuffix: string, uri: Uri, version: number
-    ): Promise<DiagnosticMessage>
+        oldDocumentText: string[],
+        appendedSuffix: string,
+        uri: Uri,
+        version: number
+    ): Promise<DiagnosticMessage>;
 
-    closeTextDocument(uri: Uri): Promise<void>
+    closeTextDocument(uri: Uri): Promise<void>;
 
-    getFlecheDocument(uri: Uri): Promise<FlecheDocument>
+    getFlecheDocument(uri: Uri): Promise<FlecheDocument>;
 }
 
 const goalReqType = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
     "proof/goals"
 );
 
-const flecheDocReqType = new RequestType<FlecheDocumentParams, FlecheDocument, void>(
-    "coq/getDocument"
-);
+const flecheDocReqType = new RequestType<
+    FlecheDocumentParams,
+    FlecheDocument,
+    void
+>("coq/getDocument");
 
 export type DiagnosticMessage = string | undefined;
 
@@ -84,34 +76,50 @@ export class CoqLspClient implements CoqLspClientInterface {
 
     constructor(
         serverConfig: CoqLspServerConfig,
-        clientConfig: CoqLspClientConfig,
+        clientConfig: CoqLspClientConfig
     ) {
         this.client = new CoqLspConnector(serverConfig, clientConfig);
         this.client.start();
     }
 
     async getFirstGoalAtPoint(
-        position: Position, 
+        position: Position,
         documentUri: Uri,
-        version: number, 
+        version: number,
         pretac?: string
     ): Promise<Goal<PpString> | Error> {
         return await this.mutex.runExclusive(async () => {
-            return this.getFirstGoalAtPointUnsafe(position, documentUri, version, pretac);
+            return this.getFirstGoalAtPointUnsafe(
+                position,
+                documentUri,
+                version,
+                pretac
+            );
         });
     }
 
-    async openTextDocument(uri: Uri, version: number = 1): Promise<DiagnosticMessage> {
+    async openTextDocument(
+        uri: Uri,
+        version: number = 1
+    ): Promise<DiagnosticMessage> {
         return await this.mutex.runExclusive(async () => {
             return this.openTextDocumentUnsafe(uri, version);
         });
     }
 
     async updateTextDocument(
-        oldDocumentText: string[], appendedSuffix: string, uri: Uri, version: number = 1
+        oldDocumentText: string[],
+        appendedSuffix: string,
+        uri: Uri,
+        version: number = 1
     ): Promise<DiagnosticMessage> {
         return await this.mutex.runExclusive(async () => {
-            return this.updateTextDocumentUnsafe(oldDocumentText, appendedSuffix, uri, version);
+            return this.updateTextDocumentUnsafe(
+                oldDocumentText,
+                appendedSuffix,
+                uri,
+                version
+            );
         });
     }
 
@@ -127,16 +135,24 @@ export class CoqLspClient implements CoqLspClientInterface {
         });
     }
 
-    filterDiagnostics(diagnostics: Diagnostic[], position: Position): string | undefined {
-        return diagnostics.filter(diag => diag.range.start.line >= position.line)
-                          .filter(diag => diag.severity === 1) // 1 is error
-                          .shift()?.message?.split('\n').shift() ?? undefined;
+    filterDiagnostics(
+        diagnostics: Diagnostic[],
+        position: Position
+    ): string | undefined {
+        return (
+            diagnostics
+                .filter((diag) => diag.range.start.line >= position.line)
+                .filter((diag) => diag.severity === 1) // 1 is error
+                .shift()
+                ?.message?.split("\n")
+                .shift() ?? undefined
+        );
     }
 
     private async getFirstGoalAtPointUnsafe(
-        position: Position, 
+        position: Position,
         documentUri: Uri,
-        version: number, 
+        version: number,
         pretac?: string
     ): Promise<Goal<PpString> | Error> {
         let goalRequestParams: GoalRequest = {
@@ -146,14 +162,17 @@ export class CoqLspClient implements CoqLspClientInterface {
             ),
             position,
             // eslint-disable-next-line @typescript-eslint/naming-convention
-            pp_format: "Str"
+            pp_format: "Str",
         };
 
         if (pretac) {
             goalRequestParams.pretac = pretac;
         }
 
-        const goals = await this.client.sendRequest(goalReqType, goalRequestParams);
+        const goals = await this.client.sendRequest(
+            goalReqType,
+            goalRequestParams
+        );
         const goal = goals?.goals?.goals?.shift() ?? undefined;
         if (!goal) {
             return new CoqLspError("No goals at point.");
@@ -163,39 +182,51 @@ export class CoqLspClient implements CoqLspClientInterface {
     }
 
     private sleep(ms: number): Promise<ReturnType<typeof setTimeout>> {
-        return new Promise(resolve => setTimeout(resolve, ms));
+        return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
     private async waitUntilFileFullyChecked(
         requestType: ProtocolNotificationType<any, any>,
-        params: any, 
+        params: any,
         uri: Uri,
         lastDocumentEndPosition?: Position,
-        timeout: number = 50000,
+        timeout: number = 50000
     ): Promise<DiagnosticMessage> {
         await this.client.sendNotification(requestType, params);
 
         let pendingProgress = true;
         let pendingDiagnostic = true;
-        let awaitedDiagnostics: Diagnostic[] | undefined  = undefined;
+        let awaitedDiagnostics: Diagnostic[] | undefined = undefined;
 
-        this.subscriptions.push(this.client.onNotification(LogTraceNotification.type, (params) => {
-            if (params.message.includes("document fully checked")) {
-                pendingProgress = false;
-            }
-        })); 
-
-        this.subscriptions.push(this.client.onNotification(PublishDiagnosticsNotification.type, (params) => {
-            if (params.uri.toString() === uri.uri) {
-                pendingDiagnostic = false;
-                awaitedDiagnostics = params.diagnostics;
- 
-                if (lastDocumentEndPosition && 
-                    this.filterDiagnostics(params.diagnostics, lastDocumentEndPosition) !== undefined) {
+        this.subscriptions.push(
+            this.client.onNotification(LogTraceNotification.type, (params) => {
+                if (params.message.includes("document fully checked")) {
                     pendingProgress = false;
                 }
-            }
-        }));
+            })
+        );
+
+        this.subscriptions.push(
+            this.client.onNotification(
+                PublishDiagnosticsNotification.type,
+                (params) => {
+                    if (params.uri.toString() === uri.uri) {
+                        pendingDiagnostic = false;
+                        awaitedDiagnostics = params.diagnostics;
+
+                        if (
+                            lastDocumentEndPosition &&
+                            this.filterDiagnostics(
+                                params.diagnostics,
+                                lastDocumentEndPosition
+                            ) !== undefined
+                        ) {
+                            pendingProgress = false;
+                        }
+                    }
+                }
+            )
+        );
 
         while (timeout > 0 && (pendingProgress || pendingDiagnostic)) {
             await this.sleep(100);
@@ -204,17 +235,23 @@ export class CoqLspClient implements CoqLspClientInterface {
 
         if (
             timeout <= 0 ||
-            pendingProgress || 
-            pendingDiagnostic || 
+            pendingProgress ||
+            pendingDiagnostic ||
             awaitedDiagnostics === undefined
         ) {
             throw new Error("Coq-lsp did not respond in time");
         }
 
-        return this.filterDiagnostics(awaitedDiagnostics, lastDocumentEndPosition ?? Position.create(0, 0));
+        return this.filterDiagnostics(
+            awaitedDiagnostics,
+            lastDocumentEndPosition ?? Position.create(0, 0)
+        );
     }
 
-    private async openTextDocumentUnsafe(uri: Uri, version: number = 1): Promise<DiagnosticMessage> {
+    private async openTextDocumentUnsafe(
+        uri: Uri,
+        version: number = 1
+    ): Promise<DiagnosticMessage> {
         const docText = readFileSync(uri.fsPath).toString();
 
         const params: DidOpenTextDocumentParams = {
@@ -222,21 +259,28 @@ export class CoqLspClient implements CoqLspClientInterface {
                 uri: uri.uri,
                 languageId: "coq",
                 version: version,
-                text: docText
-            }
+                text: docText,
+            },
         };
 
-        return await this.waitUntilFileFullyChecked(DidOpenTextDocumentNotification.type, params, uri);
+        return await this.waitUntilFileFullyChecked(
+            DidOpenTextDocumentNotification.type,
+            params,
+            uri
+        );
     }
 
     private getTextEndPosition(lines: string[]): Position {
-        return Position.create(lines.length - 1, lines[lines.length - 1].length);
+        return Position.create(
+            lines.length - 1,
+            lines[lines.length - 1].length
+        );
     }
 
     private async updateTextDocumentUnsafe(
-        oldDocumentText: string[], 
-        appendedSuffix: string, 
-        uri: Uri, 
+        oldDocumentText: string[],
+        appendedSuffix: string,
+        uri: Uri,
         version: number = 1
     ): Promise<DiagnosticMessage> {
         const updatedText = oldDocumentText.join("\n") + appendedSuffix;
@@ -245,31 +289,41 @@ export class CoqLspClient implements CoqLspClientInterface {
         const params: DidChangeTextDocumentParams = {
             textDocument: {
                 uri: uri.uri,
-                version: version
+                version: version,
             },
-            contentChanges: [{
-                text: updatedText
-            }]
+            contentChanges: [
+                {
+                    text: updatedText,
+                },
+            ],
         };
 
-        return await this.waitUntilFileFullyChecked(DidChangeTextDocumentNotification.type, params, uri, oldEndPosition);
+        return await this.waitUntilFileFullyChecked(
+            DidChangeTextDocumentNotification.type,
+            params,
+            uri,
+            oldEndPosition
+        );
     }
 
     private async closeTextDocumentUnsafe(uri: Uri): Promise<void> {
         const params: DidCloseTextDocumentParams = {
             textDocument: {
                 uri: uri.uri,
-            }
+            },
         };
 
-        await this.client.sendNotification(DidCloseTextDocumentNotification.type, params);
+        await this.client.sendNotification(
+            DidCloseTextDocumentNotification.type,
+            params
+        );
     }
 
     private async getFlecheDocumentUnsafe(uri: Uri): Promise<FlecheDocument> {
         let textDocument = TextDocumentIdentifier.create(uri.uri);
         let params: FlecheDocumentParams = { textDocument };
         const doc = await this.client.sendRequest(flecheDocReqType, params);
-        
+
         return doc;
     }
 

@@ -1,5 +1,5 @@
 import { generateCompletion } from "../../core/completionGenerator";
-import * as path from 'path';
+import * as path from "path";
 import { CoqLspClient } from "../../coqLsp/coqLspClient";
 import { CoqLspConfig } from "../../coqLsp/coqLspConfig";
 import { inspectSourceFile } from "../../core/inspectSourceFile";
@@ -10,30 +10,32 @@ import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/
 import { ProcessEnvironment } from "../../core/completionGenerator";
 import { Uri } from "../../utils/uri";
 
-import { 
-    FailureGenerationResult, 
-    SuccessGenerationResult 
+import {
+    FailureGenerationResult,
+    SuccessGenerationResult,
 } from "../../core/completionGenerator";
 
-suite('GigaSuite', () => {
-	test('MegaTest', async () => {
+suite("GigaSuite", () => {
+    test("MegaTest", async () => {
         const dirname = path.dirname(path.dirname(path.dirname(__dirname)));
-        const filePath = path.join(dirname, 'src', 'test', 'resources', 'interaction_test_holes.v');
+        const filePath = path.join(
+            dirname,
+            "src",
+            "test",
+            "resources",
+            "interaction_test_holes.v"
+        );
         const fileUri = Uri.fromPath(filePath);
 
         const coqLspServerConfig = CoqLspConfig.createServerConfig();
         const coqLspClientConfig = CoqLspConfig.createClientConfig();
-        
+
         const client = new CoqLspClient(coqLspServerConfig, coqLspClientConfig);
 
         const coqProofChecker = new CoqProofChecker(client);
         await client.openTextDocument(fileUri);
-        const [completionContexts, sourceFileEnvironment] = await inspectSourceFile(
-            1,
-            (_hole) => true,
-            fileUri,
-            client
-        );
+        const [completionContexts, sourceFileEnvironment] =
+            await inspectSourceFile(1, (_hole) => true, fileUri, client);
 
         console.log("sourceFileEnvironment: ", sourceFileEnvironment);
         console.log("completionContexts: ", completionContexts);
@@ -47,13 +49,13 @@ suite('GigaSuite', () => {
             modelsParams: {
                 openAiParams: [],
                 grazieParams: [],
-                predefinedProofsModelParams: []
+                predefinedProofsModelParams: [],
             },
             services: {
                 openAiService,
                 grazieService,
-                predefinedProofsService
-            }
+                predefinedProofsService,
+            },
         };
 
         for (const completionContext of completionContexts) {
@@ -62,26 +64,24 @@ suite('GigaSuite', () => {
                 sourceFileEnvironment,
                 processEnvironment
             );
-            
+
             if (result instanceof SuccessGenerationResult) {
                 console.log("result: ", result.data);
             } else if (result instanceof FailureGenerationResult) {
-                const status = (function() {
+                const status = (function () {
                     switch (result.status) {
-                        case 0: return "timeout";
-                        case 1: return "exception";
-                        case 2: return "searchFailed";
-                        default: return "unknown";
+                        case 0:
+                            return "timeout";
+                        case 1:
+                            return "exception";
+                        case 2:
+                            return "searchFailed";
+                        default:
+                            return "unknown";
                     }
                 })();
                 console.log("result: ", result.message, status);
-            } 
+            }
         }
-
     }).timeout(50000);
 });
-
-
-
-
-

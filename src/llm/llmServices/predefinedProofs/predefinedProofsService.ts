@@ -1,8 +1,8 @@
-import { 
+import {
     PredefinedProofsModelParams,
-    ProofGenerationContext
-} from '../modelParamsInterfaces';
-import { LLMServiceInterface } from '../llmServiceInterface';
+    ProofGenerationContext,
+} from "../modelParamsInterfaces";
+import { LLMServiceInterface } from "../llmServiceInterface";
 
 export class PredefinedProofsService implements LLMServiceInterface {
     async generateProof(

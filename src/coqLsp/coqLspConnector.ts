@@ -1,15 +1,9 @@
-import { 
-    LanguageClientOptions, 
-    RevealOutputChannelOn
-} from "vscode-languageclient";
 import {
-    LanguageClient, 
-    ServerOptions, 
-} from "vscode-languageclient/node";
-import { 
-    CoqLspServerConfig, 
-    CoqLspClientConfig 
-} from "./coqLspConfig";
+    LanguageClientOptions,
+    RevealOutputChannelOn,
+} from "vscode-languageclient";
+import { LanguageClient, ServerOptions } from "vscode-languageclient/node";
+import { CoqLspServerConfig, CoqLspClientConfig } from "./coqLspConfig";
 import { EventLogger } from "../logging/eventLogger";
 
 export class CoqLspConnector extends LanguageClient {
@@ -33,12 +27,12 @@ export class CoqLspConnector extends LanguageClient {
                 },
                 provideDocumentSymbols: (_document, _token, _next) => {
                     return [];
-                }
-            }
+                },
+            },
         };
 
         const serverOptions: ServerOptions = {
-            command: clientConfig.coq_lsp_server_path
+            command: clientConfig.coq_lsp_server_path,
         };
 
         super(
@@ -50,23 +44,22 @@ export class CoqLspConnector extends LanguageClient {
     }
 
     override async start(): Promise<void> {
-        await super.start()
-            .then(this.logStatusUpdate.bind(this, 'started'))
+        await super
+            .start()
+            .then(this.logStatusUpdate.bind(this, "started"))
             .catch((error) => {
                 let emsg = error.toString();
-                this.eventLogger?.log('coq-lsp-start-error', emsg);
-                this.logStatusUpdate('stopped');
+                this.eventLogger?.log("coq-lsp-start-error", emsg);
+                this.logStatusUpdate("stopped");
             });
     }
 
     override async stop(): Promise<void> {
-        super.stop()
-            .then(this.logStatusUpdate.bind(this, 'stopped'));
+        super.stop().then(this.logStatusUpdate.bind(this, "stopped"));
     }
 
-
     private logStatusUpdate = (status: "started" | "stopped") => {
-        this.eventLogger?.log('coq-lsp-status-change', status);
+        this.eventLogger?.log("coq-lsp-status-change", status);
     };
 
     restartLspClient() {

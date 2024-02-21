@@ -2,29 +2,30 @@ import { parseCoqFile } from "../coqParser/parseCoqFile";
 import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { readFileSync } from "fs";
 import { Uri } from "../utils/uri";
-import { 
-    ProofStep,
-    Theorem
-} from "../coqParser/parsedTypes";
-import * as path from 'path';
+import { ProofStep, Theorem } from "../coqParser/parsedTypes";
+import * as path from "path";
 
-import { 
-    CompletionContext, 
-    SourceFileEnvironment
+import {
+    CompletionContext,
+    SourceFileEnvironment,
 } from "./completionGenerator";
 
-type AnalyzedFile = [CompletionContext[], SourceFileEnvironment]; 
+type AnalyzedFile = [CompletionContext[], SourceFileEnvironment];
 
 export async function inspectSourceFile(
     fileVersion: number,
     shouldCompleteHole: (hole: ProofStep) => boolean,
-    fileUri: Uri, 
-    client: CoqLspClient,
+    fileUri: Uri,
+    client: CoqLspClient
 ): Promise<AnalyzedFile> {
-    const sourceFileEnvironment = await createSourceFileEnvironment(fileVersion, fileUri, client);
+    const sourceFileEnvironment = await createSourceFileEnvironment(
+        fileVersion,
+        fileUri,
+        client
+    );
     const completionContexts = await createCompletionContexts(
         fileVersion,
-        shouldCompleteHole, 
+        shouldCompleteHole,
         sourceFileEnvironment.fileTheorems,
         fileUri,
         client
@@ -56,8 +57,8 @@ async function createCompletionContexts(
         if (!(goal instanceof Error)) {
             completionContexts.push({
                 proofGoal: goal,
-                prefixEndPosition: hole.range.start, 
-                admitEndPosition: hole.range.end
+                prefixEndPosition: hole.range.start,
+                admitEndPosition: hole.range.end,
             });
         }
     }
@@ -67,7 +68,7 @@ async function createCompletionContexts(
 
 async function createSourceFileEnvironment(
     fileVersion: number,
-    fileUri: Uri, 
+    fileUri: Uri,
     client: CoqLspClient
 ): Promise<SourceFileEnvironment> {
     const fileTheorems = await parseCoqFile(fileUri, client);
@@ -79,9 +80,9 @@ async function createSourceFileEnvironment(
 
     return {
         fileTheorems: fileTheorems,
-        fileLines: fileText.toString().split('\n'),
+        fileLines: fileText.toString().split("\n"),
         fileVersion: fileVersion,
-        dirPath: dirPath
+        dirPath: dirPath,
     };
 }
 

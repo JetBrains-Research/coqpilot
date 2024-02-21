@@ -1,31 +1,30 @@
-import {
-    Position,
-    Range, 
-} from "vscode-languageclient";
+import { Position, Range } from "vscode-languageclient";
 
-import { 
-    Theorem,
-    Vernacexpr, 
-    TheoremProof, 
-    ProofStep 
-} from "./parsedTypes";
+import { Theorem, Vernacexpr, TheoremProof, ProofStep } from "./parsedTypes";
 
-import { 
-    FlecheDocument,
-    RangedSpan
-} from "../coqLsp/coqLspTypes";
+import { FlecheDocument, RangedSpan } from "../coqLsp/coqLspTypes";
 
 import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { readFileSync } from "fs";
 import { Uri } from "../utils/uri";
 
-export async function parseCoqFile(uri: Uri, client: CoqLspClient): Promise<Theorem[]> {
-    return client.getFlecheDocument(uri).then((doc) => {
-        const documentText = readFileSync(uri.fsPath).toString().split('\n');
-        return parseFlecheDocument(doc, documentText);
-    }).catch((error) => {
-        throw new CoqParsingError(`Failed to parse file with Error: ${error.message}`);
-    });
+export async function parseCoqFile(
+    uri: Uri,
+    client: CoqLspClient
+): Promise<Theorem[]> {
+    return client
+        .getFlecheDocument(uri)
+        .then((doc) => {
+            const documentText = readFileSync(uri.fsPath)
+                .toString()
+                .split("\n");
+            return parseFlecheDocument(doc, documentText);
+        })
+        .catch((error) => {
+            throw new CoqParsingError(
+                `Failed to parse file with Error: ${error.message}`
+            );
+        });
 }
 
 export class CoqParsingError extends Error {
@@ -38,8 +37,8 @@ export class CoqParsingError extends Error {
 }
 
 function parseFlecheDocument(
-    doc: FlecheDocument, 
-    textLines: string[],
+    doc: FlecheDocument,
+    textLines: string[]
 ): Theorem[] {
     if (doc === null) {
         throw new Error("Could not parse file");
@@ -50,35 +49,60 @@ function parseFlecheDocument(
         const span = doc.spans[i];
         try {
             const vernacType = getVernacexpr(getExpr(span));
-            if (vernacType &&
-            [
-                Vernacexpr.VernacDefinition,
-                Vernacexpr.VernacStartTheoremProof
-            ].includes(vernacType)) {
+            if (
+                vernacType &&
+                [
+                    Vernacexpr.VernacDefinition,
+                    Vernacexpr.VernacStartTheoremProof,
+                ].includes(vernacType)
+            ) {
                 const thrName = getName(getExpr(span));
                 const thrStatement = getTextInRange(
-                    doc.spans[i].range.start, 
-                    doc.spans[i].range.end, 
+                    doc.spans[i].range.start,
+                    doc.spans[i].range.end,
                     textLines,
                     true
                 );
-                
+
                 const nextExprVernac = getVernacexpr(getExpr(doc.spans[i + 1]));
                 if (i + 1 >= doc.spans.length) {
-                    theorems.push(new Theorem(thrName, doc.spans[i].range, thrStatement, null));
-                } else if(!nextExprVernac) {
+                    theorems.push(
+                        new Theorem(
+                            thrName,
+                            doc.spans[i].range,
+                            thrStatement,
+                            null
+                        )
+                    );
+                } else if (!nextExprVernac) {
                     throw new CoqParsingError("Unable to parse proof.");
-                } else if (![
-                    Vernacexpr.VernacProof, 
-                    Vernacexpr.VernacAbort, 
-                    Vernacexpr.VernacEndProof
-                ].includes(nextExprVernac)) {
-                    theorems.push(new Theorem(thrName, doc.spans[i].range, thrStatement, null));
+                } else if (
+                    ![
+                        Vernacexpr.VernacProof,
+                        Vernacexpr.VernacAbort,
+                        Vernacexpr.VernacEndProof,
+                    ].includes(nextExprVernac)
+                ) {
+                    theorems.push(
+                        new Theorem(
+                            thrName,
+                            doc.spans[i].range,
+                            thrStatement,
+                            null
+                        )
+                    );
                 } else {
                     const proof = parseProof(i + 1, doc.spans, textLines);
-                    theorems.push(new Theorem(thrName, doc.spans[i].range, thrStatement, proof));
+                    theorems.push(
+                        new Theorem(
+                            thrName,
+                            doc.spans[i].range,
+                            thrStatement,
+                            proof
+                        )
+                    );
                 }
-            } 
+            }
         } catch (error) {
             // Ignore
         }
@@ -89,7 +113,7 @@ function parseFlecheDocument(
 
 function getExpr(span: RangedSpan): any[] | null {
     try {
-        return span.span === null ? null : span.span['v']['expr'][1];
+        return span.span === null ? null : span.span["v"]["expr"][1];
     } catch (error) {
         return null;
     }
@@ -97,7 +121,7 @@ function getExpr(span: RangedSpan): any[] | null {
 
 function getTheoremName(expr: any): string {
     try {
-        return expr[2][0][0][0]['v'][1];
+        return expr[2][0][0][0]["v"][1];
     } catch (error) {
         throw new CoqParsingError("Invalid theorem name");
     }
@@ -105,7 +129,7 @@ function getTheoremName(expr: any): string {
 
 function getDefinitionName(expr: any): string {
     try {
-        return expr[2][0]['v'][1][1];
+        return expr[2][0]["v"][1][1];
     } catch (error) {
         throw new CoqParsingError("Invalid definition name");
     }
@@ -140,15 +164,15 @@ function getProofEndCommand(expr: { [key: string]: any }): string | null {
 
 function checkIfExprEAdmit(expr: any): boolean {
     try {
-        return getProofEndCommand(expr) === 'Admitted';
+        return getProofEndCommand(expr) === "Admitted";
     } catch (error) {
         return false;
     }
 }
 
 function getTextInRange(
-    start: Position, 
-    end: Position, 
+    start: Position,
+    end: Position,
     lines: string[],
     preserveLineBreaks = false
 ): string {
@@ -158,12 +182,12 @@ function getTextInRange(
         let text = lines[start.line].substring(start.character);
         for (let i = start.line + 1; i < end.line; i++) {
             if (preserveLineBreaks) {
-                text += '\n';
+                text += "\n";
             }
             text += lines[i];
         }
         if (preserveLineBreaks) {
-            text += '\n';
+            text += "\n";
         }
         text += lines[end.line].substring(0, end.character);
 
@@ -172,9 +196,9 @@ function getTextInRange(
 }
 
 function parseProof(
-    spanIndex: number, 
-    ast: RangedSpan[], 
-    lines: string[],
+    spanIndex: number,
+    ast: RangedSpan[],
+    lines: string[]
 ): TheoremProof {
     let index = spanIndex;
     let proven = false;
@@ -188,10 +212,15 @@ function parseProof(
 
         const vernacType = getVernacexpr(getExpr(span));
         if (!vernacType) {
-            throw new CoqParsingError("Unable to derive the vernac type of the sentance");
+            throw new CoqParsingError(
+                "Unable to derive the vernac type of the sentance"
+            );
         }
 
-        if (vernacType === Vernacexpr.VernacEndProof || vernacType === Vernacexpr.VernacAbort) {
+        if (
+            vernacType === Vernacexpr.VernacEndProof ||
+            vernacType === Vernacexpr.VernacAbort
+        ) {
             const proofStep = new ProofStep(
                 getTextInRange(span.range.start, span.range.end, lines),
                 vernacType,
@@ -200,22 +229,25 @@ function parseProof(
             proof.push(proofStep);
             proven = true;
             endPos = span.range;
-           
-            if (checkIfExprEAdmit(getExpr(span)) || vernacType === Vernacexpr.VernacAbort) {
+
+            if (
+                checkIfExprEAdmit(getExpr(span)) ||
+                vernacType === Vernacexpr.VernacAbort
+            ) {
                 proofContainsAdmit = true;
             }
         } else {
-            const proofText = getTextInRange(span.range.start, span.range.end, lines);
-            const proofStep = new ProofStep(
-                proofText,
-                vernacType,
-                span.range
+            const proofText = getTextInRange(
+                span.range.start,
+                span.range.end,
+                lines
             );
+            const proofStep = new ProofStep(proofText, vernacType, span.range);
 
             proof.push(proofStep);
             index += 1;
 
-            if (proofText.includes('admit')) {
+            if (proofText.includes("admit")) {
                 proofHoles.push(proofStep);
             }
         }
@@ -225,6 +257,11 @@ function parseProof(
         throw new CoqParsingError("Invalid or incomplete proof.");
     }
 
-    const proofObj = new TheoremProof(proof, endPos, proofContainsAdmit, proofHoles);
+    const proofObj = new TheoremProof(
+        proof,
+        endPos,
+        proofContainsAdmit,
+        proofHoles
+    );
     return proofObj;
 }

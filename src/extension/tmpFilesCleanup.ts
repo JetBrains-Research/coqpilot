@@ -1,10 +1,7 @@
-import {
-    workspace,
-    Uri
-} from 'vscode';
+import { workspace, Uri } from "vscode";
 
-import * as glob from 'glob';
-import * as path from 'path';
+import * as glob from "glob";
+import * as path from "path";
 
 export function hideAuxFiles() {
     // Hide files generated to check proofs
@@ -13,7 +10,7 @@ export function hideAuxFiles() {
     activationConfig.update("files.exclude", {
         ...fexc,
         // eslint-disable-next-line @typescript-eslint/naming-convention
-        '**/*_cp_aux.v': true,
+        "**/*_cp_aux.v": true,
     });
 }
 
@@ -25,15 +22,19 @@ export function cleanAuxFiles() {
     }
 
     workspaceFolders.forEach((folder) => {
-        glob('**/*_cp_aux.v', { sync: false, cwd: folder.uri.fsPath }, (err, files) => {
-            if (err) {
-                return;
-            }
+        glob(
+            "**/*_cp_aux.v",
+            { sync: false, cwd: folder.uri.fsPath },
+            (err, files) => {
+                if (err) {
+                    return;
+                }
 
-            files.forEach((file) => {
-                const filePath = path.resolve(folder.uri.fsPath, file);
-                workspace.fs.delete(Uri.file(filePath));
-            });
-        });
+                files.forEach((file) => {
+                    const filePath = path.resolve(folder.uri.fsPath, file);
+                    workspace.fs.delete(Uri.file(filePath));
+                });
+            }
+        );
     });
 }

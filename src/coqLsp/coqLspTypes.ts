@@ -90,11 +90,13 @@ export type PpString = Pp | string;
  * Quick and dirty utility function to convert a pretty-printing object into a plain string.
  */
 export function convertToString(pp: PpString): string {
-    if (typeof pp === "string") { return pp; }
+    if (typeof pp === "string") {
+        return pp;
+    }
     switch (pp[0]) {
         case "Pp_empty":
         case "Pp_comment":
-                return "";
+            return "";
         case "Pp_string":
             return pp[1];
         case "Pp_glue":
