@@ -26,7 +26,9 @@ suite("Simple Test", () => {
         const fileUri = Uri.fromPath(filePath);
 
         const coqLspServerConfig = CoqLspConfig.createServerConfig();
-        const coqLspClientConfig = CoqLspConfig.createClientConfig();
+        const coqLspClientConfig = CoqLspConfig.createClientConfig(
+            process.env.COQ_LSP_PATH || "coq-lsp"
+        );
 
         const client = new CoqLspClient(coqLspServerConfig, coqLspClientConfig);
 
