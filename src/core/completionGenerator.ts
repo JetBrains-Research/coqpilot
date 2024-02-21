@@ -10,7 +10,7 @@ import {
     CoqLspTimeoutError
 } from "./coqProofChecker"; 
 
-import { ProofGenerationContext } from "../llm/llmService/modelParamsInterfaces";
+import { ProofGenerationContext } from "../llm/llmServices/modelParamsInterfaces";
 import { EventLogger } from "../logging/eventLogger";
 import { Position } from "vscode-languageclient";
 

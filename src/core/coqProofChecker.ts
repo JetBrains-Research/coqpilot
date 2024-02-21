@@ -77,8 +77,7 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
     }
 
     private checkIfProofContainsAdmit(proof: Proof): boolean {
-        const forbiddenTactics = ["admit.", "Admitted.", "Abort."];
-        return forbiddenTactics.some(tactic => proof.includes(tactic));
+        return forbiddenAdmitTactics.some(tactic => proof.includes(tactic));
     }
 
     private async checkProofsUnsafe(
@@ -136,3 +135,5 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
         return results;
     }
 }
+
+const forbiddenAdmitTactics = ["admit.", "Admitted.", "Abort."];

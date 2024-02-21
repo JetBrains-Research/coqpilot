@@ -76,7 +76,7 @@ This extension contributes the following settings:
 * `coqpilot.run_generation`: Try to generate proof for the goal under the cursor.
 * `coqpilot.toggle`: Toggle the plugin.
 * `coqpilot.prove_all_holes`: Try to prove all holes (admitted goals) in the current file.
-* `coqpilot.prove_in_selection`: Try to prove holes in selection.
+* `coqpilot.prove_in_selection`: Try to prove holes (admitted goals) in selection.
 
 ## Planned Features
 

@@ -4,9 +4,9 @@ import { CoqLspClient } from "../../coqLsp/coqLspClient";
 import { CoqLspConfig } from "../../coqLsp/coqLspConfig";
 import { inspectSourceFile } from "../../core/inspectSourceFile";
 import { CoqProofChecker } from "../../core/coqProofChecker";
-import { OpenAiService } from "../../llm/llmService/openai/openAiService";
-import { GrazieService } from "../../llm/llmService/grazie/grazieService";
-import { PredefinedProofsService } from "../../llm/llmService/predefinedProofs/predefinedProofsService";
+import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
+import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
+import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
 import { ProcessEnvironment } from "../../core/completionGenerator";
 import { Uri } from "../../utils/uri";
 

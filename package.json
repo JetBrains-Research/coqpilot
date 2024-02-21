@@ -45,7 +45,7 @@
       },
       {
         "command": "coqpilot.perform_completion_in_selection",
-        "title": "Coqpilot: Try to prove holes in selection."
+        "title": "Coqpilot: Try to prove holes (admitted goals) in selection."
       }
     ],
     "menus": {

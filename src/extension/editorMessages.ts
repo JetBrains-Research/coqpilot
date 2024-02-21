@@ -11,8 +11,6 @@ import {
 } from 'fs';
 
 export namespace EditorMessages {
-    export const coqFileNotOpen = 'Please open a Coq file first.';
-    export const noAdmitsFound = 'Please select a theorem to prove. Select it by highlighting the whole theorem, including the Admitted.';
     export const timeoutError = 'Coqpilot: The proof checking process timed out. Please try again.';
     export const noProofsForAdmit = (admitIdentifier: any) => `Coqpilot failed to find a proof for the admit at line ${admitIdentifier}.`;
     export const exceptionError = (errorMsg: string) => 'Coqpilot: An exception occured: ' + errorMsg;
@@ -52,7 +50,7 @@ export function showApiKeyNotProvidedMessage(
     });
 }
 
-export async function addAuxFilesToGitIgnore() {
+export async function suggestAddingAuxFilesToGitignore() {
     const workspaceFolders = workspace.workspaceFolders;
     if (!workspaceFolders) {
         return;

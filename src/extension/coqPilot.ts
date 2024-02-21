@@ -1,8 +1,8 @@
-import { OpenAiService } from "../llm/llmService/openai/openAiService";
-import { GrazieService } from "../llm/llmService/grazie/grazieService";
+import { OpenAiService } from "../llm/llmServices/openai/openAiService";
+import { GrazieService } from "../llm/llmServices/grazie/grazieService";
 import { 
     PredefinedProofsService 
-} from "../llm/llmService/predefinedProofs/predefinedProofsService";
+} from "../llm/llmServices/predefinedProofs/predefinedProofsService";
 import { CoqLspConfig } from "../coqLsp/coqLspConfig";
 import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { inspectSourceFile } from "../core/inspectSourceFile";
@@ -12,13 +12,13 @@ import { Uri } from "../utils/uri";
 import {
     hideAuxFiles,
     cleanAuxFiles
-} from "./tmpFileCleanup";
+} from "./tmpFilesCleanup";
 
 import { 
     positionInRange,
     toVSCodePosition, 
     toVSCodeRange
-} from "../utils/editor";
+} from "./positionRangeUtils";
 
 import { generateCompletion } from "../core/completionGenerator";
 import {
@@ -61,10 +61,10 @@ import {
     openAiModelParamsSchema,
     grazieModelParamsSchema,
     predefinedProofsModelParamsSchema
-} from "../llm/llmService/modelParamsInterfaces";
+} from "../llm/llmServices/modelParamsInterfaces";
 
 import {
-    addAuxFilesToGitIgnore,
+    suggestAddingAuxFilesToGitignore,
     EditorMessages,
     showMessageToUser,
     showApiKeyNotProvidedMessage
@@ -91,7 +91,7 @@ export class CoqPilot {
 
     constructor(vscodeExtensionContext: ExtensionContext) {
         hideAuxFiles();
-        addAuxFilesToGitIgnore();
+        suggestAddingAuxFilesToGitignore();
 
         this.vscodeExtensionContext = vscodeExtensionContext;
         this.globalExtensionState = new GlobalExtensionState({
@@ -200,7 +200,7 @@ export class CoqPilot {
 
         if (result instanceof SuccessGenerationResult) {
             const flatProof = this.prepareCompletionForInsertion(result.data);
-            const vsCodeHoleRange = toVSCodeRange({
+            const vscodeHoleRange = toVSCodeRange({
                 start: completionContext.prefixEndPosition,
                 end: completionContext.admitEndPosition
             });
@@ -212,7 +212,7 @@ export class CoqPilot {
                 } 
             });
 
-            await deleteTextFromRange(editor, vsCodeHoleRange);
+            await deleteTextFromRange(editor, vscodeHoleRange);
             await insertCompletion(
                 editor, flatProof, toVSCodePosition(completionContext.prefixEndPosition)
             );
@@ -226,8 +226,8 @@ export class CoqPilot {
                     showMessageToUser(EditorMessages.exceptionError(result.message), "error");
                     break;
                 case FailureGenerationStatus.searchFailed:
-                    const holeLine = completionContext.prefixEndPosition.line + 1;
-                    showMessageToUser(EditorMessages.noProofsForAdmit(holeLine), "info");
+                    const completionLine = completionContext.prefixEndPosition.line + 1;
+                    showMessageToUser(EditorMessages.noProofsForAdmit(completionLine), "info");
                     break;
             }
         }
@@ -264,7 +264,7 @@ export class CoqPilot {
         return [completionContexts, sourceFileEnvironment, processEnvironment];
     }
 
-    private jsonValidateAndParse<T>(json: any, targetClassSchema: JSONSchemaType<T>): T {
+    private validateAndParseJson<T>(json: any, targetClassSchema: JSONSchemaType<T>): T {
         const instance: T = json as T;
         const validate = this.jsonSchemaValidator.compile(targetClassSchema);
         if (!validate(instance)) {
@@ -278,13 +278,13 @@ export class CoqPilot {
         const workspaceConfig = workspace.getConfiguration(this.pluginId);
 
         const openAiParams: OpenAiModelParams[] = workspaceConfig.openAiModelsParameters.map(
-            (params: any) => this.jsonValidateAndParse(params, openAiModelParamsSchema)
+            (params: any) => this.validateAndParseJson(params, openAiModelParamsSchema)
         );
         const grazieParams: GrazieModelParams[] = workspaceConfig.grazieModelsParameters.map(
-            (params: any) => this.jsonValidateAndParse(params, grazieModelParamsSchema)
+            (params: any) => this.validateAndParseJson(params, grazieModelParamsSchema)
         );
         const predefinedProofsParams: PredefinedProofsModelParams[] = workspaceConfig.predefinedProofsModelsParameters.map(
-            (params: any) => this.jsonValidateAndParse(params, predefinedProofsModelParamsSchema)
+            (params: any) => this.validateAndParseJson(params, predefinedProofsModelParamsSchema)
         );
 
         return {

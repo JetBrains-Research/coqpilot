@@ -1,4 +1,4 @@
-import { ProofGenerationContext } from "./llmService/modelParamsInterfaces";
+import { ProofGenerationContext } from "./llmServices/modelParamsInterfaces";
 import { EventLogger } from "../logging/eventLogger";
 import { ModelsParams, LLMServices } from "./configurations";
 

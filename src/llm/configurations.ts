@@ -2,12 +2,12 @@ import {
     OpenAiModelParams,
     GrazieModelParams,
     PredefinedProofsModelParams
-} from "./llmService/modelParamsInterfaces";
-import { GrazieService } from "./llmService/grazie/grazieService";
-import { OpenAiService } from "./llmService/openai/openAiService";
+} from "./llmServices/modelParamsInterfaces";
+import { GrazieService } from "./llmServices/grazie/grazieService";
+import { OpenAiService } from "./llmServices/openai/openAiService";
 import { 
     PredefinedProofsService 
-} from "./llmService/predefinedProofs/predefinedProofsService";
+} from "./llmServices/predefinedProofs/predefinedProofsService";
 
 export interface LLMServices {
     openAiService: OpenAiService;

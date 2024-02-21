@@ -30,7 +30,6 @@ import {
 } from "./coqLspTypes";
 
 import { readFileSync } from 'fs';
-import { sleep } from '../utils/stdlib';
 
 import { 
     CoqLspServerConfig, 
@@ -128,6 +127,12 @@ export class CoqLspClient implements CoqLspClientInterface {
         });
     }
 
+    filterDiagnostics(diagnostics: Diagnostic[], position: Position): string | undefined {
+        return diagnostics.filter(diag => diag.range.start.line >= position.line)
+                          .filter(diag => diag.severity === 1) // 1 is error
+                          .shift()?.message?.split('\n').shift() ?? undefined;
+    }
+
     private async getFirstGoalAtPointUnsafe(
         position: Position, 
         documentUri: Uri,
@@ -157,10 +162,8 @@ export class CoqLspClient implements CoqLspClientInterface {
         return goal;
     }
 
-    filterDiagnostics(diagnostics: Diagnostic[], position: Position): string | undefined {
-        return diagnostics.filter(diag => diag.range.start.line >= position.line)
-                          .filter(diag => diag.severity === 1) // 1 is error
-                          .shift()?.message?.split('\n').shift() ?? undefined;
+    private sleep(ms: number): Promise<ReturnType<typeof setTimeout>> {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     private async waitUntilFileFullyChecked(
@@ -195,7 +198,7 @@ export class CoqLspClient implements CoqLspClientInterface {
         }));
 
         while (timeout > 0 && (pendingProgress || pendingDiagnostic)) {
-            await sleep(100);
+            await this.sleep(100);
             timeout -= 100;
         }
 

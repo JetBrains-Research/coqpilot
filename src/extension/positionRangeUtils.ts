@@ -8,20 +8,6 @@ import {
     Position as VSPosition
 } from "vscode";
 
-export function fromVSCodeRange(range: VSRange): Range {
-    return {
-        start: fromVSCodePosition(range.start),
-        end: fromVSCodePosition(range.end)
-    };
-}
-
-export function fromVSCodePosition(position: VSPosition): Position {
-    return {
-        line: position.line,
-        character: position.character
-    };
-}
-
 export function toVSCodeRange(range: Range): VSRange {
     return new VSRange(
         toVSCodePosition(range.start),
