@@ -9,14 +9,12 @@ import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
 import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
 import { ProcessEnvironment } from "../../core/completionGenerator";
 import { Uri } from "../../utils/uri";
+import * as assert from "assert";
+import { SuccessGenerationResult } from "../../core/completionGenerator";
 
-import {
-    FailureGenerationResult,
-    SuccessGenerationResult,
-} from "../../core/completionGenerator";
-
-suite("GigaSuite", () => {
-    test("MegaTest", async () => {
+// More tests will come soon
+suite("Simple Test", () => {
+    test("Sanity check", async () => {
         const dirname = path.dirname(path.dirname(path.dirname(__dirname)));
         const filePath = path.join(
             dirname,
@@ -37,9 +35,6 @@ suite("GigaSuite", () => {
         const [completionContexts, sourceFileEnvironment] =
             await inspectSourceFile(1, (_hole) => true, fileUri, client);
 
-        console.log("sourceFileEnvironment: ", sourceFileEnvironment);
-        console.log("completionContexts: ", completionContexts);
-
         const openAiService = new OpenAiService();
         const grazieService = new GrazieService();
         const predefinedProofsService = new PredefinedProofsService();
@@ -49,7 +44,11 @@ suite("GigaSuite", () => {
             modelsParams: {
                 openAiParams: [],
                 grazieParams: [],
-                predefinedProofsModelParams: [],
+                predefinedProofsModelParams: [
+                    {
+                        tactics: ["intros.", "auto."],
+                    },
+                ],
             },
             services: {
                 openAiService,
@@ -65,23 +64,7 @@ suite("GigaSuite", () => {
                 processEnvironment
             );
 
-            if (result instanceof SuccessGenerationResult) {
-                console.log("result: ", result.data);
-            } else if (result instanceof FailureGenerationResult) {
-                const status = (function () {
-                    switch (result.status) {
-                        case 0:
-                            return "timeout";
-                        case 1:
-                            return "exception";
-                        case 2:
-                            return "searchFailed";
-                        default:
-                            return "unknown";
-                    }
-                })();
-                console.log("result: ", result.message, status);
-            }
+            assert.ok(result instanceof SuccessGenerationResult);
         }
     }).timeout(50000);
 });
