@@ -4,6 +4,7 @@ import {
     OpenAiModelParams,
 } from "../modelParamsInterfaces";
 import { LLMServiceInterface } from "../llmServiceInterface";
+import { accumulateTheoremsUntilTokenCount } from "../accumulateTheoremsInContext";
 
 type GptRole = "function" | "user" | "system" | "assistant";
 type History = { role: GptRole; content: string }[];
@@ -11,10 +12,17 @@ type History = { role: GptRole; content: string }[];
 export class OpenAiService implements LLMServiceInterface {
     private createHistory = (
         proofGenerationContext: ProofGenerationContext,
-        systemMessage: string
+        params: OpenAiModelParams
     ): History => {
+        const theorems = accumulateTheoremsUntilTokenCount(
+            params.maxTokens,
+            proofGenerationContext,
+            params.prompt,
+            params.model,
+            params.modelContextLength
+        );
         const formattedHistory: History = [];
-        for (const theorem of proofGenerationContext.sameFileTheorems) {
+        for (const theorem of theorems) {
             formattedHistory.push({ role: "user", content: theorem.statement });
             formattedHistory.push({
                 role: "assistant",
@@ -27,7 +35,7 @@ export class OpenAiService implements LLMServiceInterface {
         });
 
         return [
-            { role: "system", content: systemMessage },
+            { role: "system", content: params.prompt },
             ...formattedHistory,
         ];
     };
@@ -39,7 +47,7 @@ export class OpenAiService implements LLMServiceInterface {
         // Add retry, add logging
         const openai = new OpenAI({ apiKey: params.apiKey });
         const completion = await openai.chat.completions.create({
-            messages: this.createHistory(proofGenerationContext, params.prompt),
+            messages: this.createHistory(proofGenerationContext, params),
             model: params.model,
             n: params.choices,
             temperature: params.temperature,

@@ -10,7 +10,10 @@ export interface ModelParams {}
 
 export interface OpenAiModelParams extends ModelParams {
     prompt: string;
+    // The maximum number of tokens that can be generated in the chat completion.
     maxTokens: number;
+    // Input length + generated tokens max length.
+    modelContextLength: number;
     temperature: number;
     model: string;
     apiKey: string;
@@ -19,6 +22,10 @@ export interface OpenAiModelParams extends ModelParams {
 
 export interface GrazieModelParams extends ModelParams {
     prompt: string;
+    // The maximum number of tokens that can be generated in the chat completion.
+    maxTokens: number;
+    // Input length + generated tokens max length.
+    modelContextLength: number;
     model: string;
     apiKey: string;
     choices: number;
@@ -34,6 +41,7 @@ export const openAiModelParamsSchema: JSONSchemaType<OpenAiModelParams> = {
     properties: {
         prompt: { type: "string" },
         maxTokens: { type: "number" },
+        modelContextLength: { type: "number" },
         temperature: { type: "number" },
         model: { type: "string" },
         apiKey: { type: "string" },
@@ -42,6 +50,7 @@ export const openAiModelParamsSchema: JSONSchemaType<OpenAiModelParams> = {
     required: [
         "prompt",
         "maxTokens",
+        "modelContextLength",
         "temperature",
         "model",
         "apiKey",
@@ -53,11 +62,20 @@ export const grazieModelParamsSchema: JSONSchemaType<GrazieModelParams> = {
     type: "object",
     properties: {
         prompt: { type: "string" },
+        maxTokens: { type: "number" },
+        modelContextLength: { type: "number" },
         model: { type: "string" },
         apiKey: { type: "string" },
         choices: { type: "number" },
     },
-    required: ["prompt", "model", "apiKey", "choices"],
+    required: [
+        "prompt",
+        "maxTokens",
+        "modelContextLength",
+        "model",
+        "apiKey",
+        "choices",
+    ],
 };
 
 export const predefinedProofsModelParamsSchema: JSONSchemaType<PredefinedProofsModelParams> =
