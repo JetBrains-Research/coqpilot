@@ -18,12 +18,28 @@ import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
 import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
 import { Uri } from "../../utils/uri";
 
+import {
+    OpenAiModelParams,
+    openAiModelParamsSchema,
+    GrazieModelParams,
+    grazieModelParamsSchema,
+    PredefinedProofsModelParams,
+    predefinedProofsModelParamsSchema,
+} from "../../llm/llmServices/modelParamsInterfaces";
+import { JSONSchemaType } from "ajv";
+import Ajv from "ajv/dist/core";
+
+import * as fs from "fs";
 import * as path from "path";
 import * as assert from "assert";
 
 suite("Benchmark Test", () => {
+    const benchmarkDir = getBenchmarkDir();
+    const settingsPath = path.join(benchmarkDir, "benchmark_settings.json");
+    const datasetDir = path.join(benchmarkDir, "dataset");
+
     test("Complete with `auto`", async () => {
-        const filePath = path.join(getTestResourcesDir(), "auto_benchmark.v");
+        const filePath = path.join(datasetDir, "auto_benchmark.v");
         const modelsParams: ModelsParams = {
             openAiParams: [],
             grazieParams: [],
@@ -34,13 +50,46 @@ suite("Benchmark Test", () => {
             ],
         };
         await runTestBenchmark(filePath, modelsParams);
-        console.log("Benchmarking has finished!\n");
+    }).timeout(50000);
+
+    test("Complete with models from settings", async () => {
+        const modelsParams: ModelsParams = parseBenchmarkSettings(settingsPath);
+        const sourcePath = path.join(datasetDir, "mixed_benchmark.v");
+        await runTestBenchmark(sourcePath, modelsParams);
     }).timeout(50000);
 });
 
-function getTestResourcesDir(): string {
+function getBenchmarkDir(): string {
     const dirname: string = path.join(__dirname, "../../../");
-    return path.join(dirname, "src", "test", "resources");
+    return path.join(dirname, "src", "test", "benchmark");
+}
+
+async function runTestBenchmark(
+    filePath: string,
+    modelsParams: ModelsParams
+): Promise<void> {
+    console.log(`run benchmarks for file: ${filePath}\n`);
+    const shouldCompleteHole = (_hole: ProofStep) => true;
+
+    const [completionContexts, sourceFileEnvironment, processEnvironment] =
+        await prepareForCompletions(modelsParams, shouldCompleteHole, filePath);
+
+    const totalCompletionsNumber = completionContexts.length;
+    let successfulCompletionsNumber = 0;
+    for (const completionContext of completionContexts) {
+        const success = await performSingleCompletion(
+            completionContext,
+            sourceFileEnvironment,
+            processEnvironment
+        );
+        if (success) {
+            successfulCompletionsNumber += 1;
+        }
+    }
+    console.log(
+        `BENCHMARK RESULT: ${successfulCompletionsNumber} / ${totalCompletionsNumber}`
+    );
+    assert.ok(successfulCompletionsNumber === totalCompletionsNumber);
 }
 
 async function prepareForCompletions(
@@ -114,30 +163,48 @@ async function performSingleCompletion(
     return success;
 }
 
-async function runTestBenchmark(
-    filePath: string,
-    modelsParams: ModelsParams
-): Promise<void> {
-    console.log(`run benchmarks for file: ${filePath}`);
-    const shouldCompleteHole = (_hole: ProofStep) => true;
+function parseBenchmarkSettings(settingsPath: string): ModelsParams {
+    const settingsText = fs.readFileSync(settingsPath, "utf-8");
+    const modelsParams = JSON.parse(settingsText);
 
-    const [completionContexts, sourceFileEnvironment, processEnvironment] =
-        await prepareForCompletions(modelsParams, shouldCompleteHole, filePath);
+    // TODO: find the way to validate schemas correctly in the strict mode
+    const ajv = new Ajv({ strictSchema: "log" });
 
-    const totalCompletionsNumber = completionContexts.length;
-    let successfulCompletionsNumber = 0;
-    for (const completionContext of completionContexts) {
-        const success = await performSingleCompletion(
-            completionContext,
-            sourceFileEnvironment,
-            processEnvironment
-        );
-        if (success) {
-            successfulCompletionsNumber += 1;
-        }
-    }
-    console.log(
-        `BENCHMARK RESULT: ${successfulCompletionsNumber} / ${totalCompletionsNumber}`
+    const openAiParams: OpenAiModelParams[] = modelsParams[
+        "coqpilot.openAiModelsParameters"
+    ].map((params: any) =>
+        validateAndParseJson(params, openAiModelParamsSchema, ajv)
     );
-    assert.ok(successfulCompletionsNumber === totalCompletionsNumber);
+    const grazieParams: GrazieModelParams[] = modelsParams[
+        "coqpilot.grazieModelsParameters"
+    ].map((params: any) =>
+        validateAndParseJson(params, grazieModelParamsSchema, ajv)
+    );
+    const predefinedProofsParams: PredefinedProofsModelParams[] = modelsParams[
+        "coqpilot.predefinedProofsModelsParameters"
+    ].map((params: any) =>
+        validateAndParseJson(params, predefinedProofsModelParamsSchema, ajv)
+    );
+
+    return {
+        openAiParams: openAiParams,
+        grazieParams: grazieParams,
+        predefinedProofsModelParams: predefinedProofsParams,
+    };
+}
+
+function validateAndParseJson<T>(
+    json: any,
+    targetClassSchema: JSONSchemaType<T>,
+    jsonSchemaValidator: Ajv
+): T {
+    const instance: T = json as T;
+    const validate = jsonSchemaValidator.compile(targetClassSchema);
+    if (!validate(instance)) {
+        throw new Error(
+            `Unable to validate json against the class: ${JSON.stringify(validate.errors)}`
+        );
+    }
+
+    return instance;
 }
