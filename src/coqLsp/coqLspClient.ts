@@ -18,7 +18,6 @@ import {
     DidOpenTextDocumentNotification,
     DidChangeTextDocumentNotification,
     DidChangeTextDocumentParams,
-    LogTraceNotification,
     PublishDiagnosticsNotification,
 } from "vscode-languageclient";
 
@@ -194,17 +193,17 @@ export class CoqLspClient implements CoqLspClientInterface {
     ): Promise<DiagnosticMessage> {
         await this.client.sendNotification(requestType, params);
 
-        let pendingProgress = true;
+        // let pendingProgress = true;
         let pendingDiagnostic = true;
         let awaitedDiagnostics: Diagnostic[] | undefined = undefined;
 
-        this.subscriptions.push(
-            this.client.onNotification(LogTraceNotification.type, (params) => {
-                if (params.message.includes("document fully checked")) {
-                    pendingProgress = false;
-                }
-            })
-        );
+        // this.subscriptions.push(
+        //     this.client.onNotification(LogTraceNotification.type, (params) => {
+        //         if (params.message.includes("document fully checked")) {
+        //             pendingProgress = false;
+        //         }
+        //     })
+        // );
 
         this.subscriptions.push(
             this.client.onNotification(
@@ -221,21 +220,21 @@ export class CoqLspClient implements CoqLspClientInterface {
                                 lastDocumentEndPosition
                             ) !== undefined
                         ) {
-                            pendingProgress = false;
+                            // pendingProgress = false;
                         }
                     }
                 }
             )
         );
 
-        while (timeout > 0 && (pendingProgress || pendingDiagnostic)) {
+        while (timeout > 0 && pendingDiagnostic) {
             await this.sleep(100);
             timeout -= 100;
         }
 
         if (
             timeout <= 0 ||
-            pendingProgress ||
+            // pendingProgress ||
             pendingDiagnostic ||
             awaitedDiagnostics === undefined
         ) {
