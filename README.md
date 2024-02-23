@@ -25,7 +25,7 @@ User can:
 
 ## Requirements
 
-* `coq-lsp` version 0.1.8 is currently required to run the extension.
+* `coq-lsp` version `0.1.8+8.19`!! is currently required to run the extension.
 
 ## Coq-lsp installation
 
@@ -89,7 +89,7 @@ Here are parameters each of the service contributes:
 
 ### Milestone 2.0.0
 
-It is planned to implement a proof repair feature for the proofs which will establish a dialogue between `coq-lsp` and the LLM. When LLM generates an incorrect proof, the error would be sent to LLM as a next message and the process would be repeated until a valid proof is found or the limit of attempts is reached. Also it is planned to fetch proofs from different LLMs not at once in the beggining, but asynchronously and one by one, if it fails to find a proof in the first LLM, it will try the next one.
+It is planned to implement a proof repair feature for the proofs which will establish a dialogue between `coq-lsp` and the LLM. When LLM generates an incorrect proof, the error would be sent to LLM as a next message and the process would be repeated until a valid proof is found or the limit of attempts is reached.
 
 ## Release Notes
 
