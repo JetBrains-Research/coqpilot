@@ -27,7 +27,7 @@ import {
     predefinedProofsModelParamsSchema,
 } from "../../llm/llmServices/modelParamsInterfaces";
 import { JSONSchemaType } from "ajv";
-import Ajv from "ajv/dist/core";
+import Ajv2019 from "ajv/dist/2019";
 
 import * as fs from "fs";
 import * as path from "path";
@@ -167,8 +167,7 @@ function parseBenchmarkSettings(settingsPath: string): ModelsParams {
     const settingsText = fs.readFileSync(settingsPath, "utf-8");
     const modelsParams = JSON.parse(settingsText);
 
-    // TODO: find the way to validate schemas correctly in the strict mode
-    const ajv = new Ajv({ strictSchema: "log" });
+    const ajv = new Ajv2019({ strictSchema: true });
 
     const openAiParams: OpenAiModelParams[] = modelsParams[
         "coqpilot.openAiModelsParameters"
@@ -196,9 +195,10 @@ function parseBenchmarkSettings(settingsPath: string): ModelsParams {
 function validateAndParseJson<T>(
     json: any,
     targetClassSchema: JSONSchemaType<T>,
-    jsonSchemaValidator: Ajv
+    jsonSchemaValidator: Ajv2019
 ): T {
     const instance: T = json as T;
+    console.dir(instance, { depth: null });
     const validate = jsonSchemaValidator.compile(targetClassSchema);
     if (!validate(instance)) {
         throw new Error(

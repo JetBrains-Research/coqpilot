@@ -30,15 +30,8 @@ export interface PredefinedProofsModelParams extends ModelParams {
 }
 
 export const openAiModelParamsSchema: JSONSchemaType<OpenAiModelParams> = {
+    $schema: "https://json-schema.org/draft/2019-09/schema",
     type: "object",
-    properties: {
-        prompt: { type: "string" },
-        maxTokens: { type: "number" },
-        temperature: { type: "number" },
-        model: { type: "string" },
-        apiKey: { type: "string" },
-        choices: { type: "number" },
-    },
     required: [
         "prompt",
         "maxTokens",
@@ -47,9 +40,19 @@ export const openAiModelParamsSchema: JSONSchemaType<OpenAiModelParams> = {
         "apiKey",
         "choices",
     ],
+    properties: {
+        prompt: { type: "string" },
+        maxTokens: { type: "number" },
+        temperature: { type: "number" },
+        model: { type: "string" },
+        apiKey: { type: "string" },
+        choices: { type: "number" },
+    },
 };
 
 export const grazieModelParamsSchema: JSONSchemaType<GrazieModelParams> = {
+    $schema: "https://json-schema.org/draft/2019-09/schema",
+    required: ["prompt", "model", "apiKey", "choices"],
     type: "object",
     properties: {
         prompt: { type: "string" },
@@ -57,17 +60,19 @@ export const grazieModelParamsSchema: JSONSchemaType<GrazieModelParams> = {
         apiKey: { type: "string" },
         choices: { type: "number" },
     },
-    required: ["prompt", "model", "apiKey", "choices"],
 };
 
 export const predefinedProofsModelParamsSchema: JSONSchemaType<PredefinedProofsModelParams> =
     {
+        $schema: "https://json-schema.org/draft/2019-09/schema",
         type: "object",
+        required: ["tactics"],
         properties: {
             tactics: {
                 type: "array",
-                items: { type: "string" },
+                items: {
+                    type: "string",
+                },
             },
         },
-        required: ["tactics"],
     };

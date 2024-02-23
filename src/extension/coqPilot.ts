@@ -21,7 +21,8 @@ import {
     insertCompletion,
     highlightTextInEditor,
 } from "./documentEditor";
-import Ajv, { JSONSchemaType } from "ajv";
+import { JSONSchemaType } from "ajv";
+import Ajv2019 from "ajv/dist/2019";
 
 import {
     SuccessGenerationResult,
@@ -77,7 +78,7 @@ export class CoqPilot {
     private readonly vscodeExtensionContext: ExtensionContext;
     private readonly pluginId = "coqpilot";
 
-    private readonly jsonSchemaValidator: Ajv;
+    private readonly jsonSchemaValidator: Ajv2019;
 
     constructor(vscodeExtensionContext: ExtensionContext) {
         hideAuxFiles();
@@ -103,7 +104,7 @@ export class CoqPilot {
             this.performCompletionForAllAdmits.bind(this)
         );
 
-        this.jsonSchemaValidator = new Ajv();
+        this.jsonSchemaValidator = new Ajv2019({ strict: true });
 
         this.vscodeExtensionContext.subscriptions.push(this);
     }
