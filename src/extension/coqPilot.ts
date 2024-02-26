@@ -191,14 +191,16 @@ export class CoqPilot {
             return;
         }
 
-        for (const completionContext of completionContexts) {
-            await this.performSingleCompletion(
+        let completionPromises = completionContexts.map((completionContext) => {
+            return this.performSingleCompletion(
                 completionContext,
                 sourceFileEnvironment,
                 processEnvironment,
                 editor
             );
-        }
+        });
+
+        await Promise.all(completionPromises);
     }
 
     private async performSingleCompletion(
