@@ -22,8 +22,6 @@ export interface OpenAiModelParams extends ModelParams {
 
 export interface GrazieModelParams extends ModelParams {
     prompt: string;
-    // The maximum number of tokens that can be generated in the chat completion.
-    maxTokens: number;
     // Input length + generated tokens max length.
     modelContextLength: number;
     model: string;
@@ -62,20 +60,12 @@ export const grazieModelParamsSchema: JSONSchemaType<GrazieModelParams> = {
     type: "object",
     properties: {
         prompt: { type: "string" },
-        maxTokens: { type: "number" },
         modelContextLength: { type: "number" },
         model: { type: "string" },
         apiKey: { type: "string" },
         choices: { type: "number" },
     },
-    required: [
-        "prompt",
-        "maxTokens",
-        "modelContextLength",
-        "model",
-        "apiKey",
-        "choices",
-    ],
+    required: ["prompt", "modelContextLength", "model", "apiKey", "choices"],
 };
 
 export const predefinedProofsModelParamsSchema: JSONSchemaType<PredefinedProofsModelParams> =
