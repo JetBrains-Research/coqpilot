@@ -30,8 +30,14 @@ export async function inspectSourceFile(
         fileUri,
         client
     );
+    const sourceFileEnvironmentWithCompleteProofs: SourceFileEnvironment = {
+        ...sourceFileEnvironment,
+        fileTheorems: sourceFileEnvironment.fileTheorems.filter(
+            (thr) => thr.proof && !thr.proof.is_incomplete
+        ),
+    };
 
-    return [completionContexts, sourceFileEnvironment];
+    return [completionContexts, sourceFileEnvironmentWithCompleteProofs];
 }
 
 async function createCompletionContexts(

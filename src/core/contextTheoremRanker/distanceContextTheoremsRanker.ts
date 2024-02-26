@@ -1,12 +1,8 @@
-import { ContextTheoremsRankerInterface } from "./contextTheoremsRankerInterface";
+import { ContextTheoremsRanker } from "./contextTheoremsRanker";
 import { Theorem } from "../../coqParser/parsedTypes";
 import { CompletionContext } from "../completionGenerator";
 
-export class DistanceContextTheoremsRanker
-    implements ContextTheoremsRankerInterface
-{
-    constructor() {}
-
+export class DistanceContextTheoremsRanker implements ContextTheoremsRanker {
     rankContextTheorems(
         theorems: Theorem[],
         completionContext: CompletionContext

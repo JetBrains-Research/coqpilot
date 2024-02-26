@@ -10,6 +10,7 @@ import {
 import { ProofGenerationContext } from "../llm/llmServices/modelParamsInterfaces";
 import { EventLogger } from "../logging/eventLogger";
 import { Position } from "vscode-languageclient";
+import { ContextTheoremsRanker } from "./contextTheoremRanker/contextTheoremsRanker";
 
 import { Hyp, Goal, PpString } from "../coqLsp/coqLspTypes";
 
@@ -32,6 +33,7 @@ export interface ProcessEnvironment {
     coqProofChecker: CoqProofChecker;
     modelsParams: ModelsParams;
     services: LLMServices;
+    theoremRanker?: ContextTheoremsRanker;
 }
 
 export async function generateCompletion(
@@ -42,7 +44,13 @@ export async function generateCompletion(
 ): Promise<GenerationResult> {
     const context = buildProofGenerationContext(
         completionContext,
-        sourceFileEnvironment
+        sourceFileEnvironment,
+        processEnvironment
+    );
+    eventLogger?.log(
+        "proof-gen-context-create",
+        "Ranked theorems for proof generation",
+        context.sameFileTheorems.map((thr) => thr.name)
     );
     const iterator = new LLMSequentialIterator(
         context,
@@ -152,10 +160,16 @@ function goalToTargetLemma(proofGoal: Goal<PpString>): string {
 
 function buildProofGenerationContext(
     completionContext: CompletionContext,
-    sourceFileEnvironment: SourceFileEnvironment
+    sourceFileEnvironment: SourceFileEnvironment,
+    processEnvironment: ProcessEnvironment
 ): ProofGenerationContext {
+    const rankedTheorems =
+        processEnvironment.theoremRanker?.rankContextTheorems(
+            sourceFileEnvironment.fileTheorems,
+            completionContext
+        ) ?? sourceFileEnvironment.fileTheorems;
     return {
-        sameFileTheorems: sourceFileEnvironment.fileTheorems,
+        sameFileTheorems: rankedTheorems,
         admitCompletionTarget: goalToTargetLemma(completionContext.proofGoal),
     };
 }

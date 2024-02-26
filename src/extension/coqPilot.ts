@@ -64,6 +64,10 @@ import {
     showApiKeyNotProvidedMessage,
 } from "./editorMessages";
 
+import { ContextTheoremsRanker } from "../core/contextTheoremRanker/contextTheoremsRanker";
+import { DistanceContextTheoremsRanker } from "../core/contextTheoremRanker/distanceContextTheoremsRanker";
+import { RandomContextTheoremsRanker } from "../core/contextTheoremRanker/randomContextTheoremsRanker";
+
 export class GlobalExtensionState {
     constructor(public readonly llmServices: LLMServices) {}
 
@@ -275,6 +279,7 @@ export class CoqPilot {
         const coqLspServerConfig = CoqLspConfig.createServerConfig();
         const coqLspClientConfig = CoqLspConfig.createClientConfig();
         const client = new CoqLspClient(coqLspServerConfig, coqLspClientConfig);
+        const contextTheoremsRanker = this.buildTheoremsRankerFromConfig();
 
         const coqProofChecker = new CoqProofChecker(client);
         const [completionContexts, sourceFileEnvironment] =
@@ -288,6 +293,7 @@ export class CoqPilot {
             coqProofChecker: coqProofChecker,
             modelsParams: this.buildModelsParamsFromConfig(),
             services: this.globalExtensionState.llmServices,
+            theoremRanker: contextTheoremsRanker,
         };
 
         return [completionContexts, sourceFileEnvironment, processEnvironment];
@@ -306,6 +312,22 @@ export class CoqPilot {
         }
 
         return instance;
+    }
+
+    private buildTheoremsRankerFromConfig(): ContextTheoremsRanker {
+        const workspaceConfig = workspace.getConfiguration(this.pluginId);
+        const rankerType = workspaceConfig.contextTheoremsRankerType;
+
+        switch (rankerType) {
+            case "distance":
+                return new DistanceContextTheoremsRanker();
+            case "random":
+                return new RandomContextTheoremsRanker();
+            default:
+                throw new Error(
+                    `Unknown context theorems ranker type: ${rankerType}`
+                );
+        }
     }
 
     private buildModelsParamsFromConfig(): ModelsParams {
