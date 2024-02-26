@@ -2,12 +2,13 @@ import { ProofGenerationContext } from "./modelParamsInterfaces";
 import { Theorem } from "../../coqParser/parsedTypes";
 import { encoding_for_model, Tiktoken, TiktokenModel } from "tiktoken";
 
-export function accumulateTheoremsUntilTokenCount(
+export function pickTheoremsUntilTokenLimit(
     answerMaxTokens: number,
     proofGenerationContext: ProofGenerationContext,
     systemMessage: string,
     model: string,
-    modelContextLength: number
+    // Input length + generated tokens max length.
+    modelContextWindowTokens: number
 ): Theorem[] {
     let encoder: Tiktoken | undefined = undefined;
     try {
@@ -34,7 +35,10 @@ export function accumulateTheoremsUntilTokenCount(
         const theoremProof = theorem.proof?.onlyText() ?? "";
         const proofTokens = countTokes(theoremProof);
 
-        if (tokenCount + statementTokens + proofTokens > modelContextLength) {
+        if (
+            tokenCount + statementTokens + proofTokens >
+            modelContextWindowTokens
+        ) {
             break;
         }
 

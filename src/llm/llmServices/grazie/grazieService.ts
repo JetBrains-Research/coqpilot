@@ -6,7 +6,7 @@ import { GrazieApiInterface } from "./grazieApiInterface";
 import { LLMServiceInterface } from "../llmServiceInterface";
 import { GrazieApi, GrazieFormattedHistory } from "./grazieApi";
 import { EventLogger } from "../../../logging/eventLogger";
-import { accumulateTheoremsUntilTokenCount } from "../accumulateTheoremsInContext";
+import { pickTheoremsUntilTokenLimit } from "../accumulateTheoremsInContext";
 
 export class GrazieService implements LLMServiceInterface {
     private api: GrazieApiInterface;
@@ -21,7 +21,7 @@ export class GrazieService implements LLMServiceInterface {
         proofGenerationContext: ProofGenerationContext,
         params: GrazieModelParams
     ): GrazieFormattedHistory => {
-        const theorems = accumulateTheoremsUntilTokenCount(
+        const theorems = pickTheoremsUntilTokenLimit(
             this.grazieMaxTokensInCompletion,
             proofGenerationContext,
             params.prompt,

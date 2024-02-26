@@ -23,6 +23,8 @@ export interface CompletionContext {
 }
 
 export interface SourceFileEnvironment {
+    // Theorems here are only those that
+    // successfully finish with Qed.
     fileTheorems: Theorem[];
     fileLines: string[];
     fileVersion: number;
@@ -33,6 +35,9 @@ export interface ProcessEnvironment {
     coqProofChecker: CoqProofChecker;
     modelsParams: ModelsParams;
     services: LLMServices;
+    // If not provided, the default ranker will be used:
+    // Theorems would be passed sequentially
+    // in the same order as they are in the file
     theoremRanker?: ContextTheoremsRanker;
 }
 

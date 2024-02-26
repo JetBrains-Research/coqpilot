@@ -11,7 +11,7 @@ export interface ModelParams {}
 export interface OpenAiModelParams extends ModelParams {
     prompt: string;
     // The maximum number of tokens that can be generated in the chat completion.
-    maxTokens: number;
+    answerMaxTokens: number;
     // Input length + generated tokens max length.
     modelContextLength: number;
     temperature: number;
@@ -38,7 +38,7 @@ export const openAiModelParamsSchema: JSONSchemaType<OpenAiModelParams> = {
     type: "object",
     properties: {
         prompt: { type: "string" },
-        maxTokens: { type: "number" },
+        answerMaxTokens: { type: "number" },
         modelContextLength: { type: "number" },
         temperature: { type: "number" },
         model: { type: "string" },
@@ -47,7 +47,7 @@ export const openAiModelParamsSchema: JSONSchemaType<OpenAiModelParams> = {
     },
     required: [
         "prompt",
-        "maxTokens",
+        "answerMaxTokens",
         "modelContextLength",
         "temperature",
         "model",

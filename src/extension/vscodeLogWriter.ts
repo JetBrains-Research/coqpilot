@@ -2,10 +2,11 @@ import pino, { LoggerOptions, DestinationStream } from "pino";
 import { window, OutputChannel } from "vscode";
 import { Severity, EventLogger, ALL_EVENTS } from "../logging/eventLogger";
 
-class OutputChannelLogger {
-    private readonly vscodeChannel =
-        window.createOutputChannel("CoqPilot Events");
-    private readonly outputChannelWriter = pino(
+class VSCodeLogWriter {
+    private readonly outputStream = new VSCodeOutputChannelDestinationStream(
+        window.createOutputChannel("CoqPilot Events")
+    );
+    private readonly outputStreamWriter = pino(
         {
             formatters: {
                 level: (label) => {
@@ -19,12 +20,12 @@ class OutputChannelLogger {
             },
             timestamp: pino.stdTimeFunctions.isoTime,
         } as LoggerOptions,
-        new VSCodeOutputChannelDestinationStream(this.vscodeChannel)
+        this.outputStream
     );
 
     constructor(eventLogger: EventLogger, logLevel: Severity = Severity.INFO) {
         eventLogger.subscribe(ALL_EVENTS, Severity.INFO, (message, data) => {
-            this.outputChannelWriter.info({
+            this.outputStreamWriter.info({
                 message,
                 data,
             });
@@ -34,13 +35,18 @@ class OutputChannelLogger {
                 ALL_EVENTS,
                 Severity.DEBUG,
                 (message, data) => {
-                    this.outputChannelWriter.info({
+                    this.outputStreamWriter.info({
                         message,
                         data,
                     });
                 }
             );
         }
+    }
+
+    dispose(): void {
+        this.outputStreamWriter.flush();
+        this.outputStream.close();
     }
 }
 
@@ -63,4 +69,4 @@ class VSCodeOutputChannelDestinationStream implements DestinationStream {
     }
 }
 
-export default OutputChannelLogger;
+export default VSCodeLogWriter;

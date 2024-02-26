@@ -8,7 +8,7 @@ import { CoqProofChecker } from "../core/coqProofChecker";
 import { Uri } from "../utils/uri";
 
 import { hideAuxFiles, cleanAuxFiles } from "./tmpFilesCleanup";
-import OutputChannelLogger from "./outputChannelLogger";
+import VSCodeLogWriter from "./vscodeLogWriter";
 import { EventLogger } from "../logging/eventLogger";
 
 import {
@@ -69,12 +69,23 @@ import { DistanceContextTheoremsRanker } from "../core/contextTheoremRanker/dist
 import { RandomContextTheoremsRanker } from "../core/contextTheoremRanker/randomContextTheoremsRanker";
 
 export class GlobalExtensionState {
-    constructor(public readonly llmServices: LLMServices) {}
+    public readonly eventLogger: EventLogger = new EventLogger();
+    public readonly logWriter: VSCodeLogWriter = new VSCodeLogWriter(
+        this.eventLogger
+    );
+    public readonly llmServices: LLMServices = {
+        openAiService: new OpenAiService(this.eventLogger),
+        grazieService: new GrazieService(this.eventLogger),
+        predefinedProofsService: new PredefinedProofsService(),
+    };
+
+    constructor() {}
 
     dispose(): void {
         this.llmServices.openAiService.dispose();
         this.llmServices.grazieService.dispose();
         this.llmServices.predefinedProofsService.dispose();
+        this.logWriter.dispose();
     }
 }
 
@@ -82,7 +93,6 @@ export class CoqPilot {
     private readonly globalExtensionState: GlobalExtensionState;
     private readonly vscodeExtensionContext: ExtensionContext;
     private readonly pluginId = "coqpilot";
-    private readonly eventLogger = new EventLogger();
 
     private readonly jsonSchemaValidator: Ajv;
 
@@ -91,11 +101,7 @@ export class CoqPilot {
         suggestAddingAuxFilesToGitignore();
 
         this.vscodeExtensionContext = vscodeExtensionContext;
-        this.globalExtensionState = new GlobalExtensionState({
-            openAiService: new OpenAiService(this.eventLogger),
-            grazieService: new GrazieService(this.eventLogger),
-            predefinedProofsService: new PredefinedProofsService(),
-        });
+        this.globalExtensionState = new GlobalExtensionState();
 
         this.registerEditorCommand(
             "perform_completion_under_cursor",
@@ -111,7 +117,6 @@ export class CoqPilot {
         );
 
         this.jsonSchemaValidator = new Ajv();
-        new OutputChannelLogger(this.eventLogger);
 
         this.vscodeExtensionContext.subscriptions.push(this);
     }
@@ -213,7 +218,7 @@ export class CoqPilot {
             completionContext,
             sourceFileEnvironment,
             processEnvironment,
-            this.eventLogger
+            this.globalExtensionState.eventLogger
         );
 
         if (result instanceof SuccessGenerationResult) {

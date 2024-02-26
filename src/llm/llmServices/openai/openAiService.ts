@@ -4,7 +4,7 @@ import {
     OpenAiModelParams,
 } from "../modelParamsInterfaces";
 import { LLMServiceInterface } from "../llmServiceInterface";
-import { accumulateTheoremsUntilTokenCount } from "../accumulateTheoremsInContext";
+import { pickTheoremsUntilTokenLimit } from "../accumulateTheoremsInContext";
 import { EventLogger, Severity } from "../../../logging/eventLogger";
 
 type GptRole = "function" | "user" | "system" | "assistant";
@@ -17,8 +17,8 @@ export class OpenAiService implements LLMServiceInterface {
         proofGenerationContext: ProofGenerationContext,
         params: OpenAiModelParams
     ): History => {
-        const theorems = accumulateTheoremsUntilTokenCount(
-            params.maxTokens,
+        const theorems = pickTheoremsUntilTokenLimit(
+            params.answerMaxTokens,
             proofGenerationContext,
             params.prompt,
             params.model,
@@ -65,7 +65,7 @@ export class OpenAiService implements LLMServiceInterface {
             n: params.choices,
             temperature: params.temperature,
             // eslint-disable-next-line @typescript-eslint/naming-convention
-            max_tokens: params.maxTokens,
+            max_tokens: params.answerMaxTokens,
         });
 
         return completion.choices.map((choice: any) => choice.message.content);
