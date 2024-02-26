@@ -5,12 +5,13 @@ import {
 import { GrazieApiInterface } from "./grazieApiInterface";
 import { LLMServiceInterface } from "../llmServiceInterface";
 import { GrazieApi, GrazieFormattedHistory } from "./grazieApi";
+import { EventLogger } from "../../../logging/eventLogger";
 
 export class GrazieService implements LLMServiceInterface {
     private api: GrazieApiInterface;
 
-    constructor() {
-        this.api = new GrazieApi();
+    constructor(eventLogger?: EventLogger) {
+        this.api = new GrazieApi(eventLogger);
     }
 
     private createHistory = (

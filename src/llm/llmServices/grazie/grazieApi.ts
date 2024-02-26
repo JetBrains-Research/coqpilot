@@ -4,6 +4,7 @@ import { GrazieApiInterface } from "./grazieApiInterface";
 import axios from "axios";
 import { ResponseType } from "axios";
 import { GrazieModelParams } from "../modelParamsInterfaces";
+import { EventLogger, Severity } from "../../../logging/eventLogger";
 
 export type GrazieChatRole = "User" | "System" | "Assistant";
 export type GrazieFormattedHistory = { role: GrazieChatRole; text: string }[];
@@ -11,7 +12,7 @@ export type GrazieFormattedHistory = { role: GrazieChatRole; text: string }[];
 export class GrazieApi implements GrazieApiInterface {
     private readonly config: GrazieConfig;
 
-    constructor() {
+    constructor(private readonly eventLogger?: EventLogger) {
         this.config = GrazieHolder.create();
     }
 
@@ -29,7 +30,9 @@ export class GrazieApi implements GrazieApiInterface {
         params: GrazieModelParams
     ): string {
         return JSON.stringify({
-            chat: history,
+            chat: {
+                messages: history,
+            },
             profile: params.model,
         });
     }
@@ -110,6 +113,17 @@ export class GrazieApi implements GrazieApiInterface {
     ): Promise<string> {
         const headers = this.createHeaders(apiToken);
         headers["Content-Length"] = body.length;
+        this.eventLogger?.log(
+            "grazie-fetch-started",
+            "Completion from Grazie requested",
+            {
+                url: url,
+                body: body,
+                headers: headers,
+            },
+            Severity.DEBUG
+        );
+
         const response = await this.fetchAndProcessEvents(
             this.config.gateawayUrl + url,
             body,

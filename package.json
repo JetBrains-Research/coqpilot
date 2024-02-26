@@ -89,7 +89,7 @@
                 },
                 "model": {
                   "type": "string",
-                  "description": "The model to use from the open-ai platform.",
+                  "markdownDescription": "The model to use from the open-ai platform: \n * gpt-4 \n * gpt-4-0314 \n * gpt-4-0613 \n * gpt-4-32k \n * gpt-4-32k-0314 \n * gpt-4-32k-0613 \n * gpt-3.5-turbo \n * gpt-3.5-turbo-16k \n * gpt-3.5-turbo-0301 \n * gpt-3.5-turbo-0613 \n * gpt-3.5-turbo-16k-0613",
                   "default": "gpt-3.5-turbo-0301"
                 },
                 "apiKey": {
@@ -138,7 +138,7 @@
                 },
                 "model": {
                   "type": "string",
-                  "description": "The model to use from the grazie platform.",
+                  "markdownDescription": "The model to use from the grazie platform: \n * openai-gpt-4 \n * openai-chat-gpt \n * grazie-chat-llama-v2-7b \n * grazie-chat-llama-v2-13b \n * grazie-chat-zephyr-7b \n * qwen-turbo \n * qwen-plus",
                   "default": "openai-gpt-4"
                 },
                 "apiKey": {

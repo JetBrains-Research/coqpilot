@@ -5,11 +5,14 @@ import {
 } from "../modelParamsInterfaces";
 import { LLMServiceInterface } from "../llmServiceInterface";
 import { accumulateTheoremsUntilTokenCount } from "../accumulateTheoremsInContext";
+import { EventLogger, Severity } from "../../../logging/eventLogger";
 
 type GptRole = "function" | "user" | "system" | "assistant";
 type History = { role: GptRole; content: string }[];
 
 export class OpenAiService implements LLMServiceInterface {
+    constructor(private readonly eventLogger?: EventLogger) {}
+
     private createHistory = (
         proofGenerationContext: ProofGenerationContext,
         params: OpenAiModelParams
@@ -46,8 +49,18 @@ export class OpenAiService implements LLMServiceInterface {
     ): Promise<string[]> {
         // Add retry, add logging
         const openai = new OpenAI({ apiKey: params.apiKey });
+        const formattedHistory = this.createHistory(
+            proofGenerationContext,
+            params
+        );
+        this.eventLogger?.log(
+            "openai-fetch-started",
+            "Completion from OpenAI requested",
+            { history: formattedHistory },
+            Severity.DEBUG
+        );
         const completion = await openai.chat.completions.create({
-            messages: this.createHistory(proofGenerationContext, params),
+            messages: formattedHistory,
             model: params.model,
             n: params.choices,
             temperature: params.temperature,

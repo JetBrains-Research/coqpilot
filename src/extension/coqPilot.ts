@@ -8,6 +8,8 @@ import { CoqProofChecker } from "../core/coqProofChecker";
 import { Uri } from "../utils/uri";
 
 import { hideAuxFiles, cleanAuxFiles } from "./tmpFilesCleanup";
+import OutputChannelLogger from "./outputChannelLogger";
+import { EventLogger } from "../logging/eventLogger";
 
 import {
     positionInRange,
@@ -76,6 +78,7 @@ export class CoqPilot {
     private readonly globalExtensionState: GlobalExtensionState;
     private readonly vscodeExtensionContext: ExtensionContext;
     private readonly pluginId = "coqpilot";
+    private readonly eventLogger = new EventLogger();
 
     private readonly jsonSchemaValidator: Ajv;
 
@@ -85,8 +88,8 @@ export class CoqPilot {
 
         this.vscodeExtensionContext = vscodeExtensionContext;
         this.globalExtensionState = new GlobalExtensionState({
-            openAiService: new OpenAiService(),
-            grazieService: new GrazieService(),
+            openAiService: new OpenAiService(this.eventLogger),
+            grazieService: new GrazieService(this.eventLogger),
             predefinedProofsService: new PredefinedProofsService(),
         });
 
@@ -104,6 +107,7 @@ export class CoqPilot {
         );
 
         this.jsonSchemaValidator = new Ajv();
+        new OutputChannelLogger(this.eventLogger);
 
         this.vscodeExtensionContext.subscriptions.push(this);
     }
@@ -202,7 +206,8 @@ export class CoqPilot {
         const result = await generateCompletion(
             completionContext,
             sourceFileEnvironment,
-            processEnvironment
+            processEnvironment,
+            this.eventLogger
         );
 
         if (result instanceof SuccessGenerationResult) {

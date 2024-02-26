@@ -42,7 +42,8 @@ export class LLMSequentialIterator implements AsyncIterator<ProofBatch> {
             proofsGenerationHooks.push(() => {
                 this.eventLogger?.log(
                     "predefined-proofs-fetch-started",
-                    JSON.stringify(params)
+                    "Completion from predefined proofs",
+                    params
                 );
                 return services.predefinedProofsService.generateProof(
                     proofGenerationContext,
@@ -55,7 +56,8 @@ export class LLMSequentialIterator implements AsyncIterator<ProofBatch> {
             proofsGenerationHooks.push(() => {
                 this.eventLogger?.log(
                     "openai-fetch-started",
-                    JSON.stringify(params)
+                    "Completion from OpenAI",
+                    params
                 );
                 return services.openAiService.generateProof(
                     proofGenerationContext,
@@ -68,7 +70,8 @@ export class LLMSequentialIterator implements AsyncIterator<ProofBatch> {
             proofsGenerationHooks.push(() => {
                 this.eventLogger?.log(
                     "grazie-fetch-started",
-                    JSON.stringify(params)
+                    "Completion from Grazie",
+                    params
                 );
                 return services.grazieService.generateProof(
                     proofGenerationContext,
