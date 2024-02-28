@@ -37,12 +37,6 @@ jobs:
     - name: Opam eval 
       run: eval $(opam env)
 
-    - name: Make coq project from test resources directory
-      run: |
-        cd src/test/resources/coqProj
-        make
-      shell: bash
-
     - name: Install Node.js
       uses: actions/setup-node@v3
       with:
