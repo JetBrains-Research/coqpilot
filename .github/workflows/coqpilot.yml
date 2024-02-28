@@ -26,12 +26,6 @@ jobs:
       uses: ocaml/setup-ocaml@v2
       with:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
-
-    - name: Make coq project from test resources directory
-      run: |
-        cd src/test/resources/coqProj
-        make
-      shell: bash
         
     - name: Install opam dependencies
       env:
@@ -42,6 +36,12 @@ jobs:
     
     - name: Opam eval 
       run: eval $(opam env)
+
+    - name: Make coq project from test resources directory
+      run: |
+        cd src/test/resources/coqProj
+        make
+      shell: bash
 
     - name: Install Node.js
       uses: actions/setup-node@v3
