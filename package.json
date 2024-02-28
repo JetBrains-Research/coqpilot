@@ -206,6 +206,7 @@
   "devDependencies": {
     "@types/cli-progress": "^3.11.3",
     "@types/event-source-polyfill": "^1.0.5",
+    "@types/expect.js": "^0.3.32",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "20.2.5",
@@ -214,6 +215,7 @@
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "@vscode/test-electron": "^2.3.2",
+    "earl": "^1.1.0",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",

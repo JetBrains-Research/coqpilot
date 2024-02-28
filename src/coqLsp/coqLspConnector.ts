@@ -5,6 +5,7 @@ import {
 import { LanguageClient, ServerOptions } from "vscode-languageclient/node";
 import { CoqLspServerConfig, CoqLspClientConfig } from "./coqLspConfig";
 import { EventLogger } from "../logging/eventLogger";
+import { Uri } from "vscode";
 
 export class CoqLspConnector extends LanguageClient {
     constructor(
@@ -30,6 +31,17 @@ export class CoqLspConnector extends LanguageClient {
                 },
             },
         };
+
+        if (clientConfig.workspace_root_path) {
+            clientOptions = {
+                ...clientOptions,
+                workspaceFolder: {
+                    uri: Uri.file(clientConfig.workspace_root_path),
+                    name: "name",
+                    index: 0,
+                },
+            };
+        }
 
         const serverOptions: ServerOptions = {
             command: clientConfig.coq_lsp_server_path,

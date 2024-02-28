@@ -21,7 +21,7 @@ suite("Simple Test", () => {
             "src",
             "test",
             "resources",
-            "interaction_test_holes.v"
+            "test_many_admits.v"
         );
         const fileUri = Uri.fromPath(filePath);
 

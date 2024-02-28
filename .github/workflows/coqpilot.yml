@@ -2,9 +2,11 @@ name: Build and Test
 
 on: 
   push:
-    branches: [ main ]
+    branches: [ main, tests-refactor ]
   pull_request:
     branches: [ main ]
+env: 
+  coqlsppath: "coq-lsp"
 
 jobs:
   build: 
@@ -24,6 +26,12 @@ jobs:
       uses: ocaml/setup-ocaml@v2
       with:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+    - name: Make coq project from test resources directory
+      run: |
+        cd src/test/resources/coqProj
+        make
+      shell: bash
         
     - name: Install opam dependencies
       env:
@@ -63,13 +71,13 @@ jobs:
     - name: Test on Linux
       env:
           COQ_LSP_PATH: ${{ env.coqlsppath }}
-      run: xvfb-run -a npm test -- -ex='simpleSolver.test.js'
+      run: xvfb-run -a npm test
       if: runner.os == 'Linux'
 
     - name: Test not on Linux
       env:
           COQ_LSP_PATH: ${{ env.coqlsppath }}
-      run: npm test -- -ex='simpleSolver.test.js'
+      run: npm test
       if: runner.os != 'Linux'
 
     - name: Package Extension
