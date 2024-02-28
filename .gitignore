@@ -8,3 +8,11 @@ logs
 
 # Test resources 
 src/test/resources/coqProj/.vscode
+**/*.glob
+**/*.vo
+**/*.vok
+**/*.vos
+**/*.aux
+src/test/resources/coqProj/.Makefile.coq.d
+src/test/resources/coqProj/Makefile.coq
+src/test/resources/coqProj/Makefile.coq.conf

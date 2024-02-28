@@ -201,7 +201,8 @@
     "lint": "eslint \"src/**/*.{ts,js}\" --ext .ts",
     "format": "prettier --write \"src/**/*.{ts,js}\" && eslint \"src/**/*.{ts,js}\" --ext .ts --fix",
     "pretest": "npm run compile && npm run lint",
-    "test": "node ./out/test/runTest.js"
+    "test": "node ./out/test/runTest.js",
+    "test-ci": "npm test -- -g=\"--non-ci\" -i=true"
   },
   "devDependencies": {
     "@types/cli-progress": "^3.11.3",

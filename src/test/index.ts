@@ -9,6 +9,7 @@ export function run(): Promise<void> {
         color: true,
         diff: true,
         fgrep: process.env["TEST_ARG-g"],
+        invert: process.env["TEST_ARG-i"] === "true",
     });
 
     const testsRoot = path.resolve(__dirname);

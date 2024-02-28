@@ -65,13 +65,13 @@ jobs:
     - name: Test on Linux
       env:
           COQ_LSP_PATH: ${{ env.coqlsppath }}
-      run: xvfb-run -a npm test
+      run: xvfb-run -a npm run test-ci
       if: runner.os == 'Linux'
 
     - name: Test not on Linux
       env:
           COQ_LSP_PATH: ${{ env.coqlsppath }}
-      run: npm test
+      run: npm run test-ci
       if: runner.os != 'Linux'
 
     - name: Package Extension
