@@ -6,7 +6,7 @@ import { GrazieApiInterface } from "./grazieApiInterface";
 import { LLMServiceInterface } from "../llmServiceInterface";
 import { GrazieApi, GrazieFormattedHistory } from "./grazieApi";
 import { EventLogger } from "../../../logging/eventLogger";
-import { pickTheoremsUntilTokenLimit } from "../accumulateTheoremsInContext";
+import { pickTheoremsUntilTokenLimit } from "../pickTheoremsUntilTokenLimit";
 
 export class GrazieService implements LLMServiceInterface {
     private api: GrazieApiInterface;

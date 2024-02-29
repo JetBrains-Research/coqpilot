@@ -4,7 +4,7 @@ import {
     OpenAiModelParams,
 } from "../modelParamsInterfaces";
 import { LLMServiceInterface } from "../llmServiceInterface";
-import { pickTheoremsUntilTokenLimit } from "../accumulateTheoremsInContext";
+import { pickTheoremsUntilTokenLimit } from "../pickTheoremsUntilTokenLimit";
 import { EventLogger, Severity } from "../../../logging/eventLogger";
 
 type GptRole = "function" | "user" | "system" | "assistant";
