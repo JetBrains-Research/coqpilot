@@ -1,6 +1,7 @@
 import { LLMSequentialIterator } from "../../llm/llmIterator";
 import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
 import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
+import { LmStudioService } from "../../llm/llmServices/lmStudio/lmStudioService";
 import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
 import { expect } from "earl";
 import { ProofGenerationContext } from "../../llm/llmServices/modelParamsInterfaces";
@@ -14,6 +15,7 @@ suite("LLM Iterator test", () => {
         const openAiService = new OpenAiService();
         const grazieService = new GrazieService();
         const predefinedProofsService = new PredefinedProofsService();
+        const lmStudioService = new LmStudioService();
         const predefinedProofs = [
             "intros.",
             "reflexivity.",
@@ -29,11 +31,13 @@ suite("LLM Iterator test", () => {
                     tactics: predefinedProofs,
                 },
             ],
+            lmStudioModelParams: [],
         };
         const services = {
             openAiService,
             grazieService,
             predefinedProofsService,
+            lmStudioService,
         };
         const proofGenerationContext: ProofGenerationContext = {
             sameFileTheorems: [],

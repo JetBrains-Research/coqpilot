@@ -1,5 +1,6 @@
 import { OpenAiService } from "../llm/llmServices/openai/openAiService";
 import { GrazieService } from "../llm/llmServices/grazie/grazieService";
+import { LmStudioService } from "../llm/llmServices/lmStudio/lmStudioService";
 import { PredefinedProofsService } from "../llm/llmServices/predefinedProofs/predefinedProofsService";
 import { CoqLspConfig } from "../coqLsp/coqLspConfig";
 import { CoqLspClient } from "../coqLsp/coqLspClient";
@@ -52,9 +53,11 @@ import {
     GrazieModelParams,
     OpenAiModelParams,
     PredefinedProofsModelParams,
+    LmStudioModelParams,
     openAiModelParamsSchema,
     grazieModelParamsSchema,
     predefinedProofsModelParamsSchema,
+    lmStudioModelParamsSchema,
 } from "../llm/llmServices/modelParamsInterfaces";
 
 import {
@@ -77,6 +80,7 @@ export class GlobalExtensionState {
         openAiService: new OpenAiService(this.eventLogger),
         grazieService: new GrazieService(this.eventLogger),
         predefinedProofsService: new PredefinedProofsService(),
+        lmStudioService: new LmStudioService(this.eventLogger),
     };
 
     constructor() {}
@@ -356,11 +360,16 @@ export class CoqPilot {
                         predefinedProofsModelParamsSchema
                     )
             );
+        const lmStudioParams: LmStudioModelParams[] =
+            workspaceConfig.lmStudioModelsParameters.map((params: any) =>
+                this.validateAndParseJson(params, lmStudioModelParamsSchema)
+            );
 
         return {
             openAiParams: openAiParams,
             grazieParams: grazieParams,
             predefinedProofsModelParams: predefinedProofsParams,
+            lmStudioModelParams: lmStudioParams,
         };
     }
 

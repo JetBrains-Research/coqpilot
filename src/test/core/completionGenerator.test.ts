@@ -10,6 +10,7 @@ import { CoqProofChecker } from "../../core/coqProofChecker";
 import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
 import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
 import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
+import { LmStudioService } from "../../llm/llmServices/lmStudio/lmStudioService";
 import { ProcessEnvironment } from "../../core/completionGenerator";
 import { Uri } from "../../utils/uri";
 import { expect } from "earl";
@@ -39,6 +40,7 @@ suite("Completion generation tests", () => {
         const openAiService = new OpenAiService();
         const grazieService = new GrazieService();
         const predefinedProofsService = new PredefinedProofsService();
+        const lmStudioService = new LmStudioService();
 
         const processEnvironment: ProcessEnvironment = {
             coqProofChecker: coqProofChecker,
@@ -50,11 +52,13 @@ suite("Completion generation tests", () => {
                         tactics: predefinedProofs,
                     },
                 ],
+                lmStudioModelParams: [],
             },
             services: {
                 openAiService,
                 grazieService,
                 predefinedProofsService,
+                lmStudioService,
             },
         };
 

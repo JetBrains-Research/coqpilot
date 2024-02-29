@@ -34,6 +34,17 @@ export interface PredefinedProofsModelParams extends ModelParams {
     tactics: string[];
 }
 
+export interface LmStudioModelParams extends ModelParams {
+    port: number;
+    prompt: string;
+    // The maximum number of tokens that can be generated in the chat completion.
+    answerMaxTokens: number;
+    // Input length + generated tokens max length.
+    modelContextLength: number;
+    temperature: number;
+    choices: number;
+}
+
 export const openAiModelParamsSchema: JSONSchemaType<OpenAiModelParams> = {
     type: "object",
     properties: {
@@ -79,3 +90,23 @@ export const predefinedProofsModelParamsSchema: JSONSchemaType<PredefinedProofsM
         },
         required: ["tactics"],
     };
+
+export const lmStudioModelParamsSchema: JSONSchemaType<LmStudioModelParams> = {
+    type: "object",
+    properties: {
+        port: { type: "number" },
+        answerMaxTokens: { type: "number" },
+        modelContextLength: { type: "number" },
+        prompt: { type: "string" },
+        temperature: { type: "number" },
+        choices: { type: "number" },
+    },
+    required: [
+        "port",
+        "answerMaxTokens",
+        "modelContextLength",
+        "prompt",
+        "temperature",
+        "choices",
+    ],
+};

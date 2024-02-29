@@ -80,6 +80,20 @@ export class LLMSequentialIterator implements AsyncIterator<ProofBatch> {
             });
         }
 
+        for (const params of modelsParams.lmStudioModelParams) {
+            proofsGenerationHooks.push(() => {
+                this.eventLogger?.log(
+                    "lm-studio-fetch-started",
+                    "Completion from LmStudio",
+                    params
+                );
+                return services.lmStudioService.generateProof(
+                    proofGenerationContext,
+                    params
+                );
+            });
+        }
+
         return proofsGenerationHooks;
     }
 
