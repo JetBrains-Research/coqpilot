@@ -1,7 +1,10 @@
-import { generateCompletion } from "../../core/completionGenerator";
+import {
+    FailureGenerationResult,
+    FailureGenerationStatus,
+    GenerationResult,
+    generateCompletion,
+} from "../../core/completionGenerator";
 import * as path from "path";
-import { CoqLspClient } from "../../coqLsp/coqLspClient";
-import { CoqLspConfig } from "../../coqLsp/coqLspConfig";
 import { inspectSourceFile } from "../../core/inspectSourceFile";
 import { CoqProofChecker } from "../../core/coqProofChecker";
 import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
@@ -9,33 +12,29 @@ import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
 import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
 import { ProcessEnvironment } from "../../core/completionGenerator";
 import { Uri } from "../../utils/uri";
-import * as assert from "assert";
+import { expect } from "earl";
 import { SuccessGenerationResult } from "../../core/completionGenerator";
+import { getResourceFolder, createCoqLspClient } from "../commonTestFunctions";
 
-// More tests will come soon
-suite("Simple Test", () => {
-    test("Sanity check", async () => {
-        const dirname = path.dirname(path.dirname(path.dirname(__dirname)));
-        const filePath = path.join(
-            dirname,
-            "src",
-            "test",
-            "resources",
-            "test_many_admits.v"
+suite("Completion generation tests", () => {
+    async function generateCompletionForAdmitsFromFile(
+        resourcePath: string[],
+        predefinedProofs: string[],
+        projectRootPath?: string[]
+    ): Promise<GenerationResult[]> {
+        const filePath = path.join(getResourceFolder(), ...resourcePath);
+        const rootDir = path.join(
+            getResourceFolder(),
+            ...(projectRootPath ?? [])
         );
+
         const fileUri = Uri.fromPath(filePath);
-
-        const coqLspServerConfig = CoqLspConfig.createServerConfig();
-        const coqLspClientConfig = CoqLspConfig.createClientConfig(
-            process.env.COQ_LSP_PATH || "coq-lsp"
-        );
-
-        const client = new CoqLspClient(coqLspServerConfig, coqLspClientConfig);
-
+        const client = createCoqLspClient(rootDir);
         const coqProofChecker = new CoqProofChecker(client);
         await client.openTextDocument(fileUri);
         const [completionContexts, sourceFileEnvironment] =
             await inspectSourceFile(1, (_hole) => true, fileUri, client);
+        await client.closeTextDocument(fileUri);
 
         const openAiService = new OpenAiService();
         const grazieService = new GrazieService();
@@ -48,7 +47,7 @@ suite("Simple Test", () => {
                 grazieParams: [],
                 predefinedProofsModelParams: [
                     {
-                        tactics: ["intros.", "auto."],
+                        tactics: predefinedProofs,
                     },
                 ],
             },
@@ -59,14 +58,101 @@ suite("Simple Test", () => {
             },
         };
 
-        for (const completionContext of completionContexts) {
-            const result = await generateCompletion(
-                completionContext,
-                sourceFileEnvironment,
-                processEnvironment
-            );
+        return Promise.all(
+            completionContexts.map(async (completionContext) => {
+                const result = await generateCompletion(
+                    completionContext,
+                    sourceFileEnvironment,
+                    processEnvironment
+                );
 
-            assert.ok(result instanceof SuccessGenerationResult);
+                return result;
+            })
+        );
+    }
+
+    function unpackProof(text: string): string {
+        const flatProof = text.replace(/\n/g, " ");
+        return flatProof
+            .trim()
+            .slice(1, flatProof.length - 2)
+            .trim();
+    }
+
+    test("Check small file with 1 admit", async () => {
+        const resourcePath = ["small_document.v"];
+        const predefinedProofs = ["intros.", "auto."];
+
+        const results = await generateCompletionForAdmitsFromFile(
+            resourcePath,
+            predefinedProofs
+        );
+
+        expect(results).toHaveLength(1);
+        expect(results[0]).toBeA(SuccessGenerationResult);
+        expect(
+            unpackProof((results[0] as SuccessGenerationResult).data)
+        ).toEqual("auto.");
+    }).timeout(2000);
+
+    test("Check many admits", async () => {
+        const resourcePath = ["test_many_admits.v"];
+        const predefinedProofs = ["intros.", "auto."];
+
+        const results = await generateCompletionForAdmitsFromFile(
+            resourcePath,
+            predefinedProofs
+        );
+
+        expect(results).toHaveLength(6);
+        for (const result of results) {
+            expect(result).toBeA(SuccessGenerationResult);
+            expect(
+                unpackProof((result as SuccessGenerationResult).data)
+            ).toEqual("auto.");
         }
-    }).timeout(50000);
+    }).timeout(5000);
+
+    test("Check proofs harder than auto", async () => {
+        const resourcePath = ["harder_than_auto.v"];
+        const predefinedProofs = [
+            "auto.",
+            "intros. induction n as [| n' IHn']. { auto. } apply eq_S. apply IHn'.",
+        ];
+
+        const results = await generateCompletionForAdmitsFromFile(
+            resourcePath,
+            predefinedProofs
+        );
+
+        expect(results).toHaveLength(2);
+        expect(results[0]).toBeA(SuccessGenerationResult);
+        expect(
+            unpackProof((results[0] as SuccessGenerationResult).data)
+        ).toEqual(
+            "intros. induction n as [| n' IHn']. { auto. } apply eq_S. apply IHn'."
+        );
+        expect(results[1]).toBeA(FailureGenerationResult);
+        expect((results[1] as FailureGenerationResult).status).toEqual(
+            FailureGenerationStatus.searchFailed
+        );
+    }).timeout(2000);
+
+    test("Check generation in project --non-ci", async () => {
+        const resourcePath = ["coqProj", "theories", "C.v"];
+        const predefinedProofs = ["intros.", "auto."];
+        const projectRootPath = ["coqProj"];
+
+        const results = await generateCompletionForAdmitsFromFile(
+            resourcePath,
+            predefinedProofs,
+            projectRootPath
+        );
+
+        expect(results).toHaveLength(1);
+        expect(results[0]).toBeA(SuccessGenerationResult);
+        expect(
+            unpackProof((results[0] as SuccessGenerationResult).data)
+        ).toEqual("auto.");
+    }).timeout(2000);
 });

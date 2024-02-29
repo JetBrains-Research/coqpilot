@@ -2,7 +2,7 @@ name: Build and Test
 
 on: 
   push:
-    branches: [ main, tests-refactor ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 env: 
