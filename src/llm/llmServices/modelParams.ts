@@ -1,12 +1,8 @@
-import { Theorem } from "../../coqParser/parsedTypes";
 import { JSONSchemaType } from "ajv";
 
-export interface ProofGenerationContext {
-    sameFileTheorems: Theorem[];
-    admitCompletionTarget: string;
+export interface ModelParams {
+    modelName: string;
 }
-
-export interface ModelParams {}
 
 export interface OpenAiModelParams extends ModelParams {
     prompt: string;

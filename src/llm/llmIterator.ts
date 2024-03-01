@@ -1,9 +1,10 @@
-import { ProofGenerationContext } from "./llmServices/modelParamsInterfaces";
+import {
+    ProofGenerationContext,
+    Proof,
+    ProofBatch,
+} from "./llmServices/llmService";
 import { EventLogger } from "../logging/eventLogger";
 import { ModelsParams, LLMServices } from "./configurations";
-
-export type Proof = string;
-export type ProofBatch = Proof[];
 
 type ProofsGenerationHook = () => Promise<string[]>;
 

@@ -55,7 +55,7 @@ import {
     openAiModelParamsSchema,
     grazieModelParamsSchema,
     predefinedProofsModelParamsSchema,
-} from "../llm/llmServices/modelParamsInterfaces";
+} from "../llm/llmServices/modelParams";
 
 import {
     suggestAddingAuxFilesToGitignore,

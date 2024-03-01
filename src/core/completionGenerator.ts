@@ -7,7 +7,7 @@ import {
     CoqLspTimeoutError,
 } from "./coqProofChecker";
 
-import { ProofGenerationContext } from "../llm/llmServices/modelParamsInterfaces";
+import { ProofGenerationContext } from "../llm/llmServices/llmService";
 import { EventLogger } from "../logging/eventLogger";
 import { Position } from "vscode-languageclient";
 import { ContextTheoremsRanker } from "./contextTheoremRanker/contextTheoremsRanker";
@@ -55,7 +55,7 @@ export async function generateCompletion(
     eventLogger?.log(
         "proof-gen-context-create",
         "Ranked theorems for proof generation",
-        context.sameFileTheorems.map((thr) => thr.name)
+        context.contextTheorems.map((thr) => thr.name)
     );
     const iterator = new LLMSequentialIterator(
         context,
@@ -174,8 +174,8 @@ function buildProofGenerationContext(
             completionContext
         ) ?? sourceFileEnvironment.fileTheorems;
     return {
-        sameFileTheorems: rankedTheorems,
-        admitCompletionTarget: goalToTargetLemma(completionContext.proofGoal),
+        contextTheorems: rankedTheorems,
+        completionTarget: goalToTargetLemma(completionContext.proofGoal),
     };
 }
 
