@@ -3,19 +3,22 @@ import { ChatMessage } from "./chat";
 
 export class ChatTokensFitter {
     readonly tokensLimit: number;
-    readonly modelName: string;
 
     private tokens: number = 0;
     private readonly countTokens: (text: string) => number;
 
-    private tokensLimitByModel: { [modelName: string]: number } = {
-        // eslint-disable-next-line @typescript-eslint/naming-convention
-        "gpt-3.5-turbo-0301": 2000,
-    };
-
-    constructor(modelName: string, tokensLimit?: number) {
-        this.modelName = modelName;
-        this.tokensLimit = tokensLimit ?? this.tokensLimitByModel[modelName];
+    constructor(
+        modelName: string,
+        newMessageMaxTokens: number,
+        tokensLimit: number
+    ) {
+        this.tokensLimit = tokensLimit;
+        if (this.tokensLimit < newMessageMaxTokens) {
+            throw Error(
+                `tokens limit ${this.tokensLimit} is not enough to generate a new message that needs up to ${newMessageMaxTokens}`
+            );
+        }
+        this.tokens += newMessageMaxTokens;
 
         let encoder: Tiktoken | undefined = undefined;
         try {

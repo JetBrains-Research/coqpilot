@@ -1,64 +1,57 @@
+import { GrazieModelParams, ModelParams } from "../modelParams";
 import {
+    GeneratedProof,
+    Proof,
     ProofGenerationContext,
-    GrazieModelParams,
-} from "../modelParamsInterfaces";
+    ProofVersion,
+} from "../llmService";
 import { GrazieApiInterface } from "./grazieApiInterface";
-import { LLMServiceInterface } from "../llmServiceInterface";
-import { GrazieApi, GrazieFormattedHistory } from "./grazieApi";
+import { LLMService } from "../llmService";
+import { GrazieApi, GrazieChatRole, GrazieFormattedHistory } from "./grazieApi";
 import { EventLogger } from "../../../logging/eventLogger";
-import { pickTheoremsUntilTokenLimit } from "../accumulateTheoremsInContext";
+import { ChatHistory, ChatMessage } from "../chat";
+import { UserModelParams } from "../userModelParams";
 
-export class GrazieService implements LLMServiceInterface {
+export class GrazieService extends LLMService {
     private api: GrazieApiInterface;
     // Is constant (now) as specified in Grazie REST API
-    private readonly grazieMaxTokensInCompletion = 1024;
+    private readonly newMessageMaxTokens = 1024;
 
     constructor(eventLogger?: EventLogger) {
+        super(eventLogger);
         this.api = new GrazieApi(eventLogger);
     }
 
-    private createHistory = (
+    constructGeneratedProof(
+        proof: string,
         proofGenerationContext: ProofGenerationContext,
-        params: GrazieModelParams
-    ): GrazieFormattedHistory => {
-        const theorems = pickTheoremsUntilTokenLimit(
-            this.grazieMaxTokensInCompletion,
+        modelParams: ModelParams,
+        previousProofVersions?: ProofVersion[] | undefined
+    ): GeneratedProof {
+        return new GrazieGeneratedProof(
+            proof,
             proofGenerationContext,
-            params.prompt,
-            params.model,
-            params.modelContextLength
+            modelParams as GrazieModelParams,
+            this,
+            previousProofVersions
         );
-        const formattedHistory: GrazieFormattedHistory = [];
-        for (const theorem of theorems) {
-            formattedHistory.push({ role: "User", text: theorem.statement });
-            formattedHistory.push({
-                role: "Assistant",
-                text: theorem.proof?.onlyText() ?? "Admitted.",
-            });
-        }
-        formattedHistory.push({
-            role: "User",
-            text: proofGenerationContext.admitCompletionTarget,
-        });
+    }
 
-        return [{ role: "System", text: params.prompt }, ...formattedHistory];
-    };
-
-    async generateProof(
-        proofGenerationContext: ProofGenerationContext,
-        params: GrazieModelParams
+    async generateFromChat(
+        chat: ChatHistory,
+        params: ModelParams,
+        choices: number
     ): Promise<string[]> {
-        const choices = params.choices;
         let attempts = choices * 2;
         const completions: Promise<string>[] = [];
-        const grazieFormattedHistory = this.createHistory(
-            proofGenerationContext,
-            params
-        );
+        const formattedChat = this.formatChatHistory(chat);
 
         while (completions.length < choices && attempts > 0) {
             completions.push(
-                this.api.chatCompletionRequest(params, grazieFormattedHistory)
+                this.api.chatCompletionRequest(
+                    params as GrazieModelParams,
+                    formattedChat
+                )
             );
             attempts--;
         }
@@ -66,7 +59,37 @@ export class GrazieService implements LLMServiceInterface {
         return Promise.all(completions);
     }
 
-    dispose(): void {
-        return;
+    private formatChatHistory(chat: ChatHistory): GrazieFormattedHistory {
+        return chat.map((message: ChatMessage) => {
+            const grazieRoleName =
+                message.role[0].toUpperCase() + message.role.slice(1);
+            return {
+                role: grazieRoleName as GrazieChatRole,
+                text: message.content,
+            };
+        });
+    }
+
+    resolveParameters(params: UserModelParams): ModelParams {
+        params.newMessageMaxTokens = this.newMessageMaxTokens;
+        return this.resolveParametersWithDefaults(params);
+    }
+}
+
+export class GrazieGeneratedProof extends GeneratedProof {
+    constructor(
+        proof: Proof,
+        proofGenerationContext: ProofGenerationContext,
+        modelParams: GrazieModelParams,
+        llmService: GrazieService,
+        previousProofVersions?: ProofVersion[]
+    ) {
+        super(
+            proof,
+            proofGenerationContext,
+            modelParams,
+            llmService,
+            previousProofVersions
+        );
     }
 }

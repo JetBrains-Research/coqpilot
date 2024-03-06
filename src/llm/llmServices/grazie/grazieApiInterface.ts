@@ -1,4 +1,4 @@
-import { GrazieModelParams } from "../modelParamsInterfaces";
+import { GrazieModelParams } from "../modelParams";
 import { GrazieFormattedHistory } from "./grazieApi";
 
 export interface GrazieApiInterface {

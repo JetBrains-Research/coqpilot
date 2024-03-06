@@ -3,7 +3,7 @@ import { GrazieHolder, GrazieConfig } from "./grazieConfig";
 import { GrazieApiInterface } from "./grazieApiInterface";
 import axios from "axios";
 import { ResponseType } from "axios";
-import { GrazieModelParams } from "../modelParamsInterfaces";
+import { GrazieModelParams } from "../modelParams";
 import { EventLogger, Severity } from "../../../logging/eventLogger";
 
 export type GrazieChatRole = "User" | "System" | "Assistant";
@@ -33,7 +33,7 @@ export class GrazieApi implements GrazieApiInterface {
             chat: {
                 messages: history,
             },
-            profile: params.model,
+            profile: params.modelName,
         });
     }
 

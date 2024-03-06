@@ -6,7 +6,7 @@ import {
     itemizedChatToHistory,
     UserAssistantChatItem,
 } from "./chat";
-import { ProofGenerationContext, ProofWithDiagnostic } from "./llmService";
+import { ProofGenerationContext, ProofVersion } from "./llmService";
 import * as assert from "assert";
 import { ModelParams } from "./modelParams";
 import { ChatTokensFitter } from "./chatTokensFitter";
@@ -23,7 +23,7 @@ export function buildTheoremsChat(theorems: Theorem[]): ChatHistory {
 }
 
 export function proofVersionToChatItem(
-    proofVersion: ProofWithDiagnostic
+    proofVersion: ProofVersion
 ): UserAssistantChatItem {
     return {
         userMessage: proofVersion.proof,
@@ -32,7 +32,7 @@ export function proofVersionToChatItem(
 }
 
 export function buildPreviousProofVersionsChat(
-    proofVersions: ProofWithDiagnostic[]
+    proofVersions: ProofVersion[]
 ): ChatHistory {
     return itemizedChatToHistory(proofVersions.map(proofVersionToChatItem));
 }
@@ -55,6 +55,13 @@ export function validateChat(chat: ChatHistory): [boolean, string] {
         }
         prevRole = curRole;
     }
+    const lastMessageRole = chat[chat.length - 1].role;
+    if (lastMessageRole === "assistant") {
+        return [
+            false,
+            "last message in the chat should be authored either by `user` or by `system`",
+        ];
+    }
     return [true, "ok"];
 }
 
@@ -73,17 +80,55 @@ function createFixProofMessage(diagnostic: string): string {
     return `Unfortunately, the last proof is not correct. Here is the compiler's feedback: '${diagnostic}'. Please, fix the proof.`;
 }
 
-export function buildFixProofChat(
-    modelParams: ModelParams,
+export function buildGenerateProofChat(
     proofGenerationContext: ProofGenerationContext,
-    proofVersions: ProofWithDiagnostic[],
-    systemMessageContent?: string
+    modelParams: ModelParams
 ): ChatHistory {
-    const fitter = new ChatTokensFitter(modelParams.modelName);
+    const fitter = new ChatTokensFitter(
+        modelParams.modelName,
+        modelParams.newMessageMaxTokens!,
+        modelParams.tokensLimit!
+    );
 
     const systemMessage: ChatMessage = {
         role: "system",
-        content: systemMessageContent!, // TODO: handle undefined properly
+        content: modelParams.systemPromt!,
+    };
+    fitter.fitRequiredMessage(systemMessage);
+
+    const completionTargetMessage: ChatMessage = {
+        role: "user",
+        content: proofGenerationContext.completionTarget,
+    };
+    fitter.fitRequiredMessage(completionTargetMessage);
+
+    const fittedContextTheorems = fitter.fitOptionalObjects(
+        proofGenerationContext.contextTheorems,
+        (theorem) => chatItemToContent(theoremToChatItem(theorem))
+    );
+    const contextTheoremsChat = buildTheoremsChat(fittedContextTheorems);
+
+    return buildChat(
+        systemMessage,
+        contextTheoremsChat,
+        completionTargetMessage
+    );
+}
+
+export function buildFixProofChat(
+    proofGenerationContext: ProofGenerationContext,
+    proofVersions: ProofVersion[],
+    modelParams: ModelParams
+): ChatHistory {
+    const fitter = new ChatTokensFitter(
+        modelParams.modelName,
+        modelParams.newMessageMaxTokens!,
+        modelParams.tokensLimit!
+    );
+
+    const systemMessage: ChatMessage = {
+        role: "system",
+        content: modelParams.systemPromt!,
     };
     fitter.fitRequiredMessage(systemMessage);
 
@@ -127,18 +172,3 @@ export function buildFixProofChat(
         fixProofMessage
     );
 }
-
-// export function createProofGenerationChat(
-//     systemPromt: string,
-//     contextTheorems: Theorem[],
-//     admitCompletionTarget: string
-// ): ChatHistory {
-//     const chat: ChatHistory = [{ role: "system", content: systemPromt }];
-//     const theoremsChat = buildTheoremsChat(contextTheorems);
-//     chat.concat(theoremsChat);
-//     chat.push({
-//         role: "user",
-//         content: admitCompletionTarget,
-//     });
-//     return chat;
-// }
