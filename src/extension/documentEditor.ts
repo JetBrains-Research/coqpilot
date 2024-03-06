@@ -1,4 +1,4 @@
-import { Position, TextEditor, Range, window } from "vscode";
+import { Position, Range, TextEditor, window } from "vscode";
 
 export async function insertCompletion(
     editor: TextEditor,

@@ -1,9 +1,11 @@
-import { parseCoqFile } from "../coqParser/parseCoqFile";
-import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { readFileSync } from "fs";
-import { Uri } from "../utils/uri";
-import { ProofStep, Theorem } from "../coqParser/parsedTypes";
 import * as path from "path";
+
+import { CoqLspClient } from "../coqLsp/coqLspClient";
+
+import { parseCoqFile } from "../coqParser/parseCoqFile";
+import { ProofStep, Theorem } from "../coqParser/parsedTypes";
+import { Uri } from "../utils/uri";
 
 import {
     CompletionContext,

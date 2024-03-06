@@ -1,12 +1,11 @@
+import { Mutex } from "async-mutex";
+import { appendFileSync, existsSync, unlinkSync, writeFileSync } from "fs";
+import * as path from "path";
 import { Position } from "vscode-languageclient";
 
 import { CoqLspClient } from "../coqLsp/coqLspClient";
-import * as path from "path";
+
 import { Uri } from "../utils/uri";
-
-import { existsSync, writeFileSync, unlinkSync, appendFileSync } from "fs";
-
-import { Mutex } from "async-mutex";
 
 export type ProofCheckResult = [string, boolean, string | null];
 type Proof = string;

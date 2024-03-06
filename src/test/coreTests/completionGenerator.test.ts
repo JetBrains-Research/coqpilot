@@ -1,16 +1,20 @@
-import { generateCompletion } from "../../core/completionGenerator";
+import * as assert from "assert";
 import * as path from "path";
+
+import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
+import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
+import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
+
 import { CoqLspClient } from "../../coqLsp/coqLspClient";
 import { CoqLspConfig } from "../../coqLsp/coqLspConfig";
-import { inspectSourceFile } from "../../core/inspectSourceFile";
-import { CoqProofChecker } from "../../core/coqProofChecker";
-import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
-import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
-import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
+
+import { generateCompletion } from "../../core/completionGenerator";
 import { ProcessEnvironment } from "../../core/completionGenerator";
-import { Uri } from "../../utils/uri";
-import * as assert from "assert";
 import { SuccessGenerationResult } from "../../core/completionGenerator";
+import { CoqProofChecker } from "../../core/coqProofChecker";
+import { inspectSourceFile } from "../../core/inspectSourceFile";
+
+import { Uri } from "../../utils/uri";
 
 // More tests will come soon
 suite("Simple Test", () => {

@@ -1,20 +1,20 @@
-import { LLMSequentialIterator } from "../llm/llmIterator";
-import { ModelsParams, LLMServices } from "../llm/configurations";
-
-import {
-    CoqProofChecker,
-    ProofCheckResult,
-    CoqLspTimeoutError,
-} from "./coqProofChecker";
-
-import { ProofGenerationContext } from "../llm/llmServices/llmService";
-import { EventLogger } from "../logging/eventLogger";
 import { Position } from "vscode-languageclient";
-import { ContextTheoremsRanker } from "./contextTheoremRanker/contextTheoremsRanker";
 
-import { Hyp, Goal, PpString } from "../coqLsp/coqLspTypes";
+import { LLMSequentialIterator } from "../llm/llmIterator";
+import { LLMServices, ModelsParams } from "../llm/llmServices";
+import { ProofGenerationContext } from "../llm/proofGenerationContext";
+
+import { Goal, Hyp, PpString } from "../coqLsp/coqLspTypes";
 
 import { Theorem } from "../coqParser/parsedTypes";
+import { EventLogger } from "../logging/eventLogger";
+
+import { ContextTheoremsRanker } from "./contextTheoremRanker/contextTheoremsRanker";
+import {
+    CoqLspTimeoutError,
+    CoqProofChecker,
+    ProofCheckResult,
+} from "./coqProofChecker";
 
 export interface CompletionContext {
     proofGoal: Goal<PpString>;

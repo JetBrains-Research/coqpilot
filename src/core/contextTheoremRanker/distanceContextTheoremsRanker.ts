@@ -1,6 +1,7 @@
-import { ContextTheoremsRanker } from "./contextTheoremsRanker";
 import { Theorem } from "../../coqParser/parsedTypes";
 import { CompletionContext } from "../completionGenerator";
+
+import { ContextTheoremsRanker } from "./contextTheoremsRanker";
 
 export class DistanceContextTheoremsRanker implements ContextTheoremsRanker {
     rankContextTheorems(

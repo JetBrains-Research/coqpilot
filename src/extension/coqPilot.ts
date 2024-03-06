@@ -1,72 +1,68 @@
-import { OpenAiService } from "../llm/llmServices/openai/openAiService";
+import Ajv, { JSONSchemaType } from "ajv";
+import {
+    ExtensionContext,
+    ProgressLocation,
+    TextEditor,
+    commands,
+    window,
+    workspace,
+} from "vscode";
+
+import { LLMServices, ModelsParams } from "../llm/llmServices";
 import { GrazieService } from "../llm/llmServices/grazie/grazieService";
+import {
+    GrazieModelParams,
+    OpenAiModelParams,
+    PredefinedProofsModelParams,
+    grazieModelParamsSchema,
+    openAiModelParamsSchema,
+    predefinedProofsModelParamsSchema,
+} from "../llm/llmServices/modelParams";
+import { OpenAiService } from "../llm/llmServices/openai/openAiService";
 import { PredefinedProofsService } from "../llm/llmServices/predefinedProofs/predefinedProofsService";
-import { CoqLspConfig } from "../coqLsp/coqLspConfig";
+
 import { CoqLspClient } from "../coqLsp/coqLspClient";
-import { inspectSourceFile } from "../core/inspectSourceFile";
+import { CoqLspConfig } from "../coqLsp/coqLspConfig";
+
+import { generateCompletion } from "../core/completionGenerator";
+import {
+    FailureGenerationResult,
+    FailureGenerationStatus,
+    SuccessGenerationResult,
+} from "../core/completionGenerator";
+import {
+    CompletionContext,
+    ProcessEnvironment,
+    SourceFileEnvironment,
+} from "../core/completionGenerator";
+import { ContextTheoremsRanker } from "../core/contextTheoremRanker/contextTheoremsRanker";
+import { DistanceContextTheoremsRanker } from "../core/contextTheoremRanker/distanceContextTheoremsRanker";
+import { RandomContextTheoremsRanker } from "../core/contextTheoremRanker/randomContextTheoremsRanker";
 import { CoqProofChecker } from "../core/coqProofChecker";
+import { inspectSourceFile } from "../core/inspectSourceFile";
+
+import { ProofStep } from "../coqParser/parsedTypes";
+import { EventLogger } from "../logging/eventLogger";
 import { Uri } from "../utils/uri";
 
-import { hideAuxFiles, cleanAuxFiles } from "./tmpFilesCleanup";
-import VSCodeLogWriter from "./vscodeLogWriter";
-import { EventLogger } from "../logging/eventLogger";
-
+import {
+    deleteTextFromRange,
+    highlightTextInEditor,
+    insertCompletion,
+} from "./documentEditor";
+import {
+    EditorMessages,
+    showApiKeyNotProvidedMessage,
+    showMessageToUser,
+    suggestAddingAuxFilesToGitignore,
+} from "./editorMessages";
 import {
     positionInRange,
     toVSCodePosition,
     toVSCodeRange,
 } from "./positionRangeUtils";
-
-import { generateCompletion } from "../core/completionGenerator";
-import {
-    deleteTextFromRange,
-    insertCompletion,
-    highlightTextInEditor,
-} from "./documentEditor";
-import Ajv, { JSONSchemaType } from "ajv";
-
-import {
-    SuccessGenerationResult,
-    FailureGenerationResult,
-    FailureGenerationStatus,
-} from "../core/completionGenerator";
-
-import {
-    ProcessEnvironment,
-    SourceFileEnvironment,
-    CompletionContext,
-} from "../core/completionGenerator";
-
-import { ModelsParams, LLMServices } from "../llm/configurations";
-
-import {
-    commands,
-    ExtensionContext,
-    workspace,
-    TextEditor,
-    ProgressLocation,
-    window,
-} from "vscode";
-import { ProofStep } from "../coqParser/parsedTypes";
-import {
-    GrazieModelParams,
-    OpenAiModelParams,
-    PredefinedProofsModelParams,
-    openAiModelParamsSchema,
-    grazieModelParamsSchema,
-    predefinedProofsModelParamsSchema,
-} from "../llm/llmServices/modelParams";
-
-import {
-    suggestAddingAuxFilesToGitignore,
-    EditorMessages,
-    showMessageToUser,
-    showApiKeyNotProvidedMessage,
-} from "./editorMessages";
-
-import { ContextTheoremsRanker } from "../core/contextTheoremRanker/contextTheoremsRanker";
-import { DistanceContextTheoremsRanker } from "../core/contextTheoremRanker/distanceContextTheoremsRanker";
-import { RandomContextTheoremsRanker } from "../core/contextTheoremRanker/randomContextTheoremsRanker";
+import { cleanAuxFiles, hideAuxFiles } from "./tmpFilesCleanup";
+import VSCodeLogWriter from "./vscodeLogWriter";
 
 export class GlobalExtensionState {
     public readonly eventLogger: EventLogger = new EventLogger();

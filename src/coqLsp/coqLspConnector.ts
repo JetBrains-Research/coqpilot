@@ -3,8 +3,10 @@ import {
     RevealOutputChannelOn,
 } from "vscode-languageclient";
 import { LanguageClient, ServerOptions } from "vscode-languageclient/node";
-import { CoqLspServerConfig, CoqLspClientConfig } from "./coqLspConfig";
+
 import { EventLogger } from "../logging/eventLogger";
+
+import { CoqLspClientConfig, CoqLspServerConfig } from "./coqLspConfig";
 
 export class CoqLspConnector extends LanguageClient {
     constructor(
