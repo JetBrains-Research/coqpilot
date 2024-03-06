@@ -1,10 +1,11 @@
-import { OpenAiModelParams, ModelParams } from "../modelParams";
-import { ProofGenerationContext } from "../llmService";
-import { GeneratedProof, LLMService, ProofVersion } from "../llmService";
-import { EventLogger, Severity } from "../../../logging/eventLogger";
-import { Proof } from "../llmService";
-import { ChatHistory } from "../chat";
 import OpenAI from "openai";
+
+import { EventLogger, Severity } from "../../../logging/eventLogger";
+import { ProofGenerationContext } from "../../proofGenerationContext";
+import { ChatHistory } from "../chat";
+import { GeneratedProof, LLMService, ProofVersion } from "../llmService";
+import { Proof } from "../llmService";
+import { ModelParams, OpenAiModelParams } from "../modelParams";
 
 export class OpenAiService extends LLMService {
     constructor(eventLogger?: EventLogger) {

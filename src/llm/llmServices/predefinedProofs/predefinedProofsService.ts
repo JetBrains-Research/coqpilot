@@ -1,17 +1,13 @@
-import { ModelParams, PredefinedProofsModelParams } from "../modelParams";
-import {
-    UserModelParams,
-    UserPredefinedProofsModelParams,
-} from "../userModelParams";
-import {
-    GeneratedProof,
-    Proof,
-    ProofGenerationContext,
-    ProofVersion,
-} from "../llmService";
-import { LLMService } from "../llmService";
 import { EventLogger } from "../../../logging/eventLogger";
+import { ProofGenerationContext } from "../../proofGenerationContext";
+import {
+    PredefinedProofsUserModelParams,
+    UserModelParams,
+} from "../../userModelParams";
 import { ChatHistory } from "../chat";
+import { GeneratedProof, Proof, ProofVersion } from "../llmService";
+import { LLMService } from "../llmService";
+import { ModelParams, PredefinedProofsModelParams } from "../modelParams";
 
 export class PredefinedProofsService extends LLMService {
     constructor(eventLogger?: EventLogger) {
@@ -76,7 +72,7 @@ export class PredefinedProofsService extends LLMService {
     }
 
     resolveParameters(params: UserModelParams): ModelParams {
-        const castedParams = params as UserPredefinedProofsModelParams;
+        const castedParams = params as PredefinedProofsUserModelParams;
         if (castedParams.tactics.length === 0) {
             throw Error(
                 "no tactics are selected in the PredefinedProofsModelParams"

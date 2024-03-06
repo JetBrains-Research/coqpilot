@@ -1,10 +1,12 @@
 /* eslint-disable @typescript-eslint/naming-convention */
-import { GrazieHolder, GrazieConfig } from "./grazieConfig";
-import { GrazieApiInterface } from "./grazieApiInterface";
 import axios from "axios";
 import { ResponseType } from "axios";
-import { GrazieModelParams } from "../modelParams";
+
 import { EventLogger, Severity } from "../../../logging/eventLogger";
+import { GrazieModelParams } from "../modelParams";
+
+import { GrazieApiInterface } from "./grazieApiInterface";
+import { GrazieConfig, GrazieHolder } from "./grazieConfig";
 
 export type GrazieChatRole = "User" | "System" | "Assistant";
 export type GrazieFormattedHistory = { role: GrazieChatRole; text: string }[];

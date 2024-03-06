@@ -1,5 +1,6 @@
-import { Tiktoken, encoding_for_model, TiktokenModel } from "tiktoken";
-import { ChatMessage } from "./chat";
+import { Tiktoken, TiktokenModel, encoding_for_model } from "tiktoken";
+
+import { ChatMessage } from "../chat";
 
 export class ChatTokensFitter {
     readonly tokensLimit: number;

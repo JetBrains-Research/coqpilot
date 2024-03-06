@@ -10,18 +10,24 @@ export interface UserModelParams {
     tokensLimit?: number;
 }
 
-export interface UserOpenAiModelParams extends UserModelParams {
+export interface OpenAiUserModelParams extends UserModelParams {
     temperature: number;
     apiKey: string;
 }
 
-export interface UserGrazieModelParams extends UserModelParams {
+export interface GrazieUserModelParams extends UserModelParams {
     apiKey: string;
 }
 
-export interface UserPredefinedProofsModelParams extends UserModelParams {
+export interface PredefinedProofsUserModelParams extends UserModelParams {
     // A list of tactics to try to solve the goal with.
     tactics: string[];
+}
+
+export interface UserModelsParams {
+    openAiParams: OpenAiUserModelParams[];
+    grazieParams: GrazieUserModelParams[];
+    predefinedProofsModelParams: PredefinedProofsUserModelParams[];
 }
 
 // export const openAiModelParamsSchema: JSONSchemaType<OpenAiModelParams> = {

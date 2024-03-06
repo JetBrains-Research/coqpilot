@@ -1,21 +1,18 @@
-import { Theorem } from "../../coqParser/parsedTypes";
-import { EventLogger } from "../../logging/eventLogger";
-import { ChatHistory } from "./chat";
-import { buildFixProofChat, buildGenerateProofChat } from "./chatFactory";
-import { ModelParams } from "./modelParams";
-import { UserModelParams } from "./userModelParams";
 import * as assert from "assert";
+
+import { EventLogger } from "../../logging/eventLogger";
+import { ProofGenerationContext } from "../proofGenerationContext";
+import { UserModelParams } from "../userModelParams";
+
+import { ChatHistory } from "./chat";
+import { ModelParams } from "./modelParams";
+import { buildFixProofChat, buildGenerateProofChat } from "./utils/chatFactory";
 
 export type Proof = string;
 
 export interface ProofVersion {
     proof: Proof;
     diagnostic?: string;
-}
-
-export interface ProofGenerationContext {
-    completionTarget: string;
-    contextTheorems: Theorem[];
 }
 
 export abstract class LLMService {
@@ -91,12 +88,6 @@ export abstract class LLMService {
     private readonly defaultSystemMessageContent =
         "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'.";
 }
-
-// TODO 2: implement interfaces in services
-// TODO 3: implement in core logic
-// TODO 4: support params, refactor Grazie
-// TODO 5: test
-// TODO 6: docs
 
 export abstract class GeneratedProof {
     readonly llmService: LLMService;

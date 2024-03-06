@@ -1,41 +1,17 @@
-import { Theorem } from "../../coqParser/parsedTypes";
-import {
-    ChatHistory,
-    chatItemToContent,
-    ChatMessage,
-    itemizedChatToHistory,
-    UserAssistantChatItem,
-} from "./chat";
-import { ProofGenerationContext, ProofVersion } from "./llmService";
 import * as assert from "assert";
-import { ModelParams } from "./modelParams";
+
+import { Theorem } from "../../../coqParser/parsedTypes";
+import { ProofGenerationContext } from "../../proofGenerationContext";
+import { ChatHistory, ChatMessage } from "../chat";
+import { ProofVersion } from "../llmService";
+import { ModelParams } from "../modelParams";
+
 import { ChatTokensFitter } from "./chatTokensFitter";
-
-export function theoremToChatItem(theorem: Theorem): UserAssistantChatItem {
-    return {
-        userMessage: theorem.statement,
-        assistantMessage: theorem.proof?.onlyText() ?? "Admitted.",
-    };
-}
-
-export function buildTheoremsChat(theorems: Theorem[]): ChatHistory {
-    return itemizedChatToHistory(theorems.map(theoremToChatItem));
-}
-
-export function proofVersionToChatItem(
-    proofVersion: ProofVersion
-): UserAssistantChatItem {
-    return {
-        userMessage: proofVersion.proof,
-        assistantMessage: proofVersion.diagnostic!, // TODO: handle undefined properly
-    };
-}
-
-export function buildPreviousProofVersionsChat(
-    proofVersions: ProofVersion[]
-): ChatHistory {
-    return itemizedChatToHistory(proofVersions.map(proofVersionToChatItem));
-}
+import {
+    UserAssistantChatItem,
+    chatItemToContent,
+    itemizedChatToHistory,
+} from "./chatUtils";
 
 export function validateChat(chat: ChatHistory): [boolean, string] {
     if (chat.length < 1) {
@@ -75,11 +51,6 @@ export function buildChat(
     return chat;
 }
 
-// TODO: support experiments
-function createFixProofMessage(diagnostic: string): string {
-    return `Unfortunately, the last proof is not correct. Here is the compiler's feedback: '${diagnostic}'. Please, fix the proof.`;
-}
-
 export function buildGenerateProofChat(
     proofGenerationContext: ProofGenerationContext,
     modelParams: ModelParams
@@ -115,6 +86,11 @@ export function buildGenerateProofChat(
     );
 }
 
+// TODO: support experiments
+function createFixProofMessage(diagnostic: string): string {
+    return `Unfortunately, the last proof is not correct. Here is the compiler's feedback: '${diagnostic}'. Please, fix the proof.`;
+}
+
 export function buildFixProofChat(
     proofGenerationContext: ProofGenerationContext,
     proofVersions: ProofVersion[],
@@ -143,7 +119,7 @@ export function buildFixProofChat(
     };
     const fixProofMessage: ChatMessage = {
         role: "user",
-        content: createFixProofMessage(lastProofVersion.diagnostic!), // TODO: handle undefined properly
+        content: createFixProofMessage(lastProofVersion.diagnostic!),
     };
     fitter.fitRequiredMessage(completionTargetMessage);
     fitter.fitRequiredMessage(proofMessage);
@@ -171,4 +147,30 @@ export function buildFixProofChat(
         proofMessage,
         fixProofMessage
     );
+}
+
+export function theoremToChatItem(theorem: Theorem): UserAssistantChatItem {
+    return {
+        userMessage: theorem.statement,
+        assistantMessage: theorem.proof?.onlyText() ?? "Admitted.",
+    };
+}
+
+export function buildTheoremsChat(theorems: Theorem[]): ChatHistory {
+    return itemizedChatToHistory(theorems.map(theoremToChatItem));
+}
+
+export function proofVersionToChatItem(
+    proofVersion: ProofVersion
+): UserAssistantChatItem {
+    return {
+        userMessage: proofVersion.proof,
+        assistantMessage: proofVersion.diagnostic!,
+    };
+}
+
+export function buildPreviousProofVersionsChat(
+    proofVersions: ProofVersion[]
+): ChatHistory {
+    return itemizedChatToHistory(proofVersions.map(proofVersionToChatItem));
 }

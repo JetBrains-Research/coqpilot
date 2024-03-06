@@ -1,16 +1,13 @@
-import { GrazieModelParams, ModelParams } from "../modelParams";
-import {
-    GeneratedProof,
-    Proof,
-    ProofGenerationContext,
-    ProofVersion,
-} from "../llmService";
-import { GrazieApiInterface } from "./grazieApiInterface";
-import { LLMService } from "../llmService";
-import { GrazieApi, GrazieChatRole, GrazieFormattedHistory } from "./grazieApi";
 import { EventLogger } from "../../../logging/eventLogger";
+import { ProofGenerationContext } from "../../proofGenerationContext";
+import { UserModelParams } from "../../userModelParams";
 import { ChatHistory, ChatMessage } from "../chat";
-import { UserModelParams } from "../userModelParams";
+import { GeneratedProof, Proof, ProofVersion } from "../llmService";
+import { LLMService } from "../llmService";
+import { GrazieModelParams, ModelParams } from "../modelParams";
+
+import { GrazieApi, GrazieChatRole, GrazieFormattedHistory } from "./grazieApi";
+import { GrazieApiInterface } from "./grazieApiInterface";
 
 export class GrazieService extends LLMService {
     private api: GrazieApiInterface;
