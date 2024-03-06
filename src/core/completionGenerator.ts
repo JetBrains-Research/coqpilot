@@ -1,8 +1,10 @@
 import { Position } from "vscode-languageclient";
 
 import { LLMSequentialIterator } from "../llm/llmIterator";
-import { LLMServices, ModelsParams } from "../llm/llmServices";
+import { LLMServices } from "../llm/llmServices";
+import { GeneratedProof } from "../llm/llmServices/llmService";
 import { ProofGenerationContext } from "../llm/proofGenerationContext";
+import { UserModelsParams } from "../llm/userModelParams";
 
 import { Goal, Hyp, PpString } from "../coqLsp/coqLspTypes";
 
@@ -23,8 +25,7 @@ export interface CompletionContext {
 }
 
 export interface SourceFileEnvironment {
-    // Theorems here are only those that
-    // successfully finish with Qed.
+    // `fileTheorems` contain only ones that successfully finish with Qed.
     fileTheorems: Theorem[];
     fileLines: string[];
     fileVersion: number;
@@ -33,11 +34,12 @@ export interface SourceFileEnvironment {
 
 export interface ProcessEnvironment {
     coqProofChecker: CoqProofChecker;
-    modelsParams: ModelsParams;
+    modelsParams: UserModelsParams;
     services: LLMServices;
-    // If not provided, the default ranker will be used:
-    // Theorems would be passed sequentially
-    // in the same order as they are in the file
+    /**
+     * If `theoremRanker` is not provided, the default one will be used:
+     * theorems would be passed sequentially in the same order as they are in the file
+     */
     theoremRanker?: ContextTheoremsRanker;
 }
 
@@ -70,15 +72,16 @@ export async function generateCompletion(
 
     try {
         for await (const proofBatch of iterator) {
-            const praparedProofBatch = proofBatch.map((proof: string) =>
-                prepareProofToCheck(proof)
+            const preparedProofBatch = proofBatch.map(
+                (generatedProof: GeneratedProof) =>
+                    prepareProofToCheck(generatedProof.proof())
             );
             const proofCheckResults =
                 await processEnvironment.coqProofChecker.checkProofs(
                     sourceFileEnvironment.dirPath,
                     sourceFileContentPrefix,
                     completionContext.prefixEndPosition,
-                    praparedProofBatch
+                    preparedProofBatch
                 );
 
             const completion = getFirstValidProof(proofCheckResults);
