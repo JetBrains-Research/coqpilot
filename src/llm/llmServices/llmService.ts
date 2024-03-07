@@ -79,8 +79,14 @@ export abstract class LLMService {
         if (newMessageMaxTokens === undefined || tokensLimits === undefined) {
             throw Error(`user model parameters cannot be resolved: ${params}`);
         }
+
+        /** NOTE: it's important to pass `...extractedParams` first
+         * because if so, then the omitted fields of the `params`
+         * (`systemPromt`, `newMessageMaxTokens`, `tokensLimit`, etc)
+         * will be overriden - and not in the opposite way!
+         */
         return {
-            modelName: params.modelName,
+            ...params,
             systemPrompt: systemMessageContent,
             newMessageMaxTokens: newMessageMaxTokens,
             tokensLimit: tokensLimits,
@@ -88,16 +94,16 @@ export abstract class LLMService {
         };
     };
 
+    private readonly defaultNewMessageMaxTokens: {
+        [modelName: string]: number;
+    } = {};
+
     private readonly defaultTokensLimits: {
         [modelName: string]: number;
     } = {
         // eslint-disable-next-line @typescript-eslint/naming-convention
         "gpt-3.5-turbo-0301": 2000,
     };
-
-    private readonly defaultNewMessageMaxTokens: {
-        [modelName: string]: number;
-    } = {};
 
     private readonly defaultSystemMessageContent: string =
         "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'.";

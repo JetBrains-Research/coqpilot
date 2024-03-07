@@ -53,6 +53,7 @@ suite("Simple Test", () => {
                 predefinedProofsModelParams: [
                     {
                         tactics: ["intros.", "auto."],
+                        modelName: "predefined",
                     },
                 ],
             },
@@ -69,7 +70,6 @@ suite("Simple Test", () => {
                 sourceFileEnvironment,
                 processEnvironment
             );
-
             assert.ok(result instanceof SuccessGenerationResult);
         }
     }).timeout(50000);

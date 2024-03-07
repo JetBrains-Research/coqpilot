@@ -81,7 +81,7 @@ export class PredefinedProofsService extends LLMService {
                 "no tactics are selected in the PredefinedProofsModelParams"
             );
         }
-        return {
+        const modelParams: PredefinedProofsModelParams = {
             modelName: params.modelName,
             newMessageMaxTokens: Math.max(
                 ...castedParams.tactics.map((tactic) => tactic.length)
@@ -93,7 +93,9 @@ export class PredefinedProofsService extends LLMService {
                 proofFixChoices: 0,
                 proofFixPrompt: "",
             },
+            tactics: castedParams.tactics,
         };
+        return modelParams;
     }
 }
 
