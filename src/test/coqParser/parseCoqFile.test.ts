@@ -1,9 +1,10 @@
-import * as path from "path";
-import { Uri } from "../../utils/uri";
-import { getResourceFolder, createCoqLspClient } from "../commonTestFunctions";
-import { parseCoqFile } from "../../coqParser/parseCoqFile";
 import { expect } from "earl";
+import * as path from "path";
+
+import { parseCoqFile } from "../../coqParser/parseCoqFile";
 import { Theorem } from "../../coqParser/parsedTypes";
+import { Uri } from "../../utils/uri";
+import { createCoqLspClient, getResourceFolder } from "../commonTestFunctions";
 
 suite("Coq file parser tests", () => {
     async function getCoqDocument(

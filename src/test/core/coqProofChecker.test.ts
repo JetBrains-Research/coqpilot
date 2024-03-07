@@ -1,9 +1,11 @@
-import * as path from "path";
-import { CoqProofChecker } from "../../core/coqProofChecker";
 import { expect } from "earl";
-import { getResourceFolder, createCoqLspClient } from "../commonTestFunctions";
-import { ProofCheckResult } from "../../core/coqProofChecker";
 import { readFileSync } from "fs";
+import * as path from "path";
+
+import { CoqProofChecker } from "../../core/coqProofChecker";
+import { ProofCheckResult } from "../../core/coqProofChecker";
+
+import { createCoqLspClient, getResourceFolder } from "../commonTestFunctions";
 
 suite("Coq Proof Checker tests", () => {
     async function checkProofsForAdmitsFromFile(
@@ -36,7 +38,10 @@ suite("Coq Proof Checker tests", () => {
                     preparedProofs[i]
                 );
                 return proofCheckRes.map((res) => {
-                    return [unpackProof(res[0]), res[1], res[2]];
+                    return {
+                        ...res,
+                        proof: unpackProof(res.proof),
+                    };
                 });
             })
         );
@@ -78,8 +83,16 @@ suite("Coq Proof Checker tests", () => {
         );
 
         const expected: ProofCheckResult[] = [
-            ["reflexivity.", false, "In environment"],
-            ["auto.", true, null],
+            {
+                proof: "reflexivity.",
+                isValid: false,
+                diagnostic: "In environment",
+            },
+            {
+                proof: "auto.",
+                isValid: true,
+                diagnostic: undefined,
+            },
         ];
 
         expect(results).toHaveLength(1);
@@ -109,33 +122,67 @@ suite("Coq Proof Checker tests", () => {
         ];
 
         const expected: ProofCheckResult[][] = [
-            [["auto.", true, null]],
             [
-                [
-                    "intros.",
-                    false,
-                    "This proof is focused, but cannot be unfocused this way",
-                ],
-                ["assumption.", true, null],
+                {
+                    proof: "auto.",
+                    isValid: true,
+                    diagnostic: undefined,
+                },
             ],
             [
-                [
-                    "intros.",
-                    false,
-                    "This proof is focused, but cannot be unfocused this way",
-                ],
-                ["left. reflexivity.", true, null],
+                {
+                    proof: "intros.",
+                    isValid: false,
+                    diagnostic:
+                        "This proof is focused, but cannot be unfocused this way",
+                },
+                {
+                    proof: "assumption.",
+                    isValid: true,
+                    diagnostic: undefined,
+                },
             ],
             [
-                [
-                    "kek.",
-                    false,
-                    "The reference kek was not found in the current",
-                ],
-                ["right. auto.", true, null],
+                {
+                    proof: "intros.",
+                    isValid: false,
+                    diagnostic:
+                        "This proof is focused, but cannot be unfocused this way",
+                },
+                {
+                    proof: "left. reflexivity.",
+                    isValid: true,
+                    diagnostic: undefined,
+                },
             ],
-            [["reflexivity.", true, null]],
-            [["lol.", false, "The reference lol was not found in the current"]],
+            [
+                {
+                    proof: "kek.",
+                    isValid: false,
+                    diagnostic:
+                        "The reference kek was not found in the current",
+                },
+                {
+                    proof: "right. auto.",
+                    isValid: true,
+                    diagnostic: undefined,
+                },
+            ],
+            [
+                {
+                    proof: "reflexivity.",
+                    isValid: true,
+                    diagnostic: undefined,
+                },
+            ],
+            [
+                {
+                    proof: "lol.",
+                    isValid: false,
+                    diagnostic:
+                        "The reference lol was not found in the current",
+                },
+            ],
         ];
 
         const results = await checkProofsForAdmitsFromFile(

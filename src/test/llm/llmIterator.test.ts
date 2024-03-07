@@ -1,9 +1,11 @@
-import { LLMSequentialIterator } from "../../llm/llmIterator";
-import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
-import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
-import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
 import { expect } from "earl";
-import { ProofGenerationContext } from "../../llm/llmServices/modelParamsInterfaces";
+
+import { LLMSequentialIterator } from "../../llm/llmIterator";
+import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
+import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
+import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
+import { ProofGenerationContext } from "../../llm/proofGenerationContext";
+import { UserModelsParams } from "../../llm/userModelParams";
 
 suite("LLM Iterator test", () => {
     function getProofFromPredefinedCoqSentance(proof: string): string {
@@ -21,11 +23,12 @@ suite("LLM Iterator test", () => {
             "assumption. intros.",
             "left. reflexivity.",
         ];
-        const modelsParams = {
+        const modelsParams: UserModelsParams = {
             openAiParams: [],
             grazieParams: [],
             predefinedProofsModelParams: [
                 {
+                    modelName: "Doesn't matter",
                     tactics: predefinedProofs,
                 },
             ],
@@ -36,8 +39,8 @@ suite("LLM Iterator test", () => {
             predefinedProofsService,
         };
         const proofGenerationContext: ProofGenerationContext = {
-            sameFileTheorems: [],
-            admitCompletionTarget: "doesn't matter",
+            contextTheorems: [],
+            completionTarget: "doesn't matter",
         };
         const iterator = new LLMSequentialIterator(
             proofGenerationContext,
@@ -52,7 +55,7 @@ suite("LLM Iterator test", () => {
                 break;
             }
             const proof = result.value;
-            expect(proof).toEqual(
+            expect(proof.proof()).toEqual(
                 getProofFromPredefinedCoqSentance(predefinedProofs[i])
             );
             i++;

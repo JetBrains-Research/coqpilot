@@ -13,7 +13,7 @@ import { EventLogger } from "../logging/eventLogger";
 
 import { ContextTheoremsRanker } from "./contextTheoremRanker/contextTheoremsRanker";
 import {
-    CoqLspTimeoutError,
+    // CoqLspTimeoutError,
     CoqProofChecker,
     ProofCheckResult,
 } from "./coqProofChecker";
@@ -128,17 +128,18 @@ export async function generateCompletion(
             "No valid completions found"
         );
     } catch (e: any) {
-        if (e instanceof CoqLspTimeoutError) {
-            return new FailureGenerationResult(
-                FailureGenerationStatus.excededTimeout,
-                e.message
-            );
-        } else {
-            return new FailureGenerationResult(
-                FailureGenerationStatus.exception,
-                e.message
-            );
-        }
+        throw e;
+        // if (e instanceof CoqLspTimeoutError) {
+        //     return new FailureGenerationResult(
+        //         FailureGenerationStatus.excededTimeout,
+        //         e.message
+        //     );
+        // } else {
+        //     return new FailureGenerationResult(
+        //         FailureGenerationStatus.exception,
+        //         e.message
+        //     );
+        // }
     }
 }
 

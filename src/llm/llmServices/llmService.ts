@@ -159,9 +159,9 @@ export abstract class GeneratedProof {
         return this.lastProofVersion().proof;
     }
 
-    // starts with zero, then +1 for each version
+    // starts with one, then +1 for each version
     versionNumber(): number {
-        return this.proofVersions.length - 1;
+        return this.proofVersions.length;
     }
 
     protected async generateNextVersion(

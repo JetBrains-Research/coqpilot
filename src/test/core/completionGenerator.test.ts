@@ -1,20 +1,23 @@
+import { expect } from "earl";
+import * as path from "path";
+
+import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
+import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
+import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
+
 import {
     FailureGenerationResult,
     FailureGenerationStatus,
     GenerationResult,
     generateCompletion,
 } from "../../core/completionGenerator";
-import * as path from "path";
-import { inspectSourceFile } from "../../core/inspectSourceFile";
-import { CoqProofChecker } from "../../core/coqProofChecker";
-import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
-import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
-import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
 import { ProcessEnvironment } from "../../core/completionGenerator";
-import { Uri } from "../../utils/uri";
-import { expect } from "earl";
 import { SuccessGenerationResult } from "../../core/completionGenerator";
-import { getResourceFolder, createCoqLspClient } from "../commonTestFunctions";
+import { CoqProofChecker } from "../../core/coqProofChecker";
+import { inspectSourceFile } from "../../core/inspectSourceFile";
+
+import { Uri } from "../../utils/uri";
+import { createCoqLspClient, getResourceFolder } from "../commonTestFunctions";
 
 suite("Completion generation tests", () => {
     async function generateCompletionForAdmitsFromFile(
@@ -47,6 +50,7 @@ suite("Completion generation tests", () => {
                 grazieParams: [],
                 predefinedProofsModelParams: [
                     {
+                        modelName: "Doesn't matter",
                         tactics: predefinedProofs,
                     },
                 ],

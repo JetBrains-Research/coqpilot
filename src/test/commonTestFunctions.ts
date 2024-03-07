@@ -1,4 +1,5 @@
 import * as path from "path";
+
 import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { CoqLspConfig } from "../coqLsp/coqLspConfig";
 

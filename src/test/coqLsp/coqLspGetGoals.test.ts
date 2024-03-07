@@ -1,8 +1,10 @@
-import * as path from "path";
-import { Uri } from "../../utils/uri";
-import { getResourceFolder, createCoqLspClient } from "../commonTestFunctions";
 import { expect } from "earl";
+import * as path from "path";
+
 import { Goal, PpString } from "../../coqLsp/coqLspTypes";
+
+import { Uri } from "../../utils/uri";
+import { createCoqLspClient, getResourceFolder } from "../commonTestFunctions";
 
 suite("Retrieve goals from Coq file", () => {
     async function getGoalsAtPoints(

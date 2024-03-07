@@ -1,13 +1,17 @@
 import { expect } from "earl";
-import { TiktokenModel, encoding_for_model } from "tiktoken";
-import { pickTheoremsUntilTokenLimit } from "../../llm/llmServices/pickTheoremsUntilTokenLimit";
-import { Theorem } from "../../coqParser/parsedTypes";
 import * as path from "path";
-import { Uri } from "../../utils/uri";
-import { getResourceFolder, createCoqLspClient } from "../commonTestFunctions";
-import { parseCoqFile } from "../../coqParser/parseCoqFile";
+import { TiktokenModel, encoding_for_model } from "tiktoken";
 
-suite("Token counter and theorem picker tests", () => {
+import { theoremToChatItem } from "../../llm/llmServices/utils/chatFactory";
+import { ChatTokensFitter } from "../../llm/llmServices/utils/chatTokensFitter";
+import { chatItemToContent } from "../../llm/llmServices/utils/chatUtils";
+
+import { parseCoqFile } from "../../coqParser/parseCoqFile";
+import { Theorem } from "../../coqParser/parsedTypes";
+import { Uri } from "../../utils/uri";
+import { createCoqLspClient, getResourceFolder } from "../commonTestFunctions";
+
+suite("Chat tokens fitter tests", () => {
     function calculateTokensViaTikToken(
         text: string,
         model: TiktokenModel
@@ -43,116 +47,119 @@ suite("Token counter and theorem picker tests", () => {
         return document;
     }
 
+    function countTheoremsPickedFromContext(
+        systemMessage: string,
+        completionTarget: string,
+        theorems: Theorem[],
+        model: string,
+        newMessageMaxTokens: number,
+        tokensLimit: number
+    ): number {
+        const fitter = new ChatTokensFitter(
+            model,
+            newMessageMaxTokens,
+            tokensLimit
+        );
+
+        fitter.fitRequiredMessage({
+            role: "system",
+            content: systemMessage,
+        });
+
+        fitter.fitRequiredMessage({
+            role: "user",
+            content: completionTarget,
+        });
+
+        const fittedTheorems = fitter.fitOptionalObjects(theorems, (theorem) =>
+            chatItemToContent(theoremToChatItem(theorem))
+        );
+
+        return fittedTheorems.length;
+    }
+
     test("Empty theorems array", async () => {
         const theorems: Theorem[] = [];
-        const proofGenerationContext = {
-            sameFileTheorems: theorems,
-            admitCompletionTarget: "doesn't matter",
-        };
-
-        const answer = pickTheoremsUntilTokenLimit(
-            100,
-            proofGenerationContext,
+        const answer = countTheoremsPickedFromContext(
             "You are a friendly assistant",
+            "doesn't matter",
+            theorems,
             "openai-gpt",
+            100,
             1000
         );
 
-        expect(answer).toHaveLength(0);
+        expect(answer).toEqual(0);
     });
 
     test("Two theorems, but overflow", async () => {
         const theorems: Theorem[] = await getCoqDocument(["small_document.v"]);
-
-        const proofGenerationContext = {
-            sameFileTheorems: theorems,
-            admitCompletionTarget: "doesn't matter",
-        };
-
-        const answer = pickTheoremsUntilTokenLimit(
-            1000,
-            proofGenerationContext,
-            "You are a friendly assistant",
-            "openai-gpt",
-            1000
-        );
-
-        expect(answer).toHaveLength(0);
+        expect(() => {
+            countTheoremsPickedFromContext(
+                "You are a friendly assistant",
+                "doesn't matter",
+                theorems,
+                "openai-gpt",
+                1000,
+                1000
+            );
+        }).toThrow();
     });
 
     test("Two theorems, no overflow", async () => {
         const theorems: Theorem[] = await getCoqDocument(["small_document.v"]);
-
-        const proofGenerationContext = {
-            sameFileTheorems: theorems,
-            admitCompletionTarget: "doesn't matter",
-        };
-
-        const answer = pickTheoremsUntilTokenLimit(
-            1000,
-            proofGenerationContext,
+        const answer = countTheoremsPickedFromContext(
             "You are a friendly assistant",
+            "doesn't matter",
+            theorems,
             "openai-gpt",
+            1000,
             10000
         );
 
-        expect(answer).toHaveLength(2);
+        expect(answer).toEqual(2);
     });
 
     test("Two theorems, overflow after first", async () => {
         const theorems: Theorem[] = await getCoqDocument(["small_document.v"]);
 
-        const proofGenerationContext = {
-            sameFileTheorems: theorems,
-            admitCompletionTarget: "",
-        };
-
         const statementTokens = approxCalculateTokens(theorems[0].statement);
         const theoremProof = theorems[0].proof?.onlyText() ?? "";
         const proofTokens = approxCalculateTokens(theoremProof);
-
-        const answer = pickTheoremsUntilTokenLimit(
-            1000,
-            proofGenerationContext,
+        const answer = countTheoremsPickedFromContext(
             "",
+            "",
+            theorems,
             "invalid-model",
+            1000,
             1000 + statementTokens + proofTokens
         );
 
-        expect(answer).toHaveLength(1);
+        expect(answer).toEqual(1);
     });
 
     test("Two theorems, overflow almost before first", async () => {
         const theorems: Theorem[] = await getCoqDocument(["small_document.v"]);
 
-        const proofGenerationContext = {
-            sameFileTheorems: theorems,
-            admitCompletionTarget: "",
-        };
-
         const statementTokens = approxCalculateTokens(theorems[0].statement);
         const theoremProof = theorems[0].proof?.onlyText() ?? "";
         const proofTokens = approxCalculateTokens(theoremProof);
 
-        const answer = pickTheoremsUntilTokenLimit(
-            1000,
-            proofGenerationContext,
+        const answer = countTheoremsPickedFromContext(
             "",
+            "",
+            theorems,
             "invalid-model",
+            1000,
             1000 + statementTokens + proofTokens - 1
         );
 
-        expect(answer).toHaveLength(0);
+        expect(answer).toEqual(0);
     });
 
     test("Two theorems, overflow after first with tiktoken", async () => {
         const theorems: Theorem[] = await getCoqDocument(["small_document.v"]);
         const model = "gpt-3.5-turbo-0301";
-
-        const proofGenerationContext = {
-            sameFileTheorems: theorems,
-            admitCompletionTarget: "",
-        };
 
         const statementTokens = calculateTokensViaTikToken(
             theorems[0].statement,
@@ -160,16 +167,16 @@ suite("Token counter and theorem picker tests", () => {
         );
         const theoremProof = theorems[0].proof?.onlyText() ?? "";
         const proofTokens = calculateTokensViaTikToken(theoremProof, model);
-
-        const answer = pickTheoremsUntilTokenLimit(
-            1000,
-            proofGenerationContext,
+        const answer = countTheoremsPickedFromContext(
             "",
+            "",
+            theorems,
             model,
+            1000,
             1000 + statementTokens + proofTokens
         );
 
-        expect(answer).toHaveLength(1);
+        expect(answer).toEqual(1);
     });
 
     test("Test if two tokenizers are similar: Small text", async () => {

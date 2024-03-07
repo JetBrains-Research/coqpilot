@@ -1,3 +1,4 @@
+import { Uri } from "vscode";
 import {
     LanguageClientOptions,
     RevealOutputChannelOn,
@@ -5,7 +6,6 @@ import {
 import { LanguageClient, ServerOptions } from "vscode-languageclient/node";
 
 import { EventLogger } from "../logging/eventLogger";
-import { Uri } from "vscode";
 
 import { CoqLspClientConfig, CoqLspServerConfig } from "./coqLspConfig";
 

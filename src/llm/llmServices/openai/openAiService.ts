@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+
 import { EventLogger, Severity } from "../../../logging/eventLogger";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { ChatHistory } from "../chat";
