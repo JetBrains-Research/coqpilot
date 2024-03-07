@@ -2,6 +2,7 @@ import { expect } from "earl";
 import * as path from "path";
 
 import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
+import { LMStudioService } from "../../llm/llmServices/lmStudio/lmStudioService";
 import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
 import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
 
@@ -42,6 +43,7 @@ suite("Completion generation tests", () => {
         const openAiService = new OpenAiService();
         const grazieService = new GrazieService();
         const predefinedProofsService = new PredefinedProofsService();
+        const lmStudioService = new LMStudioService();
 
         const processEnvironment: ProcessEnvironment = {
             coqProofChecker: coqProofChecker,
@@ -54,11 +56,13 @@ suite("Completion generation tests", () => {
                         tactics: predefinedProofs,
                     },
                 ],
+                lmStudioParams: [],
             },
             services: {
                 openAiService,
                 grazieService,
                 predefinedProofsService,
+                lmStudioService,
             },
         };
 

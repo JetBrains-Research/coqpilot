@@ -67,6 +67,12 @@ export class LLMSequentialIterator
                 services.grazieService,
                 "grazie"
             ),
+            ...this.createLLMServiceHooks(
+                proofGenerationContext,
+                modelsParams.lmStudioParams,
+                services.lmStudioService,
+                "lm-studio"
+            ),
         ];
     }
 

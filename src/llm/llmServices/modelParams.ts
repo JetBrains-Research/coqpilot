@@ -25,3 +25,8 @@ export interface PredefinedProofsModelParams extends ModelParams {
     // A list of tactics to try to solve the goal with.
     tactics: string[];
 }
+
+export interface LMStudioModelParams extends ModelParams {
+    temperature: number;
+    port: number;
+}

@@ -11,14 +11,17 @@ import {
 
 import { LLMServices } from "../llm/llmServices";
 import { GrazieService } from "../llm/llmServices/grazie/grazieService";
+import { LMStudioService } from "../llm/llmServices/lmStudio/lmStudioService";
 import { OpenAiService } from "../llm/llmServices/openai/openAiService";
 import { PredefinedProofsService } from "../llm/llmServices/predefinedProofs/predefinedProofsService";
 import {
     GrazieUserModelParams,
+    LMStudioUserModelParams,
     OpenAiUserModelParams,
     PredefinedProofsUserModelParams,
     UserModelsParams,
     grazieUserModelParamsSchema,
+    lmStudioUserModelParamsSchema,
     openAiUserModelParamsSchema,
     predefinedProofsUserModelParamsSchema,
 } from "../llm/userModelParams";
@@ -78,6 +81,7 @@ export class GlobalExtensionState {
         openAiService: new OpenAiService(this.eventLogger),
         grazieService: new GrazieService(this.eventLogger),
         predefinedProofsService: new PredefinedProofsService(),
+        lmStudioService: new LMStudioService(this.eventLogger),
     };
 
     constructor() {}
@@ -98,6 +102,7 @@ export class GlobalExtensionState {
         this.llmServices.openAiService.dispose();
         this.llmServices.grazieService.dispose();
         this.llmServices.predefinedProofsService.dispose();
+        this.llmServices.lmStudioService.dispose();
         this.logWriter.dispose();
     }
 }
@@ -354,11 +359,16 @@ export class CoqPilot {
                     predefinedProofsUserModelParamsSchema
                 )
             );
+        const lmStudioParams: LMStudioUserModelParams[] =
+            config.lmStudioModelsParameters.map((params: any) =>
+                this.validateAndParseJson(params, lmStudioUserModelParamsSchema)
+            );
 
         return {
             openAiParams: openAiParams,
             grazieParams: grazieParams,
             predefinedProofsModelParams: predefinedProofsParams,
+            lmStudioParams: lmStudioParams,
         };
     }
 

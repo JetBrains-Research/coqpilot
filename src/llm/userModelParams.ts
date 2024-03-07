@@ -38,10 +38,16 @@ export interface PredefinedProofsUserModelParams extends UserModelParams {
     tactics: string[];
 }
 
+export interface LMStudioUserModelParams extends UserModelParams {
+    temperature: number;
+    port: number;
+}
+
 export interface UserModelsParams {
     openAiParams: OpenAiUserModelParams[];
     grazieParams: GrazieUserModelParams[];
     predefinedProofsModelParams: PredefinedProofsUserModelParams[];
+    lmStudioParams: LMStudioUserModelParams[];
 }
 
 export const userMultiroundProfileSchema: JSONSchemaType<UserMultiroundProfile> =
@@ -108,4 +114,15 @@ export const predefinedProofsUserModelParamsSchema: JSONSchemaType<PredefinedPro
             ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
         },
         required: ["modelName", "tactics"],
+    };
+
+export const lmStudioUserModelParamsSchema: JSONSchemaType<LMStudioUserModelParams> =
+    {
+        type: "object",
+        properties: {
+            temperature: { type: "number" },
+            port: { type: "number" },
+            ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
+        },
+        required: ["modelName", "temperature", "port"],
     };
