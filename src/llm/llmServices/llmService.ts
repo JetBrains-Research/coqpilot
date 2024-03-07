@@ -122,6 +122,11 @@ export abstract class GeneratedProof {
         return this.lastProofVersion().proof;
     }
 
+    // starts with zero, then +1 for each version
+    versionNumber(): number {
+        return this.proofVersions.length - 1;
+    }
+
     protected async generateNextVersion(
         chat: ChatHistory,
         choices: number
@@ -156,4 +161,6 @@ export abstract class GeneratedProof {
         );
         return this.generateNextVersion(chat, choices);
     }
+
+    abstract supportsFixing(): Boolean;
 }

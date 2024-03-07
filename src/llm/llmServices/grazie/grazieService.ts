@@ -89,4 +89,8 @@ export class GrazieGeneratedProof extends GeneratedProof {
             previousProofVersions
         );
     }
+
+    supportsFixing(): Boolean {
+        return true;
+    }
 }

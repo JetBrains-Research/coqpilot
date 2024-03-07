@@ -111,4 +111,8 @@ export class PredefinedProof extends GeneratedProof {
     fixProof(_diagnostic: string, _choices: number): Promise<GeneratedProof[]> {
         throw new Error("PredefinedProof cannot be fixed");
     }
+
+    supportsFixing(): Boolean {
+        return false;
+    }
 }

@@ -71,4 +71,8 @@ export class OpenAiGeneratedProof extends GeneratedProof {
             previousProofVersions
         );
     }
+
+    supportsFixing(): Boolean {
+        return true;
+    }
 }

@@ -43,6 +43,25 @@ export interface ProcessEnvironment {
     theoremRanker?: ContextTheoremsRanker;
 }
 
+export interface GenerationResult {}
+
+export class SuccessGenerationResult implements GenerationResult {
+    constructor(public data: any) {}
+}
+
+export class FailureGenerationResult implements GenerationResult {
+    constructor(
+        public status: FailureGenerationStatus,
+        public message: string
+    ) {}
+}
+
+export enum FailureGenerationStatus {
+    excededTimeout,
+    exception,
+    searchFailed,
+}
+
 export async function generateCompletion(
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
@@ -71,23 +90,38 @@ export async function generateCompletion(
     );
 
     try {
-        for await (const proofBatch of iterator) {
-            const preparedProofBatch = proofBatch.map(
-                (generatedProof: GeneratedProof) =>
-                    prepareProofToCheck(generatedProof.proof())
-            );
-            const proofCheckResults =
-                await processEnvironment.coqProofChecker.checkProofs(
-                    sourceFileEnvironment.dirPath,
-                    sourceFileContentPrefix,
-                    completionContext.prefixEndPosition,
-                    preparedProofBatch
-                );
+        /** newlyGeneratedProofs = generatedProofsBatch from iterator +
+         *  + all proofs fixed at the previous iteration */
+        let newlyGeneratedProofs: GeneratedProof[] = [];
 
+        for await (const generatedProofsBatch of iterator) {
+            newlyGeneratedProofs.push(...generatedProofsBatch);
+
+            // check proofs and finish with success if at least one is valid
+            const proofCheckResults = await checkGeneratedProofs(
+                newlyGeneratedProofs,
+                sourceFileContentPrefix,
+                completionContext,
+                sourceFileEnvironment,
+                processEnvironment
+            );
             const completion = getFirstValidProof(proofCheckResults);
             if (completion) {
                 return new SuccessGenerationResult(completion);
             }
+
+            // fix proofs checked on this iteration
+            const proofsWithFeedback: ProofWithFeedback[] =
+                newlyGeneratedProofs.map((generatedProof, i) => {
+                    return {
+                        generatedProof: generatedProof,
+                        diagnostic: proofCheckResults[i].diagnostic!,
+                    };
+                });
+            newlyGeneratedProofs = []; // prepare to a new iteration
+
+            const fixedProofs = await fixProofs(proofsWithFeedback);
+            newlyGeneratedProofs.push(...fixedProofs);
         }
 
         return new FailureGenerationResult(
@@ -109,34 +143,70 @@ export async function generateCompletion(
     }
 }
 
-export interface GenerationResult {}
-
-export class SuccessGenerationResult implements GenerationResult {
-    constructor(public data: any) {}
+async function checkGeneratedProofs(
+    generatedProofs: GeneratedProof[],
+    sourceFileContentPrefix: string[],
+    completionContext: CompletionContext,
+    sourceFileEnvironment: SourceFileEnvironment,
+    processEnvironment: ProcessEnvironment
+): Promise<ProofCheckResult[]> {
+    const preparedProofBatch = generatedProofs.map(
+        (generatedProof: GeneratedProof) =>
+            prepareProofToCheck(generatedProof.proof())
+    );
+    return processEnvironment.coqProofChecker.checkProofs(
+        sourceFileEnvironment.dirPath,
+        sourceFileContentPrefix,
+        completionContext.prefixEndPosition,
+        preparedProofBatch
+    );
 }
 
-export class FailureGenerationResult implements GenerationResult {
-    constructor(
-        public status: FailureGenerationStatus,
-        public message: string
-    ) {}
+interface ProofWithFeedback {
+    generatedProof: GeneratedProof;
+    diagnostic: string;
 }
 
-export enum FailureGenerationStatus {
-    excededTimeout,
-    exception,
-    searchFailed,
+async function fixProofs(
+    proofsWithFeedback: ProofWithFeedback[]
+): Promise<GeneratedProof[]> {
+    const fixProofsPromises = [];
+
+    // build promises
+    for (const proofWithFeedback of proofsWithFeedback) {
+        const generatedProof = proofWithFeedback.generatedProof;
+        if (
+            !generatedProof.supportsFixing() ||
+            generatedProof.versionNumber() >= 3 // TODO: make it param
+        ) {
+            continue;
+        }
+        const diagnostic = proofWithFeedback.diagnostic;
+
+        const newProofVersions = generatedProof.fixProof(diagnostic, 1); // TODO: make it param
+        fixProofsPromises.push(newProofVersions);
+    }
+
+    // resolve promises
+    return (await Promise.allSettled(fixProofsPromises)).flatMap(
+        (resolvedPromise) => {
+            if (resolvedPromise.status === "fulfilled") {
+                return resolvedPromise.value;
+            } else {
+                return [];
+            }
+        }
+    );
 }
 
 function getFirstValidProof(
     proofCheckResults: ProofCheckResult[]
 ): string | undefined {
-    for (const [proof, isValid, _message] of proofCheckResults) {
-        if (isValid) {
-            return proof;
+    for (const proofCheckResult of proofCheckResults) {
+        if (proofCheckResult.isValid) {
+            return proofCheckResult.proof;
         }
     }
-
     return undefined;
 }
 
