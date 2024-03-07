@@ -6,7 +6,10 @@ import { UserModelParams } from "../userModelParams";
 
 import { ChatHistory } from "./chat";
 import { ModelParams, MultiroundProfile } from "./modelParams";
-import { buildFixProofChat, buildGenerateProofChat } from "./utils/chatFactory";
+import {
+    buildProofFixChat,
+    buildProofGenerationChat,
+} from "./utils/chatFactory";
 
 export type Proof = string;
 
@@ -39,7 +42,7 @@ export abstract class LLMService {
         if (choices <= 0) {
             return [];
         }
-        const chat = buildGenerateProofChat(proofGenerationContext, params);
+        const chat = buildProofGenerationChat(proofGenerationContext, params);
         const proofs = await this.generateFromChat(chat, params, choices);
         return proofs.map((proof: string) =>
             this.constructGeneratedProof(proof, proofGenerationContext, params)
@@ -62,14 +65,18 @@ export abstract class LLMService {
             params.tokensLimit ?? this.defaultTokensLimits[params.modelName];
         const systemMessageContent =
             params.systemPromt ?? this.defaultSystemMessageContent;
-        const multiroundProfile =
-            params.multiroundProfile ?? this.defaultMultiroundProfile;
-        if (
-            newMessageMaxTokens === undefined ||
-            tokensLimits === undefined ||
-            systemMessageContent === undefined ||
-            multiroundProfile === undefined
-        ) {
+        const multiroundProfile: MultiroundProfile = {
+            maxRoundsNumber:
+                params.multiroundProfile?.maxRoundsNumber ??
+                this.defaultMultiroundProfile.maxRoundsNumber,
+            proofFixChoices:
+                params.multiroundProfile?.proofFixChoices ??
+                this.defaultMultiroundProfile.proofFixChoices,
+            proofFixPromt:
+                params.multiroundProfile?.proofFixPromt ??
+                this.defaultMultiroundProfile.proofFixPromt,
+        };
+        if (newMessageMaxTokens === undefined || tokensLimits === undefined) {
             throw Error(`user model parameters cannot be resolved: ${params}`);
         }
         return {
@@ -92,13 +99,15 @@ export abstract class LLMService {
         [modelName: string]: number;
     } = {};
 
-    private readonly defaultSystemMessageContent =
+    private readonly defaultSystemMessageContent: string =
         "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'.";
 
-    // multiround is disabled by default
+    // its properties can be used separately
     private readonly defaultMultiroundProfile: MultiroundProfile = {
-        maxRoundsNumber: 1,
-        fixedProofChoices: 0,
+        maxRoundsNumber: 1, // multiround is disabled by default
+        proofFixChoices: 1, // 1 fix version per proof by default
+        proofFixPromt:
+            "Unfortunately, the last proof is not correct. Here is the compiler's feedback: '${diagnostic}'. Please, fix the proof.",
     };
 }
 
@@ -177,7 +186,7 @@ export abstract class GeneratedProof {
      */
     async fixProof(
         diagnostic: string,
-        choices: number = this.modelParams.multiroundProfile.fixedProofChoices
+        choices: number = this.modelParams.multiroundProfile.proofFixChoices
     ): Promise<GeneratedProof[]> {
         if (choices <= 0 || !this.canBeFixed()) {
             return [];
@@ -187,7 +196,7 @@ export abstract class GeneratedProof {
         assert.ok(lastProofVersion.diagnostic === undefined);
         lastProofVersion.diagnostic = diagnostic;
 
-        const chat = buildFixProofChat(
+        const chat = buildProofFixChat(
             this.proofGenerationContext,
             this.proofVersions,
             this.modelParams

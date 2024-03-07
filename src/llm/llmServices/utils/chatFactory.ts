@@ -51,7 +51,7 @@ export function buildChat(
     return chat;
 }
 
-export function buildGenerateProofChat(
+export function buildProofGenerationChat(
     proofGenerationContext: ProofGenerationContext,
     modelParams: ModelParams
 ): ChatHistory {
@@ -86,12 +86,7 @@ export function buildGenerateProofChat(
     );
 }
 
-// TODO: support experiments
-function createFixProofMessage(diagnostic: string): string {
-    return `Unfortunately, the last proof is not correct. Here is the compiler's feedback: '${diagnostic}'. Please, fix the proof.`;
-}
-
-export function buildFixProofChat(
+export function buildProofFixChat(
     proofGenerationContext: ProofGenerationContext,
     proofVersions: ProofVersion[],
     modelParams: ModelParams
@@ -117,13 +112,16 @@ export function buildFixProofChat(
         role: "assistant",
         content: lastProofVersion.proof,
     };
-    const fixProofMessage: ChatMessage = {
+    const proofFixMessage: ChatMessage = {
         role: "user",
-        content: createFixProofMessage(lastProofVersion.diagnostic!),
+        content: createProofFixMessage(
+            lastProofVersion.diagnostic!,
+            modelParams.multiroundProfile.proofFixPromt
+        ),
     };
     fitter.fitRequiredMessage(completionTargetMessage);
     fitter.fitRequiredMessage(proofMessage);
-    fitter.fitRequiredMessage(fixProofMessage);
+    fitter.fitRequiredMessage(proofFixMessage);
 
     const fittedProofVersions = fitter.fitOptionalObjects(
         proofVersions.slice(0, proofVersions.length - 1),
@@ -145,8 +143,15 @@ export function buildFixProofChat(
         completionTargetMessage,
         previousProofVersionsChat,
         proofMessage,
-        fixProofMessage
+        proofFixMessage
     );
+}
+
+function createProofFixMessage(
+    diagnostic: string,
+    proofFixPromt: string
+): string {
+    return proofFixPromt.replace("${diagnostic}", diagnostic);
 }
 
 export function theoremToChatItem(theorem: Theorem): UserAssistantChatItem {

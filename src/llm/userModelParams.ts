@@ -1,5 +1,15 @@
 // import { JSONSchemaType } from "ajv";
-import { MultiroundProfile } from "./llmServices/modelParams";
+
+export interface UserMultiroundProfile {
+    // cannot be overriden: proof will always be updated no more than `maxRoundsNumber` times
+    maxRoundsNumber?: number;
+
+    // can be overriden in the `fixProof` call with the `choices` parameter
+    proofFixChoices?: number;
+
+    // use `${diagnostic}` syntax to include a diagnostic message into the promt
+    proofFixPromt?: string;
+}
 
 export interface UserModelParams {
     modelName: string;
@@ -10,7 +20,7 @@ export interface UserModelParams {
     newMessageMaxTokens?: number;
     tokensLimit?: number;
 
-    multiroundProfile?: MultiroundProfile;
+    multiroundProfile?: UserMultiroundProfile;
 }
 
 export interface OpenAiUserModelParams extends UserModelParams {

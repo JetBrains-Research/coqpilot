@@ -1,9 +1,7 @@
 export interface MultiroundProfile {
-    // cannot be overriden: proof will always be updated no more than `maxRoundsNumber` times
     maxRoundsNumber: number;
-
-    // can be overriden in the `fixProof` call with the `choices` parameter
-    fixedProofChoices: number;
+    proofFixChoices: number;
+    proofFixPromt: string;
 }
 
 export interface ModelParams {

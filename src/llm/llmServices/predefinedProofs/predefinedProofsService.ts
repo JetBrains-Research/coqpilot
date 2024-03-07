@@ -90,7 +90,8 @@ export class PredefinedProofsService extends LLMService {
             systemPromt: "",
             multiroundProfile: {
                 maxRoundsNumber: 1,
-                fixedProofChoices: 0,
+                proofFixChoices: 0,
+                proofFixPromt: "",
             },
         };
     }
