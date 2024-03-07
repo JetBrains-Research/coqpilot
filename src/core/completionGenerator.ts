@@ -1,20 +1,22 @@
-import { LLMSequentialIterator } from "../llm/llmIterator";
-import { ModelsParams, LLMServices } from "../llm/configurations";
-
-import {
-    CoqProofChecker,
-    ProofCheckResult,
-    CoqLspTimeoutError,
-} from "./coqProofChecker";
-
-import { ProofGenerationContext } from "../llm/llmServices/modelParamsInterfaces";
-import { EventLogger } from "../logging/eventLogger";
 import { Position } from "vscode-languageclient";
-import { ContextTheoremsRanker } from "./contextTheoremRanker/contextTheoremsRanker";
 
-import { Hyp, Goal, PpString } from "../coqLsp/coqLspTypes";
+import { LLMSequentialIterator } from "../llm/llmIterator";
+import { LLMServices } from "../llm/llmServices";
+import { GeneratedProof } from "../llm/llmServices/llmService";
+import { ProofGenerationContext } from "../llm/proofGenerationContext";
+import { UserModelsParams } from "../llm/userModelParams";
+
+import { Goal, Hyp, PpString } from "../coqLsp/coqLspTypes";
 
 import { Theorem } from "../coqParser/parsedTypes";
+import { EventLogger } from "../logging/eventLogger";
+
+import { ContextTheoremsRanker } from "./contextTheoremRanker/contextTheoremsRanker";
+import {
+    CoqLspTimeoutError,
+    CoqProofChecker,
+    ProofCheckResult,
+} from "./coqProofChecker";
 
 export interface CompletionContext {
     proofGoal: Goal<PpString>;
@@ -23,8 +25,7 @@ export interface CompletionContext {
 }
 
 export interface SourceFileEnvironment {
-    // Theorems here are only those that
-    // successfully finish with Qed.
+    // `fileTheorems` contain only ones that successfully finish with Qed.
     fileTheorems: Theorem[];
     fileLines: string[];
     fileVersion: number;
@@ -33,77 +34,13 @@ export interface SourceFileEnvironment {
 
 export interface ProcessEnvironment {
     coqProofChecker: CoqProofChecker;
-    modelsParams: ModelsParams;
+    modelsParams: UserModelsParams;
     services: LLMServices;
-    // If not provided, the default ranker will be used:
-    // Theorems would be passed sequentially
-    // in the same order as they are in the file
+    /**
+     * If `theoremRanker` is not provided, the default one will be used:
+     * theorems would be passed sequentially in the same order as they are in the file
+     */
     theoremRanker?: ContextTheoremsRanker;
-}
-
-export async function generateCompletion(
-    completionContext: CompletionContext,
-    sourceFileEnvironment: SourceFileEnvironment,
-    processEnvironment: ProcessEnvironment,
-    eventLogger?: EventLogger
-): Promise<GenerationResult> {
-    const context = buildProofGenerationContext(
-        completionContext,
-        sourceFileEnvironment,
-        processEnvironment
-    );
-    eventLogger?.log(
-        "proof-gen-context-create",
-        "Ranked theorems for proof generation",
-        context.sameFileTheorems.map((thr) => thr.name)
-    );
-    const iterator = new LLMSequentialIterator(
-        context,
-        processEnvironment.modelsParams,
-        processEnvironment.services,
-        eventLogger
-    );
-    const sourceFileContentPrefix = getTextBeforePosition(
-        sourceFileEnvironment.fileLines,
-        completionContext.prefixEndPosition
-    );
-
-    try {
-        for await (const proofBatch of iterator) {
-            const praparedProofBatch = proofBatch.map((proof: string) =>
-                prepareProofToCheck(proof)
-            );
-            const proofCheckResults =
-                await processEnvironment.coqProofChecker.checkProofs(
-                    sourceFileEnvironment.dirPath,
-                    sourceFileContentPrefix,
-                    completionContext.prefixEndPosition,
-                    praparedProofBatch
-                );
-
-            const completion = getFirstValidProof(proofCheckResults);
-            if (completion) {
-                return new SuccessGenerationResult(completion);
-            }
-        }
-
-        return new FailureGenerationResult(
-            FailureGenerationStatus.searchFailed,
-            "No valid completions found"
-        );
-    } catch (e: any) {
-        if (e instanceof CoqLspTimeoutError) {
-            return new FailureGenerationResult(
-                FailureGenerationStatus.excededTimeout,
-                e.message
-            );
-        } else {
-            return new FailureGenerationResult(
-                FailureGenerationStatus.exception,
-                e.message
-            );
-        }
-    }
 }
 
 export interface GenerationResult {}
@@ -125,15 +62,180 @@ export enum FailureGenerationStatus {
     searchFailed,
 }
 
+export async function generateCompletion(
+    completionContext: CompletionContext,
+    sourceFileEnvironment: SourceFileEnvironment,
+    processEnvironment: ProcessEnvironment,
+    eventLogger?: EventLogger
+): Promise<GenerationResult> {
+    const context = buildProofGenerationContext(
+        completionContext,
+        sourceFileEnvironment,
+        processEnvironment
+    );
+    eventLogger?.log(
+        "proof-gen-context-create",
+        "Ranked theorems for proof generation",
+        context.contextTheorems.map((thr) => thr.name)
+    );
+    const iterator = new LLMSequentialIterator(
+        context,
+        processEnvironment.modelsParams,
+        processEnvironment.services,
+        eventLogger
+    );
+    const sourceFileContentPrefix = getTextBeforePosition(
+        sourceFileEnvironment.fileLines,
+        completionContext.prefixEndPosition
+    );
+
+    try {
+        /** newlyGeneratedProofs = generatedProofsBatch from iterator +
+         *  + all proofs fixed at the previous iteration */
+        let newlyGeneratedProofs: GeneratedProof[] = [];
+
+        for await (const generatedProofsBatch of iterator) {
+            newlyGeneratedProofs.push(...generatedProofsBatch);
+            const fixedProofsOrCompletion = await checkAndFixProofs(
+                newlyGeneratedProofs,
+                sourceFileContentPrefix,
+                completionContext,
+                sourceFileEnvironment,
+                processEnvironment
+            );
+            if (fixedProofsOrCompletion instanceof SuccessGenerationResult) {
+                return fixedProofsOrCompletion;
+            }
+            newlyGeneratedProofs = [...fixedProofsOrCompletion];
+        }
+
+        while (newlyGeneratedProofs.length > 0) {
+            const fixedProofsOrCompletion = await checkAndFixProofs(
+                newlyGeneratedProofs,
+                sourceFileContentPrefix,
+                completionContext,
+                sourceFileEnvironment,
+                processEnvironment
+            );
+            if (fixedProofsOrCompletion instanceof SuccessGenerationResult) {
+                return fixedProofsOrCompletion;
+            }
+            newlyGeneratedProofs = [...fixedProofsOrCompletion];
+        }
+
+        return new FailureGenerationResult(
+            FailureGenerationStatus.searchFailed,
+            "No valid completions found"
+        );
+    } catch (e: any) {
+        if (e instanceof CoqLspTimeoutError) {
+            return new FailureGenerationResult(
+                FailureGenerationStatus.excededTimeout,
+                e.message
+            );
+        } else {
+            return new FailureGenerationResult(
+                FailureGenerationStatus.exception,
+                e.message
+            );
+        }
+    }
+}
+
+export async function checkAndFixProofs(
+    newlyGeneratedProofs: GeneratedProof[],
+    sourceFileContentPrefix: string[],
+    completionContext: CompletionContext,
+    sourceFileEnvironment: SourceFileEnvironment,
+    processEnvironment: ProcessEnvironment
+): Promise<GeneratedProof[] | SuccessGenerationResult> {
+    // check proofs and finish with success if at least one is valid
+    const proofCheckResults = await checkGeneratedProofs(
+        newlyGeneratedProofs,
+        sourceFileContentPrefix,
+        completionContext,
+        sourceFileEnvironment,
+        processEnvironment
+    );
+    const completion = getFirstValidProof(proofCheckResults);
+    if (completion) {
+        return new SuccessGenerationResult(completion);
+    }
+
+    // fix proofs checked on this iteration
+    const proofsWithFeedback: ProofWithFeedback[] = newlyGeneratedProofs.map(
+        (generatedProof, i) => {
+            return {
+                generatedProof: generatedProof,
+                diagnostic: proofCheckResults[i].diagnostic!,
+            };
+        }
+    );
+    const fixedProofs = await fixProofs(proofsWithFeedback);
+    return fixedProofs; // prepare to a new iteration
+}
+
+async function checkGeneratedProofs(
+    generatedProofs: GeneratedProof[],
+    sourceFileContentPrefix: string[],
+    completionContext: CompletionContext,
+    sourceFileEnvironment: SourceFileEnvironment,
+    processEnvironment: ProcessEnvironment
+): Promise<ProofCheckResult[]> {
+    const preparedProofBatch = generatedProofs.map(
+        (generatedProof: GeneratedProof) =>
+            prepareProofToCheck(generatedProof.proof())
+    );
+    return processEnvironment.coqProofChecker.checkProofs(
+        sourceFileEnvironment.dirPath,
+        sourceFileContentPrefix,
+        completionContext.prefixEndPosition,
+        preparedProofBatch
+    );
+}
+
+interface ProofWithFeedback {
+    generatedProof: GeneratedProof;
+    diagnostic: string;
+}
+
+async function fixProofs(
+    proofsWithFeedback: ProofWithFeedback[]
+): Promise<GeneratedProof[]> {
+    const fixProofsPromises = [];
+
+    // build fix promises
+    for (const proofWithFeedback of proofsWithFeedback) {
+        const generatedProof = proofWithFeedback.generatedProof;
+        if (!generatedProof.canBeFixed()) {
+            continue;
+        }
+        const diagnostic = proofWithFeedback.diagnostic;
+
+        const newProofVersions = generatedProof.fixProof(diagnostic);
+        fixProofsPromises.push(newProofVersions);
+    }
+
+    // resolve promises: wait for all requested proofs to be fixed
+    return (await Promise.allSettled(fixProofsPromises)).flatMap(
+        (resolvedPromise) => {
+            if (resolvedPromise.status === "fulfilled") {
+                return resolvedPromise.value;
+            } else {
+                return [];
+            }
+        }
+    );
+}
+
 function getFirstValidProof(
     proofCheckResults: ProofCheckResult[]
 ): string | undefined {
-    for (const [proof, isValid, _message] of proofCheckResults) {
-        if (isValid) {
-            return proof;
+    for (const proofCheckResult of proofCheckResults) {
+        if (proofCheckResult.isValid) {
+            return proofCheckResult.proof;
         }
     }
-
     return undefined;
 }
 
@@ -174,8 +276,8 @@ function buildProofGenerationContext(
             completionContext
         ) ?? sourceFileEnvironment.fileTheorems;
     return {
-        sameFileTheorems: rankedTheorems,
-        admitCompletionTarget: goalToTargetLemma(completionContext.proofGoal),
+        contextTheorems: rankedTheorems,
+        completionTarget: goalToTargetLemma(completionContext.proofGoal),
     };
 }
 

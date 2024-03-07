@@ -1,22 +1,31 @@
-import { ProofGenerationContext } from "./llmServices/modelParamsInterfaces";
 import { EventLogger } from "../logging/eventLogger";
-import { ModelsParams, LLMServices } from "./configurations";
 
-export type Proof = string;
-export type ProofBatch = Proof[];
+import { LLMServices } from "./llmServices";
+import { GeneratedProof, LLMService } from "./llmServices/llmService";
+import { ProofGenerationContext } from "./proofGenerationContext";
+import {
+    PredefinedProofsUserModelParams,
+    UserModelParams,
+    UserModelsParams,
+} from "./userModelParams";
 
-type ProofsGenerationHook = () => Promise<string[]>;
+type GeneratedProofsBatch = GeneratedProof[];
+type ProofsGenerationHook = () => Promise<GeneratedProofsBatch>;
 
-export class LLMSequentialIterator implements AsyncIterator<ProofBatch> {
+export class LLMSequentialIterator
+    implements AsyncIterator<GeneratedProofsBatch>
+{
     private proofsGenerationHook: ProofsGenerationHook[];
-    private fetchedResults: ProofBatch[];
+    private fetchedResults: GeneratedProofsBatch[];
 
     private hooksIndex: number;
     private insideBatchIndex: number;
 
+    private readonly defaultGenerationChoices = 10;
+
     constructor(
         proofGenerationContext: ProofGenerationContext,
-        modelsParams: ModelsParams,
+        modelsParams: UserModelsParams,
         services: LLMServices,
         private eventLogger?: EventLogger
     ) {
@@ -27,60 +36,66 @@ export class LLMSequentialIterator implements AsyncIterator<ProofBatch> {
             modelsParams,
             services
         );
-        this.fetchedResults = new Array<ProofBatch>(
+        this.fetchedResults = new Array<GeneratedProofsBatch>(
             this.proofsGenerationHook.length
         );
     }
 
     private createHooks(
         proofGenerationContext: ProofGenerationContext,
-        modelsParams: ModelsParams,
+        modelsParams: UserModelsParams,
         services: LLMServices
     ): ProofsGenerationHook[] {
-        const proofsGenerationHooks: ProofsGenerationHook[] = [];
-        for (const params of modelsParams.predefinedProofsModelParams) {
-            proofsGenerationHooks.push(() => {
+        return [
+            ...this.createLLMServiceHooks(
+                proofGenerationContext,
+                modelsParams.predefinedProofsModelParams,
+                services.predefinedProofsService,
+                "predefined-proofs",
+                (params) =>
+                    (params as PredefinedProofsUserModelParams).tactics.length
+            ),
+            ...this.createLLMServiceHooks(
+                proofGenerationContext,
+                modelsParams.openAiParams,
+                services.openAiService,
+                "openai"
+            ),
+            ...this.createLLMServiceHooks(
+                proofGenerationContext,
+                modelsParams.grazieParams,
+                services.grazieService,
+                "grazie"
+            ),
+        ];
+    }
+
+    private createLLMServiceHooks(
+        proofGenerationContext: ProofGenerationContext,
+        allModelParamsForService: UserModelParams[],
+        llmService: LLMService,
+        serviceLoggingName: string,
+        resolveChoices: (userModelParams: UserModelParams) => number = (_) =>
+            this.defaultGenerationChoices
+    ): ProofsGenerationHook[] {
+        const hooks = [];
+        for (const userModelParams of allModelParamsForService) {
+            hooks.push(() => {
+                const resolvedParams =
+                    llmService.resolveParameters(userModelParams);
                 this.eventLogger?.log(
-                    "predefined-proofs-fetch-started",
-                    "Completion from predefined proofs",
-                    params
+                    `${serviceLoggingName}-fetch-started`,
+                    `Completion from ${serviceLoggingName}`,
+                    resolvedParams
                 );
-                return services.predefinedProofsService.generateProof(
+                return llmService.generateProof(
                     proofGenerationContext,
-                    params
+                    resolvedParams,
+                    userModelParams.choices ?? resolveChoices(userModelParams)
                 );
             });
         }
-
-        for (const params of modelsParams.openAiParams) {
-            proofsGenerationHooks.push(() => {
-                this.eventLogger?.log(
-                    "openai-fetch-started",
-                    "Completion from OpenAI",
-                    params
-                );
-                return services.openAiService.generateProof(
-                    proofGenerationContext,
-                    params
-                );
-            });
-        }
-
-        for (const params of modelsParams.grazieParams) {
-            proofsGenerationHooks.push(() => {
-                this.eventLogger?.log(
-                    "grazie-fetch-started",
-                    "Completion from Grazie",
-                    params
-                );
-                return services.grazieService.generateProof(
-                    proofGenerationContext,
-                    params
-                );
-            });
-        }
-
-        return proofsGenerationHooks;
+        return hooks;
     }
 
     [Symbol.asyncIterator]() {
@@ -108,7 +123,7 @@ export class LLMSequentialIterator implements AsyncIterator<ProofBatch> {
         return false;
     }
 
-    async next(): Promise<IteratorResult<ProofBatch, any>> {
+    async next(): Promise<IteratorResult<GeneratedProofsBatch, any>> {
         const finished = await this.prepareFetched();
         if (finished) {
             return { done: true, value: undefined };
@@ -122,7 +137,7 @@ export class LLMSequentialIterator implements AsyncIterator<ProofBatch> {
         return { done: false, value: proofs };
     }
 
-    async nextProof(): Promise<IteratorResult<Proof, any>> {
+    async nextProof(): Promise<IteratorResult<GeneratedProof, any>> {
         const finished = await this.prepareFetched();
         if (finished) {
             return { done: true, value: undefined };

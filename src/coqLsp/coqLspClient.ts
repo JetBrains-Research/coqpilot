@@ -1,38 +1,32 @@
+import { Mutex } from "async-mutex";
+import { readFileSync } from "fs";
 import {
-    RequestType,
     BaseLanguageClient,
-    Position,
-    VersionedTextDocumentIdentifier,
     Diagnostic,
-    ProtocolNotificationType,
     Disposable,
+    Position,
+    ProtocolNotificationType,
+    RequestType,
     TextDocumentIdentifier,
+    VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
-
-import { Uri } from "../utils/uri";
-
 import {
-    DidCloseTextDocumentNotification,
-    DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams,
-    DidOpenTextDocumentNotification,
     DidChangeTextDocumentNotification,
     DidChangeTextDocumentParams,
+    DidCloseTextDocumentNotification,
+    DidCloseTextDocumentParams,
+    DidOpenTextDocumentNotification,
+    DidOpenTextDocumentParams,
     LogTraceNotification,
     PublishDiagnosticsNotification,
 } from "vscode-languageclient";
 
-import { GoalRequest, GoalAnswer, PpString, Goal } from "./coqLspTypes";
+import { Uri } from "../utils/uri";
 
-import { readFileSync } from "fs";
-
-import { CoqLspServerConfig, CoqLspClientConfig } from "./coqLspConfig";
-
+import { CoqLspClientConfig, CoqLspServerConfig } from "./coqLspConfig";
 import { CoqLspConnector } from "./coqLspConnector";
-import { Mutex } from "async-mutex";
-
+import { Goal, GoalAnswer, GoalRequest, PpString } from "./coqLspTypes";
 import { FlecheDocument, FlecheDocumentParams } from "./coqLspTypes";
-
 import { CoqLspError } from "./coqLspTypes";
 
 export interface CoqLspClientInterface extends Disposable {

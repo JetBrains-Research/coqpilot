@@ -1,28 +1,35 @@
 /* eslint-disable @typescript-eslint/naming-convention */
-import { GrazieHolder, GrazieConfig } from "./grazieConfig";
-import { GrazieApiInterface } from "./grazieApiInterface";
 import axios from "axios";
 import { ResponseType } from "axios";
-import { GrazieModelParams } from "../modelParamsInterfaces";
+
 import { EventLogger, Severity } from "../../../logging/eventLogger";
+import { GrazieModelParams } from "../modelParams";
 
 export type GrazieChatRole = "User" | "System" | "Assistant";
 export type GrazieFormattedHistory = { role: GrazieChatRole; text: string }[];
 
-export class GrazieApi implements GrazieApiInterface {
+interface GrazieConfig {
+    gateawayUrl: string;
+    chatUrl: string;
+}
+
+export class GrazieApi {
     private readonly config: GrazieConfig;
 
     constructor(private readonly eventLogger?: EventLogger) {
-        this.config = GrazieHolder.create();
+        this.config = {
+            chatUrl: "v5/llm/chat/stream/v3",
+            gateawayUrl:
+                "https://api.app.stgn.grazie.aws.intellij.net/service/",
+        };
     }
 
-    private createHeaders(token: string): any {
-        return {
-            Accept: "*/*",
-            "Content-Type": "application/json",
-            "Grazie-Authenticate-Jwt": token,
-            "Grazie-Original-Service-JWT": token,
-        };
+    async requestChatCompletion(
+        params: GrazieModelParams,
+        history: GrazieFormattedHistory
+    ): Promise<string> {
+        const body = this.createRequestBody(history, params);
+        return this.post(this.config.chatUrl, body, params.apiKey);
     }
 
     private createRequestBody(
@@ -33,8 +40,44 @@ export class GrazieApi implements GrazieApiInterface {
             chat: {
                 messages: history,
             },
-            profile: params.model,
+            profile: params.modelName,
         });
+    }
+
+    private async post(
+        url: string,
+        body: string,
+        apiToken: string
+    ): Promise<string> {
+        const headers = this.createHeaders(apiToken);
+        headers["Content-Length"] = body.length;
+        this.eventLogger?.log(
+            "grazie-fetch-started",
+            "Completion from Grazie requested",
+            {
+                url: url,
+                body: body,
+                headers: headers,
+            },
+            Severity.DEBUG
+        );
+
+        const response = await this.fetchAndProcessEvents(
+            this.config.gateawayUrl + url,
+            body,
+            headers
+        );
+
+        return response;
+    }
+
+    private createHeaders(token: string): any {
+        return {
+            Accept: "*/*",
+            "Content-Type": "application/json",
+            "Grazie-Authenticate-Jwt": token,
+            "Grazie-Original-Service-JWT": token,
+        };
     }
 
     private chunkToTokens(chunk: any): string[] {
@@ -68,7 +111,7 @@ export class GrazieApi implements GrazieApiInterface {
         return messages;
     }
 
-    async fetchAndProcessEvents(
+    private async fetchAndProcessEvents(
         url: string,
         postData: any,
         headers: any
@@ -104,40 +147,5 @@ export class GrazieApi implements GrazieApiInterface {
                 reject(error);
             }
         });
-    }
-
-    private async post(
-        url: string,
-        body: string,
-        apiToken: string
-    ): Promise<string> {
-        const headers = this.createHeaders(apiToken);
-        headers["Content-Length"] = body.length;
-        this.eventLogger?.log(
-            "grazie-fetch-started",
-            "Completion from Grazie requested",
-            {
-                url: url,
-                body: body,
-                headers: headers,
-            },
-            Severity.DEBUG
-        );
-
-        const response = await this.fetchAndProcessEvents(
-            this.config.gateawayUrl + url,
-            body,
-            headers
-        );
-
-        return response;
-    }
-
-    async chatCompletionRequest(
-        params: GrazieModelParams,
-        history: GrazieFormattedHistory
-    ): Promise<string> {
-        const body = this.createRequestBody(history, params);
-        return this.post(this.config.chatUrl, body, params.apiKey);
     }
 }

@@ -205,6 +205,7 @@
     "test-ci": "npm test -- -g=\"--non-ci\" -i=true"
   },
   "devDependencies": {
+    "@trivago/prettier-plugin-sort-imports": "^4.3.0",
     "@types/cli-progress": "^3.11.3",
     "@types/event-source-polyfill": "^1.0.5",
     "@types/expect.js": "^0.3.32",

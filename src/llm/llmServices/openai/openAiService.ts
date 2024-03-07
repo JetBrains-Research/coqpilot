@@ -1,77 +1,76 @@
 import OpenAI from "openai";
-import {
-    ProofGenerationContext,
-    OpenAiModelParams,
-} from "../modelParamsInterfaces";
-import { LLMServiceInterface } from "../llmServiceInterface";
-import { pickTheoremsUntilTokenLimit } from "../pickTheoremsUntilTokenLimit";
 import { EventLogger, Severity } from "../../../logging/eventLogger";
+import { ProofGenerationContext } from "../../proofGenerationContext";
+import { ChatHistory } from "../chat";
+import { GeneratedProof, LLMService, ProofVersion } from "../llmService";
+import { Proof } from "../llmService";
+import { ModelParams, OpenAiModelParams } from "../modelParams";
 
-type GptRole = "function" | "user" | "system" | "assistant";
-type History = { role: GptRole; content: string }[];
+export class OpenAiService extends LLMService {
+    constructor(eventLogger?: EventLogger) {
+        super(eventLogger);
+    }
 
-export class OpenAiService implements LLMServiceInterface {
-    constructor(private readonly eventLogger?: EventLogger) {}
-
-    private createHistory = (
+    constructGeneratedProof(
+        proof: string,
         proofGenerationContext: ProofGenerationContext,
-        params: OpenAiModelParams
-    ): History => {
-        const theorems = pickTheoremsUntilTokenLimit(
-            params.answerMaxTokens,
+        modelParams: ModelParams,
+        previousProofVersions?: ProofVersion[]
+    ): GeneratedProof {
+        return new OpenAiGeneratedProof(
+            proof,
             proofGenerationContext,
-            params.prompt,
-            params.model,
-            params.modelContextLength
+            modelParams as OpenAiModelParams,
+            this,
+            previousProofVersions
         );
-        const formattedHistory: History = [];
-        for (const theorem of theorems) {
-            formattedHistory.push({ role: "user", content: theorem.statement });
-            formattedHistory.push({
-                role: "assistant",
-                content: theorem.proof?.onlyText() ?? "Admitted.",
-            });
-        }
-        formattedHistory.push({
-            role: "user",
-            content: proofGenerationContext.admitCompletionTarget,
-        });
+    }
 
-        return [
-            { role: "system", content: params.prompt },
-            ...formattedHistory,
-        ];
-    };
-
-    async generateProof(
-        proofGenerationContext: ProofGenerationContext,
-        params: OpenAiModelParams
+    async generateFromChat(
+        chat: ChatHistory,
+        params: ModelParams,
+        choices: number
     ): Promise<string[]> {
-        // Add retry, add logging
-        const openai = new OpenAI({ apiKey: params.apiKey });
-        const formattedHistory = this.createHistory(
-            proofGenerationContext,
-            params
-        );
+        // TODO: support retries
+        if (choices <= 0) {
+            return [];
+        }
+        const openAiParams = params as OpenAiModelParams;
+        const openai = new OpenAI({ apiKey: openAiParams.apiKey });
+
         this.eventLogger?.log(
             "openai-fetch-started",
-            "Completion from OpenAI requested",
-            { history: formattedHistory },
+            "Generate with OpenAI",
+            { history: chat },
             Severity.DEBUG
         );
         const completion = await openai.chat.completions.create({
-            messages: formattedHistory,
-            model: params.model,
-            n: params.choices,
-            temperature: params.temperature,
+            messages: chat,
+            model: openAiParams.modelName,
+            n: choices,
+            temperature: openAiParams.temperature,
             // eslint-disable-next-line @typescript-eslint/naming-convention
-            max_tokens: params.answerMaxTokens,
+            max_tokens: openAiParams.newMessageMaxTokens,
         });
 
         return completion.choices.map((choice: any) => choice.message.content);
     }
+}
 
-    dispose(): void {
-        return;
+export class OpenAiGeneratedProof extends GeneratedProof {
+    constructor(
+        proof: Proof,
+        proofGenerationContext: ProofGenerationContext,
+        modelParams: OpenAiModelParams,
+        llmService: OpenAiService,
+        previousProofVersions?: ProofVersion[]
+    ) {
+        super(
+            proof,
+            proofGenerationContext,
+            modelParams,
+            llmService,
+            previousProofVersions
+        );
     }
 }

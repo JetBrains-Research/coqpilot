@@ -1,72 +1,70 @@
-import { OpenAiService } from "../llm/llmServices/openai/openAiService";
+import Ajv, { JSONSchemaType } from "ajv";
+import {
+    ExtensionContext,
+    ProgressLocation,
+    TextEditor,
+    WorkspaceConfiguration,
+    commands,
+    window,
+    workspace,
+} from "vscode";
+
+import { LLMServices } from "../llm/llmServices";
 import { GrazieService } from "../llm/llmServices/grazie/grazieService";
+import { OpenAiService } from "../llm/llmServices/openai/openAiService";
 import { PredefinedProofsService } from "../llm/llmServices/predefinedProofs/predefinedProofsService";
-import { CoqLspConfig } from "../coqLsp/coqLspConfig";
+import {
+    GrazieUserModelParams,
+    OpenAiUserModelParams,
+    PredefinedProofsUserModelParams,
+    UserModelsParams,
+    grazieUserModelParamsSchema,
+    openAiUserModelParamsSchema,
+    predefinedProofsUserModelParamsSchema,
+} from "../llm/userModelParams";
+
 import { CoqLspClient } from "../coqLsp/coqLspClient";
-import { inspectSourceFile } from "../core/inspectSourceFile";
+import { CoqLspConfig } from "../coqLsp/coqLspConfig";
+
+import { generateCompletion } from "../core/completionGenerator";
+import {
+    FailureGenerationResult,
+    FailureGenerationStatus,
+    SuccessGenerationResult,
+} from "../core/completionGenerator";
+import {
+    CompletionContext,
+    ProcessEnvironment,
+    SourceFileEnvironment,
+} from "../core/completionGenerator";
+import { ContextTheoremsRanker } from "../core/contextTheoremRanker/contextTheoremsRanker";
+import { DistanceContextTheoremsRanker } from "../core/contextTheoremRanker/distanceContextTheoremsRanker";
+import { RandomContextTheoremsRanker } from "../core/contextTheoremRanker/randomContextTheoremsRanker";
 import { CoqProofChecker } from "../core/coqProofChecker";
+import { inspectSourceFile } from "../core/inspectSourceFile";
+
+import { ProofStep } from "../coqParser/parsedTypes";
+import { EventLogger } from "../logging/eventLogger";
 import { Uri } from "../utils/uri";
 
-import { hideAuxFiles, cleanAuxFiles } from "./tmpFilesCleanup";
-import VSCodeLogWriter from "./vscodeLogWriter";
-import { EventLogger } from "../logging/eventLogger";
-
+import {
+    deleteTextFromRange,
+    highlightTextInEditor,
+    insertCompletion,
+} from "./documentEditor";
+import {
+    EditorMessages,
+    showApiKeyNotProvidedMessage,
+    showMessageToUser,
+    suggestAddingAuxFilesToGitignore,
+} from "./editorMessages";
 import {
     positionInRange,
     toVSCodePosition,
     toVSCodeRange,
 } from "./positionRangeUtils";
-
-import { generateCompletion } from "../core/completionGenerator";
-import {
-    deleteTextFromRange,
-    insertCompletion,
-    highlightTextInEditor,
-} from "./documentEditor";
-import Ajv, { JSONSchemaType } from "ajv";
-
-import {
-    SuccessGenerationResult,
-    FailureGenerationResult,
-    FailureGenerationStatus,
-} from "../core/completionGenerator";
-
-import {
-    ProcessEnvironment,
-    SourceFileEnvironment,
-    CompletionContext,
-} from "../core/completionGenerator";
-
-import { ModelsParams, LLMServices } from "../llm/configurations";
-
-import {
-    commands,
-    ExtensionContext,
-    workspace,
-    TextEditor,
-    ProgressLocation,
-    window,
-} from "vscode";
-import { ProofStep } from "../coqParser/parsedTypes";
-import {
-    GrazieModelParams,
-    OpenAiModelParams,
-    PredefinedProofsModelParams,
-    openAiModelParamsSchema,
-    grazieModelParamsSchema,
-    predefinedProofsModelParamsSchema,
-} from "../llm/llmServices/modelParamsInterfaces";
-
-import {
-    suggestAddingAuxFilesToGitignore,
-    EditorMessages,
-    showMessageToUser,
-    showApiKeyNotProvidedMessage,
-} from "./editorMessages";
-
-import { ContextTheoremsRanker } from "../core/contextTheoremRanker/contextTheoremsRanker";
-import { DistanceContextTheoremsRanker } from "../core/contextTheoremRanker/distanceContextTheoremsRanker";
-import { RandomContextTheoremsRanker } from "../core/contextTheoremRanker/randomContextTheoremsRanker";
+import { cleanAuxFiles, hideAuxFiles } from "./tmpFilesCleanup";
+import VSCodeLogWriter from "./vscodeLogWriter";
 
 export class GlobalExtensionState {
     public readonly eventLogger: EventLogger = new EventLogger();
@@ -298,27 +296,14 @@ export class CoqPilot {
             );
         const processEnvironment: ProcessEnvironment = {
             coqProofChecker: coqProofChecker,
-            modelsParams: this.buildModelsParamsFromConfig(),
+            modelsParams: this.parseUserModelsParams(
+                workspace.getConfiguration(this.pluginId)
+            ),
             services: this.globalExtensionState.llmServices,
             theoremRanker: contextTheoremsRanker,
         };
 
         return [completionContexts, sourceFileEnvironment, processEnvironment];
-    }
-
-    private validateAndParseJson<T>(
-        json: any,
-        targetClassSchema: JSONSchemaType<T>
-    ): T {
-        const instance: T = json as T;
-        const validate = this.jsonSchemaValidator.compile(targetClassSchema);
-        if (!validate(instance)) {
-            throw new Error(
-                `Unable to validate json against the class: ${JSON.stringify(validate.errors)}`
-            );
-        }
-
-        return instance;
     }
 
     private buildTheoremsRankerFromConfig(): ContextTheoremsRanker {
@@ -337,24 +322,23 @@ export class CoqPilot {
         }
     }
 
-    private buildModelsParamsFromConfig(): ModelsParams {
-        const workspaceConfig = workspace.getConfiguration(this.pluginId);
-
-        const openAiParams: OpenAiModelParams[] =
-            workspaceConfig.openAiModelsParameters.map((params: any) =>
-                this.validateAndParseJson(params, openAiModelParamsSchema)
+    private parseUserModelsParams(
+        config: WorkspaceConfiguration
+    ): UserModelsParams {
+        const openAiParams: OpenAiUserModelParams[] =
+            config.openAiModelsParameters.map((params: any) =>
+                this.validateAndParseJson(params, openAiUserModelParamsSchema)
             );
-        const grazieParams: GrazieModelParams[] =
-            workspaceConfig.grazieModelsParameters.map((params: any) =>
-                this.validateAndParseJson(params, grazieModelParamsSchema)
+        const grazieParams: GrazieUserModelParams[] =
+            config.grazieModelsParameters.map((params: any) =>
+                this.validateAndParseJson(params, grazieUserModelParamsSchema)
             );
-        const predefinedProofsParams: PredefinedProofsModelParams[] =
-            workspaceConfig.predefinedProofsModelsParameters.map(
-                (params: any) =>
-                    this.validateAndParseJson(
-                        params,
-                        predefinedProofsModelParamsSchema
-                    )
+        const predefinedProofsParams: PredefinedProofsUserModelParams[] =
+            config.predefinedProofsModelsParameters.map((params: any) =>
+                this.validateAndParseJson(
+                    params,
+                    predefinedProofsUserModelParamsSchema
+                )
             );
 
         return {
@@ -362,6 +346,21 @@ export class CoqPilot {
             grazieParams: grazieParams,
             predefinedProofsModelParams: predefinedProofsParams,
         };
+    }
+
+    private validateAndParseJson<T>(
+        json: any,
+        targetClassSchema: JSONSchemaType<T>
+    ): T {
+        const instance: T = json as T;
+        const validate = this.jsonSchemaValidator.compile(targetClassSchema);
+        if (!validate(instance)) {
+            throw new Error(
+                `Unable to validate json against the class: ${JSON.stringify(validate.errors)}`
+            );
+        }
+
+        return instance;
     }
 
     private registerEditorCommand(
