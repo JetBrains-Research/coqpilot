@@ -7,10 +7,9 @@ import { LLMService } from "../llmService";
 import { GrazieModelParams, ModelParams } from "../modelParams";
 
 import { GrazieApi, GrazieChatRole, GrazieFormattedHistory } from "./grazieApi";
-import { GrazieApiInterface } from "./grazieApiInterface";
 
 export class GrazieService extends LLMService {
-    private api: GrazieApiInterface;
+    private api: GrazieApi;
     // Is constant (now) as specified in Grazie REST API
     private readonly newMessageMaxTokens = 1024;
 
@@ -48,7 +47,7 @@ export class GrazieService extends LLMService {
 
         while (completions.length < choices && attempts > 0) {
             completions.push(
-                this.api.chatCompletionRequest(
+                this.api.requestChatCompletion(
                     params as GrazieModelParams,
                     formattedChat
                 )
