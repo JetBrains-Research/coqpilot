@@ -1,4 +1,5 @@
 // import { JSONSchemaType } from "ajv";
+import { MultiroundProfile } from "./llmServices/modelParams";
 
 export interface UserModelParams {
     modelName: string;
@@ -8,6 +9,8 @@ export interface UserModelParams {
 
     newMessageMaxTokens?: number;
     tokensLimit?: number;
+
+    multiroundProfile?: MultiroundProfile;
 }
 
 export interface OpenAiUserModelParams extends UserModelParams {

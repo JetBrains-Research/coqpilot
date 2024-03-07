@@ -39,6 +39,9 @@ export class GrazieService extends LLMService {
         params: ModelParams,
         choices: number
     ): Promise<string[]> {
+        if (choices <= 0) {
+            return [];
+        }
         let attempts = choices * 2;
         const completions: Promise<string>[] = [];
         const formattedChat = this.formatChatHistory(chat);
@@ -88,9 +91,5 @@ export class GrazieGeneratedProof extends GeneratedProof {
             llmService,
             previousProofVersions
         );
-    }
-
-    supportsFixing(): Boolean {
-        return true;
     }
 }

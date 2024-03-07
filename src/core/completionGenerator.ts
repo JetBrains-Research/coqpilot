@@ -118,10 +118,8 @@ export async function generateCompletion(
                         diagnostic: proofCheckResults[i].diagnostic!,
                     };
                 });
-            newlyGeneratedProofs = []; // prepare to a new iteration
-
             const fixedProofs = await fixProofs(proofsWithFeedback);
-            newlyGeneratedProofs.push(...fixedProofs);
+            newlyGeneratedProofs = [...fixedProofs]; // prepare to a new iteration
         }
 
         return new FailureGenerationResult(
@@ -172,22 +170,19 @@ async function fixProofs(
 ): Promise<GeneratedProof[]> {
     const fixProofsPromises = [];
 
-    // build promises
+    // build fix promises
     for (const proofWithFeedback of proofsWithFeedback) {
         const generatedProof = proofWithFeedback.generatedProof;
-        if (
-            !generatedProof.supportsFixing() ||
-            generatedProof.versionNumber() >= 3 // TODO: make it param
-        ) {
+        if (!generatedProof.canBeFixed()) {
             continue;
         }
         const diagnostic = proofWithFeedback.diagnostic;
 
-        const newProofVersions = generatedProof.fixProof(diagnostic, 1); // TODO: make it param
+        const newProofVersions = generatedProof.fixProof(diagnostic);
         fixProofsPromises.push(newProofVersions);
     }
 
-    // resolve promises
+    // resolve promises: wait for all requested proofs to be fixed
     return (await Promise.allSettled(fixProofsPromises)).flatMap(
         (resolvedPromise) => {
             if (resolvedPromise.status === "fulfilled") {

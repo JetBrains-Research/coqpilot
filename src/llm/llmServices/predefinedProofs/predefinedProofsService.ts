@@ -43,6 +43,9 @@ export class PredefinedProofsService extends LLMService {
         params: ModelParams,
         choices: number
     ): Promise<GeneratedProof[]> {
+        if (choices <= 0) {
+            return [];
+        }
         const predefinedProofsParams = params as PredefinedProofsModelParams;
         const tactics = predefinedProofsParams.tactics;
         if (choices > tactics.length) {
@@ -85,6 +88,10 @@ export class PredefinedProofsService extends LLMService {
             ),
             tokensLimit: Number.POSITIVE_INFINITY,
             systemPromt: "",
+            multiroundProfile: {
+                maxRoundsNumber: 1,
+                fixedProofChoices: 0,
+            },
         };
     }
 }
@@ -110,9 +117,5 @@ export class PredefinedProof extends GeneratedProof {
 
     fixProof(_diagnostic: string, _choices: number): Promise<GeneratedProof[]> {
         throw new Error("PredefinedProof cannot be fixed");
-    }
-
-    supportsFixing(): Boolean {
-        return false;
     }
 }

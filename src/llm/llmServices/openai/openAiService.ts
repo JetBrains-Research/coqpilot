@@ -33,6 +33,9 @@ export class OpenAiService extends LLMService {
         choices: number
     ): Promise<string[]> {
         // TODO: support retries
+        if (choices <= 0) {
+            return [];
+        }
         const openAiParams = params as OpenAiModelParams;
         const openai = new OpenAI({ apiKey: openAiParams.apiKey });
 
@@ -70,9 +73,5 @@ export class OpenAiGeneratedProof extends GeneratedProof {
             llmService,
             previousProofVersions
         );
-    }
-
-    supportsFixing(): Boolean {
-        return true;
     }
 }

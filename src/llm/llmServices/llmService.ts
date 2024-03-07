@@ -5,7 +5,7 @@ import { ProofGenerationContext } from "../proofGenerationContext";
 import { UserModelParams } from "../userModelParams";
 
 import { ChatHistory } from "./chat";
-import { ModelParams } from "./modelParams";
+import { ModelParams, MultiroundProfile } from "./modelParams";
 import { buildFixProofChat, buildGenerateProofChat } from "./utils/chatFactory";
 
 export type Proof = string;
@@ -36,6 +36,9 @@ export abstract class LLMService {
         params: ModelParams,
         choices: number
     ): Promise<GeneratedProof[]> {
+        if (choices <= 0) {
+            return [];
+        }
         const chat = buildGenerateProofChat(proofGenerationContext, params);
         const proofs = await this.generateFromChat(chat, params, choices);
         return proofs.map((proof: string) =>
@@ -59,10 +62,13 @@ export abstract class LLMService {
             params.tokensLimit ?? this.defaultTokensLimits[params.modelName];
         const systemMessageContent =
             params.systemPromt ?? this.defaultSystemMessageContent;
+        const multiroundProfile =
+            params.multiroundProfile ?? this.defaultMultiroundProfile;
         if (
             newMessageMaxTokens === undefined ||
             tokensLimits === undefined ||
-            systemMessageContent === undefined
+            systemMessageContent === undefined ||
+            multiroundProfile === undefined
         ) {
             throw Error(`user model parameters cannot be resolved: ${params}`);
         }
@@ -71,6 +77,7 @@ export abstract class LLMService {
             systemPromt: systemMessageContent,
             newMessageMaxTokens: newMessageMaxTokens,
             tokensLimit: tokensLimits,
+            multiroundProfile: multiroundProfile,
         };
     };
 
@@ -87,11 +94,18 @@ export abstract class LLMService {
 
     private readonly defaultSystemMessageContent =
         "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'.";
+
+    // multiround is disabled by default
+    private readonly defaultMultiroundProfile: MultiroundProfile = {
+        maxRoundsNumber: 1,
+        fixedProofChoices: 0,
+    };
 }
 
 export abstract class GeneratedProof {
     readonly llmService: LLMService;
     readonly modelParams: ModelParams;
+    readonly maxRoundsNumber: number;
 
     readonly proofGenerationContext: ProofGenerationContext;
     readonly proofVersions: ProofVersion[];
@@ -112,6 +126,14 @@ export abstract class GeneratedProof {
             proof: proof,
             diagnostic: undefined,
         });
+
+        this.maxRoundsNumber =
+            this.modelParams.multiroundProfile.maxRoundsNumber;
+        if (this.maxRoundsNumber < this.proofVersions.length) {
+            throw new Error(
+                `proof cannot be generated: max rounds number (${this.maxRoundsNumber}) was already reached`
+            );
+        }
     }
 
     private lastProofVersion(): ProofVersion {
@@ -131,6 +153,9 @@ export abstract class GeneratedProof {
         chat: ChatHistory,
         choices: number
     ): Promise<GeneratedProof[]> {
+        if (!this.nextVersionCanBeGenerated() || choices <= 0) {
+            return [];
+        }
         const newProofs = await this.llmService.generateFromChat(
             chat,
             this.modelParams,
@@ -146,10 +171,18 @@ export abstract class GeneratedProof {
         );
     }
 
+    /**
+     * `modelParams.multiroundProfile.fixedProofChoices` can be overriden here
+     * with `choices` parameter
+     */
     async fixProof(
         diagnostic: string,
-        choices: number
+        choices: number = this.modelParams.multiroundProfile.fixedProofChoices
     ): Promise<GeneratedProof[]> {
+        if (choices <= 0 || !this.canBeFixed()) {
+            return [];
+        }
+
         const lastProofVersion = this.lastProofVersion();
         assert.ok(lastProofVersion.diagnostic === undefined);
         lastProofVersion.diagnostic = diagnostic;
@@ -162,5 +195,12 @@ export abstract class GeneratedProof {
         return this.generateNextVersion(chat, choices);
     }
 
-    abstract supportsFixing(): Boolean;
+    protected nextVersionCanBeGenerated(): Boolean {
+        return this.versionNumber() < this.maxRoundsNumber;
+    }
+
+    // doesn't check this.modelParams.multiroundProfile.fixedProofChoices, because they can be overriden
+    canBeFixed(): Boolean {
+        return this.nextVersionCanBeGenerated();
+    }
 }
