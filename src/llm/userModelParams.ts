@@ -1,4 +1,5 @@
-// import { JSONSchemaType } from "ajv";
+import { JSONSchemaType } from "ajv";
+import { PropertiesSchema } from "ajv/dist/types/json-schema";
 
 export interface UserMultiroundProfile {
     // cannot be overriden: proof will always be updated no more than `maxRoundsNumber` times
@@ -7,15 +8,15 @@ export interface UserMultiroundProfile {
     // can be overriden in the `fixProof` call with the `choices` parameter
     proofFixChoices?: number;
 
-    // use `${diagnostic}` syntax to include a diagnostic message into the promt
-    proofFixPromt?: string;
+    // use `${diagnostic}` syntax to include a diagnostic message into the prompt
+    proofFixPrompt?: string;
 }
 
 export interface UserModelParams {
     modelName: string;
-    choices: number;
+    choices?: number;
 
-    systemPromt?: string;
+    systemPrompt?: string;
 
     newMessageMaxTokens?: number;
     tokensLimit?: number;
@@ -43,48 +44,68 @@ export interface UserModelsParams {
     predefinedProofsModelParams: PredefinedProofsUserModelParams[];
 }
 
-// export const openAiModelParamsSchema: JSONSchemaType<OpenAiModelParams> = {
-//     type: "object",
-//     properties: {
-//         prompt: { type: "string" },
-//         answerMaxTokens: { type: "number" },
-//         modelContextLength: { type: "number" },
-//         temperature: { type: "number" },
-//         model: { type: "string" },
-//         apiKey: { type: "string" },
-//         choices: { type: "number" },
-//     },
-//     required: [
-//         "prompt",
-//         "answerMaxTokens",
-//         "modelContextLength",
-//         "temperature",
-//         "model",
-//         "apiKey",
-//         "choices",
-//     ],
-// };
+export const userMultiroundProfileSchema: JSONSchemaType<UserMultiroundProfile> =
+    {
+        type: "object",
+        properties: {
+            maxRoundsNumber: { type: "number", nullable: true },
+            proofFixChoices: { type: "number", nullable: true },
+            proofFixPrompt: { type: "string", nullable: true },
+        },
+        required: [],
+        additionalProperties: false,
+    };
 
-// export const grazieModelParamsSchema: JSONSchemaType<GrazieModelParams> = {
-//     type: "object",
-//     properties: {
-//         prompt: { type: "string" },
-//         modelContextLength: { type: "number" },
-//         model: { type: "string" },
-//         apiKey: { type: "string" },
-//         choices: { type: "number" },
-//     },
-//     required: ["prompt", "modelContextLength", "model", "apiKey", "choices"],
-// };
+export const userModelParamsSchema: JSONSchemaType<UserModelParams> = {
+    type: "object",
+    properties: {
+        modelName: { type: "string" },
+        choices: { type: "number", nullable: true },
 
-// export const predefinedProofsModelParamsSchema: JSONSchemaType<PredefinedProofsModelParams> =
-//     {
-//         type: "object",
-//         properties: {
-//             tactics: {
-//                 type: "array",
-//                 items: { type: "string" },
-//             },
-//         },
-//         required: ["tactics"],
-//     };
+        systemPrompt: { type: "string", nullable: true },
+
+        newMessageMaxTokens: { type: "number", nullable: true },
+        tokensLimit: { type: "number", nullable: true },
+
+        multiroundProfile: {
+            type: "object",
+            oneOf: [userMultiroundProfileSchema],
+            nullable: true,
+        },
+    },
+    required: ["modelName"],
+};
+
+export const openAiUserModelParamsSchema: JSONSchemaType<OpenAiUserModelParams> =
+    {
+        type: "object",
+        properties: {
+            temperature: { type: "number" },
+            apiKey: { type: "string" },
+            ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
+        },
+        required: ["modelName", "temperature", "apiKey"],
+    };
+
+export const grazieUserModelParamsSchema: JSONSchemaType<GrazieUserModelParams> =
+    {
+        type: "object",
+        properties: {
+            apiKey: { type: "string" },
+            ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
+        },
+        required: ["modelName", "apiKey"],
+    };
+
+export const predefinedProofsUserModelParamsSchema: JSONSchemaType<PredefinedProofsUserModelParams> =
+    {
+        type: "object",
+        properties: {
+            tactics: {
+                type: "array",
+                items: { type: "string" },
+            },
+            ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
+        },
+        required: ["modelName", "tactics"],
+    };

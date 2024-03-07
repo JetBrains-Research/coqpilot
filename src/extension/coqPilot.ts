@@ -3,23 +3,25 @@ import {
     ExtensionContext,
     ProgressLocation,
     TextEditor,
+    WorkspaceConfiguration,
     commands,
     window,
     workspace,
 } from "vscode";
 
-import { LLMServices, ModelsParams } from "../llm/llmServices";
+import { LLMServices } from "../llm/llmServices";
 import { GrazieService } from "../llm/llmServices/grazie/grazieService";
-import {
-    GrazieModelParams,
-    OpenAiModelParams,
-    PredefinedProofsModelParams,
-    grazieModelParamsSchema,
-    openAiModelParamsSchema,
-    predefinedProofsModelParamsSchema,
-} from "../llm/llmServices/modelParams";
 import { OpenAiService } from "../llm/llmServices/openai/openAiService";
 import { PredefinedProofsService } from "../llm/llmServices/predefinedProofs/predefinedProofsService";
+import {
+    GrazieUserModelParams,
+    OpenAiUserModelParams,
+    PredefinedProofsUserModelParams,
+    UserModelsParams,
+    grazieUserModelParamsSchema,
+    openAiUserModelParamsSchema,
+    predefinedProofsUserModelParamsSchema,
+} from "../llm/userModelParams";
 
 import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { CoqLspConfig } from "../coqLsp/coqLspConfig";
@@ -294,27 +296,14 @@ export class CoqPilot {
             );
         const processEnvironment: ProcessEnvironment = {
             coqProofChecker: coqProofChecker,
-            modelsParams: this.buildModelsParamsFromConfig(),
+            modelsParams: this.parseUserModelsParams(
+                workspace.getConfiguration(this.pluginId)
+            ),
             services: this.globalExtensionState.llmServices,
             theoremRanker: contextTheoremsRanker,
         };
 
         return [completionContexts, sourceFileEnvironment, processEnvironment];
-    }
-
-    private validateAndParseJson<T>(
-        json: any,
-        targetClassSchema: JSONSchemaType<T>
-    ): T {
-        const instance: T = json as T;
-        const validate = this.jsonSchemaValidator.compile(targetClassSchema);
-        if (!validate(instance)) {
-            throw new Error(
-                `Unable to validate json against the class: ${JSON.stringify(validate.errors)}`
-            );
-        }
-
-        return instance;
     }
 
     private buildTheoremsRankerFromConfig(): ContextTheoremsRanker {
@@ -333,24 +322,23 @@ export class CoqPilot {
         }
     }
 
-    private buildModelsParamsFromConfig(): ModelsParams {
-        const workspaceConfig = workspace.getConfiguration(this.pluginId);
-
-        const openAiParams: OpenAiModelParams[] =
-            workspaceConfig.openAiModelsParameters.map((params: any) =>
-                this.validateAndParseJson(params, openAiModelParamsSchema)
+    private parseUserModelsParams(
+        config: WorkspaceConfiguration
+    ): UserModelsParams {
+        const openAiParams: OpenAiUserModelParams[] =
+            config.openAiModelsParameters.map((params: any) =>
+                this.validateAndParseJson(params, openAiUserModelParamsSchema)
             );
-        const grazieParams: GrazieModelParams[] =
-            workspaceConfig.grazieModelsParameters.map((params: any) =>
-                this.validateAndParseJson(params, grazieModelParamsSchema)
+        const grazieParams: GrazieUserModelParams[] =
+            config.grazieModelsParameters.map((params: any) =>
+                this.validateAndParseJson(params, grazieUserModelParamsSchema)
             );
-        const predefinedProofsParams: PredefinedProofsModelParams[] =
-            workspaceConfig.predefinedProofsModelsParameters.map(
-                (params: any) =>
-                    this.validateAndParseJson(
-                        params,
-                        predefinedProofsModelParamsSchema
-                    )
+        const predefinedProofsParams: PredefinedProofsUserModelParams[] =
+            config.predefinedProofsModelsParameters.map((params: any) =>
+                this.validateAndParseJson(
+                    params,
+                    predefinedProofsUserModelParamsSchema
+                )
             );
 
         return {
@@ -358,6 +346,21 @@ export class CoqPilot {
             grazieParams: grazieParams,
             predefinedProofsModelParams: predefinedProofsParams,
         };
+    }
+
+    private validateAndParseJson<T>(
+        json: any,
+        targetClassSchema: JSONSchemaType<T>
+    ): T {
+        const instance: T = json as T;
+        const validate = this.jsonSchemaValidator.compile(targetClassSchema);
+        if (!validate(instance)) {
+            throw new Error(
+                `Unable to validate json against the class: ${JSON.stringify(validate.errors)}`
+            );
+        }
+
+        return instance;
     }
 
     private registerEditorCommand(

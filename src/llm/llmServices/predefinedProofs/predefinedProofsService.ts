@@ -87,11 +87,11 @@ export class PredefinedProofsService extends LLMService {
                 ...castedParams.tactics.map((tactic) => tactic.length)
             ),
             tokensLimit: Number.POSITIVE_INFINITY,
-            systemPromt: "",
+            systemPrompt: "",
             multiroundProfile: {
                 maxRoundsNumber: 1,
                 proofFixChoices: 0,
-                proofFixPromt: "",
+                proofFixPrompt: "",
             },
         };
     }

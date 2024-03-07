@@ -64,7 +64,7 @@ export abstract class LLMService {
         const tokensLimits =
             params.tokensLimit ?? this.defaultTokensLimits[params.modelName];
         const systemMessageContent =
-            params.systemPromt ?? this.defaultSystemMessageContent;
+            params.systemPrompt ?? this.defaultSystemMessageContent;
         const multiroundProfile: MultiroundProfile = {
             maxRoundsNumber:
                 params.multiroundProfile?.maxRoundsNumber ??
@@ -72,16 +72,16 @@ export abstract class LLMService {
             proofFixChoices:
                 params.multiroundProfile?.proofFixChoices ??
                 this.defaultMultiroundProfile.proofFixChoices,
-            proofFixPromt:
-                params.multiroundProfile?.proofFixPromt ??
-                this.defaultMultiroundProfile.proofFixPromt,
+            proofFixPrompt:
+                params.multiroundProfile?.proofFixPrompt ??
+                this.defaultMultiroundProfile.proofFixPrompt,
         };
         if (newMessageMaxTokens === undefined || tokensLimits === undefined) {
             throw Error(`user model parameters cannot be resolved: ${params}`);
         }
         return {
             modelName: params.modelName,
-            systemPromt: systemMessageContent,
+            systemPrompt: systemMessageContent,
             newMessageMaxTokens: newMessageMaxTokens,
             tokensLimit: tokensLimits,
             multiroundProfile: multiroundProfile,
@@ -106,7 +106,7 @@ export abstract class LLMService {
     private readonly defaultMultiroundProfile: MultiroundProfile = {
         maxRoundsNumber: 1, // multiround is disabled by default
         proofFixChoices: 1, // 1 fix version per proof by default
-        proofFixPromt:
+        proofFixPrompt:
             "Unfortunately, the last proof is not correct. Here is the compiler's feedback: '${diagnostic}'. Please, fix the proof.",
     };
 }

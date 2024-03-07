@@ -3,7 +3,11 @@ import { EventLogger } from "../logging/eventLogger";
 import { LLMServices } from "./llmServices";
 import { GeneratedProof, LLMService } from "./llmServices/llmService";
 import { ProofGenerationContext } from "./proofGenerationContext";
-import { UserModelParams, UserModelsParams } from "./userModelParams";
+import {
+    PredefinedProofsUserModelParams,
+    UserModelParams,
+    UserModelsParams,
+} from "./userModelParams";
 
 type GeneratedProofsBatch = GeneratedProof[];
 type ProofsGenerationHook = () => Promise<GeneratedProofsBatch>;
@@ -16,6 +20,8 @@ export class LLMSequentialIterator
 
     private hooksIndex: number;
     private insideBatchIndex: number;
+
+    private readonly defaultGenerationChoices = 10;
 
     constructor(
         proofGenerationContext: ProofGenerationContext,
@@ -45,7 +51,9 @@ export class LLMSequentialIterator
                 proofGenerationContext,
                 modelsParams.predefinedProofsModelParams,
                 services.predefinedProofsService,
-                "predefined-proofs"
+                "predefined-proofs",
+                (params) =>
+                    (params as PredefinedProofsUserModelParams).tactics.length
             ),
             ...this.createLLMServiceHooks(
                 proofGenerationContext,
@@ -66,7 +74,9 @@ export class LLMSequentialIterator
         proofGenerationContext: ProofGenerationContext,
         allModelParamsForService: UserModelParams[],
         llmService: LLMService,
-        serviceLoggingName: string
+        serviceLoggingName: string,
+        resolveChoices: (userModelParams: UserModelParams) => number = (_) =>
+            this.defaultGenerationChoices
     ): ProofsGenerationHook[] {
         const hooks = [];
         for (const userModelParams of allModelParamsForService) {
@@ -81,7 +91,7 @@ export class LLMSequentialIterator
                 return llmService.generateProof(
                     proofGenerationContext,
                     resolvedParams,
-                    userModelParams.choices
+                    userModelParams.choices ?? resolveChoices(userModelParams)
                 );
             });
         }

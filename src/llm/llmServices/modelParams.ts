@@ -1,12 +1,12 @@
 export interface MultiroundProfile {
     maxRoundsNumber: number;
     proofFixChoices: number;
-    proofFixPromt: string;
+    proofFixPrompt: string;
 }
 
 export interface ModelParams {
     modelName: string;
-    systemPromt: string;
+    systemPrompt: string;
     newMessageMaxTokens: number;
     tokensLimit: number;
     multiroundProfile: MultiroundProfile;

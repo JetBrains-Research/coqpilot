@@ -63,7 +63,7 @@ export function buildProofGenerationChat(
 
     const systemMessage: ChatMessage = {
         role: "system",
-        content: modelParams.systemPromt!,
+        content: modelParams.systemPrompt!,
     };
     fitter.fitRequiredMessage(systemMessage);
 
@@ -99,7 +99,7 @@ export function buildProofFixChat(
 
     const systemMessage: ChatMessage = {
         role: "system",
-        content: modelParams.systemPromt!,
+        content: modelParams.systemPrompt!,
     };
     fitter.fitRequiredMessage(systemMessage);
 
@@ -116,7 +116,7 @@ export function buildProofFixChat(
         role: "user",
         content: createProofFixMessage(
             lastProofVersion.diagnostic!,
-            modelParams.multiroundProfile.proofFixPromt
+            modelParams.multiroundProfile.proofFixPrompt
         ),
     };
     fitter.fitRequiredMessage(completionTargetMessage);
@@ -149,9 +149,9 @@ export function buildProofFixChat(
 
 function createProofFixMessage(
     diagnostic: string,
-    proofFixPromt: string
+    proofFixPrompt: string
 ): string {
-    return proofFixPromt.replace("${diagnostic}", diagnostic);
+    return proofFixPrompt.replace("${diagnostic}", diagnostic);
 }
 
 export function theoremToChatItem(theorem: Theorem): UserAssistantChatItem {
