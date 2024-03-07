@@ -44,8 +44,8 @@ export function validateChat(chat: ChatHistory): [boolean, string] {
 export function buildChat(
     ...chats: (ChatHistory | ChatMessage)[]
 ): ChatHistory {
-    const chat: ChatHistory = [];
-    chat.concat(...chats);
+    let chat: ChatHistory = [];
+    chat = chat.concat(...chats);
     const [isValid, errorMessage] = validateChat(chat);
     assert.ok(isValid, errorMessage);
     return chat;
@@ -169,13 +169,16 @@ export function proofVersionToChatItem(
     proofVersion: ProofVersion
 ): UserAssistantChatItem {
     return {
-        userMessage: proofVersion.proof,
-        assistantMessage: proofVersion.diagnostic!,
+        userMessage: `Proof is invalid, compiler diagnostic: ${proofVersion.diagnostic!}`,
+        assistantMessage: proofVersion.proof,
     };
 }
 
 export function buildPreviousProofVersionsChat(
     proofVersions: ProofVersion[]
 ): ChatHistory {
-    return itemizedChatToHistory(proofVersions.map(proofVersionToChatItem));
+    return itemizedChatToHistory(
+        proofVersions.map(proofVersionToChatItem),
+        false
+    );
 }

@@ -44,7 +44,7 @@ import { CoqProofChecker } from "../core/coqProofChecker";
 import { inspectSourceFile } from "../core/inspectSourceFile";
 
 import { ProofStep } from "../coqParser/parsedTypes";
-import { EventLogger } from "../logging/eventLogger";
+import { EventLogger, Severity } from "../logging/eventLogger";
 import { Uri } from "../utils/uri";
 
 import {
@@ -66,10 +66,13 @@ import {
 import { cleanAuxFiles, hideAuxFiles } from "./tmpFilesCleanup";
 import VSCodeLogWriter from "./vscodeLogWriter";
 
+export const pluginId = "coqpilot";
+
 export class GlobalExtensionState {
     public readonly eventLogger: EventLogger = new EventLogger();
     public readonly logWriter: VSCodeLogWriter = new VSCodeLogWriter(
-        this.eventLogger
+        this.eventLogger,
+        this.parseLoggingVerbosity(workspace.getConfiguration(pluginId))
     );
     public readonly llmServices: LLMServices = {
         openAiService: new OpenAiService(this.eventLogger),
@@ -78,6 +81,18 @@ export class GlobalExtensionState {
     };
 
     constructor() {}
+
+    private parseLoggingVerbosity(config: WorkspaceConfiguration): Severity {
+        const verbosity = config.get("loggingVerbosity");
+        switch (verbosity) {
+            case "info":
+                return Severity.INFO;
+            case "debug":
+                return Severity.DEBUG;
+            default:
+                throw new Error(`Unknown logging verbosity: ${verbosity}`);
+        }
+    }
 
     dispose(): void {
         this.llmServices.openAiService.dispose();
@@ -90,7 +105,6 @@ export class GlobalExtensionState {
 export class CoqPilot {
     private readonly globalExtensionState: GlobalExtensionState;
     private readonly vscodeExtensionContext: ExtensionContext;
-    private readonly pluginId = "coqpilot";
 
     private readonly jsonSchemaValidator: Ajv;
 
@@ -147,14 +161,14 @@ export class CoqPilot {
                 (params) => params.apiKey === "None"
             )
         ) {
-            showApiKeyNotProvidedMessage("openai", this.pluginId);
+            showApiKeyNotProvidedMessage("openai", pluginId);
             return false;
         } else if (
             processEnvironment.modelsParams.grazieParams.some(
                 (params) => params.apiKey === "None"
             )
         ) {
-            showApiKeyNotProvidedMessage("grazie", this.pluginId);
+            showApiKeyNotProvidedMessage("grazie", pluginId);
             return false;
         }
 
@@ -168,7 +182,7 @@ export class CoqPilot {
         await window.withProgress(
             {
                 location: ProgressLocation.Window,
-                title: `${this.pluginId}: In progress`,
+                title: `${pluginId}: In progress`,
             },
             async () => {
                 await this.performSpecificCompletions(
@@ -297,7 +311,7 @@ export class CoqPilot {
         const processEnvironment: ProcessEnvironment = {
             coqProofChecker: coqProofChecker,
             modelsParams: this.parseUserModelsParams(
-                workspace.getConfiguration(this.pluginId)
+                workspace.getConfiguration(pluginId)
             ),
             services: this.globalExtensionState.llmServices,
             theoremRanker: contextTheoremsRanker,
@@ -307,7 +321,7 @@ export class CoqPilot {
     }
 
     private buildTheoremsRankerFromConfig(): ContextTheoremsRanker {
-        const workspaceConfig = workspace.getConfiguration(this.pluginId);
+        const workspaceConfig = workspace.getConfiguration(pluginId);
         const rankerType = workspaceConfig.contextTheoremsRankerType;
 
         switch (rankerType) {
@@ -368,7 +382,7 @@ export class CoqPilot {
         fn: (editor: TextEditor) => void
     ) {
         let disposable = commands.registerTextEditorCommand(
-            `${this.pluginId}.` + command,
+            `${pluginId}.` + command,
             fn
         );
         this.vscodeExtensionContext.subscriptions.push(disposable);

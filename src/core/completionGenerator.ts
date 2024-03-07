@@ -13,7 +13,7 @@ import { EventLogger } from "../logging/eventLogger";
 
 import { ContextTheoremsRanker } from "./contextTheoremRanker/contextTheoremsRanker";
 import {
-    // CoqLspTimeoutError,
+    CoqLspTimeoutError,
     CoqProofChecker,
     ProofCheckResult,
 } from "./coqProofChecker";
@@ -96,12 +96,18 @@ export async function generateCompletion(
 
         for await (const generatedProofsBatch of iterator) {
             newlyGeneratedProofs.push(...generatedProofsBatch);
+            eventLogger?.log(
+                "core-new-proofs-ready-for-checking",
+                "Newly generated proofs are ready for checking",
+                newlyGeneratedProofs.map((proof) => proof.proof())
+            );
             const fixedProofsOrCompletion = await checkAndFixProofs(
                 newlyGeneratedProofs,
                 sourceFileContentPrefix,
                 completionContext,
                 sourceFileEnvironment,
-                processEnvironment
+                processEnvironment,
+                eventLogger
             );
             if (fixedProofsOrCompletion instanceof SuccessGenerationResult) {
                 return fixedProofsOrCompletion;
@@ -115,12 +121,18 @@ export async function generateCompletion(
                 sourceFileContentPrefix,
                 completionContext,
                 sourceFileEnvironment,
-                processEnvironment
+                processEnvironment,
+                eventLogger
             );
             if (fixedProofsOrCompletion instanceof SuccessGenerationResult) {
                 return fixedProofsOrCompletion;
             }
             newlyGeneratedProofs = [...fixedProofsOrCompletion];
+            eventLogger?.log(
+                "core-new-proofs-ready-for-checking",
+                "Newly generated only proof fixes are ready for checking",
+                newlyGeneratedProofs.map((proof) => proof.proof())
+            );
         }
 
         return new FailureGenerationResult(
@@ -128,18 +140,17 @@ export async function generateCompletion(
             "No valid completions found"
         );
     } catch (e: any) {
-        throw e;
-        // if (e instanceof CoqLspTimeoutError) {
-        //     return new FailureGenerationResult(
-        //         FailureGenerationStatus.excededTimeout,
-        //         e.message
-        //     );
-        // } else {
-        //     return new FailureGenerationResult(
-        //         FailureGenerationStatus.exception,
-        //         e.message
-        //     );
-        // }
+        if (e instanceof CoqLspTimeoutError) {
+            return new FailureGenerationResult(
+                FailureGenerationStatus.excededTimeout,
+                e.message
+            );
+        } else {
+            return new FailureGenerationResult(
+                FailureGenerationStatus.exception,
+                e.message
+            );
+        }
     }
 }
 
@@ -148,7 +159,8 @@ export async function checkAndFixProofs(
     sourceFileContentPrefix: string[],
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
-    processEnvironment: ProcessEnvironment
+    processEnvironment: ProcessEnvironment,
+    eventLogger?: EventLogger
 ): Promise<GeneratedProof[] | SuccessGenerationResult> {
     // check proofs and finish with success if at least one is valid
     const proofCheckResults = await checkGeneratedProofs(
@@ -173,6 +185,14 @@ export async function checkAndFixProofs(
         }
     );
     const fixedProofs = await fixProofs(proofsWithFeedback);
+    eventLogger?.log(
+        "core-proofs-fixed",
+        "Proofs were fixed",
+        fixedProofs.map(
+            (proof) =>
+                `New proof: ${proof.proof()} with version ${proof.versionNumber()}\n Previous version: ${JSON.stringify(proof.proofVersions.slice(-2))}`
+        )
+    );
     return fixedProofs; // prepare to a new iteration
 }
 
@@ -223,6 +243,10 @@ async function fixProofs(
             if (resolvedPromise.status === "fulfilled") {
                 return resolvedPromise.value;
             } else {
+                console.error(
+                    "Failed to fix proof: ",
+                    (resolvedPromise as PromiseRejectedResult).reason
+                );
                 return [];
             }
         }

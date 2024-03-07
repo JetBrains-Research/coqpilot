@@ -12,11 +12,19 @@ export interface UserAssistantChatItem {
 
 export type ItemizedChat = UserAssistantChatItem[];
 
-export function itemizedChatToHistory(itemizedChat: ItemizedChat): ChatHistory {
+export function itemizedChatToHistory(
+    itemizedChat: ItemizedChat,
+    userFirst: boolean = true
+): ChatHistory {
     const chat: ChatHistory = [];
     for (const item of itemizedChat) {
-        chat.push({ role: "user", content: item.userMessage });
-        chat.push({ role: "assistant", content: item.assistantMessage });
+        if (userFirst) {
+            chat.push({ role: "user", content: item.userMessage });
+            chat.push({ role: "assistant", content: item.assistantMessage });
+        } else {
+            chat.push({ role: "assistant", content: item.assistantMessage });
+            chat.push({ role: "user", content: item.userMessage });
+        }
     }
     return chat;
 }

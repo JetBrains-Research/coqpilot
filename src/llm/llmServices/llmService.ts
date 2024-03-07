@@ -136,7 +136,8 @@ export abstract class GeneratedProof {
         this.modelParams = modelParams;
 
         this.proofGenerationContext = proofGenerationContext;
-        this.proofVersions = previousProofVersions ?? [];
+        // Makes a copy of the previous proof versions
+        this.proofVersions = [...(previousProofVersions ?? [])];
         this.proofVersions.push({
             proof: proof,
             diagnostic: undefined,
@@ -166,7 +167,8 @@ export abstract class GeneratedProof {
 
     protected async generateNextVersion(
         chat: ChatHistory,
-        choices: number
+        choices: number,
+        postprocessProof: (proof: string) => string = (proof) => proof
     ): Promise<GeneratedProof[]> {
         if (!this.nextVersionCanBeGenerated() || choices <= 0) {
             return [];
@@ -178,7 +180,7 @@ export abstract class GeneratedProof {
         );
         return newProofs.map((proof: string) =>
             this.llmService.constructGeneratedProof(
-                proof,
+                postprocessProof(proof),
                 this.proofGenerationContext,
                 this.modelParams,
                 this.proofVersions
@@ -207,7 +209,22 @@ export abstract class GeneratedProof {
             this.proofVersions,
             this.modelParams
         );
-        return this.generateNextVersion(chat, choices);
+
+        return this.generateNextVersion(
+            chat,
+            choices,
+            this.parseFixedProofFromMessage.bind(this)
+        );
+    }
+
+    parseFixedProofFromMessage(message: string): string {
+        const regex = /Proof\.(.*?)Qed\./s;
+        const match = regex.exec(message);
+        if (match) {
+            return match[0];
+        } else {
+            return message;
+        }
     }
 
     protected nextVersionCanBeGenerated(): Boolean {
