@@ -57,13 +57,13 @@ export function buildProofGenerationChat(
 ): ChatHistory {
     const fitter = new ChatTokensFitter(
         modelParams.modelName,
-        modelParams.newMessageMaxTokens!,
-        modelParams.tokensLimit!
+        modelParams.newMessageMaxTokens,
+        modelParams.tokensLimit
     );
 
     const systemMessage: ChatMessage = {
         role: "system",
-        content: modelParams.systemPrompt!,
+        content: modelParams.systemPrompt,
     };
     fitter.fitRequiredMessage(systemMessage);
 
@@ -93,13 +93,13 @@ export function buildProofFixChat(
 ): ChatHistory {
     const fitter = new ChatTokensFitter(
         modelParams.modelName,
-        modelParams.newMessageMaxTokens!,
-        modelParams.tokensLimit!
+        modelParams.newMessageMaxTokens,
+        modelParams.tokensLimit
     );
 
     const systemMessage: ChatMessage = {
         role: "system",
-        content: modelParams.systemPrompt!,
+        content: modelParams.systemPrompt,
     };
     fitter.fitRequiredMessage(systemMessage);
 
