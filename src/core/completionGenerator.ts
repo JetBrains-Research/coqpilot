@@ -96,30 +96,31 @@ export async function generateCompletion(
 
         for await (const generatedProofsBatch of iterator) {
             newlyGeneratedProofs.push(...generatedProofsBatch);
-
-            // check proofs and finish with success if at least one is valid
-            const proofCheckResults = await checkGeneratedProofs(
+            const fixedProofsOrCompletion = await checkAndFixProofs(
                 newlyGeneratedProofs,
                 sourceFileContentPrefix,
                 completionContext,
                 sourceFileEnvironment,
                 processEnvironment
             );
-            const completion = getFirstValidProof(proofCheckResults);
-            if (completion) {
-                return new SuccessGenerationResult(completion);
+            if (fixedProofsOrCompletion instanceof SuccessGenerationResult) {
+                return fixedProofsOrCompletion;
             }
+            newlyGeneratedProofs = [...fixedProofsOrCompletion];
+        }
 
-            // fix proofs checked on this iteration
-            const proofsWithFeedback: ProofWithFeedback[] =
-                newlyGeneratedProofs.map((generatedProof, i) => {
-                    return {
-                        generatedProof: generatedProof,
-                        diagnostic: proofCheckResults[i].diagnostic!,
-                    };
-                });
-            const fixedProofs = await fixProofs(proofsWithFeedback);
-            newlyGeneratedProofs = [...fixedProofs]; // prepare to a new iteration
+        while (newlyGeneratedProofs.length > 0) {
+            const fixedProofsOrCompletion = await checkAndFixProofs(
+                newlyGeneratedProofs,
+                sourceFileContentPrefix,
+                completionContext,
+                sourceFileEnvironment,
+                processEnvironment
+            );
+            if (fixedProofsOrCompletion instanceof SuccessGenerationResult) {
+                return fixedProofsOrCompletion;
+            }
+            newlyGeneratedProofs = [...fixedProofsOrCompletion];
         }
 
         return new FailureGenerationResult(
@@ -139,6 +140,39 @@ export async function generateCompletion(
             );
         }
     }
+}
+
+export async function checkAndFixProofs(
+    newlyGeneratedProofs: GeneratedProof[],
+    sourceFileContentPrefix: string[],
+    completionContext: CompletionContext,
+    sourceFileEnvironment: SourceFileEnvironment,
+    processEnvironment: ProcessEnvironment
+): Promise<GeneratedProof[] | SuccessGenerationResult> {
+    // check proofs and finish with success if at least one is valid
+    const proofCheckResults = await checkGeneratedProofs(
+        newlyGeneratedProofs,
+        sourceFileContentPrefix,
+        completionContext,
+        sourceFileEnvironment,
+        processEnvironment
+    );
+    const completion = getFirstValidProof(proofCheckResults);
+    if (completion) {
+        return new SuccessGenerationResult(completion);
+    }
+
+    // fix proofs checked on this iteration
+    const proofsWithFeedback: ProofWithFeedback[] = newlyGeneratedProofs.map(
+        (generatedProof, i) => {
+            return {
+                generatedProof: generatedProof,
+                diagnostic: proofCheckResults[i].diagnostic!,
+            };
+        }
+    );
+    const fixedProofs = await fixProofs(proofsWithFeedback);
+    return fixedProofs; // prepare to a new iteration
 }
 
 async function checkGeneratedProofs(
