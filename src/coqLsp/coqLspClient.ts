@@ -133,14 +133,20 @@ export class CoqLspClient implements CoqLspClientInterface {
         diagnostics: Diagnostic[],
         position: Position
     ): string | undefined {
-        return (
-            diagnostics
-                .filter((diag) => diag.range.start.line >= position.line)
-                .filter((diag) => diag.severity === 1) // 1 is error
-                .shift()
-                ?.message?.split("\n")
-                .shift() ?? undefined
-        );
+        const traceStartString = "Raised at";
+        const diagnosticMessageWithTrace = diagnostics
+            .filter((diag) => diag.range.start.line >= position.line)
+            .filter((diag) => diag.severity === 1) // 1 is error
+            .shift()?.message;
+
+        if (!diagnosticMessageWithTrace) {
+            return undefined;
+        } else if (!diagnosticMessageWithTrace.includes(traceStartString)) {
+            return diagnosticMessageWithTrace.split("\n").shift();
+        }
+        return diagnosticMessageWithTrace
+            .substring(0, diagnosticMessageWithTrace.indexOf(traceStartString))
+            .trim();
     }
 
     private async getFirstGoalAtPointUnsafe(
