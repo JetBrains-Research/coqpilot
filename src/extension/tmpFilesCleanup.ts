@@ -1,7 +1,6 @@
-import { workspace, Uri } from "vscode";
-
 import * as glob from "glob";
 import * as path from "path";
+import { Uri, workspace } from "vscode";
 
 export function hideAuxFiles() {
     // Hide files generated to check proofs

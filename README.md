@@ -6,34 +6,84 @@
 
 Now `coqpilot` is in early beta and seeks for feedbacks. Please feel free to open an issue regarding any problem you encounter or any feature you want to see in the future. 
 
+***Important:*** This version 2.0.0 is not yet tested very well. Please feel free to open an issue if you encounter any problem. Moreover, stay tuned for the soon release of the 2.0.1.
+
+## Requirements
+
+* `coq-lsp` version `0.1.8+8.19.0` is currently required to run the extension.
+
 ## Brief technical overview
 
-`Coqpilot` now supports fetching proofs from all [open-ai](https://openai.com) gpt models, but is designed to be easily extensible to other models.  
+`Coqpilot` fetches proofs from multiple completion services. Now we support: 
+- a service that always returns a list of pre-defined in the settings tactics/coq sentances.
+- an [open-ai](https://openai.com) gpt service.
+- a service that fetches completions from the model, running locally in LM Studio.
+- a service that uses Grazie platform (only for JetBrains employees for now).
 
-## Features
+For each service, an array of models could be defined through the settings. Each model will be used for generation independantly. This brings freedom to the user to experiment with different model parameters, e.g. temperature, prompt, etc.
 
-`Coqpilot` could be run to analyse the opened `coq` file, fetch proofs of successfully typechecked theorems inside it, parse them and use as a message history to present to LLM.
+When `CoqPilot` completion command is issued, it parses the currently opened file, extracts theorems that have complete proofs and processes them into a message history for the LLM. It helps LLM to keep the style and hallucinate less. 
 
-It performs a request to an LLM with an admitted theorem and a message history and get a list of potential proofs. It then uses `coq-lsp` to typecheck them and substitute the first valid proof in the editor. Moreover, coqpilot was designed to fetch multiple LLMs, so that many ways of proof generation could be used at once. Right now, apart from open-ai models, coqpilot also tries substituting single-line proofs from the predefined tactics list.
+For each `admit.` present in the file, an independent completion process is issued. If a valid proof is found, it is substituted in the editor. `CoqPilot` also allows a multi-round fixing procedure for the proofs from the LLM. I.e. if the proof was incorrect, compiler message could be automatically sent to the LLM with a request to repair it. It can now be configured in the settings. One can set the amount of attempts for the consequtive proof fixing with compiler feedback.
 
-User can:
+As soon as at least one valid proof is found, it is substituted in the editor and the process is finished.
+
+**Notice:** By default, coqpilot sets only `predefinedProofs` and `open-ai` services. The first one tries `auto.` tactic and the second one has one model -- `gpt-3.5`. By default the `apiKey` for open-ai is not set, i.e. set to `None`. Do not forget to change that in the settings before using this service.
+
+**Notice:** File `settings.json` declares not all the settings, but those that are overriden from the defaults. Keep that in mind, if you want, for example, to turn off the `open-ai` service. For that, you would need to override the corresponding setting with an empty array, but not delete this property from the file.
+
+## Example usage
+
+`Coqpilot` only runs on an opened `coq` file. User can:
 - Run `coqpilot` with some chosen selection to try substitute all admits in this selection.
 
 <img src="./etc/gif/solve-in-selection.gif"/>
 
 - Run `coqpilot` to try substitute all admits in the file.
+- Run `coqpilot` to substitute the proof for the admit if there is one under the cursor.
 
-## Requirements
+## Installation
 
-* `coq-lsp` version `0.1.8+8.19`!! is currently required to run the extension.
-
-## Coq-lsp installation
+### Coq-lsp installation
 
 To make the extension running you will have to install `coq-lsp` server. You can install it using opam: 
 ```bash
+opam pin add coq-lsp 0.1.8+8.19.0
 opam install coq-lsp
 ```
 For more information on how to install `coq-lsp` please refer to [coq-lsp](https://github.com/ejgallego/coq-lsp). 
+
+With coq-lsp, extension should have everything it needs to run.
+
+### Building locally
+
+To build the extension locally, you will need to have `npm` installed. Then you can clone the repository and run the following commands:
+```bash
+npm install
+npm run compile
+```
+
+To run the extension, you can press `F5` in the vscode. It will open a new window with the extension running.
+
+To run tests you should go to the `src/test/resources/coqProj` directory and run make:
+```bash
+make 
+```
+Some tests depend on the small coq project, that is expected to be built. After that run: 
+```bash
+npm run test
+```
+
+Otherwise, if you do not want to build that small project, you can run: 
+```bash
+npm run test-ci
+```
+
+To run specific tests, you can use `npm run test -- -g="grep pattern"`.
+
+<!-- ## Architecture
+
+The extension's architecture overview is stored in the [ARCHITECTURE.md](https://github.com/JetBrains-Research/coqpilot/blob/refactor/ARCHITECTURE.md) file. It will be extended and updated as the project evolves. -->
 
 ## Important 
 
@@ -52,32 +102,12 @@ Comment: Such files are not visible in the vscode explorer, because plugin adds 
 
 This extension contributes the following settings:
 
-* `coqpilot.openAiModelsParameters`, `coqpilot.predefinedProofsModelsParameters` and `coqpilot.grazieModelsParameters`. 
+* `coqpilot.contextTheoremsRankerType` : The type of theorems ranker that will be used to select theorems for proof generation (when context is smaller than taking all of them). Either randomly or by distance from the theorem, with the currently generated admit. 
+* `coqpilot.loggingVerbosity` : Verbosity of the logs. Could be `info`, `debug`.
 
-Each of these settings are modified in `settings.json` and contain an array of models from this service. Each model will be used for generation independantly. Multiple models for a single service could be defined. For example, you can define parameters for two open-ai gpt models. One would be using `gpt-3.5` and the other one `gpt-4`. CoqPilot will first try to generate proofs using the first model, and if it fails, it will try the second one. This way coqpilot iterates over all services (currently 3 of them) and for each service it iterates over all models.
+* `coqpilot.openAiModelsParameters`, `coqpilot.predefinedProofsModelsParameters`, `coqpilot.grazieModelsParameters` and `coqpilot.lmStudioModelsParameters`:
 
-Here are parameters each of the service contributes:
-
-### Open-ai Service Parameters
-
-* `coqpilot.openAiModelsParameters.prompt`: System prompt for the `open-ai` model.
-* `coqpilot.openAiModelsParameters.apiKey`: An `open-ai` api key. Is used to communicate with the open-ai api. You can get one [here](https://platform.openai.com/account/api-keys). It is required to run the extension.
-* `coqpilot.openAiModelsParameters.choices`: How many proof attempts should be generated for one theorem.
-* `coqpilot.openAiModelsParameters.model`: Which `open-ai` model should be used to generate proofs.
-* `coqpilot.openAiModelsParameters.maxTokens`: What is your token per minute limit for `open-ai` api. It is used to calculate how many proofs could be used as a message history. For more information please refer to [open-ai](https://platform.openai.com/account/rate-limits). 
-* `coqpilot.openAiModelsParameters.temperature`: How much randomness should be added to the generated proofs. The higher the temperature, the more random the generated proofs will be.
-
-### Predefined Proofs Service Parameters
-
-* `coqpilot.predefinedProofsModelsParameters.tactics`: An array of tactics that will be used to generate proofs. For example `["auto."]`. This service is tried at the very beginning of the proof generation process.
-
-### Grazie Service Parameters
-
-* `coqpilot.grazieModelsParameters.prompt`: System prompt for the models. 
-* `coqpilot.grazieModelsParameters.apiKey`: An `grazie` api key. Is used to communicate with the grazie api. 
-* `coqpilot.grazieModelsParameters.choices`: How many proof attempts should be generated for one theorem.
-* `coqpilot.grazieModelsParameters.model`: Which model should be used to generate proofs.
-
+Each of these settings are modified in `settings.json` and contain an array of models from this service. Each model will be used for generation independantly. Multiple models for a single service could be defined. For example, you can define parameters for two open-ai gpt models. One would be using `gpt-3.5` and the other one `gpt-4`. CoqPilot will first try to generate proofs using the first model, and if it fails, it will try the second one. This way coqpilot iterates over all services (currently 4 of them) and for each service it iterates over all models. 
 
 ## Contributed Commands
 
@@ -87,9 +117,7 @@ Here are parameters each of the service contributes:
 
 ## Planned Features
 
-### Milestone 2.0.0
-
-It is planned to implement a proof repair feature for the proofs which will establish a dialogue between `coq-lsp` and the LLM. When LLM generates an incorrect proof, the error would be sent to LLM as a next message and the process would be repeated until a valid proof is found or the limit of attempts is reached.
+- Add benchmarking options for various models: soon. 
 
 ## Release Notes
 
