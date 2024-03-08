@@ -69,15 +69,21 @@ To run tests you should go to the `src/test/resources/coqProj` directory and run
 ```bash
 make 
 ```
+Some tests depend on the small coq project, that is expected to be built. After that run: 
+```bash
+npm run test
+```
 
-Otherwise, if you do not want to build that small project, you cna run: 
+Otherwise, if you do not want to build that small project, you can run: 
 ```bash
 npm run test-ci
 ```
 
-## Architecture
+To run specific tests, you can use `npm run test -- -g="grep pattern"`.
 
-The extension's architecture overview is stored in the [ARCHITECTURE.md](https://github.com/JetBrains-Research/coqpilot/blob/refactor/ARCHITECTURE.md) file. It will be extended and updated as the project evolves.
+<!-- ## Architecture
+
+The extension's architecture overview is stored in the [ARCHITECTURE.md](https://github.com/JetBrains-Research/coqpilot/blob/refactor/ARCHITECTURE.md) file. It will be extended and updated as the project evolves. -->
 
 ## Important 
 
