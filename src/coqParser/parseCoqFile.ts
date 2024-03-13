@@ -113,7 +113,7 @@ function parseFlecheDocument(
 
 function getExpr(span: RangedSpan): any[] | null {
     try {
-        return span.span === null ? null : span.span["v"]["expr"][1];
+        return span.span === null ? null : span.span["v"]["expr"];
     } catch (error) {
         return null;
     }
