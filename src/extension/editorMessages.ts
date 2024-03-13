@@ -1,6 +1,6 @@
-import { window, commands, workspace } from "vscode";
+import { appendFile, existsSync, readFileSync } from "fs";
 import * as path from "path";
-import { existsSync, readFileSync, appendFile } from "fs";
+import { commands, window, workspace } from "vscode";
 
 export namespace EditorMessages {
     export const timeoutError =

@@ -2,8 +2,8 @@
 import {
     Position,
     Range,
-    VersionedTextDocumentIdentifier,
     TextDocumentIdentifier,
+    VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
 
 export interface Hyp<Pp> {

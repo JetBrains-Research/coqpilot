@@ -1,6 +1,5 @@
-import { Range, Position } from "vscode-languageclient";
-
-import { Range as VSRange, Position as VSPosition } from "vscode";
+import { Position as VSPosition, Range as VSRange } from "vscode";
+import { Position, Range } from "vscode-languageclient";
 
 export function toVSCodeRange(range: Range): VSRange {
     return new VSRange(

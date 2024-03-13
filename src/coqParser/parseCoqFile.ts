@@ -1,12 +1,12 @@
+import { readFileSync } from "fs";
 import { Position, Range } from "vscode-languageclient";
 
-import { Theorem, Vernacexpr, TheoremProof, ProofStep } from "./parsedTypes";
-
+import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { FlecheDocument, RangedSpan } from "../coqLsp/coqLspTypes";
 
-import { CoqLspClient } from "../coqLsp/coqLspClient";
-import { readFileSync } from "fs";
 import { Uri } from "../utils/uri";
+
+import { ProofStep, Theorem, TheoremProof, Vernacexpr } from "./parsedTypes";
 
 export async function parseCoqFile(
     uri: Uri,

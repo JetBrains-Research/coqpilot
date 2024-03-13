@@ -1,4 +1,5 @@
 import { ExtensionContext } from "vscode";
+
 import { CoqPilot } from "./extension/coqPilot";
 
 export let extension: CoqPilot | undefined;

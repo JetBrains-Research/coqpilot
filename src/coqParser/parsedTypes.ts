@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/naming-convention */
-
 import { Range } from "vscode-languageclient";
 
 export enum Vernacexpr {
