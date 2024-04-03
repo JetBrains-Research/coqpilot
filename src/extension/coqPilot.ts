@@ -423,6 +423,6 @@ class UserSettingsValidationError extends Error {
     }
 
     toString(): string {
-        return `Unable to validate user settings for ${this.settingsName}. Please refer to the README for the correct settings format.`;
+        return `Unable to validate user settings for ${this.settingsName}. Please refer to the README for the correct settings format: https://github.com/JetBrains-Research/coqpilot/blob/main/README.md#guide-to-model-configuration.`;
     }
 }

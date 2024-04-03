@@ -8,6 +8,24 @@ Now `coqpilot` is in early beta and seeks for feedbacks. Please feel free to ope
 
 ***Important:*** This version 2.0.0 is not yet tested very well. Please feel free to open an issue if you encounter any problem. Moreover, stay tuned for the soon release of the 2.0.1.
 
+# Table of Contents
+
+- 🚀 [Coqpilot Overview](#coqpilot)
+- 📋 [Requirements](#requirements)
+- 🔍 [Brief Technical Overview](#brief-technical-overview)
+- 💡 [Example Usage](#example-usage)
+- 🛠 [Installation](#installation)
+  - ▶️ [Coq-lsp Installation](#coq-lsp-installation)
+  - 🤖 [Building Locally](#building-locally)
+- ⚠️ [Important Information](#important)
+- ⚙️ [Extension Settings](#extension-settings)
+- 📐 [Guide to Model Configuration](#guide-to-model-configuration)
+  - 🎛 [How VsCode settings work](#how-vscode-settings-work)
+  - 🧰 [Model Configuration](#model-configuration)
+- 📌 [Contributed Commands](#contributed-commands)
+- 🚧 [Planned Features](#planned-features)
+- 📜 [Release Notes](#release-notes)
+
 ## Requirements
 
 * `coq-lsp` version `0.1.8+8.19.0` is currently required to run the extension.
@@ -108,6 +126,70 @@ This extension contributes the following settings:
 * `coqpilot.openAiModelsParameters`, `coqpilot.predefinedProofsModelsParameters`, `coqpilot.grazieModelsParameters` and `coqpilot.lmStudioModelsParameters`:
 
 Each of these settings are modified in `settings.json` and contain an array of models from this service. Each model will be used for generation independantly. Multiple models for a single service could be defined. For example, you can define parameters for two open-ai gpt models. One would be using `gpt-3.5` and the other one `gpt-4`. CoqPilot will first try to generate proofs using the first model, and if it fails, it will try the second one. This way coqpilot iterates over all services (currently 4 of them) and for each service it iterates over all models. 
+
+## Guide to Model Configuration
+
+### How VsCode settings work
+
+A common way to change the settings, contributed by the extension, is to open the `settings.json` file, or click `Edit in settings.json` on some field in settings UI. Say, by default extension contributes field (setting) `A` with default state `a'`. When you click edit, this field is being copied to the `settings.json` file with the value `a'`: 
+```json
+{
+    "A": "a'"
+}
+```
+From that moment and until you completely remove this field from the `settings.json` file, this will be the source of truth for this setting. Once again, if you want to set the value of the setting `A` back to the default, you have to remove this field from the file completely.
+
+### Model configuration
+
+As mentioned in the previous section, at the moment, four services are supported. 
+
+By default, only `predefinedProofs` and `open-ai` services are enabled. The first one tries `auto.` tactic and the second one has one model -- `gpt-3.5`. Models for other services are defaulted with empty arrays. That denotes that we do not create any models from these services. 
+
+Each and every service is configured with an array of independent models. This was made to easily experiment with different models and their parameters. 
+
+The simplest service to configure is `predefinedProofs`: 
+```json
+{
+    "coqpilot.predefinedProofsModelsParameters": [
+        {
+            "modelName": "Any name",
+            "tactics": [
+                "reflexivity.",
+                "simpl. reflexivity.",
+                "auto."
+            ]
+        }
+    ]
+}
+```
+Model name here is only used for convinience inside code, so may be any string. 
+
+The most commonly used service is `open-ai` (`grazie` and `lmStudio` are configured very similarly). 
+```json
+{
+    "coqpilot.openAiModelsParameters": [
+        {
+            "temperature": 1,
+            "apiKey": "***your-api-key***",
+            "modelName": "gpt-3.5-turbo-0301",
+            "choices": 10,
+            "systemPrompt": "Generate proof...",
+            "newMessageMaxTokens": 2000,
+            "tokensLimit": 4096,
+            "multiroundProfile": {
+                "maxRoundsNumber": 1,
+                "proofFixChoices": 1,
+                "proofFixPrompt": "Unfortunately, the last proof is not correct..."
+            }
+        }
+    ],
+}
+```
+Don't forget to set up the `apiKey` field, by default it is set to `None`. Moreover, make sure that your open-ai key is valid and has enough credits to run the models. If you create a free version of the key, it will not work (it has some weird limitations like 5 requests per inf). You can check you key here: https://platform.openai.com/playground/chat. If the playground works, the key is probably valid.
+
+Multi-round profile setting configures the number of attempts to fix the proof if it is incorrect. If the proof is incorrect, the compiler message is sent to the LLM with a request to repair it. The number of round attempts for one proof is set by `maxRoundsNumber`. The number of choices for the proof fixing is set by `proofFixChoices`. By default, values are set to 1 and that means that **NO** attempts to fix the proof are made. That means that proof is only being generated once. That's equivalent to say that multi-round fixing is turned off. 0 is not a valid value for `maxRoundsNumber` nor for `proofFixChoices`.  
+
+Another thing to keep in mind: We are still in beta and changes in settings may occur pretty often. When that happens, and your re-defined settings (which are stored aside from the extension) are not updated (by hand), this can lead to exceptions. Keep in mind that if you get an error or plugin does not start after the update, you may want double check the settings. Easy way is remove the setting completely in `settings.json`, e.g. `openAiModelsParameters`, than go to the UI, click `Edit in settings.json` on the `openAiModelsParameters` field. It will fill up with updated default values. Afterwards you can re-define the settings as you want.
 
 ## Contributed Commands
 
