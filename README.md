@@ -6,8 +6,6 @@
 
 Now `coqpilot` is in early beta and seeks for feedbacks. Please feel free to open an issue regarding any problem you encounter or any feature you want to see in the future. 
 
-***Important:*** This version 2.0.0 is not yet tested very well. Please feel free to open an issue if you encounter any problem. Moreover, stay tuned for the soon release of the 2.0.1.
-
 # Table of Contents
 
 - 🚀 [Coqpilot Overview](#coqpilot)
