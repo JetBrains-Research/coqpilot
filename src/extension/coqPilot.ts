@@ -190,10 +190,19 @@ export class CoqPilot {
                 title: `${pluginId}: In progress`,
             },
             async () => {
-                await this.performSpecificCompletions(
-                    shouldCompleteHole,
-                    editor
-                );
+                try {
+                    await this.performSpecificCompletions(
+                        shouldCompleteHole,
+                        editor
+                    );
+                } catch (error) {
+                    if (error instanceof UserSettingsValidationError) {
+                        showMessageToUser(error.toString(), "error");
+                    } else if (error instanceof Error) {
+                        showMessageToUser(error.message, "error");
+                        console.error(error);
+                    }
+                }
             }
         );
     }
@@ -379,8 +388,9 @@ export class CoqPilot {
         const instance: T = json as T;
         const validate = this.jsonSchemaValidator.compile(targetClassSchema);
         if (!validate(instance)) {
-            throw new Error(
-                `Unable to validate json against the class: ${JSON.stringify(validate.errors)}`
+            throw new UserSettingsValidationError(
+                `Unable to validate json against the class: ${JSON.stringify(validate.errors)}`,
+                targetClassSchema.title ?? "Unknown"
             );
         }
 
@@ -401,5 +411,18 @@ export class CoqPilot {
     dispose(): void {
         cleanAuxFiles();
         this.globalExtensionState.dispose();
+    }
+}
+
+class UserSettingsValidationError extends Error {
+    constructor(
+        message: string,
+        public readonly settingsName: string
+    ) {
+        super(message);
+    }
+
+    toString(): string {
+        return `Unable to validate user settings for ${this.settingsName}. Please refer to the README for the correct settings format.`;
     }
 }
