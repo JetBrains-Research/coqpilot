@@ -1,0 +1,13 @@
+{
+    "coqpilot.openAiModelsParameters": [
+        
+    ],
+    "coqpilot.predefinedProofsModelsParameters": [
+        {
+            "tactics": [
+                "auto."
+            ]
+        }
+    ],
+    "coqpilot.grazieModelsParameters": []
+}

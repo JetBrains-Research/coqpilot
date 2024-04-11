@@ -353,6 +353,7 @@
     "pretest": "npm run compile && npm run lint",
     "test": "node ./out/test/runTest.js",
     "test-ci": "npm test -- -g=\"--non-ci\" -i=true",
+    "benchmark": "npm run test -- -g='Benchmark Test'",
     "clean": "rm -rf out"
   },
   "devDependencies": {
