@@ -353,8 +353,9 @@
     "pretest": "npm run compile && npm run lint",
     "test": "node ./out/test/runTest.js",
     "test-ci": "npm test -- -g=\"--non-ci\" -i=true",
-    "benchmark": "npm run test -- -g='Benchmark Test'",
-    "clean": "rm -rf out"
+    "clean": "rm -rf out",
+    "prebenchmark": "npm run clean",
+    "benchmark": "npm run test -- -g='Benchmark'"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
@@ -373,7 +374,7 @@
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",
-    "glob": "^8.1.0",
+    "glob": "^10.3.12",
     "mocha": "^10.2.0",
     "prettier": "^3.2.5",
     "typescript": "^5.3.3"
