@@ -15,6 +15,7 @@ export interface CoqLspServerConfig {
 
 export interface CoqLspClientConfig {
     coq_lsp_server_path: string;
+    workspace_root_path?: string;
 }
 
 export namespace CoqLspConfig {
@@ -35,10 +36,12 @@ export namespace CoqLspConfig {
     }
 
     export function createClientConfig(
-        coqLspServerPath: string = "coq-lsp"
+        coqLspServerPath: string = "coq-lsp",
+        workspaceRootPath?: string
     ): CoqLspClientConfig {
         let obj: CoqLspClientConfig = {
             coq_lsp_server_path: coqLspServerPath,
+            workspace_root_path: workspaceRootPath,
         };
         return obj;
     }

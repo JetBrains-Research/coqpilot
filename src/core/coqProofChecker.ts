@@ -1,14 +1,18 @@
+import { Mutex } from "async-mutex";
+import { appendFileSync, existsSync, unlinkSync, writeFileSync } from "fs";
+import * as path from "path";
 import { Position } from "vscode-languageclient";
 
 import { CoqLspClient } from "../coqLsp/coqLspClient";
-import * as path from "path";
+
 import { Uri } from "../utils/uri";
 
-import { existsSync, writeFileSync, unlinkSync, appendFileSync } from "fs";
+export interface ProofCheckResult {
+    proof: string;
+    isValid: boolean;
+    diagnostic?: string;
+}
 
-import { Mutex } from "async-mutex";
-
-export type ProofCheckResult = [string, boolean, string | null];
 type Proof = string;
 
 export interface CoqProofCheckerInterface {
@@ -17,7 +21,7 @@ export interface CoqProofCheckerInterface {
         sourceFileContentPrefix: string[],
         prefixEndPosition: Position,
         proofs: Proof[]
-    ): Promise<[string, boolean, string | null][]>;
+    ): Promise<ProofCheckResult[]>;
 }
 
 export class CoqLspTimeoutError extends Error {
@@ -112,7 +116,11 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
             for (const proof of proofs) {
                 // 3.1. Check if the proof contains admit
                 if (this.checkIfProofContainsAdmit(proof)) {
-                    results.push([proof, false, "Proof contains admit"]);
+                    results.push({
+                        proof: proof,
+                        isValid: false,
+                        diagnostic: "Proof contains admit",
+                    });
                     continue;
                 }
 
@@ -130,11 +138,11 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
                     );
 
                 // 6. Check diagnostics
-                results.push([
-                    proof,
-                    diagnosticMessage === undefined,
-                    diagnosticMessage ?? null,
-                ]);
+                results.push({
+                    proof: proof,
+                    isValid: diagnosticMessage === undefined,
+                    diagnostic: diagnosticMessage,
+                });
 
                 // 7. Bring file to the previous state
                 writeFileSync(auxFileUri.fsPath, sourceFileContent);

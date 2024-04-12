@@ -1,9 +1,11 @@
-import { parseCoqFile } from "../coqParser/parseCoqFile";
-import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { readFileSync } from "fs";
-import { Uri } from "../utils/uri";
-import { ProofStep, Theorem } from "../coqParser/parsedTypes";
 import * as path from "path";
+
+import { CoqLspClient } from "../coqLsp/coqLspClient";
+
+import { parseCoqFile } from "../coqParser/parseCoqFile";
+import { ProofStep, Theorem } from "../coqParser/parsedTypes";
+import { Uri } from "../utils/uri";
 
 import {
     CompletionContext,
@@ -30,8 +32,14 @@ export async function inspectSourceFile(
         fileUri,
         client
     );
+    const sourceFileEnvironmentWithCompleteProofs: SourceFileEnvironment = {
+        ...sourceFileEnvironment,
+        fileTheorems: sourceFileEnvironment.fileTheorems.filter(
+            (thr) => thr.proof && !thr.proof.is_incomplete
+        ),
+    };
 
-    return [completionContexts, sourceFileEnvironment];
+    return [completionContexts, sourceFileEnvironmentWithCompleteProofs];
 }
 
 async function createCompletionContexts(
@@ -66,7 +74,7 @@ async function createCompletionContexts(
     return completionContexts;
 }
 
-async function createSourceFileEnvironment(
+export async function createSourceFileEnvironment(
     fileVersion: number,
     fileUri: Uri,
     client: CoqLspClient
