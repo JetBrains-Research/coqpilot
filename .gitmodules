@@ -1,5 +1,5 @@
-[submodule "src/test/benchmark/dataset/imm"]
-	path = src/test/benchmark/dataset/imm
+[submodule "dataset/imm"]
+	path = dataset/imm
 	url = https://github.com/weakmemory/imm.git
-	brach = coq819
+	branch = coq819
 	ignore = dirty

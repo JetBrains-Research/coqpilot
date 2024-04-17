@@ -11,3 +11,4 @@ vsc-extension-quickstart.md
 logs/**
 _opam/**
 ./out/test/**
+dataset

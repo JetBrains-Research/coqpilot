@@ -140,13 +140,13 @@ First things first, the process of running the benchmark is not perfectly automa
 
 3. Go to the `imm` subdirectory, apply the nix environment (without it the project will NOT build) and build the project: 
     ```bash
-    cd src/test/benchmark/dataset/imm 
+    cd dataset/imm 
     nix-shell 
     nix-build
     ```
 4. Return to the project root not exiting the nix-shell. Run the benchmark: 
     ```bash
-    cd ../../../../..
+    cd ../../
     npm run benchmark
     ```    
 
