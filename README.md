@@ -119,6 +119,37 @@ Each of these settings are modified in `settings.json` and contain an array of m
 
 - Add benchmarking options for various models: soon. 
 
+## Benchmark
+
+To run benchmarks on some project, apart from installing and building CoqPilot manually as described above, you will need to download the necessary projects that are used as datasets for the benchmarks. These projects are added as submodules to the repository. To download them, run the following commands:
+```bash
+git submodule init
+git submodule update
+```
+After that, you need to build the projects. And be careful, the actively maintained way to build this projects is `nix`. Moreover, when adding your own projects, make sure that they are built using `coq-8.19.0`. 
+
+First things first, the process of running the benchmark is not perfectly automated yet. We are working on it. For now, one project (one unit containing nix environment) shall be ran at a time. Let's say you are going to run the benchmark on the `imm` project. You will have to do the following: 
+
+1. Install nix, as specified in the [here](https://nixos.org/download.html). 
+
+2. Install needed caches: 
+    ```bash
+    nix-env -iA nixpkgs.cachix && cachix use coq && cachix use coq-community && cachix use math-comp
+    cachix use weakmemory
+    ```
+
+3. Go to the `imm` subdirectory, apply the nix environment (without it the project will NOT build) and build the project: 
+    ```bash
+    cd src/test/benchmark/dataset/imm 
+    nix-shell 
+    nix-build
+    ```
+4. Return to the project root not exiting the nix-shell. Run the benchmark: 
+    ```bash
+    cd ../../../../..
+    npm run benchmark
+    ```    
+
 ## Release Notes
 
 Release notes could be found in the [CHANGELOG.md](https://github.com/JetBrains-Research/coqpilot/blob/refactor/CHANGELOG.md) file.

@@ -43,7 +43,19 @@ const mixedAutoBenchmark: Benchmark = {
     timeoutMinutes: 1,
 };
 
-const benchmarks: Benchmark[] = [simpleAutoBenchmark, mixedAutoBenchmark];
+const immBenchmark: Benchmark = {
+    name: "Complete imm with auto",
+    items: [new DatasetItem("imm/src/basic/Events.v", "imm")],
+    modelsParams: onlyAutoModelsParams,
+    requireAllAdmitsCompleted: false,
+    timeoutMinutes: 60,
+};
+
+const benchmarks: Benchmark[] = [
+    simpleAutoBenchmark,
+    mixedAutoBenchmark,
+    immBenchmark,
+];
 
 suite("Benchmark", () => {
     const benchmarkDir = getBenchmarkDir();

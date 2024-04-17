@@ -10,3 +10,4 @@ vsc-extension-quickstart.md
 **/*.ts
 logs/**
 _opam/**
+./out/test/**
