@@ -2,6 +2,7 @@ import { Uri } from "vscode";
 import {
     LanguageClientOptions,
     RevealOutputChannelOn,
+    Trace,
 } from "vscode-languageclient";
 import { LanguageClient, ServerOptions } from "vscode-languageclient/node";
 
@@ -58,6 +59,7 @@ export class CoqLspConnector extends LanguageClient {
     }
 
     override async start(): Promise<void> {
+        super.setTrace(Trace.Verbose);
         await super
             .start()
             .then(this.logStatusUpdate.bind(this, "started"))
