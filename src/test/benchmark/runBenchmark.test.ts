@@ -58,8 +58,7 @@ const benchmarks: Benchmark[] = [
 ];
 
 suite("Benchmark", () => {
-    const benchmarkDir = getBenchmarkDir();
-    const datasetDir = path.join(benchmarkDir, "dataset");
+    const datasetDir = getDatasetDir();
 
     for (const benchmark of benchmarks) {
         test(benchmark.name, async () => {
@@ -108,9 +107,9 @@ suite("Benchmark", () => {
     }
 });
 
-function getBenchmarkDir(): string {
+function getDatasetDir(): string {
     const dirname: string = path.join(__dirname, "../../../");
-    return path.join(dirname, "src", "test", "benchmark");
+    return path.join(dirname, "dataset");
 }
 
 function getPathStats(path: string): fs.Stats {
