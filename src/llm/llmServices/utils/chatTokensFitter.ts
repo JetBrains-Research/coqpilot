@@ -34,6 +34,10 @@ export class ChatTokensFitter {
         };
     }
 
+    estimateTokens(): number {
+        return this.tokens;
+    }
+
     fitRequiredMessage(message: ChatMessage) {
         this.fitRequired(message.content);
     }

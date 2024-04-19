@@ -8,8 +8,8 @@ import { Proof } from "../llmService";
 import { ModelParams, OpenAiModelParams } from "../modelParams";
 
 export class OpenAiService extends LLMService {
-    constructor(eventLogger?: EventLogger) {
-        super(eventLogger);
+    constructor(requestsLogsFilePath: string, eventLogger?: EventLogger) {
+        super("OpenAiService", requestsLogsFilePath, eventLogger);
     }
 
     constructGeneratedProof(
@@ -27,7 +27,7 @@ export class OpenAiService extends LLMService {
         );
     }
 
-    async generateFromChat(
+    async generateFromChatImpl(
         chat: ChatHistory,
         params: ModelParams,
         choices: number

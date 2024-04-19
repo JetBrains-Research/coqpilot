@@ -1,12 +1,10 @@
 import { expect } from "earl";
 
 import { LLMSequentialIterator } from "../../llm/llmIterator";
-import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
-import { LMStudioService } from "../../llm/llmServices/lmStudio/lmStudioService";
-import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
-import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
 import { ProofGenerationContext } from "../../llm/proofGenerationContext";
 import { UserModelsParams } from "../../llm/userModelParams";
+
+import { createDefaultServices } from "../commonTestFunctions";
 
 suite("LLM Iterator test", () => {
     function getProofFromPredefinedCoqSentance(proof: string): string {
@@ -14,10 +12,6 @@ suite("LLM Iterator test", () => {
     }
 
     test("Simple test of the iterator via predef proofs", async () => {
-        const openAiService = new OpenAiService();
-        const grazieService = new GrazieService();
-        const predefinedProofsService = new PredefinedProofsService();
-        const lmStudioService = new LMStudioService();
         const predefinedProofs = [
             "intros.",
             "reflexivity.",
@@ -36,12 +30,7 @@ suite("LLM Iterator test", () => {
             ],
             lmStudioParams: [],
         };
-        const services = {
-            openAiService,
-            grazieService,
-            predefinedProofsService,
-            lmStudioService,
-        };
+        const services = createDefaultServices();
         const proofGenerationContext: ProofGenerationContext = {
             contextTheorems: [],
             completionTarget: "doesn't matter",

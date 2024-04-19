@@ -1,10 +1,12 @@
 import Ajv, { JSONSchemaType } from "ajv";
+import * as path from "path";
 import {
     ExtensionContext,
     ProgressLocation,
     TextEditor,
     WorkspaceConfiguration,
     commands,
+    extensions,
     window,
     workspace,
 } from "vscode";
@@ -77,11 +79,27 @@ export class GlobalExtensionState {
         this.eventLogger,
         this.parseLoggingVerbosity(workspace.getConfiguration(pluginId))
     );
+    // TODO: clean and hide this directory (?) + test
+    public readonly llmServicesLogsDir = path.join(
+        extensions.getExtension(pluginId)!.extensionPath,
+        "llm-services-logs/"
+    );
     public readonly llmServices: LLMServices = {
-        openAiService: new OpenAiService(this.eventLogger),
-        grazieService: new GrazieService(this.eventLogger),
-        predefinedProofsService: new PredefinedProofsService(),
-        lmStudioService: new LMStudioService(this.eventLogger),
+        openAiService: new OpenAiService(
+            `${this.llmServicesLogsDir}openai-logs.txt`,
+            this.eventLogger
+        ),
+        grazieService: new GrazieService(
+            `${this.llmServicesLogsDir}grazie-logs.txt`,
+            this.eventLogger
+        ),
+        predefinedProofsService: new PredefinedProofsService(
+            `${this.llmServicesLogsDir}predefined-proofs-logs.txt`
+        ),
+        lmStudioService: new LMStudioService(
+            `${this.llmServicesLogsDir}lmstudio-logs.txt`,
+            this.eventLogger
+        ),
     };
 
     constructor() {}

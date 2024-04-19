@@ -21,7 +21,7 @@ export class LoggerRecord {
         public readonly modelName: string,
         public readonly responseStatus: ResponseStatus,
         public readonly choices: number,
-        public readonly estimatedTokens: number,
+        public readonly estimatedTokens: number | undefined = undefined,
         public readonly error: LoggedError | undefined = undefined
     ) {}
 
@@ -116,7 +116,7 @@ export class LoggerRecord {
                 modelName,
                 responseStatus,
                 this.parseIntValue(rawChoices, "requested choices"),
-                this.parseIntValue(rawTokens, "request's tokens"),
+                this.parseIntValueOrUndefined(rawTokens, "request's tokens"),
                 error
             ),
             restRawRecord,
@@ -151,14 +151,24 @@ export class LoggerRecord {
     }
 
     protected static parseIntValue(
-        rawNumber: string,
+        rawValue: string,
         valueName: string
     ): number {
         try {
-            return parseInt(rawNumber);
+            return parseInt(rawValue);
         } catch (e) {
-            throw new ParsingError(`invalid ${valueName}`, rawNumber);
+            throw new ParsingError(`invalid ${valueName}`, rawValue);
         }
+    }
+
+    protected static parseIntValueOrUndefined(
+        rawValue: string,
+        valueName: string
+    ): number | undefined {
+        if (rawValue === "undefined") {
+            return undefined;
+        }
+        return this.parseIntValue(rawValue, valueName);
     }
 
     protected static parseByRegex(
@@ -191,7 +201,7 @@ export class LoggerRecord {
 export class DebugLoggerRecord extends LoggerRecord {
     constructor(
         baseRecord: LoggerRecord,
-        public readonly chat: ChatHistory,
+        public readonly chat: ChatHistory | undefined,
         public readonly params: ModelParams,
         public readonly generatedProofs: string[] | undefined = undefined
     ) {
@@ -215,7 +225,10 @@ export class DebugLoggerRecord extends LoggerRecord {
     }
 
     private buildExtraInfo(): string {
-        const chatInfo = `- chat sent:\n${this.chatToExtraLogs()}\n`;
+        const chatInfo =
+            this.chat !== undefined
+                ? `- chat sent:\n${this.chatToExtraLogs()}\n`
+                : "";
         const generatedProofs =
             this.generatedProofs !== undefined
                 ? `- generated proofs:\n${this.proofsToExtraLogs()}\n`
@@ -225,12 +238,10 @@ export class DebugLoggerRecord extends LoggerRecord {
     }
 
     private chatToExtraLogs(): string {
-        return this.chat
-            .map(
-                (message) =>
-                    `${DebugLoggerRecord.subItemDelim}[${message.role}]: \`${LoggerRecord.escapeNewlines(message.content)}\``
-            )
-            .join("\n");
+        return this.chat!.map(
+            (message) =>
+                `${DebugLoggerRecord.subItemDelim}[${message.role}]: \`${LoggerRecord.escapeNewlines(message.content)}\``
+        ).join("\n");
     }
 
     private proofsToExtraLogs(): string {
@@ -249,10 +260,13 @@ export class DebugLoggerRecord extends LoggerRecord {
     }
 
     protected static chatHeaderPattern = /^- chat sent:$/;
+    protected static chatHeader = "- chat sent:";
     protected static chatMessagePattern = /^\t> \[(.*)\]: `(.*)`$/;
+
     protected static generatedProofsHeaderPattern = /^- generated proofs:$/;
     protected static generatedProofsHeader = "- generated proofs:";
     protected static generatedProofPattern = /^\t> `(.*)`$/;
+
     protected static paramsHeaderPattern = /^- model's params:$/;
 
     static deserealizeFromString(
@@ -261,25 +275,34 @@ export class DebugLoggerRecord extends LoggerRecord {
         const [baseRecord, afterBaseRawRecord] = super.deserealizeFromString(
             rawRecord
         );
-
-        const [chat, afterChatRawRecord] =
-            this.parseChatHistory(afterBaseRawRecord);
-
-        let generatedProofs: string[] | undefined = undefined;
-        let restRawRecord = afterChatRawRecord;
-        if (afterChatRawRecord.startsWith(this.generatedProofsHeader)) {
-            const [actualGeneratedProofs, afterProofsRawRecord] =
-                this.parseGeneratedProofs(afterChatRawRecord);
-            generatedProofs = actualGeneratedProofs;
-            restRawRecord = afterProofsRawRecord;
-        }
-
-        const [params, unparsedData] = this.parseModelParams(restRawRecord);
+        const [chat, afterChatRawRecord] = this.parseOptional(
+            this.chatHeader,
+            (text) => this.parseChatHistory(text),
+            afterBaseRawRecord
+        );
+        const [generatedProofs, afterProofsRawRecord] = this.parseOptional(
+            this.generatedProofsHeader,
+            (text) => this.parseGeneratedProofs(text),
+            afterChatRawRecord
+        );
+        const [params, unparsedData] =
+            this.parseModelParams(afterProofsRawRecord);
 
         return [
             new DebugLoggerRecord(baseRecord, chat, params, generatedProofs),
             unparsedData,
         ];
+    }
+
+    protected static parseOptional<T>(
+        header: string,
+        parse: (text: string) => [T, string],
+        text: string
+    ): [T | undefined, string] {
+        if (!text.startsWith(header)) {
+            return [undefined, text];
+        }
+        return parse(text);
     }
 
     private static parseChatHistory(text: string): [ChatHistory, string] {

@@ -4,14 +4,14 @@ import {
     PredefinedProofsUserModelParams,
     UserModelParams,
 } from "../../userModelParams";
-import { ChatHistory } from "../chat";
+import { AnalyzedChatHistory, ChatHistory } from "../chat";
 import { GeneratedProof, Proof, ProofVersion } from "../llmService";
 import { LLMService } from "../llmService";
 import { ModelParams, PredefinedProofsModelParams } from "../modelParams";
 
 export class PredefinedProofsService extends LLMService {
-    constructor(eventLogger?: EventLogger) {
-        super(eventLogger);
+    constructor(requestsLogsFilePath: string, eventLogger?: EventLogger) {
+        super("PredefinedProofsService", requestsLogsFilePath, eventLogger);
     }
 
     constructGeneratedProof(
@@ -28,7 +28,7 @@ export class PredefinedProofsService extends LLMService {
         );
     }
 
-    generateFromChat(
+    generateFromChatImpl(
         _chat: ChatHistory,
         _params: ModelParams,
         _choices: number
@@ -49,14 +49,25 @@ export class PredefinedProofsService extends LLMService {
         const predefinedProofsParams = params as PredefinedProofsModelParams;
         const tactics = predefinedProofsParams.tactics;
         if (choices > tactics.length) {
+            // TODO: should it be wrapped into LLMServiceError? logged?
             throw Error(
                 `invalid choices ${choices}: there are only ${tactics.length} predefined tactics available`
             );
         }
-        return this.formatCoqSentences(tactics.slice(0, choices)).map(
-            (tactic) =>
+        const proofs = this.formatCoqSentences(tactics.slice(0, choices)).map(
+            (tactic) => `Proof. ${tactic} Qed.`
+        );
+        this.requestsLogger.logRequestSucceeded(
+            {
+                params: params,
+                choices: choices,
+            },
+            proofs
+        );
+        return proofs.map(
+            (proof) =>
                 new PredefinedProof(
-                    `Proof. ${tactic} Qed.`,
+                    proof,
                     proofGenerationContext,
                     predefinedProofsParams,
                     this
@@ -110,7 +121,7 @@ export class PredefinedProof extends GeneratedProof {
     }
 
     protected generateNextVersion(
-        _chat: ChatHistory,
+        _analyzedChat: AnalyzedChatHistory,
         _choices: number
     ): Promise<GeneratedProof[]> {
         throw new Error(

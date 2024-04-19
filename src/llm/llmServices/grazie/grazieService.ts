@@ -13,8 +13,8 @@ export class GrazieService extends LLMService {
     // Is constant (now) as specified in Grazie REST API
     private readonly newMessageMaxTokens = 1024;
 
-    constructor(eventLogger?: EventLogger) {
-        super(eventLogger);
+    constructor(requestsLogsFilePath: string, eventLogger?: EventLogger) {
+        super("GrazieService", requestsLogsFilePath, eventLogger);
         this.api = new GrazieApi(eventLogger);
     }
 
@@ -33,7 +33,7 @@ export class GrazieService extends LLMService {
         );
     }
 
-    async generateFromChat(
+    async generateFromChatImpl(
         chat: ChatHistory,
         params: ModelParams,
         choices: number

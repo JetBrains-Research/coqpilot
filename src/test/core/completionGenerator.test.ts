@@ -1,11 +1,6 @@
 import { expect } from "earl";
 import * as path from "path";
 
-import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
-import { LMStudioService } from "../../llm/llmServices/lmStudio/lmStudioService";
-import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
-import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
-
 import {
     FailureGenerationResult,
     FailureGenerationStatus,
@@ -18,7 +13,11 @@ import { CoqProofChecker } from "../../core/coqProofChecker";
 import { inspectSourceFile } from "../../core/inspectSourceFile";
 
 import { Uri } from "../../utils/uri";
-import { createCoqLspClient, getResourceFolder } from "../commonTestFunctions";
+import {
+    createCoqLspClient,
+    createDefaultServices,
+    getResourceFolder,
+} from "../commonTestFunctions";
 
 suite("Completion generation tests", () => {
     async function generateCompletionForAdmitsFromFile(
@@ -40,11 +39,6 @@ suite("Completion generation tests", () => {
             await inspectSourceFile(1, (_hole) => true, fileUri, client);
         await client.closeTextDocument(fileUri);
 
-        const openAiService = new OpenAiService();
-        const grazieService = new GrazieService();
-        const predefinedProofsService = new PredefinedProofsService();
-        const lmStudioService = new LMStudioService();
-
         const processEnvironment: ProcessEnvironment = {
             coqProofChecker: coqProofChecker,
             modelsParams: {
@@ -58,12 +52,7 @@ suite("Completion generation tests", () => {
                 ],
                 lmStudioParams: [],
             },
-            services: {
-                openAiService,
-                grazieService,
-                predefinedProofsService,
-                lmStudioService,
-            },
+            services: createDefaultServices(),
         };
 
         return Promise.all(

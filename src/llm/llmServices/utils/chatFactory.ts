@@ -2,7 +2,7 @@ import * as assert from "assert";
 
 import { Theorem } from "../../../coqParser/parsedTypes";
 import { ProofGenerationContext } from "../../proofGenerationContext";
-import { ChatHistory, ChatMessage } from "../chat";
+import { AnalyzedChatHistory, ChatHistory, ChatMessage } from "../chat";
 import { ProofVersion } from "../llmService";
 import { ModelParams } from "../modelParams";
 
@@ -51,10 +51,20 @@ export function buildChat(
     return chat;
 }
 
+export function buildAndAnalyzeChat(
+    fitter: ChatTokensFitter,
+    ...chats: (ChatHistory | ChatMessage)[]
+): AnalyzedChatHistory {
+    return {
+        chat: buildChat(...chats),
+        estimatedTokens: fitter.estimateTokens(),
+    };
+}
+
 export function buildProofGenerationChat(
     proofGenerationContext: ProofGenerationContext,
     modelParams: ModelParams
-): ChatHistory {
+): AnalyzedChatHistory {
     const fitter = new ChatTokensFitter(
         modelParams.modelName,
         modelParams.newMessageMaxTokens,
@@ -79,7 +89,8 @@ export function buildProofGenerationChat(
     );
     const contextTheoremsChat = buildTheoremsChat(fittedContextTheorems);
 
-    return buildChat(
+    return buildAndAnalyzeChat(
+        fitter,
         systemMessage,
         contextTheoremsChat,
         completionTargetMessage
@@ -90,7 +101,7 @@ export function buildProofFixChat(
     proofGenerationContext: ProofGenerationContext,
     proofVersions: ProofVersion[],
     modelParams: ModelParams
-): ChatHistory {
+): AnalyzedChatHistory {
     const fitter = new ChatTokensFitter(
         modelParams.modelName,
         modelParams.newMessageMaxTokens,
@@ -137,7 +148,8 @@ export function buildProofFixChat(
     );
     const contextTheoremsChat = buildTheoremsChat(fittedContextTheorems);
 
-    return buildChat(
+    return buildAndAnalyzeChat(
+        fitter,
         systemMessage,
         contextTheoremsChat,
         completionTargetMessage,

@@ -5,8 +5,8 @@ import { GeneratedProof, LLMService, Proof, ProofVersion } from "../llmService";
 import { LMStudioModelParams } from "../modelParams";
 
 export class LMStudioService extends LLMService {
-    constructor(readonly eventLogger?: EventLogger) {
-        super(eventLogger);
+    constructor(requestsLogsFilePath: string, eventLogger?: EventLogger) {
+        super("LMStudioService", requestsLogsFilePath, eventLogger);
     }
 
     constructGeneratedProof(
@@ -24,7 +24,7 @@ export class LMStudioService extends LLMService {
         );
     }
 
-    async generateFromChat(
+    async generateFromChatImpl(
         chat: ChatHistory,
         params: LMStudioModelParams,
         choices: number
@@ -60,6 +60,7 @@ export class LMStudioService extends LLMService {
                     "Completion from LmStudio failed",
                     { error: err }
                 );
+                // TODO: rethrow error?
             }
             attempts--;
         }

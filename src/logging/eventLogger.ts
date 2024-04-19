@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 export enum Severity {
+    LOGIC = "LOGIC",
     INFO = "INFO",
     DEBUG = "DEBUG",
 }
@@ -32,7 +33,7 @@ export class EventLogger {
         message: string,
         data?: any,
         severity: Severity = Severity.INFO
-    ): void {
+    ) {
         this.events[event]?.forEach(([callback, subscribedSeverity]) => {
             if (subscribedSeverity === severity) {
                 callback(message, data);
@@ -44,5 +45,9 @@ export class EventLogger {
                 callback(message, data);
             }
         });
+    }
+
+    logLogicEvent(event: string, data?: any) {
+        this.log(event, "", data, Severity.LOGIC);
     }
 }

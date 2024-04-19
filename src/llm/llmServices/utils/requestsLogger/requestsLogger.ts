@@ -6,12 +6,23 @@ import { ModelParams } from "../../modelParams";
 
 import { DebugLoggerRecord, LoggerRecord } from "./loggerRecord";
 
-export interface GenerateFromChatRequest {
-    chat: ChatHistory;
-    estimatedTokens: number;
+export interface GenerationRequest {
     params: ModelParams;
     choices: number;
 }
+
+export interface FromChatGenerationRequest extends GenerationRequest {
+    chat: ChatHistory;
+    estimatedTokens: number;
+}
+
+function isFromChatGenerationRequest(
+    object: any
+): object is FromChatGenerationRequest {
+    return "chat" in object && "estimatedTokens" in object;
+}
+
+// TODO: add mutex
 
 export class RequestsLogger {
     /*
@@ -36,18 +47,20 @@ export class RequestsLogger {
     private readonly encoding = "utf-8";
     private readonly recordsDelim = "@@@ ";
 
-    logRequestSucceeded(request: GenerateFromChatRequest, proofs: string[]) {
+    logRequestSucceeded(request: GenerationRequest, proofs: string[]) {
         let record = new LoggerRecord(
             this.getNowTimestamp(),
             request.params.modelName,
             "SUCCESS",
             request.choices,
-            request.estimatedTokens
+            isFromChatGenerationRequest(request)
+                ? request.estimatedTokens
+                : undefined
         );
         if (this.debug) {
             record = new DebugLoggerRecord(
                 record,
-                request.chat,
+                isFromChatGenerationRequest(request) ? request.chat : undefined,
                 request.params,
                 proofs
             );
@@ -61,13 +74,15 @@ export class RequestsLogger {
         }
     }
 
-    logRequestFailed(request: GenerateFromChatRequest, error: Error) {
+    logRequestFailed(request: GenerationRequest, error: Error) {
         let record = new LoggerRecord(
             this.getNowTimestamp(),
             request.params.modelName,
             "FAILED",
             request.choices,
-            request.estimatedTokens,
+            isFromChatGenerationRequest(request)
+                ? request.estimatedTokens
+                : undefined,
             {
                 typeName: error.name,
                 message: error.message,
@@ -76,7 +91,7 @@ export class RequestsLogger {
         if (this.debug) {
             record = new DebugLoggerRecord(
                 record,
-                request.chat,
+                isFromChatGenerationRequest(request) ? request.chat : undefined,
                 request.params
             );
         }

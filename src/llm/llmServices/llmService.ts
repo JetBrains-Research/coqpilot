@@ -4,12 +4,16 @@ import { EventLogger } from "../../logging/eventLogger";
 import { ProofGenerationContext } from "../proofGenerationContext";
 import { UserModelParams } from "../userModelParams";
 
-import { ChatHistory } from "./chat";
+import { AnalyzedChatHistory, ChatHistory } from "./chat";
 import { ModelParams, MultiroundProfile } from "./modelParams";
 import {
     buildProofFixChat,
     buildProofGenerationChat,
 } from "./utils/chatFactory";
+import {
+    FromChatGenerationRequest,
+    RequestsLogger,
+} from "./utils/requestsLogger/requestsLogger";
 
 export type Proof = string;
 
@@ -18,8 +22,25 @@ export interface ProofVersion {
     diagnostic?: string;
 }
 
+/* eslint-disable @typescript-eslint/naming-convention */
+export enum ErrorsHandlingMode {
+    LOG_EVENTS_AND_SWALLOW_ERRORS,
+    RETHROW_ERRORS,
+}
+
 export abstract class LLMService {
-    constructor(protected readonly eventLogger?: EventLogger) {}
+    protected readonly requestsLogger: RequestsLogger;
+
+    constructor(
+        public readonly serviceName: string,
+        requestsLogsFilePath: string,
+        protected readonly eventLogger?: EventLogger
+    ) {
+        this.requestsLogger = new RequestsLogger(requestsLogsFilePath);
+    }
+
+    readonly generationFromChatFailedEvent = `generation-from-chat-failed`;
+    readonly generationFromChatSucceededEvent = `generation-from-chat-succeeded`;
 
     abstract constructGeneratedProof(
         proof: Proof,
@@ -28,11 +49,49 @@ export abstract class LLMService {
         previousProofVersions?: ProofVersion[]
     ): GeneratedProof;
 
-    abstract generateFromChat(
+    /*
+     * This method should be only a pure implementation of
+     * the generation from chat, namely, its happy path.
+     * In case something goes wrong, it should just throw an `Error`.
+     */
+    protected abstract generateFromChatImpl(
         chat: ChatHistory,
         params: ModelParams,
         choices: number
     ): Promise<string[]>;
+
+    /*
+     * Unlike the unsafe version, this method handles the errors.
+     * Namely, the default implementation catches an error,
+     * then logs the corresponding event and, finally,
+     * rethrows the wrapped error further if needed.
+     * Also, the provided implementation logs all the generation requests
+     * (both successful and failed ones) via the `RequestsLogger`:
+     * it is needed for the further estimation of the service availability.
+     */
+    async generateFromChat(
+        analyzedChat: AnalyzedChatHistory,
+        params: ModelParams,
+        choices: number,
+        errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
+    ): Promise<string[]> {
+        return this.logRequestsAndHandleErrors(
+            {
+                chat: analyzedChat.chat,
+                estimatedTokens: analyzedChat.estimatedTokens,
+                params: params,
+                choices: choices,
+            },
+            async () =>
+                await this.generateFromChatImpl(
+                    analyzedChat.chat,
+                    params,
+                    choices
+                ),
+            () => [],
+            errorsHandlingMode
+        );
+    }
 
     async generateProof(
         proofGenerationContext: ProofGenerationContext,
@@ -42,14 +101,23 @@ export abstract class LLMService {
         if (choices <= 0) {
             return [];
         }
-        const chat = buildProofGenerationChat(proofGenerationContext, params);
-        const proofs = await this.generateFromChat(chat, params, choices);
+        const analyzedChat = buildProofGenerationChat(
+            proofGenerationContext,
+            params
+        );
+        const proofs = await this.generateFromChat(
+            analyzedChat,
+            params,
+            choices
+        );
         return proofs.map((proof: string) =>
             this.constructGeneratedProof(proof, proofGenerationContext, params)
         );
     }
 
-    dispose(): void {}
+    dispose(): void {
+        this.requestsLogger.dispose();
+    }
 
     resolveParameters(params: UserModelParams): ModelParams {
         return this.resolveParametersWithDefaults(params);
@@ -80,7 +148,7 @@ export abstract class LLMService {
             throw Error(`user model parameters cannot be resolved: ${params}`);
         }
 
-        /** NOTE: it's important to pass `...extractedParams` first
+        /** NOTE: it's important to pass `...params` first
          * because if so, then the omitted fields of the `params`
          * (`systemPromt`, `newMessageMaxTokens`, `tokensLimit`, etc)
          * will be overriden - and not in the opposite way!
@@ -115,6 +183,49 @@ export abstract class LLMService {
         proofFixPrompt:
             "Unfortunately, the last proof is not correct. Here is the compiler's feedback: '${diagnostic}'. Please, fix the proof.",
     };
+
+    protected async logRequestsAndHandleErrors(
+        request: FromChatGenerationRequest,
+        generateProofs: () => Promise<string[]>,
+        returnOnError: () => string[],
+        errorsHandlingMode: ErrorsHandlingMode
+    ): Promise<string[]> {
+        try {
+            const proofs = await generateProofs();
+            this.requestsLogger.logRequestSucceeded(request, proofs);
+            this.eventLogger?.logLogicEvent(
+                this.generationFromChatSucceededEvent,
+                this
+            );
+            return proofs;
+        } catch (e) {
+            const error = e as Error;
+            if (error === null) {
+                throw e;
+            }
+            this.requestsLogger.logRequestFailed(request, error);
+            const serviceError = new GenerationFromChatFailed(error);
+            switch (+errorsHandlingMode) {
+                case ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS:
+                    if (!this.eventLogger) {
+                        throw Error(
+                            "cannot log events: no `eventLogger` provided"
+                        );
+                    }
+                    this.eventLogger.logLogicEvent(
+                        this.generationFromChatFailedEvent,
+                        this
+                    );
+                    return returnOnError();
+                case ErrorsHandlingMode.RETHROW_ERRORS:
+                    throw serviceError;
+                default:
+                    throw Error(
+                        `unsupported \`ErrorsHandlingMode\`: ${errorsHandlingMode}`
+                    );
+            }
+        }
+    }
 }
 
 export abstract class GeneratedProof {
@@ -166,7 +277,7 @@ export abstract class GeneratedProof {
     }
 
     protected async generateNextVersion(
-        chat: ChatHistory,
+        analyzedChat: AnalyzedChatHistory,
         choices: number,
         postprocessProof: (proof: string) => string = (proof) => proof
     ): Promise<GeneratedProof[]> {
@@ -174,7 +285,7 @@ export abstract class GeneratedProof {
             return [];
         }
         const newProofs = await this.llmService.generateFromChat(
-            chat,
+            analyzedChat,
             this.modelParams,
             choices
         );
@@ -204,14 +315,14 @@ export abstract class GeneratedProof {
         assert.ok(lastProofVersion.diagnostic === undefined);
         lastProofVersion.diagnostic = diagnostic;
 
-        const chat = buildProofFixChat(
+        const analyzedChat = buildProofFixChat(
             this.proofGenerationContext,
             this.proofVersions,
             this.modelParams
         );
 
         return this.generateNextVersion(
-            chat,
+            analyzedChat,
             choices,
             this.parseFixedProofFromMessage.bind(this)
         );
