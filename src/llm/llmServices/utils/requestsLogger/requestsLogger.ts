@@ -1,10 +1,8 @@
-import * as fs from "fs";
-import * as path from "path";
-
 import { ChatHistory } from "../../chat";
 import { ModelParams } from "../../modelParams";
 
 import { DebugLoggerRecord, LoggerRecord } from "./loggerRecord";
+import { SyncFile } from "./synchronizedFile";
 
 export interface GenerationRequest {
     params: ModelParams;
@@ -22,9 +20,10 @@ function isFromChatGenerationRequest(
     return "chat" in object && "estimatedTokens" in object;
 }
 
-// TODO: add mutex
-
 export class RequestsLogger {
+    private readonly logsFile: SyncFile;
+    private readonly recordsDelim = "@@@ ";
+
     /*
      * - When `debug` is false, logs only the necessary info:
      * timestamp, model name, response status and request info (choices and number of tokens sent).
@@ -34,18 +33,15 @@ export class RequestsLogger {
      * Also, the logs are never cleaned automatically.
      */
     constructor(
-        private readonly filePath: string,
+        filePath: string,
         private readonly debug: boolean = false,
         cleanLogsOnStart: boolean = true
     ) {
-        console.log(cleanLogsOnStart);
-        if (!fs.existsSync(filePath) || cleanLogsOnStart) {
+        this.logsFile = new SyncFile(filePath);
+        if (!this.logsFile.exists() || cleanLogsOnStart) {
             this.resetLogs();
         }
     }
-
-    private readonly encoding = "utf-8";
-    private readonly recordsDelim = "@@@ ";
 
     logRequestSucceeded(request: GenerationRequest, proofs: string[]) {
         let record = new LoggerRecord(
@@ -68,9 +64,9 @@ export class RequestsLogger {
 
         const newLog = `${this.recordsDelim}${record.serializeToString()}\n`;
         if (this.debug) {
-            fs.appendFileSync(this.filePath, newLog, this.encoding);
+            this.logsFile.append(newLog);
         } else {
-            fs.writeFileSync(this.filePath, newLog, this.encoding);
+            this.logsFile.write(newLog);
         }
     }
 
@@ -97,11 +93,11 @@ export class RequestsLogger {
         }
 
         const newLog = `${this.recordsDelim}${record.serializeToString()}\n`;
-        fs.appendFileSync(this.filePath, newLog, this.encoding);
+        this.logsFile.append(newLog);
     }
 
     readLogs(): LoggerRecord[] {
-        const rawData = fs.readFileSync(this.filePath, this.encoding);
+        const rawData = this.logsFile.read();
         const rawRecords = rawData.split(this.recordsDelim).slice(1);
         return rawRecords.map((rawRecord) =>
             this.debug
@@ -111,12 +107,11 @@ export class RequestsLogger {
     }
 
     resetLogs() {
-        fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
-        fs.writeFileSync(this.filePath, "");
+        this.logsFile.reset();
     }
 
     dispose() {
-        fs.unlinkSync(this.filePath);
+        this.logsFile.dispose();
     }
 
     private getNowTimestamp(): Date {
