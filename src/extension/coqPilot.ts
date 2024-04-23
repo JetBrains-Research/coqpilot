@@ -1,33 +1,12 @@
-import Ajv, { JSONSchemaType } from "ajv";
-import * as fs from "fs";
-import * as path from "path";
+import Ajv from "ajv";
 import {
     ExtensionContext,
     ProgressLocation,
     TextEditor,
-    WorkspaceConfiguration,
     commands,
-    extensions,
     window,
     workspace,
 } from "vscode";
-
-import { LLMServices } from "../llm/llmServices";
-import { GrazieService } from "../llm/llmServices/grazie/grazieService";
-import { LMStudioService } from "../llm/llmServices/lmStudio/lmStudioService";
-import { OpenAiService } from "../llm/llmServices/openai/openAiService";
-import { PredefinedProofsService } from "../llm/llmServices/predefinedProofs/predefinedProofsService";
-import {
-    GrazieUserModelParams,
-    LMStudioUserModelParams,
-    OpenAiUserModelParams,
-    PredefinedProofsUserModelParams,
-    UserModelsParams,
-    grazieUserModelParamsSchema,
-    lmStudioUserModelParamsSchema,
-    openAiUserModelParamsSchema,
-    predefinedProofsUserModelParamsSchema,
-} from "../llm/userModelParams";
 
 import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { CoqLspConfig } from "../coqLsp/coqLspConfig";
@@ -43,16 +22,17 @@ import {
     ProcessEnvironment,
     SourceFileEnvironment,
 } from "../core/completionGenerator";
-import { ContextTheoremsRanker } from "../core/contextTheoremRanker/contextTheoremsRanker";
-import { DistanceContextTheoremsRanker } from "../core/contextTheoremRanker/distanceContextTheoremsRanker";
-import { RandomContextTheoremsRanker } from "../core/contextTheoremRanker/randomContextTheoremsRanker";
 import { CoqProofChecker } from "../core/coqProofChecker";
 import { inspectSourceFile } from "../core/inspectSourceFile";
 
 import { ProofStep } from "../coqParser/parsedTypes";
-import { EventLogger, Severity } from "../logging/eventLogger";
 import { Uri } from "../utils/uri";
 
+import {
+    UserSettingsValidationError,
+    buildTheoremsRankerFromConfig,
+    parseUserModelsParams,
+} from "./configParsers";
 import {
     deleteTextFromRange,
     highlightTextInEditor,
@@ -64,6 +44,7 @@ import {
     showMessageToUser,
     suggestAddingAuxFilesToGitignore,
 } from "./editorMessages";
+import { GlobalExtensionState } from "./globalExtensionState";
 import { subscribeToLLMServicesUIEvents } from "./llmServicesAvailabilityUI";
 import {
     positionInRange,
@@ -71,65 +52,8 @@ import {
     toVSCodeRange,
 } from "./positionRangeUtils";
 import { cleanAuxFiles, hideAuxFiles } from "./tmpFilesCleanup";
-import VSCodeLogWriter from "./vscodeLogWriter";
 
 export const pluginId = "coqpilot";
-
-export class GlobalExtensionState {
-    public readonly eventLogger: EventLogger = new EventLogger();
-    public readonly logWriter: VSCodeLogWriter = new VSCodeLogWriter(
-        this.eventLogger,
-        this.parseLoggingVerbosity(workspace.getConfiguration(pluginId))
-    );
-
-    private readonly llmServicesLogsDirName = "llm-services-logs/";
-    // TODO: hide this directory (?) + test
-    public readonly llmServicesLogsDir = path.join(
-        extensions.getExtension(pluginId)!.extensionPath,
-        this.llmServicesLogsDirName
-    );
-
-    public readonly llmServices: LLMServices = {
-        openAiService: new OpenAiService(
-            `${this.llmServicesLogsDir}openai-logs.txt`,
-            this.eventLogger
-        ),
-        grazieService: new GrazieService(
-            `${this.llmServicesLogsDir}grazie-logs.txt`,
-            this.eventLogger
-        ),
-        predefinedProofsService: new PredefinedProofsService(
-            `${this.llmServicesLogsDir}predefined-proofs-logs.txt`
-        ),
-        lmStudioService: new LMStudioService(
-            `${this.llmServicesLogsDir}lmstudio-logs.txt`,
-            this.eventLogger
-        ),
-    };
-
-    constructor() {}
-
-    private parseLoggingVerbosity(config: WorkspaceConfiguration): Severity {
-        const verbosity = config.get("loggingVerbosity");
-        switch (verbosity) {
-            case "info":
-                return Severity.INFO;
-            case "debug":
-                return Severity.DEBUG;
-            default:
-                throw new Error(`Unknown logging verbosity: ${verbosity}`);
-        }
-    }
-
-    dispose(): void {
-        this.llmServices.openAiService.dispose();
-        this.llmServices.grazieService.dispose();
-        this.llmServices.predefinedProofsService.dispose();
-        this.llmServices.lmStudioService.dispose();
-        this.logWriter.dispose();
-        fs.rmSync(this.llmServicesLogsDir, { recursive: true, force: true });
-    }
-}
 
 export class CoqPilot {
     private readonly globalExtensionState: GlobalExtensionState;
@@ -348,7 +272,7 @@ export class CoqPilot {
         const coqLspServerConfig = CoqLspConfig.createServerConfig();
         const coqLspClientConfig = CoqLspConfig.createClientConfig();
         const client = new CoqLspClient(coqLspServerConfig, coqLspClientConfig);
-        const contextTheoremsRanker = this.buildTheoremsRankerFromConfig();
+        const contextTheoremsRanker = buildTheoremsRankerFromConfig();
 
         const coqProofChecker = new CoqProofChecker(client);
         const [completionContexts, sourceFileEnvironment] =
@@ -360,77 +284,15 @@ export class CoqPilot {
             );
         const processEnvironment: ProcessEnvironment = {
             coqProofChecker: coqProofChecker,
-            modelsParams: this.parseUserModelsParams(
-                workspace.getConfiguration(pluginId)
+            modelsParams: parseUserModelsParams(
+                workspace.getConfiguration(pluginId),
+                this.jsonSchemaValidator
             ),
             services: this.globalExtensionState.llmServices,
             theoremRanker: contextTheoremsRanker,
         };
 
         return [completionContexts, sourceFileEnvironment, processEnvironment];
-    }
-
-    private buildTheoremsRankerFromConfig(): ContextTheoremsRanker {
-        const workspaceConfig = workspace.getConfiguration(pluginId);
-        const rankerType = workspaceConfig.contextTheoremsRankerType;
-
-        switch (rankerType) {
-            case "distance":
-                return new DistanceContextTheoremsRanker();
-            case "random":
-                return new RandomContextTheoremsRanker();
-            default:
-                throw new Error(
-                    `Unknown context theorems ranker type: ${rankerType}`
-                );
-        }
-    }
-
-    private parseUserModelsParams(
-        config: WorkspaceConfiguration
-    ): UserModelsParams {
-        const openAiParams: OpenAiUserModelParams[] =
-            config.openAiModelsParameters.map((params: any) =>
-                this.validateAndParseJson(params, openAiUserModelParamsSchema)
-            );
-        const grazieParams: GrazieUserModelParams[] =
-            config.grazieModelsParameters.map((params: any) =>
-                this.validateAndParseJson(params, grazieUserModelParamsSchema)
-            );
-        const predefinedProofsParams: PredefinedProofsUserModelParams[] =
-            config.predefinedProofsModelsParameters.map((params: any) =>
-                this.validateAndParseJson(
-                    params,
-                    predefinedProofsUserModelParamsSchema
-                )
-            );
-        const lmStudioParams: LMStudioUserModelParams[] =
-            config.lmStudioModelsParameters.map((params: any) =>
-                this.validateAndParseJson(params, lmStudioUserModelParamsSchema)
-            );
-
-        return {
-            openAiParams: openAiParams,
-            grazieParams: grazieParams,
-            predefinedProofsModelParams: predefinedProofsParams,
-            lmStudioParams: lmStudioParams,
-        };
-    }
-
-    private validateAndParseJson<T>(
-        json: any,
-        targetClassSchema: JSONSchemaType<T>
-    ): T {
-        const instance: T = json as T;
-        const validate = this.jsonSchemaValidator.compile(targetClassSchema);
-        if (!validate(instance)) {
-            throw new UserSettingsValidationError(
-                `Unable to validate json against the class: ${JSON.stringify(validate.errors)}`,
-                targetClassSchema.title ?? "Unknown"
-            );
-        }
-
-        return instance;
     }
 
     private registerEditorCommand(
@@ -447,18 +309,5 @@ export class CoqPilot {
     dispose(): void {
         cleanAuxFiles();
         this.globalExtensionState.dispose();
-    }
-}
-
-class UserSettingsValidationError extends Error {
-    constructor(
-        message: string,
-        public readonly settingsName: string
-    ) {
-        super(message);
-    }
-
-    toString(): string {
-        return `Unable to validate user settings for ${this.settingsName}. Please refer to the README for the correct settings format: https://github.com/JetBrains-Research/coqpilot/blob/main/README.md#guide-to-model-configuration.`;
     }
 }
