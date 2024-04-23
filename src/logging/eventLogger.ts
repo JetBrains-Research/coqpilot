@@ -8,10 +8,20 @@ export enum Severity {
 export const ALL_EVENTS = "all";
 /* eslint-enable @typescript-eslint/naming-convention */
 
+export type SubscriptionId = number;
+
+interface EventSubscription {
+    id: SubscriptionId;
+    callback: (message: string, data?: any) => void;
+    severity: Severity;
+}
+
 export class EventLogger {
-    events: {
-        [key: string]: Array<[(message: string, data?: any) => void, Severity]>;
+    private events: {
+        [key: string]: Array<EventSubscription>;
     };
+
+    private newSubscriptionId: SubscriptionId = 0;
 
     constructor() {
         this.events = {};
@@ -21,11 +31,22 @@ export class EventLogger {
         event: string,
         severity: Severity,
         callback: (message: string, data?: any) => void
-    ): void {
+    ): SubscriptionId {
         if (this.events[event] === undefined) {
             this.events[event] = [];
         }
-        this.events[event].push([callback, severity]);
+        this.events[event].push({
+            id: this.newSubscriptionId,
+            callback,
+            severity,
+        });
+        return this.newSubscriptionId++;
+    }
+
+    unsubscribe(event: string, subscriptionId: SubscriptionId) {
+        this.events[event] = this.events[event]?.filter((eventSubscription) => {
+            eventSubscription.id !== subscriptionId;
+        });
     }
 
     log(
@@ -34,17 +55,26 @@ export class EventLogger {
         data?: any,
         severity: Severity = Severity.INFO
     ) {
-        this.events[event]?.forEach(([callback, subscribedSeverity]) => {
-            if (subscribedSeverity === severity) {
-                callback(message, data);
+        this.events[event]?.forEach((eventSubscription) => {
+            if (eventSubscription.severity === severity) {
+                eventSubscription.callback(message, data);
             }
         });
 
-        this.events[ALL_EVENTS]?.forEach(([callback, subscribedSeverity]) => {
-            if (subscribedSeverity === severity) {
-                callback(message, data);
+        this.events[ALL_EVENTS]?.forEach((eventSubscription) => {
+            if (eventSubscription.severity === severity) {
+                eventSubscription.callback(message, data);
             }
         });
+    }
+
+    subscribeToLogicEvent(
+        event: string,
+        callback: (data?: any) => void
+    ): SubscriptionId {
+        return this.subscribe(event, Severity.LOGIC, (_message, data) =>
+            callback(data)
+        );
     }
 
     logLogicEvent(event: string, data?: any) {

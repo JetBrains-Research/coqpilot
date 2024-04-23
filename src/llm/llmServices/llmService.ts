@@ -39,8 +39,8 @@ export abstract class LLMService {
         this.requestsLogger = new RequestsLogger(requestsLogsFilePath);
     }
 
-    readonly generationFromChatFailedEvent = `generation-from-chat-failed`;
-    readonly generationFromChatSucceededEvent = `generation-from-chat-succeeded`;
+    static readonly generationFromChatFailedEvent = `generation-from-chat-failed`;
+    static readonly generationFromChatSucceededEvent = `generation-from-chat-succeeded`;
 
     abstract constructGeneratedProof(
         proof: Proof,
@@ -194,7 +194,7 @@ export abstract class LLMService {
             const proofs = await generateProofs();
             this.requestsLogger.logRequestSucceeded(request, proofs);
             this.eventLogger?.logLogicEvent(
-                this.generationFromChatSucceededEvent,
+                LLMService.generationFromChatSucceededEvent,
                 this
             );
             return proofs;
@@ -213,7 +213,7 @@ export abstract class LLMService {
                         );
                     }
                     this.eventLogger.logLogicEvent(
-                        this.generationFromChatFailedEvent,
+                        LLMService.generationFromChatFailedEvent,
                         this
                     );
                     return returnOnError();

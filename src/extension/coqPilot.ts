@@ -1,4 +1,5 @@
 import Ajv, { JSONSchemaType } from "ajv";
+import * as fs from "fs";
 import * as path from "path";
 import {
     ExtensionContext,
@@ -13,6 +14,7 @@ import {
 
 import { LLMServices } from "../llm/llmServices";
 import { GrazieService } from "../llm/llmServices/grazie/grazieService";
+import { LLMService } from "../llm/llmServices/llmService";
 import { LMStudioService } from "../llm/llmServices/lmStudio/lmStudioService";
 import { OpenAiService } from "../llm/llmServices/openai/openAiService";
 import { PredefinedProofsService } from "../llm/llmServices/predefinedProofs/predefinedProofsService";
@@ -49,7 +51,7 @@ import { CoqProofChecker } from "../core/coqProofChecker";
 import { inspectSourceFile } from "../core/inspectSourceFile";
 
 import { ProofStep } from "../coqParser/parsedTypes";
-import { EventLogger, Severity } from "../logging/eventLogger";
+import { EventLogger, Severity, SubscriptionId } from "../logging/eventLogger";
 import { Uri } from "../utils/uri";
 
 import {
@@ -79,11 +81,14 @@ export class GlobalExtensionState {
         this.eventLogger,
         this.parseLoggingVerbosity(workspace.getConfiguration(pluginId))
     );
-    // TODO: clean and hide this directory (?) + test
+
+    private readonly llmServicesLogsDirName = "llm-services-logs/";
+    // TODO: hide this directory (?) + test
     public readonly llmServicesLogsDir = path.join(
         extensions.getExtension(pluginId)!.extensionPath,
-        "llm-services-logs/"
+        this.llmServicesLogsDirName
     );
+
     public readonly llmServices: LLMServices = {
         openAiService: new OpenAiService(
             `${this.llmServicesLogsDir}openai-logs.txt`,
@@ -122,8 +127,31 @@ export class GlobalExtensionState {
         this.llmServices.predefinedProofsService.dispose();
         this.llmServices.lmStudioService.dispose();
         this.logWriter.dispose();
+        fs.rmSync(this.llmServicesLogsDir, { recursive: true, force: true });
     }
 }
+
+/* eslint-disable @typescript-eslint/naming-convention */
+enum LLMServiceAvailablityState {
+    AVAILABLE = "AVAILABLE",
+    UNAVAILABLE = "UNAVAILABLE",
+}
+
+/* eslint-disable @typescript-eslint/naming-convention */
+enum LLMServiceMessagesShownState {
+    NO_MESSAGES_SHOWN = "NO_MESSAGES_SHOWN",
+    BECOME_UNAVAILABLE_MESSAGE_SHOWN = "BECOME_UNAVAILABLE_MESSAGE_SHOWN",
+    AGAIN_AVAILABLE_MESSAGE_SHOWN = "AGAIN_AVAILABLE_MESSAGE_SHOWN",
+}
+
+interface LLMServiceUIState {
+    availabilityState: LLMServiceAvailablityState;
+    messagesShownState: LLMServiceMessagesShownState;
+}
+
+type LLMServiceToUIState = {
+    [key: string]: LLMServiceUIState;
+};
 
 export class CoqPilot {
     private readonly globalExtensionState: GlobalExtensionState;
@@ -240,16 +268,157 @@ export class CoqPilot {
             return;
         }
 
-        let completionPromises = completionContexts.map((completionContext) => {
-            return this.performSingleCompletion(
-                completionContext,
-                sourceFileEnvironment,
-                processEnvironment,
-                editor
+        const unsubscribeCallback = this.subscribeToLLMServiceLogicEvents();
+        try {
+            let completionPromises = completionContexts.map(
+                (completionContext) => {
+                    return this.performSingleCompletion(
+                        completionContext,
+                        sourceFileEnvironment,
+                        processEnvironment,
+                        editor
+                    );
+                }
             );
-        });
 
-        await Promise.all(completionPromises);
+            await Promise.all(completionPromises);
+        } finally {
+            unsubscribeCallback();
+        }
+    }
+
+    // returns callback to unsubscribe from these events
+    private subscribeToLLMServiceLogicEvents(): () => void {
+        const llmServiceToUIState: LLMServiceToUIState =
+            this.createLLMServiceToUIState();
+        const generationFailedSubscriptionId =
+            this.subscribeToGenerationFromChatFailedEvent(llmServiceToUIState);
+        const generationSucceededSubscriptionId =
+            this.subscribeToGenerationFromChatSucceededEvent(
+                llmServiceToUIState
+            );
+        return () => {
+            this.globalExtensionState.eventLogger.unsubscribe(
+                LLMService.generationFromChatFailedEvent,
+                generationFailedSubscriptionId
+            );
+            this.globalExtensionState.eventLogger.unsubscribe(
+                LLMService.generationFromChatSucceededEvent,
+                generationSucceededSubscriptionId
+            );
+        };
+    }
+
+    private createLLMServiceToUIState(): LLMServiceToUIState {
+        return {
+            [this.globalExtensionState.llmServices.openAiService.serviceName]: {
+                availabilityState: LLMServiceAvailablityState.AVAILABLE,
+                messagesShownState:
+                    LLMServiceMessagesShownState.NO_MESSAGES_SHOWN,
+            },
+            [this.globalExtensionState.llmServices.grazieService.serviceName]: {
+                availabilityState: LLMServiceAvailablityState.AVAILABLE,
+                messagesShownState:
+                    LLMServiceMessagesShownState.NO_MESSAGES_SHOWN,
+            },
+            [this.globalExtensionState.llmServices.predefinedProofsService
+                .serviceName]: {
+                availabilityState: LLMServiceAvailablityState.AVAILABLE,
+                messagesShownState:
+                    LLMServiceMessagesShownState.NO_MESSAGES_SHOWN,
+            },
+            [this.globalExtensionState.llmServices.lmStudioService.serviceName]:
+                {
+                    availabilityState: LLMServiceAvailablityState.AVAILABLE,
+                    messagesShownState:
+                        LLMServiceMessagesShownState.NO_MESSAGES_SHOWN,
+                },
+        };
+    }
+
+    private subscribeToGenerationFromChatFailedEvent(
+        llmServiceToUIState: LLMServiceToUIState
+    ): SubscriptionId {
+        const callback = (data: any) => {
+            const [llmService, uiState] =
+                CoqPilot.parseLLMServiceLogicEventData(
+                    data,
+                    llmServiceToUIState
+                );
+            const serviceName = llmService.serviceName;
+            if (
+                uiState.availabilityState ===
+                LLMServiceAvailablityState.AVAILABLE
+            ) {
+                llmServiceToUIState[serviceName].availabilityState =
+                    LLMServiceAvailablityState.UNAVAILABLE;
+                if (
+                    uiState.messagesShownState ===
+                    LLMServiceMessagesShownState.NO_MESSAGES_SHOWN
+                ) {
+                    showMessageToUser(
+                        `\`${serviceName}\` became unavailable for this generation. If you want to use it, try again later.`,
+                        "warning"
+                    );
+                    // TODO: estimate time
+                }
+            }
+        };
+        return this.globalExtensionState.eventLogger.subscribeToLogicEvent(
+            LLMService.generationFromChatFailedEvent,
+            callback
+        );
+    }
+
+    private subscribeToGenerationFromChatSucceededEvent(
+        llmServiceToUIState: LLMServiceToUIState
+    ): SubscriptionId {
+        const callback = (data: any) => {
+            const [llmService, uiState] =
+                CoqPilot.parseLLMServiceLogicEventData(
+                    data,
+                    llmServiceToUIState
+                );
+            const serviceName = llmService.serviceName;
+            if (
+                uiState.availabilityState ===
+                LLMServiceAvailablityState.UNAVAILABLE
+            ) {
+                llmServiceToUIState[serviceName].availabilityState =
+                    LLMServiceAvailablityState.AVAILABLE;
+                if (
+                    uiState.messagesShownState ===
+                    LLMServiceMessagesShownState.BECOME_UNAVAILABLE_MESSAGE_SHOWN
+                ) {
+                    showMessageToUser(
+                        `\`${serviceName}\` is available again!`,
+                        "info"
+                    );
+                }
+            }
+        };
+        return this.globalExtensionState.eventLogger.subscribeToLogicEvent(
+            LLMService.generationFromChatSucceededEvent,
+            callback
+        );
+    }
+
+    private static parseLLMServiceLogicEventData(
+        data: any,
+        llmServiceToUIState: LLMServiceToUIState
+    ): [LLMService, LLMServiceUIState] {
+        const llmService = data as LLMService;
+        if (llmService === null) {
+            throw Error(
+                "data of the `generationFromChatFailedEvent` should be a LLMService"
+            );
+        }
+        const serviceName = llmService.serviceName;
+        const uiState = llmServiceToUIState[serviceName];
+        if (uiState === undefined) {
+            throw Error(`no UI state for \`${serviceName}\``);
+        }
+        return [llmService, uiState];
     }
 
     private async performSingleCompletion(
