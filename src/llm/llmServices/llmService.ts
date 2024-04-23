@@ -5,23 +5,18 @@ import { ProofGenerationContext } from "../proofGenerationContext";
 import { UserModelParams } from "../userModelParams";
 
 import { AnalyzedChatHistory, ChatHistory } from "./chat";
-import { ModelParams, MultiroundProfile } from "./modelParams";
+import { ModelParams } from "./modelParams";
 import {
     buildProofFixChat,
     buildProofGenerationChat,
 } from "./utils/chatFactory";
+import { estimateTimeToBecomeAvailableDefault } from "./utils/defaultAvailabilityEstimator";
+import { resolveParametersWithDefaultsImpl } from "./utils/defaultParametersResolver";
 import {
     FromChatGenerationRequest,
     RequestsLogger,
 } from "./utils/requestsLogger/requestsLogger";
-import {
-    Time,
-    millisToTime,
-    nowTimestampMillis,
-    time,
-    timeToMillis,
-    timeZero,
-} from "./utils/time";
+import { Time } from "./utils/time";
 
 export type Proof = string;
 
@@ -123,69 +118,12 @@ export abstract class LLMService {
         );
     }
 
-    protected readonly heuristicAvailabilityEstimationsMillis = [
-        time(5, "second"),
-        time(10, "second"),
-        time(30, "second"),
-        time(1, "minute"),
-        time(5, "minute"),
-        time(10, "minute"),
-        time(30, "minute"),
-        time(1, "hour"),
-        time(1, "day"),
-    ].map((time) => timeToMillis(time));
-
     /**
      * Estimates the expected time for service to become available.
      * To do this, analyzes the logs from `requestsLogger` and computes the time.
-     * The default algorithm does the following:
-     * - if the last attempt is successful => don't wait;
-     * - if there is only one failed attemp => wait 1 second;
-     * - otherwise, find the maximum time interval between two consistent failures;
-     *   - then, find the first heuristical time estimation that is greater than it;
-     *   - return the difference between this estimation and the time since last attempt
-     *   - (if the time since last attempt is greater => there is no need to wait).
      */
     estimateTimeToBecomeAvailable(): Time {
-        const [_lastSuccess, ...failures] =
-            this.requestsLogger.readLogsSinceLastSuccess();
-
-        if (failures.length === 0) {
-            return timeZero;
-        }
-        if (failures.length === 1) {
-            return time(1, "second");
-        }
-
-        const intervals: number[] = [];
-        for (let i = 1; i < failures.length; i++) {
-            intervals.push(
-                failures[i].timestampMillis - failures[i - 1].timestampMillis
-            );
-        }
-        const maxInterval = Math.max(...intervals);
-        let currentEstimationIndex = 0;
-        while (
-            currentEstimationIndex <
-                this.heuristicAvailabilityEstimationsMillis.length &&
-            maxInterval >=
-                this.heuristicAvailabilityEstimationsMillis[
-                    currentEstimationIndex
-                ]
-        ) {
-            currentEstimationIndex++;
-        }
-        const currentEstimation =
-            this.heuristicAvailabilityEstimationsMillis[currentEstimationIndex];
-
-        const timeFromLastAttempt =
-            nowTimestampMillis() -
-            failures[failures.length - 1].timestampMillis;
-
-        if (timeFromLastAttempt < currentEstimation) {
-            return millisToTime(currentEstimation - timeFromLastAttempt);
-        }
-        return timeZero;
+        return estimateTimeToBecomeAvailableDefault(this.requestsLogger);
     }
 
     dispose(): void {
@@ -198,64 +136,7 @@ export abstract class LLMService {
 
     protected readonly resolveParametersWithDefaults = (
         params: UserModelParams
-    ): ModelParams => {
-        const newMessageMaxTokens =
-            params.newMessageMaxTokens ??
-            this.defaultNewMessageMaxTokens[params.modelName];
-        const tokensLimits =
-            params.tokensLimit ?? this.defaultTokensLimits[params.modelName];
-        const systemMessageContent =
-            params.systemPrompt ?? this.defaultSystemMessageContent;
-        const multiroundProfile: MultiroundProfile = {
-            maxRoundsNumber:
-                params.multiroundProfile?.maxRoundsNumber ??
-                this.defaultMultiroundProfile.maxRoundsNumber,
-            proofFixChoices:
-                params.multiroundProfile?.proofFixChoices ??
-                this.defaultMultiroundProfile.proofFixChoices,
-            proofFixPrompt:
-                params.multiroundProfile?.proofFixPrompt ??
-                this.defaultMultiroundProfile.proofFixPrompt,
-        };
-        if (newMessageMaxTokens === undefined || tokensLimits === undefined) {
-            throw Error(`user model parameters cannot be resolved: ${params}`);
-        }
-
-        /** NOTE: it's important to pass `...params` first
-         * because if so, then the omitted fields of the `params`
-         * (`systemPromt`, `newMessageMaxTokens`, `tokensLimit`, etc)
-         * will be overriden - and not in the opposite way!
-         */
-        return {
-            ...params,
-            systemPrompt: systemMessageContent,
-            newMessageMaxTokens: newMessageMaxTokens,
-            tokensLimit: tokensLimits,
-            multiroundProfile: multiroundProfile,
-        };
-    };
-
-    private readonly defaultNewMessageMaxTokens: {
-        [modelName: string]: number;
-    } = {};
-
-    private readonly defaultTokensLimits: {
-        [modelName: string]: number;
-    } = {
-        // eslint-disable-next-line @typescript-eslint/naming-convention
-        "gpt-3.5-turbo-0301": 2000,
-    };
-
-    private readonly defaultSystemMessageContent: string =
-        "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'.";
-
-    // its properties can be used separately
-    private readonly defaultMultiroundProfile: MultiroundProfile = {
-        maxRoundsNumber: 1, // multiround is disabled by default
-        proofFixChoices: 1, // 1 fix version per proof by default
-        proofFixPrompt:
-            "Unfortunately, the last proof is not correct. Here is the compiler's feedback: '${diagnostic}'. Please, fix the proof.",
-    };
+    ): ModelParams => resolveParametersWithDefaultsImpl(params);
 
     protected async logRequestsAndHandleErrors(
         request: FromChatGenerationRequest,
