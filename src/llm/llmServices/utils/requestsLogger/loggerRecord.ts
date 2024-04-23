@@ -17,7 +17,7 @@ export class ParsingError extends Error {
 
 export class LoggerRecord {
     constructor(
-        public readonly timestamp: Date,
+        public readonly timestampMillis: number,
         public readonly modelName: string,
         public readonly responseStatus: ResponseStatus,
         public readonly choices: number,
@@ -37,7 +37,7 @@ export class LoggerRecord {
     }
 
     protected buildStatusLine(): string {
-        const timestamp = this.timestamp.toLocaleString();
+        const timestamp = new Date(this.timestampMillis).toLocaleString();
         return `[${timestamp}] \`${this.modelName}\` model: ${this.responseStatus}\n`;
     }
 
@@ -76,7 +76,7 @@ export class LoggerRecord {
             restRawRecord,
             "intro line"
         );
-        const timestamp = this.parseTimestamp(rawTimestamp);
+        const timestampMillis = this.parseTimestampMillis(rawTimestamp);
         const responseStatus = this.parseAsType<ResponseStatus>(
             rawResponseStatus,
             "response status"
@@ -112,7 +112,7 @@ export class LoggerRecord {
 
         return [
             new LoggerRecord(
-                timestamp,
+                timestampMillis,
                 modelName,
                 responseStatus,
                 this.parseIntValue(rawChoices, "requested choices"),
@@ -142,9 +142,9 @@ export class LoggerRecord {
         return parsedValue;
     }
 
-    protected static parseTimestamp(rawTimestamp: string): Date {
+    protected static parseTimestampMillis(rawTimestamp: string): number {
         try {
-            return new Date(rawTimestamp);
+            return new Date(rawTimestamp).getTime();
         } catch (e) {
             throw new ParsingError("invalid timestampt", rawTimestamp);
         }
@@ -206,7 +206,7 @@ export class DebugLoggerRecord extends LoggerRecord {
         public readonly generatedProofs: string[] | undefined = undefined
     ) {
         super(
-            baseRecord.timestamp,
+            baseRecord.timestampMillis,
             baseRecord.modelName,
             baseRecord.responseStatus,
             baseRecord.choices,

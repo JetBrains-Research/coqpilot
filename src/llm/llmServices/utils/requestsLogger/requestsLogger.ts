@@ -1,5 +1,6 @@
 import { ChatHistory } from "../../chat";
 import { ModelParams } from "../../modelParams";
+import { nowTimestampMillis } from "../time";
 
 import { DebugLoggerRecord, LoggerRecord } from "./loggerRecord";
 import { SyncFile } from "./synchronizedFile";
@@ -45,7 +46,7 @@ export class RequestsLogger {
 
     logRequestSucceeded(request: GenerationRequest, proofs: string[]) {
         let record = new LoggerRecord(
-            this.getNowTimestamp(),
+            nowTimestampMillis(),
             request.params.modelName,
             "SUCCESS",
             request.choices,
@@ -72,7 +73,7 @@ export class RequestsLogger {
 
     logRequestFailed(request: GenerationRequest, error: Error) {
         let record = new LoggerRecord(
-            this.getNowTimestamp(),
+            nowTimestampMillis(),
             request.params.modelName,
             "FAILED",
             request.choices,
@@ -106,15 +107,23 @@ export class RequestsLogger {
         );
     }
 
+    readLogsSinceLastSuccess(): LoggerRecord[] {
+        const records = this.readLogs();
+        const invertedRow = [];
+        for (let i = records.length - 1; i >= 0; i--) {
+            invertedRow.push(records[i]);
+            if (records[i].responseStatus === "SUCCESS") {
+                break;
+            }
+        }
+        return invertedRow.reverse();
+    }
+
     resetLogs() {
         this.logsFile.reset();
     }
 
     dispose() {
         this.logsFile.dispose();
-    }
-
-    private getNowTimestamp(): Date {
-        return new Date();
     }
 }
