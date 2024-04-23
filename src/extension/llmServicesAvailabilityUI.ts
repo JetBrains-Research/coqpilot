@@ -1,7 +1,8 @@
 import { LLMServices } from "../llm/llmServices";
 import { LLMService } from "../llm/llmServices/llmService";
+import { Time } from "../llm/llmServices/utils/time";
 
-import { EventLogger, SubscriptionId } from "../logging/eventLogger";
+import { EventLogger } from "../logging/eventLogger";
 
 import { showMessageToUser } from "./editorMessages";
 
@@ -35,16 +36,14 @@ export function subscribeToLLMServicesUIEvents(
 ): UnsubscribeFromLLMServicesUIEventsCallback {
     const llmServiceToUIState: LLMServiceToUIState =
         createLLMServiceToUIState(llmServices);
-    const generationFailedSubscriptionId =
-        subscribeToGenerationFromChatFailedEvent(
-            llmServiceToUIState,
-            eventLogger
-        );
-    const generationSucceededSubscriptionId =
-        subscribeToGenerationFromChatSucceededEvent(
-            llmServiceToUIState,
-            eventLogger
-        );
+    const generationFailedSubscriptionId = eventLogger.subscribeToLogicEvent(
+        LLMService.generationFromChatFailedEvent,
+        reactToGenerationFromChatFailedEvent(llmServiceToUIState)
+    );
+    const generationSucceededSubscriptionId = eventLogger.subscribeToLogicEvent(
+        LLMService.generationFromChatSucceededEvent,
+        reactToGenerationFromChatSucceededEvent(llmServiceToUIState)
+    );
     return () => {
         eventLogger.unsubscribe(
             LLMService.generationFromChatFailedEvent,
@@ -80,11 +79,10 @@ function createLLMServiceToUIState(
     };
 }
 
-function subscribeToGenerationFromChatFailedEvent(
-    llmServiceToUIState: LLMServiceToUIState,
-    eventLogger: EventLogger
-): SubscriptionId {
-    const callback = (data: any) => {
+function reactToGenerationFromChatFailedEvent(
+    llmServiceToUIState: LLMServiceToUIState
+): (data: any) => void {
+    return (data: any) => {
         const [llmService, uiState] = parseLLMServiceLogicEventData(
             data,
             llmServiceToUIState
@@ -99,25 +97,45 @@ function subscribeToGenerationFromChatFailedEvent(
                 uiState.messagesShownState ===
                 LLMServiceMessagesShownState.NO_MESSAGES_SHOWN
             ) {
+                const formattedExpectedTime = formatTimeToUIString(
+                    llmService.estimateTimeToBecomeAvailable()
+                );
+                const becameUnavailableMessage = `\`${serviceName}\` became unavailable for this generation.`;
+                const tryAgainMessage = `If you want to use it, try again in ~ ${formattedExpectedTime}.`;
                 showMessageToUser(
-                    `\`${serviceName}\` became unavailable for this generation. If you want to use it, try again later.`,
+                    `${becameUnavailableMessage} ${tryAgainMessage}`,
                     "warning"
                 );
-                // TODO: estimate time
             }
         }
     };
-    return eventLogger.subscribeToLogicEvent(
-        LLMService.generationFromChatFailedEvent,
-        callback
-    );
 }
 
-function subscribeToGenerationFromChatSucceededEvent(
-    llmServiceToUIState: LLMServiceToUIState,
-    eventLogger: EventLogger
-): SubscriptionId {
-    const callback = (data: any) => {
+function formatTimeToUIString(time: Time): string {
+    const days = `${time.days} days`;
+    const hours = `${time.hours} hours`;
+    const minutes = `${time.minutes} minutes`;
+    const seconds = `${time.seconds} seconds`;
+
+    if (time.days === 0) {
+        if (time.hours === 0) {
+            if (time.minutes === 0) {
+                return `${seconds}`;
+            } else {
+                return `${minutes}, ${seconds}`;
+            }
+        } else {
+            return `${hours}, ${minutes}`;
+        }
+    } else {
+        return `${days}, ${hours}`;
+    }
+}
+
+function reactToGenerationFromChatSucceededEvent(
+    llmServiceToUIState: LLMServiceToUIState
+): (data: any) => void {
+    return (data: any) => {
         const [llmService, uiState] = parseLLMServiceLogicEventData(
             data,
             llmServiceToUIState
@@ -139,10 +157,6 @@ function subscribeToGenerationFromChatSucceededEvent(
             }
         }
     };
-    return eventLogger.subscribeToLogicEvent(
-        LLMService.generationFromChatSucceededEvent,
-        callback
-    );
 }
 
 function parseLLMServiceLogicEventData(

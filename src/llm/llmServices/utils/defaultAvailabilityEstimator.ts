@@ -30,6 +30,8 @@ export const defaultHeuristicEstimationsMillis = [
  *   - then, find the first heuristical time estimation that is greater than it;
  *   - return the difference between this estimation and the time since last attempt
  *   - (if the time since last attempt is greater => there is no need to wait).
+ *   - P.S. In case the time since last attempt is small enough (<10% of the estimation),
+ *     returns the estimation by itself.
  */
 export function estimateTimeToBecomeAvailableDefault(
     requestsLogger: RequestsLogger
@@ -65,6 +67,11 @@ export function estimateTimeToBecomeAvailableDefault(
         nowTimestampMillis() - failures[failures.length - 1].timestampMillis;
 
     if (timeFromLastAttempt < currentEstimation) {
+        // if `timeFromLastAttempt` is small enough, return the estimation by itself
+        // (so to prevent ugly times, which are very close to the heuristic estimations)
+        if (timeFromLastAttempt / currentEstimation < 0.1) {
+            return millisToTime(currentEstimation);
+        }
         return millisToTime(currentEstimation - timeFromLastAttempt);
     }
     return timeZero;
