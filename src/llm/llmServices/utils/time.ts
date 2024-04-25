@@ -2,7 +2,7 @@ export function nowTimestampMillis(): number {
     return new Date().getTime();
 }
 
-export type TimeUnit = "second" | "minute" | "hour" | "day";
+export type TimeUnit = "millisecond" | "second" | "minute" | "hour" | "day";
 
 export interface Time {
     millis: number;
@@ -30,7 +30,8 @@ export function timeToMillis(time: Time): number {
     return (
         (((time.hours + time.days * 24) * 60 + time.minutes) * 60 +
             time.seconds) *
-        1000
+            1000 +
+        time.millis
     );
 }
 
@@ -47,15 +48,16 @@ export const timeZero: Time = {
 };
 
 function timeInUnitsToMillis(value: number, unit: TimeUnit = "second"): number {
-    let result = value * 1000;
     switch (unit) {
+        case "millisecond":
+            return value;
         case "second":
-            return result;
+            return value * 1000;
         case "minute":
-            return result * 60;
+            return value * 1000 * 60;
         case "hour":
-            return result * 60 * 60;
+            return value * 1000 * 60 * 60;
         case "day":
-            return result * 60 * 60 * 24;
+            return value * 1000 * 60 * 60 * 24;
     }
 }
