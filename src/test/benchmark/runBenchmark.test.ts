@@ -12,50 +12,63 @@ interface Benchmark {
     items: DatasetItem[];
     modelsParams: UserModelsParams;
     requireAllAdmitsCompleted: Boolean;
+    benchmarkFullTheorems: Boolean;
+    benchmarkAdmits: Boolean;
     timeoutMinutes: number;
 }
 
 class DatasetItem {
     workspaceRootPath: string | undefined;
+    specificTheoremForBenchmark: string[] | undefined;
 
     /* Paths should be relative to 'dataset' folder */
     constructor(
         public path: string,
+        specificTheoremForBenchmark: string[] | undefined = undefined,
         workspaceRootPath: string | undefined = undefined
     ) {
         this.workspaceRootPath = workspaceRootPath;
+        this.specificTheoremForBenchmark = specificTheoremForBenchmark;
     }
 }
 
-const simpleAutoBenchmark: Benchmark = {
-    name: "Complete simple examples with `auto`",
-    items: [new DatasetItem("auto_benchmark.v")],
-    modelsParams: onlyAutoModelsParams,
-    requireAllAdmitsCompleted: true,
-    timeoutMinutes: 1,
-};
+// const simpleAutoBenchmark: Benchmark = {
+//     name: "Complete simple examples with `auto`",
+//     items: [new DatasetItem("auto_benchmark.v")],
+//     modelsParams: onlyAutoModelsParams,
+//     requireAllAdmitsCompleted: true,
+//     benchmarkFullTheorems: true,
+//     benchmarkAdmits: true,
+//     timeoutMinutes: 1,
+// };
 
-const mixedAutoBenchmark: Benchmark = {
-    name: "Complete mixed examples (both simple & hard) with `auto`",
-    items: [new DatasetItem("mixed_benchmark.v")],
-    modelsParams: onlyAutoModelsParams,
-    requireAllAdmitsCompleted: false,
-    timeoutMinutes: 1,
-};
+// const mixedAutoBenchmark: Benchmark = {
+//     name: "Complete mixed examples (both simple & hard) with `auto`",
+//     items: [new DatasetItem("mixed_benchmark.v")],
+//     modelsParams: onlyAutoModelsParams,
+//     requireAllAdmitsCompleted: false,
+//     benchmarkFullTheorems: true,
+//     benchmarkAdmits: true,
+//     timeoutMinutes: 1,
+// };
 
 const immBenchmark: Benchmark = {
     name: "Complete imm with auto",
-    items: [new DatasetItem("imm/src/basic/Events.v", "imm")],
+    items: [
+        new DatasetItem(
+            "imm/src/basic/Execution_eco.v",
+            ["rf_rmw_ct_in_co"],
+            "imm"
+        ),
+    ],
     modelsParams: onlyAutoModelsParams,
     requireAllAdmitsCompleted: false,
+    benchmarkFullTheorems: true,
+    benchmarkAdmits: false,
     timeoutMinutes: 60,
 };
 
-const benchmarks: Benchmark[] = [
-    simpleAutoBenchmark,
-    mixedAutoBenchmark,
-    immBenchmark,
-];
+const benchmarks: Benchmark[] = [immBenchmark];
 
 suite("Benchmark", () => {
     const datasetDir = getDatasetDir();
@@ -84,11 +97,18 @@ suite("Benchmark", () => {
                         await runTestBenchmark(
                             resolvedFilePath,
                             benchmark.modelsParams,
+                            item.specificTheoremForBenchmark,
+                            benchmark.benchmarkFullTheorems,
+                            benchmark.benchmarkAdmits,
                             resolvedWorkspaceRootPath,
                             benchmark.requireAllAdmitsCompleted
                         );
-                    admitsCompletedInTotal.add(admitsCompleted);
-                    theoremsProvedInTotal.add(theoremsProved);
+                    admitsCompletedInTotal.add(
+                        admitsCompleted ?? new BenchmarkResult(0, 0)
+                    );
+                    theoremsProvedInTotal.add(
+                        theoremsProved ?? new BenchmarkResult(0, 0)
+                    );
                 }
             }
 

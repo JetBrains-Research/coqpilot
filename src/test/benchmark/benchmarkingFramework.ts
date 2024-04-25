@@ -31,6 +31,9 @@ import { consoleLog, consoleLogLine } from "./loggingUtils";
 export async function runTestBenchmark(
     filePath: string,
     modelsParams: UserModelsParams,
+    specificTheoremsForBenchmark: string[] | undefined,
+    benchmarkFullTheorems: Boolean = true,
+    benchmarkAdmits: Boolean = true,
     workspaceRootPath?: string,
     requireAllAdmitsCompleted: Boolean = false
 ): Promise<BenchmarkReport> {
@@ -44,30 +47,54 @@ export async function runTestBenchmark(
             workspaceRootPath,
             filePath
         );
+    const filteredCompletionTargets = {
+        admitTargets: completionTargets.admitTargets.filter(
+            (target) =>
+                specificTheoremsForBenchmark?.includes(
+                    target.parentTheorem.name
+                ) ?? true
+        ),
+        theoremTargets: completionTargets.theoremTargets.filter(
+            (target) =>
+                specificTheoremsForBenchmark?.includes(
+                    target.parentTheorem.name
+                ) ?? true
+        ),
+    };
 
     consoleLogLine("\n");
-    console.log("try to complete admits\n");
-    const admitTargetsResults = await benchmarkTargets(
-        completionTargets.admitTargets,
-        sourceFileEnvironment,
-        processEnvironment
-    );
-    console.log(`BENCHMARK RESULT, ADMITS COMPLETED: ${admitTargetsResults}\n`);
-    consoleLogLine("\n");
 
-    console.log("try to prove theorems\n");
-    const theoremTargetsResults = await benchmarkTargets(
-        completionTargets.theoremTargets,
-        sourceFileEnvironment,
-        processEnvironment
-    );
-    console.log(
-        `BENCHMARK RESULT, THEOREMS PROVED: ${theoremTargetsResults}\n`
-    );
-    consoleLogLine();
+    let admitTargetsResults: BenchmarkResult | undefined = undefined;
+    let theoremTargetsResults: BenchmarkResult | undefined = undefined;
 
-    if (requireAllAdmitsCompleted) {
-        assert.ok(admitTargetsResults.allCompleted());
+    if (benchmarkAdmits) {
+        console.log("try to complete admits\n");
+        admitTargetsResults = await benchmarkTargets(
+            filteredCompletionTargets.admitTargets,
+            sourceFileEnvironment,
+            processEnvironment
+        );
+        console.log(
+            `BENCHMARK RESULT, ADMITS COMPLETED: ${admitTargetsResults}\n`
+        );
+        consoleLogLine("\n");
+
+        if (requireAllAdmitsCompleted) {
+            assert.ok(admitTargetsResults.allCompleted());
+        }
+    }
+
+    if (benchmarkFullTheorems) {
+        console.log("try to prove theorems\n");
+        theoremTargetsResults = await benchmarkTargets(
+            filteredCompletionTargets.theoremTargets,
+            sourceFileEnvironment,
+            processEnvironment
+        );
+        console.log(
+            `BENCHMARK RESULT, THEOREMS PROVED: ${theoremTargetsResults}\n`
+        );
+        consoleLogLine();
     }
 
     return {
@@ -106,8 +133,8 @@ export class BenchmarkResult {
 }
 
 export interface BenchmarkReport {
-    admitsCompleted: BenchmarkResult;
-    theoremsProved: BenchmarkResult;
+    admitsCompleted?: BenchmarkResult;
+    theoremsProved?: BenchmarkResult;
 }
 
 export async function benchmarkTargets(
