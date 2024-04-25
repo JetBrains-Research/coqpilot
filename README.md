@@ -130,6 +130,13 @@ After that, you need to build the projects. And be careful, the actively maintai
 
 First things first, the process of running the benchmark is not perfectly automated yet. We are working on it. For now, one project (one unit containing nix environment) shall be ran at a time. Let's say you are going to run the benchmark on the `imm` project. You will have to do the following: 
 
+0. Go the the `imm` subdirectory and add a `_CoqProject` file in the root with the following: 
+    ```
+    -I result/lib/coq/8.19/user-contrib/imm
+    -R result/lib/coq/8.19/user-contrib/imm imm
+    ```
+    This is needed for the lsp-server to correctly resolve file dependencies.
+
 1. Install nix, as specified in the [here](https://nixos.org/download.html). 
 
 2. Install needed caches: 
