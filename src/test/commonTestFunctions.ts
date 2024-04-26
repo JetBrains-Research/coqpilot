@@ -6,6 +6,10 @@ import { GrazieService } from "../llm/llmServices/grazie/grazieService";
 import { LMStudioService } from "../llm/llmServices/lmStudio/lmStudioService";
 import { OpenAiService } from "../llm/llmServices/openai/openAiService";
 import { PredefinedProofsService } from "../llm/llmServices/predefinedProofs/predefinedProofsService";
+import {
+    PredefinedProofsUserModelParams,
+    UserModelsParams,
+} from "../llm/userModelParams";
 
 import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { CoqLspConfig } from "../coqLsp/coqLspConfig";
@@ -37,5 +41,46 @@ export function createDefaultServices(): LLMServices {
         grazieService,
         predefinedProofsService,
         lmStudioService,
+    };
+}
+
+export function createTrivialModelsParams(
+    predefinedProofsModelParams: PredefinedProofsUserModelParams[] = []
+): UserModelsParams {
+    return {
+        openAiParams: [],
+        grazieParams: [],
+        predefinedProofsModelParams: predefinedProofsModelParams,
+        lmStudioParams: [],
+    };
+}
+
+export function createSinglePredefinedProofsModelsParams(
+    predefinedProofs: string[] = [
+        "intros.",
+        "reflexivity.",
+        "auto.",
+        "assumption. intros.",
+        "left. reflexivity.",
+    ]
+): UserModelsParams {
+    return createTrivialModelsParams([
+        createPredefinedProofsModel("predefined-proofs", predefinedProofs),
+    ]);
+}
+
+export function createPredefinedProofsModel(
+    modelName: string = "predefined-proofs",
+    predefinedProofs: string[] = [
+        "intros.",
+        "reflexivity.",
+        "auto.",
+        "assumption. intros.",
+        "left. reflexivity.",
+    ]
+): PredefinedProofsUserModelParams {
+    return {
+        modelName: modelName,
+        tactics: predefinedProofs,
     };
 }

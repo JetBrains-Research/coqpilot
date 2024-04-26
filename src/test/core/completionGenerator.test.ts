@@ -16,6 +16,7 @@ import { Uri } from "../../utils/uri";
 import {
     createCoqLspClient,
     createDefaultServices,
+    createSinglePredefinedProofsModelsParams,
     getResourceFolder,
 } from "../commonTestFunctions";
 
@@ -41,17 +42,8 @@ suite("Completion generation tests", () => {
 
         const processEnvironment: ProcessEnvironment = {
             coqProofChecker: coqProofChecker,
-            modelsParams: {
-                openAiParams: [],
-                grazieParams: [],
-                predefinedProofsModelParams: [
-                    {
-                        modelName: "Doesn't matter",
-                        tactics: predefinedProofs,
-                    },
-                ],
-                lmStudioParams: [],
-            },
+            modelsParams:
+                createSinglePredefinedProofsModelsParams(predefinedProofs),
             services: createDefaultServices(),
         };
 

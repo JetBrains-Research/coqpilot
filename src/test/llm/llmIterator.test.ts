@@ -1,57 +1,66 @@
 import { expect } from "earl";
 
 import { LLMSequentialIterator } from "../../llm/llmIterator";
+import { GeneratedProof } from "../../llm/llmServices/llmService";
 import { ProofGenerationContext } from "../../llm/proofGenerationContext";
-import { UserModelsParams } from "../../llm/userModelParams";
 
-import { createDefaultServices } from "../commonTestFunctions";
+import {
+    createDefaultServices,
+    createPredefinedProofsModel,
+    createTrivialModelsParams,
+} from "../commonTestFunctions";
 
 suite("LLM Iterator test", () => {
-    function getProofFromPredefinedCoqSentance(proof: string): string {
-        return `Proof. ${proof} Qed.`;
-    }
+    const predefinedModel1 = createPredefinedProofsModel("first model");
+    const predefinedModel2 = createPredefinedProofsModel("second model");
+    const modelsParams = createTrivialModelsParams([
+        predefinedModel1,
+        predefinedModel2,
+    ]);
+    const tactics = predefinedModel1.tactics;
+    const tacticsAsProofs = tactics.map((tactic) => `Proof. ${tactic} Qed.`);
 
-    test("Simple test of the iterator via predef proofs", async () => {
-        const predefinedProofs = [
-            "intros.",
-            "reflexivity.",
-            "auto.",
-            "assumption. intros.",
-            "left. reflexivity.",
-        ];
-        const modelsParams: UserModelsParams = {
-            openAiParams: [],
-            grazieParams: [],
-            predefinedProofsModelParams: [
-                {
-                    modelName: "Doesn't matter",
-                    tactics: predefinedProofs,
-                },
-            ],
-            lmStudioParams: [],
-        };
-        const services = createDefaultServices();
-        const proofGenerationContext: ProofGenerationContext = {
-            contextTheorems: [],
-            completionTarget: "doesn't matter",
-        };
+    const services = createDefaultServices();
+    const proofGenerationContext: ProofGenerationContext = {
+        contextTheorems: [],
+        completionTarget: "doesn't matter",
+    };
+
+    test("Test `nextProof` via two predefined-proofs models", async () => {
         const iterator = new LLMSequentialIterator(
             proofGenerationContext,
             modelsParams,
             services
         );
-
-        let i = 0;
-        while (true) {
-            const result = await iterator.nextProof();
-            if (result.done) {
-                break;
+        for (let i = 0; i < 2; i++) {
+            for (let t = 0; t < tactics.length; t++) {
+                const result = await iterator.nextProof();
+                expect(result.done).toBeFalsy();
+                const proof = result.value;
+                expect(proof.proof()).toEqual(tacticsAsProofs[t]);
             }
-            const proof = result.value;
-            expect(proof.proof()).toEqual(
-                getProofFromPredefinedCoqSentance(predefinedProofs[i])
-            );
-            i++;
         }
+        const result = await iterator.nextProof();
+        expect(result.done);
     });
+
+    test("Test `next` via two predefined-proofs models", async () => {
+        const iterator = new LLMSequentialIterator(
+            proofGenerationContext,
+            modelsParams,
+            services
+        );
+        for (let i = 0; i < 2; i++) {
+            const result = await iterator.next();
+            expect(result.done).toBeFalsy();
+            const proofsBatch = result.value.map(
+                (proofObject: GeneratedProof) => proofObject.proof()
+            );
+            expect(proofsBatch).toEqual(tacticsAsProofs);
+        }
+        const result = await iterator.next();
+        expect(result.done);
+    });
+
+    // TODO: test with at least 2 services (via mock llm service)
 });
