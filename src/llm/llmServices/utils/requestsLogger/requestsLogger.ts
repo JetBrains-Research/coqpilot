@@ -3,7 +3,7 @@ import { ModelParams } from "../../modelParams";
 import { nowTimestampMillis } from "../time";
 
 import { DebugLoggerRecord, LoggerRecord } from "./loggerRecord";
-import { SyncFile } from "./synchronizedFile";
+import { SyncFile } from "./syncFile";
 
 export interface GenerationRequest {
     params: ModelParams;
@@ -120,10 +120,10 @@ export class RequestsLogger {
     }
 
     resetLogs() {
-        this.logsFile.reset();
+        this.logsFile.createReset();
     }
 
     dispose() {
-        this.logsFile.dispose();
+        this.logsFile.delete();
     }
 }

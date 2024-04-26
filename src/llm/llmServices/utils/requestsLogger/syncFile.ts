@@ -38,12 +38,12 @@ export class SyncFile {
         return fs.readFileSync(this.filePath, this.encoding as BufferEncoding);
     }
 
-    reset() {
+    createReset() {
         fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
         fs.writeFileSync(this.filePath, "");
     }
 
-    dispose() {
+    delete() {
         fs.unlinkSync(this.filePath);
     }
 }
