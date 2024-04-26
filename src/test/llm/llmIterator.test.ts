@@ -61,6 +61,4 @@ suite("LLM Iterator test", () => {
         const result = await iterator.next();
         expect(result.done);
     });
-
-    // TODO: test with at least 2 services (via mock llm service)
 });
