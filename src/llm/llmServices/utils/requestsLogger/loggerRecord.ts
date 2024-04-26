@@ -16,14 +16,23 @@ export class ParsingError extends Error {
 }
 
 export class LoggerRecord {
+    readonly timestampMillis: number; // is always floored to the seconds (i.e. % 1000 === 0)
+
+    protected static floorMillisToSeconds(millis: number): number {
+        return millis - (millis % 1000);
+    }
+
     constructor(
-        public readonly timestampMillis: number,
+        timestampMillis: number,
         public readonly modelName: string,
         public readonly responseStatus: ResponseStatus,
         public readonly choices: number,
         public readonly estimatedTokens: number | undefined = undefined,
         public readonly error: LoggedError | undefined = undefined
-    ) {}
+    ) {
+        this.timestampMillis =
+            LoggerRecord.floorMillisToSeconds(timestampMillis);
+    }
 
     serializeToString(): string {
         const introInfo = this.buildStatusLine();
@@ -358,9 +367,18 @@ export class DebugLoggerRecord extends LoggerRecord {
             JSON.parse(restRawRecord),
             "model's params"
         );
+
         restRawRecord = restRawRecord.slice(
             JSON.stringify(params, null, this.jsonStringifyIndent).length
         );
+        if (!restRawRecord.startsWith("\n")) {
+            throw new ParsingError(
+                `invalid model's params suffix`,
+                restRawRecord
+            );
+        }
+        restRawRecord = restRawRecord.slice(1);
+
         return [params, restRawRecord];
     }
 }
