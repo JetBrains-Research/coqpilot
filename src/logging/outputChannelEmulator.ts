@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, writeFileSync } from "fs";
+import { appendFileSync, writeFileSync } from "fs";
 import { OutputChannel, ViewColumn } from "vscode";
 
 export class OutputChannelEmulator implements OutputChannel {
@@ -9,9 +9,7 @@ export class OutputChannelEmulator implements OutputChannel {
         name: string = "OutputChannelEmulator"
     ) {
         this.name = name;
-        if (!existsSync(this.logFilePath)) {
-            writeFileSync(this.logFilePath, "");
-        }
+        writeFileSync(this.logFilePath, "");
     }
 
     append(value: string): void {
