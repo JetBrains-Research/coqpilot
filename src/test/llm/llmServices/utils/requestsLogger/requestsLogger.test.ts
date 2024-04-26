@@ -74,7 +74,7 @@ suite("[LLMService] RequestsLogger test", () => {
         requestsLogger: RequestsLogger
     ) {
         const records = requestsLogger.readLogs();
-        expect(records.length).toEqual(expectedRecordsLength);
+        expect(records).toHaveLength(expectedRecordsLength);
     }
 
     [false, true].forEach((loggerDebugMode) => {
@@ -92,7 +92,7 @@ suite("[LLMService] RequestsLogger test", () => {
             requestsLogger.resetLogs();
             await writeLogs(requestsLogger);
             const records = requestsLogger.readLogsSinceLastSuccess();
-            expect(records.length).toEqual(logsSinceLastSuccessCnt);
+            expect(records).toHaveLength(logsSinceLastSuccessCnt);
         });
 
         test(`Pseudo-concurrent write-read ${testNamePostfix}`, async () => {
