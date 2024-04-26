@@ -6,6 +6,7 @@ export class ChatTokensFitter {
     readonly tokensLimit: number;
 
     private tokens: number = 0;
+    private encoder: Tiktoken | undefined;
     private readonly countTokens: (text: string) => number;
 
     constructor(
@@ -21,19 +22,24 @@ export class ChatTokensFitter {
         }
         this.tokens += newMessageMaxTokens;
 
-        let encoder: Tiktoken | undefined = undefined;
+        this.encoder = undefined;
         try {
-            encoder = encoding_for_model(modelName as TiktokenModel);
+            this.encoder = encoding_for_model(modelName as TiktokenModel);
         } catch (e) {}
         this.countTokens = (text: string) => {
-            if (encoder) {
-                return encoder.encode(text).length;
+            if (this.encoder) {
+                return this.encoder.encode(text).length;
             } else {
                 return (text.length / 4) >> 0;
             }
         };
     }
 
+    dispose() {
+        this.encoder?.free();
+    }
+
+    // includes `newMessageMaxTokens`
     estimateTokens(): number {
         return this.tokens;
     }

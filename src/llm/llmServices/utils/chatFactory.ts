@@ -61,40 +61,52 @@ export function buildAndAnalyzeChat(
     };
 }
 
-export function buildProofGenerationChat(
-    proofGenerationContext: ProofGenerationContext,
-    modelParams: ModelParams
-): AnalyzedChatHistory {
+function withFitter<T>(
+    modelParams: ModelParams,
+    block: (fitter: ChatTokensFitter) => T
+): T {
     const fitter = new ChatTokensFitter(
         modelParams.modelName,
         modelParams.newMessageMaxTokens,
         modelParams.tokensLimit
     );
+    try {
+        return block(fitter);
+    } finally {
+        fitter.dispose();
+    }
+}
 
-    const systemMessage: ChatMessage = {
-        role: "system",
-        content: modelParams.systemPrompt,
-    };
-    fitter.fitRequiredMessage(systemMessage);
+export function buildProofGenerationChat(
+    proofGenerationContext: ProofGenerationContext,
+    modelParams: ModelParams
+): AnalyzedChatHistory {
+    return withFitter(modelParams, (fitter) => {
+        const systemMessage: ChatMessage = {
+            role: "system",
+            content: modelParams.systemPrompt,
+        };
+        fitter.fitRequiredMessage(systemMessage);
 
-    const completionTargetMessage: ChatMessage = {
-        role: "user",
-        content: proofGenerationContext.completionTarget,
-    };
-    fitter.fitRequiredMessage(completionTargetMessage);
+        const completionTargetMessage: ChatMessage = {
+            role: "user",
+            content: proofGenerationContext.completionTarget,
+        };
+        fitter.fitRequiredMessage(completionTargetMessage);
 
-    const fittedContextTheorems = fitter.fitOptionalObjects(
-        proofGenerationContext.contextTheorems,
-        (theorem) => chatItemToContent(theoremToChatItem(theorem))
-    );
-    const contextTheoremsChat = buildTheoremsChat(fittedContextTheorems);
+        const fittedContextTheorems = fitter.fitOptionalObjects(
+            proofGenerationContext.contextTheorems,
+            (theorem) => chatItemToContent(theoremToChatItem(theorem))
+        );
+        const contextTheoremsChat = buildTheoremsChat(fittedContextTheorems);
 
-    return buildAndAnalyzeChat(
-        fitter,
-        systemMessage,
-        contextTheoremsChat,
-        completionTargetMessage
-    );
+        return buildAndAnalyzeChat(
+            fitter,
+            systemMessage,
+            contextTheoremsChat,
+            completionTargetMessage
+        );
+    });
 }
 
 export function buildProofFixChat(
@@ -102,61 +114,57 @@ export function buildProofFixChat(
     proofVersions: ProofVersion[],
     modelParams: ModelParams
 ): AnalyzedChatHistory {
-    const fitter = new ChatTokensFitter(
-        modelParams.modelName,
-        modelParams.newMessageMaxTokens,
-        modelParams.tokensLimit
-    );
+    return withFitter(modelParams, (fitter) => {
+        const systemMessage: ChatMessage = {
+            role: "system",
+            content: modelParams.systemPrompt,
+        };
+        fitter.fitRequiredMessage(systemMessage);
 
-    const systemMessage: ChatMessage = {
-        role: "system",
-        content: modelParams.systemPrompt,
-    };
-    fitter.fitRequiredMessage(systemMessage);
+        const completionTargetMessage: ChatMessage = {
+            role: "user",
+            content: proofGenerationContext.completionTarget,
+        };
+        const lastProofVersion = proofVersions[proofVersions.length - 1];
+        const proofMessage: ChatMessage = {
+            role: "assistant",
+            content: lastProofVersion.proof,
+        };
+        const proofFixMessage: ChatMessage = {
+            role: "user",
+            content: createProofFixMessage(
+                lastProofVersion.diagnostic!,
+                modelParams.multiroundProfile.proofFixPrompt
+            ),
+        };
+        fitter.fitRequiredMessage(completionTargetMessage);
+        fitter.fitRequiredMessage(proofMessage);
+        fitter.fitRequiredMessage(proofFixMessage);
 
-    const completionTargetMessage: ChatMessage = {
-        role: "user",
-        content: proofGenerationContext.completionTarget,
-    };
-    const lastProofVersion = proofVersions[proofVersions.length - 1];
-    const proofMessage: ChatMessage = {
-        role: "assistant",
-        content: lastProofVersion.proof,
-    };
-    const proofFixMessage: ChatMessage = {
-        role: "user",
-        content: createProofFixMessage(
-            lastProofVersion.diagnostic!,
-            modelParams.multiroundProfile.proofFixPrompt
-        ),
-    };
-    fitter.fitRequiredMessage(completionTargetMessage);
-    fitter.fitRequiredMessage(proofMessage);
-    fitter.fitRequiredMessage(proofFixMessage);
+        const fittedProofVersions = fitter.fitOptionalObjects(
+            proofVersions.slice(0, proofVersions.length - 1),
+            (proofVersion) =>
+                chatItemToContent(proofVersionToChatItem(proofVersion))
+        );
+        const previousProofVersionsChat =
+            buildPreviousProofVersionsChat(fittedProofVersions);
 
-    const fittedProofVersions = fitter.fitOptionalObjects(
-        proofVersions.slice(0, proofVersions.length - 1),
-        (proofVersion) =>
-            chatItemToContent(proofVersionToChatItem(proofVersion))
-    );
-    const previousProofVersionsChat =
-        buildPreviousProofVersionsChat(fittedProofVersions);
+        const fittedContextTheorems = fitter.fitOptionalObjects(
+            proofGenerationContext.contextTheorems,
+            (theorem) => chatItemToContent(theoremToChatItem(theorem))
+        );
+        const contextTheoremsChat = buildTheoremsChat(fittedContextTheorems);
 
-    const fittedContextTheorems = fitter.fitOptionalObjects(
-        proofGenerationContext.contextTheorems,
-        (theorem) => chatItemToContent(theoremToChatItem(theorem))
-    );
-    const contextTheoremsChat = buildTheoremsChat(fittedContextTheorems);
-
-    return buildAndAnalyzeChat(
-        fitter,
-        systemMessage,
-        contextTheoremsChat,
-        completionTargetMessage,
-        previousProofVersionsChat,
-        proofMessage,
-        proofFixMessage
-    );
+        return buildAndAnalyzeChat(
+            fitter,
+            systemMessage,
+            contextTheoremsChat,
+            completionTargetMessage,
+            previousProofVersionsChat,
+            proofMessage,
+            proofFixMessage
+        );
+    });
 }
 
 function createProofFixMessage(
