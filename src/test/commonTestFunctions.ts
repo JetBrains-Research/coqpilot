@@ -1,5 +1,4 @@
 import * as path from "path";
-import { TiktokenModel, encoding_for_model } from "tiktoken";
 import * as tmp from "tmp";
 
 import { LLMServices } from "../llm/llmServices";
@@ -105,20 +104,4 @@ export async function parseTheoremsFromCoqFile(
     await client.closeTextDocument(fileUri);
 
     return document;
-}
-
-export const gptTurboModel = "gpt-3.5-turbo-0301";
-
-export function calculateTokensViaTikToken(
-    text: string,
-    model: TiktokenModel
-): number {
-    const encoder = encoding_for_model(model);
-    const tokens = encoder.encode(text).length;
-    encoder.free();
-    return tokens;
-}
-
-export function approxCalculateTokens(text: string): number {
-    return (text.length / 4) >> 0;
 }

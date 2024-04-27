@@ -21,11 +21,11 @@ import {
 import { ProofGenerationContext } from "../../../../llm/proofGenerationContext";
 
 import { Theorem } from "../../../../coqParser/parsedTypes";
+import { parseTheoremsFromCoqFile } from "../../../commonTestFunctions";
 import {
     calculateTokensViaTikToken,
     gptTurboModel,
-    parseTheoremsFromCoqFile,
-} from "../../../commonTestFunctions";
+} from "../../testUtils/commonTestFunctions";
 
 /*
  * Note: if in the future some of the tests will act against experiments with chats,

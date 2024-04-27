@@ -1,15 +1,15 @@
-import { ChatHistory } from "../../llm/llmServices/chat";
+import { ChatHistory } from "../../../llm/llmServices/chat";
 import {
     GeneratedProof,
     LLMService,
     Proof,
     ProofVersion,
-} from "../../llm/llmServices/llmService";
-import { ModelParams } from "../../llm/llmServices/modelParams";
-import { ProofGenerationContext } from "../../llm/proofGenerationContext";
-import { UserModelParams } from "../../llm/userModelParams";
+} from "../../../llm/llmServices/llmService";
+import { ModelParams } from "../../../llm/llmServices/modelParams";
+import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
+import { UserModelParams } from "../../../llm/userModelParams";
 
-import { EventLogger } from "../../logging/eventLogger";
+import { EventLogger } from "../../../logging/eventLogger";
 
 export interface MockLLMUserModelParams extends UserModelParams {
     proofsToGenerate: string[];
