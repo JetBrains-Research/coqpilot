@@ -13,12 +13,12 @@ import { EventLogger } from "../../../logging/eventLogger";
 
 export interface MockLLMUserModelParams extends UserModelParams {
     proofsToGenerate: string[];
-    throwError: Error | undefined;
+    throwError?: Error;
 }
 
 export interface MockLLMModelParams extends ModelParams {
     proofsToGenerate: string[];
-    throwError: Error | undefined;
+    throwError?: Error;
     resolvedWithMockLLMService: boolean;
 }
 
