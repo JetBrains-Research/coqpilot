@@ -1,5 +1,3 @@
-import * as assert from "assert";
-
 import { Theorem } from "../../../coqParser/parsedTypes";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { AnalyzedChatHistory, ChatHistory, ChatMessage } from "../chat";
@@ -47,7 +45,9 @@ export function buildChat(
     let chat: ChatHistory = [];
     chat = chat.concat(...chats);
     const [isValid, errorMessage] = validateChat(chat);
-    assert.ok(isValid, errorMessage);
+    if (!isValid) {
+        throw new Error(`built chat is invalid: ${errorMessage};\n\`${chat}\``);
+    }
     return chat;
 }
 
@@ -167,7 +167,7 @@ export function buildProofFixChat(
     });
 }
 
-function createProofFixMessage(
+export function createProofFixMessage(
     diagnostic: string,
     proofFixPrompt: string
 ): string {
@@ -185,6 +185,8 @@ export function buildTheoremsChat(theorems: Theorem[]): ChatHistory {
     return itemizedChatToHistory(theorems.map(theoremToChatItem));
 }
 
+// note: be careful, the order of the roles should be the opposite (when built as a chat),
+// i.e. first goes the proof as `assistant` message and then the diagnostic as a `user` one
 export function proofVersionToChatItem(
     proofVersion: ProofVersion
 ): UserAssistantChatItem {

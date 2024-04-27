@@ -1,54 +1,18 @@
 import { expect } from "earl";
-import * as path from "path";
-import { TiktokenModel, encoding_for_model } from "tiktoken";
 
 import { theoremToChatItem } from "../../../../llm/llmServices/utils/chatFactory";
 import { ChatTokensFitter } from "../../../../llm/llmServices/utils/chatTokensFitter";
 import { chatItemToContent } from "../../../../llm/llmServices/utils/chatUtils";
 
-import { parseCoqFile } from "../../../../coqParser/parseCoqFile";
 import { Theorem } from "../../../../coqParser/parsedTypes";
-import { Uri } from "../../../../utils/uri";
 import {
-    createCoqLspClient,
-    getResourceFolder,
+    approxCalculateTokens,
+    calculateTokensViaTikToken,
+    gptTurboModel,
+    parseTheoremsFromCoqFile,
 } from "../../../commonTestFunctions";
 
 suite("[LLMService-s utils] ChatTokensFitter test", () => {
-    function calculateTokensViaTikToken(
-        text: string,
-        model: TiktokenModel
-    ): number {
-        const encoder = encoding_for_model(model);
-        const tokens = encoder.encode(text).length;
-        encoder.free();
-        return tokens;
-    }
-
-    function approxCalculateTokens(text: string): number {
-        return (text.length / 4) >> 0;
-    }
-
-    async function parseTheoremsFromCoqFile(
-        resourcePath: string[],
-        projectRootPath?: string[]
-    ): Promise<Theorem[]> {
-        const filePath = path.join(getResourceFolder(), ...resourcePath);
-        const rootDir = path.join(
-            getResourceFolder(),
-            ...(projectRootPath ?? [])
-        );
-
-        const fileUri = Uri.fromPath(filePath);
-        const client = createCoqLspClient(rootDir);
-
-        await client.openTextDocument(fileUri);
-        const document = await parseCoqFile(fileUri, client);
-        await client.closeTextDocument(fileUri);
-
-        return document;
-    }
-
     async function readTwoTheorems(): Promise<Theorem[]> {
         const twoTheorems = await parseTheoremsFromCoqFile([
             "small_document.v",
@@ -91,8 +55,6 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
             fitter.dispose();
         }
     }
-
-    const gptTurboModel = "gpt-3.5-turbo-0301";
 
     test("No theorems", () => {
         const fittedTheoremsNumber = countTheoremsPickedFromContext({
