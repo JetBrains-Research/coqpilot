@@ -3,7 +3,7 @@ import * as tmp from "tmp";
 
 import { SyncFile } from "../../../../../llm/llmServices/utils/requestsLogger/syncFile";
 
-suite("[LLMService] SyncFile test", () => {
+suite("[LLMService-s utils] SyncFile test", () => {
     const filePath = tmp.fileSync().name;
     const file = new SyncFile(filePath);
 

@@ -13,7 +13,7 @@ import {
 } from "../../../../../llm/llmServices/utils/requestsLogger/requestsLogger";
 import { nowTimestampMillis } from "../../../../../llm/llmServices/utils/time";
 
-suite("[LLMService] RequestsLogger test", () => {
+suite("[LLMService-s utils] RequestsLogger test", () => {
     const logsTestDir = tmp.dirSync().name;
     const filePath = path.join(logsTestDir, "testLogs.txt");
 

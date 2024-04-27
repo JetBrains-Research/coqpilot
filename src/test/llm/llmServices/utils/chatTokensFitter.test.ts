@@ -14,7 +14,7 @@ import {
     getResourceFolder,
 } from "../../../commonTestFunctions";
 
-suite("[LLMService] ChatTokensFitter test", () => {
+suite("[LLMService-s utils] ChatTokensFitter test", () => {
     function calculateTokensViaTikToken(
         text: string,
         model: TiktokenModel
