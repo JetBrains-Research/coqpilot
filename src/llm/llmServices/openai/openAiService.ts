@@ -8,8 +8,12 @@ import { Proof } from "../llmService";
 import { ModelParams, OpenAiModelParams } from "../modelParams";
 
 export class OpenAiService extends LLMService {
-    constructor(requestsLogsFilePath: string, eventLogger?: EventLogger) {
-        super("OpenAiService", requestsLogsFilePath, eventLogger);
+    constructor(
+        requestsLogsFilePath: string,
+        eventLogger?: EventLogger,
+        debug: boolean = false
+    ) {
+        super("OpenAiService", requestsLogsFilePath, eventLogger, debug);
     }
 
     constructGeneratedProof(

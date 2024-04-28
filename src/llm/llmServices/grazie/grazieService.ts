@@ -13,8 +13,12 @@ export class GrazieService extends LLMService {
     // Is constant (now) as specified in Grazie REST API
     private readonly newMessageMaxTokens = 1024;
 
-    constructor(requestsLogsFilePath: string, eventLogger?: EventLogger) {
-        super("GrazieService", requestsLogsFilePath, eventLogger);
+    constructor(
+        requestsLogsFilePath: string,
+        eventLogger?: EventLogger,
+        debug: boolean = false
+    ) {
+        super("GrazieService", requestsLogsFilePath, eventLogger, debug);
         this.api = new GrazieApi(eventLogger);
     }
 

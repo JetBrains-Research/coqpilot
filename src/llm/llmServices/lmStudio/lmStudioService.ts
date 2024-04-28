@@ -5,8 +5,12 @@ import { GeneratedProof, LLMService, Proof, ProofVersion } from "../llmService";
 import { LMStudioModelParams } from "../modelParams";
 
 export class LMStudioService extends LLMService {
-    constructor(requestsLogsFilePath: string, eventLogger?: EventLogger) {
-        super("LMStudioService", requestsLogsFilePath, eventLogger);
+    constructor(
+        requestsLogsFilePath: string,
+        eventLogger?: EventLogger,
+        debug: boolean = false
+    ) {
+        super("LMStudioService", requestsLogsFilePath, eventLogger, debug);
     }
 
     constructGeneratedProof(
