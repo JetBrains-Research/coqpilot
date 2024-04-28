@@ -37,20 +37,20 @@ export function subscribeToLLMServicesUIEvents(
     const llmServiceToUIState: LLMServiceToUIState =
         createLLMServiceToUIState(llmServices);
     const generationFailedSubscriptionId = eventLogger.subscribeToLogicEvent(
-        LLMService.generationFromChatFailedEvent,
-        reactToGenerationFromChatFailedEvent(llmServiceToUIState)
+        LLMService.generationFailedEvent,
+        reactToGenerationFailedEvent(llmServiceToUIState)
     );
     const generationSucceededSubscriptionId = eventLogger.subscribeToLogicEvent(
-        LLMService.generationFromChatSucceededEvent,
-        reactToGenerationFromChatSucceededEvent(llmServiceToUIState)
+        LLMService.generationSucceededEvent,
+        reactToGenerationSucceededEvent(llmServiceToUIState)
     );
     return () => {
         eventLogger.unsubscribe(
-            LLMService.generationFromChatFailedEvent,
+            LLMService.generationFailedEvent,
             generationFailedSubscriptionId
         );
         eventLogger.unsubscribe(
-            LLMService.generationFromChatSucceededEvent,
+            LLMService.generationSucceededEvent,
             generationSucceededSubscriptionId
         );
     };
@@ -79,7 +79,7 @@ function createLLMServiceToUIState(
     };
 }
 
-function reactToGenerationFromChatFailedEvent(
+function reactToGenerationFailedEvent(
     llmServiceToUIState: LLMServiceToUIState
 ): (data: any) => void {
     return (data: any) => {
@@ -132,7 +132,7 @@ function formatTimeToUIString(time: Time): string {
     }
 }
 
-function reactToGenerationFromChatSucceededEvent(
+function reactToGenerationSucceededEvent(
     llmServiceToUIState: LLMServiceToUIState
 ): (data: any) => void {
     return (data: any) => {
@@ -165,9 +165,7 @@ function parseLLMServiceLogicEventData(
 ): [LLMService, LLMServiceUIState] {
     const llmService = data as LLMService;
     if (llmService === null) {
-        throw Error(
-            "data of the `generationFromChatFailedEvent` should be a LLMService"
-        );
+        throw Error("data of the generation event should be a LLMService");
     }
     const serviceName = llmService.serviceName;
     const uiState = llmServiceToUIState[serviceName];

@@ -1,6 +1,10 @@
 import * as assert from "assert";
 
 import { EventLogger } from "../../logging/eventLogger";
+import {
+    GenerationFromChatFailedError,
+    LLMServiceError,
+} from "../llmServiceErrors";
 import { ProofGenerationContext } from "../proofGenerationContext";
 import { UserModelParams } from "../userModelParams";
 
@@ -12,8 +16,10 @@ import {
 } from "./utils/chatFactory";
 import { estimateTimeToBecomeAvailableDefault } from "./utils/defaultAvailabilityEstimator";
 import { resolveParametersWithDefaultsImpl } from "./utils/defaultParametersResolver";
+import { LoggerRecord } from "./utils/requestsLogger/loggerRecord";
 import {
     FromChatGenerationRequest,
+    GenerationRequest,
     RequestsLogger,
 } from "./utils/requestsLogger/requestsLogger";
 import { Time } from "./utils/time";
@@ -27,8 +33,8 @@ export interface ProofVersion {
 
 /* eslint-disable @typescript-eslint/naming-convention */
 export enum ErrorsHandlingMode {
-    LOG_EVENTS_AND_SWALLOW_ERRORS,
-    RETHROW_ERRORS,
+    LOG_EVENTS_AND_SWALLOW_ERRORS = "log events & swallow errors",
+    RETHROW_ERRORS = "rethrow errors",
 }
 
 export abstract class LLMService {
@@ -37,13 +43,14 @@ export abstract class LLMService {
     constructor(
         public readonly serviceName: string,
         requestsLogsFilePath: string,
-        protected readonly eventLogger?: EventLogger
+        protected readonly eventLogger?: EventLogger,
+        debug: boolean = false
     ) {
-        this.requestsLogger = new RequestsLogger(requestsLogsFilePath);
+        this.requestsLogger = new RequestsLogger(requestsLogsFilePath, debug);
     }
 
-    static readonly generationFromChatFailedEvent = `generation-from-chat-failed`;
-    static readonly generationFromChatSucceededEvent = `generation-from-chat-succeeded`;
+    static readonly generationFailedEvent = `generation-failed`;
+    static readonly generationSucceededEvent = `generation-succeeded`;
 
     abstract constructGeneratedProof(
         proof: Proof,
@@ -76,7 +83,7 @@ export abstract class LLMService {
         analyzedChat: AnalyzedChatHistory,
         params: ModelParams,
         choices: number,
-        errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
+        errorsHandlingMode: ErrorsHandlingMode
     ): Promise<string[]> {
         return this.logRequestsAndHandleErrors(
             {
@@ -84,14 +91,14 @@ export abstract class LLMService {
                 estimatedTokens: analyzedChat.estimatedTokens,
                 params: params,
                 choices: choices,
-            },
+            } as FromChatGenerationRequest,
             async () =>
                 await this.generateFromChatImpl(
                     analyzedChat.chat,
                     params,
                     choices
                 ),
-            () => [],
+            (error) => new GenerationFromChatFailedError(error),
             errorsHandlingMode
         );
     }
@@ -99,7 +106,8 @@ export abstract class LLMService {
     async generateProof(
         proofGenerationContext: ProofGenerationContext,
         params: ModelParams,
-        choices: number
+        choices: number,
+        errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
     ): Promise<GeneratedProof[]> {
         if (choices <= 0) {
             return [];
@@ -111,7 +119,8 @@ export abstract class LLMService {
         const proofs = await this.generateFromChat(
             analyzedChat,
             params,
-            choices
+            choices,
+            errorsHandlingMode
         );
         return proofs.map((proof: string) =>
             this.constructGeneratedProof(proof, proofGenerationContext, params)
@@ -124,6 +133,12 @@ export abstract class LLMService {
      */
     estimateTimeToBecomeAvailable(): Time {
         return estimateTimeToBecomeAvailableDefault(this.requestsLogger);
+    }
+
+    readRequestsLogs(sinceLastSuccess: boolean = false): LoggerRecord[] {
+        return sinceLastSuccess
+            ? this.requestsLogger.readLogsSinceLastSuccess()
+            : this.requestsLogger.readLogs();
     }
 
     dispose(): void {
@@ -139,16 +154,16 @@ export abstract class LLMService {
     ): ModelParams => resolveParametersWithDefaultsImpl(params);
 
     protected async logRequestsAndHandleErrors(
-        request: FromChatGenerationRequest,
+        request: GenerationRequest,
         generateProofs: () => Promise<string[]>,
-        returnOnError: () => string[],
+        wrapError: (error: Error) => LLMServiceError,
         errorsHandlingMode: ErrorsHandlingMode
     ): Promise<string[]> {
         try {
             const proofs = await generateProofs();
             this.requestsLogger.logRequestSucceeded(request, proofs);
             this.eventLogger?.logLogicEvent(
-                LLMService.generationFromChatSucceededEvent,
+                LLMService.generationSucceededEvent,
                 this
             );
             return proofs;
@@ -158,8 +173,8 @@ export abstract class LLMService {
                 throw e;
             }
             this.requestsLogger.logRequestFailed(request, error);
-            const serviceError = new GenerationFromChatFailed(error);
-            switch (+errorsHandlingMode) {
+            const serviceError = wrapError(error);
+            switch (errorsHandlingMode) {
                 case ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS:
                     if (!this.eventLogger) {
                         throw Error(
@@ -167,10 +182,10 @@ export abstract class LLMService {
                         );
                     }
                     this.eventLogger.logLogicEvent(
-                        LLMService.generationFromChatFailedEvent,
+                        LLMService.generationFailedEvent,
                         this
                     );
-                    return returnOnError();
+                    return [];
                 case ErrorsHandlingMode.RETHROW_ERRORS:
                     throw serviceError;
                 default:
@@ -233,15 +248,17 @@ export abstract class GeneratedProof {
     protected async generateNextVersion(
         analyzedChat: AnalyzedChatHistory,
         choices: number,
+        errorsHandlingMode: ErrorsHandlingMode,
         postprocessProof: (proof: string) => string = (proof) => proof
     ): Promise<GeneratedProof[]> {
-        if (!this.nextVersionCanBeGenerated() || choices <= 0) {
+        if (choices <= 0 || !this.nextVersionCanBeGenerated()) {
             return [];
         }
         const newProofs = await this.llmService.generateFromChat(
             analyzedChat,
             this.modelParams,
-            choices
+            choices,
+            errorsHandlingMode
         );
         return newProofs.map((proof: string) =>
             this.llmService.constructGeneratedProof(
@@ -259,7 +276,8 @@ export abstract class GeneratedProof {
      */
     async fixProof(
         diagnostic: string,
-        choices: number = this.modelParams.multiroundProfile.proofFixChoices
+        choices: number = this.modelParams.multiroundProfile.proofFixChoices,
+        errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
     ): Promise<GeneratedProof[]> {
         if (choices <= 0 || !this.canBeFixed()) {
             return [];
@@ -278,11 +296,12 @@ export abstract class GeneratedProof {
         return this.generateNextVersion(
             analyzedChat,
             choices,
-            this.parseFixedProofFromMessage.bind(this)
+            errorsHandlingMode,
+            this.removeProofQedIfNeeded.bind(this)
         );
     }
 
-    parseFixedProofFromMessage(message: string): string {
+    removeProofQedIfNeeded(message: string): string {
         const regex = /Proof\.(.*?)Qed\./s;
         const match = regex.exec(message);
         if (match) {
