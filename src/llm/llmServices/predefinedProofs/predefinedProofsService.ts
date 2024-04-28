@@ -1,17 +1,32 @@
 import { EventLogger } from "../../../logging/eventLogger";
+import { InvalidRequestError, LLMServiceError } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import {
     PredefinedProofsUserModelParams,
     UserModelParams,
 } from "../../userModelParams";
 import { AnalyzedChatHistory, ChatHistory } from "../chat";
-import { GeneratedProof, Proof, ProofVersion } from "../llmService";
+import {
+    ErrorsHandlingMode,
+    GeneratedProof,
+    Proof,
+    ProofVersion,
+} from "../llmService";
 import { LLMService } from "../llmService";
 import { ModelParams, PredefinedProofsModelParams } from "../modelParams";
 
 export class PredefinedProofsService extends LLMService {
-    constructor(requestsLogsFilePath: string, eventLogger?: EventLogger) {
-        super("PredefinedProofsService", requestsLogsFilePath, eventLogger);
+    constructor(
+        requestsLogsFilePath: string,
+        eventLogger?: EventLogger,
+        debug: boolean = false
+    ) {
+        super(
+            "PredefinedProofsService",
+            requestsLogsFilePath,
+            eventLogger,
+            debug
+        );
     }
 
     constructGeneratedProof(
@@ -41,37 +56,38 @@ export class PredefinedProofsService extends LLMService {
     async generateProof(
         proofGenerationContext: ProofGenerationContext,
         params: ModelParams,
-        choices: number
+        choices: number,
+        errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
     ): Promise<GeneratedProof[]> {
         if (choices <= 0) {
             return [];
         }
         const predefinedProofsParams = params as PredefinedProofsModelParams;
-        const tactics = predefinedProofsParams.tactics;
-        if (choices > tactics.length) {
-            // TODO: should it be wrapped into LLMServiceError? logged?
-            throw Error(
-                `invalid choices ${choices}: there are only ${tactics.length} predefined tactics available`
-            );
-        }
-        const proofs = this.formatCoqSentences(tactics.slice(0, choices)).map(
-            (tactic) => `Proof. ${tactic} Qed.`
-        );
-        this.requestsLogger.logRequestSucceeded(
+        const proofs = await this.logRequestsAndHandleErrors(
             {
                 params: params,
                 choices: choices,
             },
-            proofs
+            async () => {
+                const tactics = predefinedProofsParams.tactics;
+                if (choices > tactics.length) {
+                    throw new InvalidRequestError(
+                        `invalid choices ${choices}: there are only ${tactics.length} predefined tactics available`
+                    );
+                }
+                return this.formatCoqSentences(tactics.slice(0, choices)).map(
+                    (tactic) => `Proof. ${tactic} Qed.`
+                );
+            },
+            (error) => error as LLMServiceError,
+            errorsHandlingMode
         );
-        return proofs.map(
-            (proof) =>
-                new PredefinedProof(
-                    proof,
-                    proofGenerationContext,
-                    predefinedProofsParams,
-                    this
-                )
+        return proofs.map((proof) =>
+            this.constructGeneratedProof(
+                proof,
+                proofGenerationContext,
+                predefinedProofsParams
+            )
         );
     }
 

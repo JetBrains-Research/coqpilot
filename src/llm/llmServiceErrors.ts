@@ -1,4 +1,4 @@
-abstract class LLMServiceError extends Error {
+export abstract class LLMServiceError extends Error {
     constructor(
         message: string = "",
         public readonly cause: Error | undefined = undefined
@@ -13,8 +13,14 @@ abstract class LLMServiceError extends Error {
     }
 }
 
-class GenerationFromChatFailed extends LLMServiceError {
+export class GenerationFromChatFailedError extends LLMServiceError {
     constructor(cause: Error) {
         super("", cause);
+    }
+}
+
+export class InvalidRequestError extends LLMServiceError {
+    constructor(message: string) {
+        super(message);
     }
 }
