@@ -1,6 +1,8 @@
 import { expect } from "earl";
 import * as path from "path";
 
+import { disposeServices } from "../../llm/llmServices";
+
 import {
     FailureGenerationResult,
     FailureGenerationStatus,
@@ -46,18 +48,21 @@ suite("Completion generation tests", () => {
                 createSinglePredefinedProofsModelsParams(predefinedProofs),
             services: createDefaultServices(),
         };
+        try {
+            return Promise.all(
+                completionContexts.map(async (completionContext) => {
+                    const result = await generateCompletion(
+                        completionContext,
+                        sourceFileEnvironment,
+                        processEnvironment
+                    );
 
-        return Promise.all(
-            completionContexts.map(async (completionContext) => {
-                const result = await generateCompletion(
-                    completionContext,
-                    sourceFileEnvironment,
-                    processEnvironment
-                );
-
-                return result;
-            })
-        );
+                    return result;
+                })
+            );
+        } finally {
+            disposeServices(processEnvironment.services);
+        }
     }
 
     function unpackProof(text: string): string {

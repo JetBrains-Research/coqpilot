@@ -71,25 +71,31 @@ suite("[LLMService] Test UserModelParams to ModelParams resolution", () => {
 
     test("Test resolution by LLMService", () => {
         const mockService = createMockLLMService();
-        const unresolvedMockUserParams: MockLLMUserModelParams = {
-            modelName: "mock model",
-            systemPrompt: "This system prompt will be overriden by service",
-            newMessageMaxTokens: 100,
-            tokensLimit: 1000,
-            proofsToGenerate: ["auto.", "avto."],
-        };
-        // MockLLMService always overrides `systemPrompt` and adds `resolvedWithMockLLMService`.
-        // Everything else should be resolved with defaults, if needed.
-        const expectedResolvedMockParams = {
-            ...unresolvedMockUserParams,
-            multiroundProfile: defaultMultiroundProfile,
-            systemPrompt: mockService.systemPromptToOverrideWith,
-            resolvedWithMockLLMService: true,
-        } as MockLLMModelParams;
+        try {
+            const unresolvedMockUserParams: MockLLMUserModelParams = {
+                modelName: "mock model",
+                systemPrompt: "This system prompt will be overriden by service",
+                newMessageMaxTokens: 100,
+                tokensLimit: 1000,
+                proofsToGenerate: ["auto.", "avto."],
+            };
+            // MockLLMService always overrides `systemPrompt` and adds `resolvedWithMockLLMService`.
+            // Everything else should be resolved with defaults, if needed.
+            const expectedResolvedMockParams = {
+                ...unresolvedMockUserParams,
+                multiroundProfile: defaultMultiroundProfile,
+                systemPrompt: mockService.systemPromptToOverrideWith,
+                resolvedWithMockLLMService: true,
+            } as MockLLMModelParams;
 
-        const actualResolvedMockParams = mockService.resolveParameters(
-            unresolvedMockUserParams
-        );
-        expect(actualResolvedMockParams).toEqual(expectedResolvedMockParams);
+            const actualResolvedMockParams = mockService.resolveParameters(
+                unresolvedMockUserParams
+            );
+            expect(actualResolvedMockParams).toEqual(
+                expectedResolvedMockParams
+            );
+        } finally {
+            mockService.dispose();
+        }
     });
 });

@@ -9,3 +9,10 @@ export interface LLMServices {
     predefinedProofsService: PredefinedProofsService;
     lmStudioService: LMStudioService;
 }
+
+export function disposeServices(services: LLMServices) {
+    services.openAiService.dispose();
+    services.grazieService.dispose();
+    services.predefinedProofsService.dispose();
+    services.lmStudioService.dispose();
+}

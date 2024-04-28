@@ -1,8 +1,7 @@
 import * as fs from "fs";
-import path from "path";
-import { WorkspaceConfiguration, extensions, workspace } from "vscode";
+import { WorkspaceConfiguration, workspace } from "vscode";
 
-import { LLMServices } from "../llm/llmServices";
+import { LLMServices, disposeServices } from "../llm/llmServices";
 import { GrazieService } from "../llm/llmServices/grazie/grazieService";
 import { LMStudioService } from "../llm/llmServices/lmStudio/lmStudioService";
 import { OpenAiService } from "../llm/llmServices/openai/openAiService";
@@ -20,12 +19,9 @@ export class GlobalExtensionState {
         this.parseLoggingVerbosity(workspace.getConfiguration(pluginId))
     );
 
-    private readonly llmServicesLogsDirName = "llm-services-logs/";
-    // TODO: hide this directory (?) + test
-    public readonly llmServicesLogsDir = path.join(
-        extensions.getExtension(pluginId)!.extensionPath,
-        this.llmServicesLogsDirName
-    );
+    // TODO: find a proper directory to store logs
+    // private readonly llmServicesLogsDirName = "llm-services-logs/";
+    public readonly llmServicesLogsDir = "TODO";
 
     public readonly llmServices: LLMServices = {
         openAiService: new OpenAiService(
@@ -60,10 +56,7 @@ export class GlobalExtensionState {
     }
 
     dispose(): void {
-        this.llmServices.openAiService.dispose();
-        this.llmServices.grazieService.dispose();
-        this.llmServices.predefinedProofsService.dispose();
-        this.llmServices.lmStudioService.dispose();
+        disposeServices(this.llmServices);
         this.logWriter.dispose();
         fs.rmSync(this.llmServicesLogsDir, { recursive: true, force: true });
     }
