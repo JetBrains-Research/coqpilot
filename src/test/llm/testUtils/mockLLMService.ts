@@ -18,12 +18,10 @@ import { EventLogger } from "../../../logging/eventLogger";
 
 export interface MockLLMUserModelParams extends UserModelParams {
     proofsToGenerate: string[];
-    throwError?: Error;
 }
 
 export interface MockLLMModelParams extends ModelParams {
     proofsToGenerate: string[];
-    throwError?: Error;
     resolvedWithMockLLMService: boolean;
 }
 
@@ -41,6 +39,9 @@ export class MockLLMService extends LLMService {
     ) {
         super("MockLLMService", requestsLogsFilePath, eventLogger, debug);
     }
+
+    // Set this property to make 1 next generation throw the specified error.
+    throwErrorOnNextGeneration: Error | undefined = undefined;
 
     readonly generationFromChatEvent = "mockllm-generation-from-chat";
     readonly systemPromptToOverrideWith = "unique mock-llm system prompt";
@@ -80,7 +81,8 @@ export class MockLLMService extends LLMService {
      * Generally, `generateFromChatImpl` simply returns first `choices` proofs from the `MockLLMModelParams.proofsToGenerate`.
      * Each `generateFromChatImpl` call sends logic `this.generationFromChatEvent` event to the `eventLogger`.
      * Special behaviour:
-     * - If `throwError` is specified at `MockLLMModelParams`, `generateFromChatImpl` throws this error.
+     * - If `this.throwErrorOnNextGenereation` is specified,
+     *   `generateFromChatImpl` throws this error and then resets `this.throwErrorOnNextGenereation`.
      * - If `chat` contains special control message (see `transformChatToSkipFirstNProofs`),
      *   several proofs from the beggining of `MockLLMModelParams.proofsToGenerate` will be skipped.
      *   Practically, it provides a way to generate different proofs depending on the `chat` (while `modelParams` stay the same).
@@ -95,8 +97,12 @@ export class MockLLMService extends LLMService {
         this.eventLogger?.logLogicEvent(this.generationFromChatEvent, chat);
 
         const mockLLMServiceParams = params as MockLLMModelParams;
-        if (mockLLMServiceParams.throwError !== undefined) {
-            throw mockLLMServiceParams.throwError;
+        if (this.throwErrorOnNextGeneration !== undefined) {
+            try {
+                throw this.throwErrorOnNextGeneration;
+            } finally {
+                this.throwErrorOnNextGeneration = undefined;
+            }
         }
 
         const proofFixPromptInChat = chat.find(

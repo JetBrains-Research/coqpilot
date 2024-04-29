@@ -1,12 +1,7 @@
 import { expect } from "earl";
 
 import { AnalyzedChatHistory } from "../../../../llm/llmServices/chat";
-import {
-    ErrorsHandlingMode,
-    GeneratedProof,
-    ProofVersion,
-} from "../../../../llm/llmServices/llmService";
-import { ProofGenerationContext } from "../../../../llm/proofGenerationContext";
+import { ErrorsHandlingMode } from "../../../../llm/llmServices/llmService";
 
 import {
     MockLLMGeneratedProof,
@@ -15,24 +10,22 @@ import {
 } from "../../testUtils/mockLLMService";
 import {
     enhanceMockParams,
+    expectGeneratedProof,
     mockChat,
+    mockProofGenerationContext,
     proofsToGenerate,
+    toProofVersion,
     withMockLLMService,
 } from "../../testUtils/testGenerateProofPipeline";
 
 /*
  * Note: fitting context (theorems, diagnostics) into chats is tested in
  * `chatFactory.test.ts` and `chatTokensFitter.test.ts`.
- * Therefore, in this suite tesing of context-fitting will be omitted.
+ * Therefore, in this suite testing of context-fitting will be omitted.
  */
 suite("[LLMService] Test `GeneratedProof`", () => {
     // the first initial proof and 3 new ones = at least 4 proofs to generate
     expect(proofsToGenerate.length).toBeGreaterThanOrEqual(4);
-
-    const mockProofGenerationContext: ProofGenerationContext = {
-        completionTarget: "forall n : nat, 0 + n = n",
-        contextTheorems: [],
-    };
 
     function transformChatToSkipProofs(
         analyzedChat: AnalyzedChatHistory,
@@ -46,38 +39,6 @@ suite("[LLMService] Test `GeneratedProof`", () => {
             ),
             estimatedTokens: analyzedChat.estimatedTokens,
         };
-    }
-
-    interface ExpectedGeneratedProof {
-        proof: string;
-        versionNumber: number;
-        proofVersions: ProofVersion[];
-        nextVersionCanBeGenerated?: boolean;
-        canBeFixed?: Boolean;
-    }
-
-    function expectGeneratedProof(
-        actual: GeneratedProof,
-        expected: ExpectedGeneratedProof
-    ) {
-        const mockGeneratedProof = actual as MockLLMGeneratedProof;
-        expect(mockGeneratedProof.proof()).toEqual(expected.proof);
-        expect(mockGeneratedProof.versionNumber()).toEqual(
-            expected.versionNumber
-        );
-        expect(mockGeneratedProof.proofVersions).toEqual(
-            expected.proofVersions
-        );
-        if (expected.nextVersionCanBeGenerated !== undefined) {
-            expect(mockGeneratedProof.nextVersionCanBeGenerated()).toEqual(
-                expected.nextVersionCanBeGenerated
-            );
-        }
-        if (expected.canBeFixed !== undefined) {
-            expect(mockGeneratedProof.canBeFixed()).toEqual(
-                expected.canBeFixed
-            );
-        }
     }
 
     function constructInitialGeneratedProof(
@@ -101,13 +62,6 @@ suite("[LLMService] Test `GeneratedProof`", () => {
             mockProofGenerationContext,
             unlimitedTokensWithFixesMockParams
         ) as MockLLMGeneratedProof;
-    }
-
-    function toProofVersion(
-        proof: string,
-        diagnostic: string | undefined = undefined
-    ): ProofVersion {
-        return { proof: proof, diagnostic: diagnostic };
     }
 
     test("Build initial version", async () => {

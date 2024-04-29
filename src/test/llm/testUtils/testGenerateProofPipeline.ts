@@ -5,13 +5,22 @@ import {
     AnalyzedChatHistory,
     ChatHistory,
 } from "../../../llm/llmServices/chat";
-import { LLMService } from "../../../llm/llmServices/llmService";
+import {
+    GeneratedProof,
+    LLMService,
+    ProofVersion,
+} from "../../../llm/llmServices/llmService";
 import { ResponseStatus } from "../../../llm/llmServices/utils/requestsLogger/loggerRecord";
+import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { UserMultiroundProfile } from "../../../llm/userModelParams";
 
 import { EventLogger } from "../../../logging/eventLogger";
 
-import { MockLLMModelParams, MockLLMService } from "./mockLLMService";
+import {
+    MockLLMGeneratedProof,
+    MockLLMModelParams,
+    MockLLMService,
+} from "./mockLLMService";
 
 export const proofsToGenerate = [
     "auto.",
@@ -19,11 +28,21 @@ export const proofsToGenerate = [
     "right. auto.",
     "intros.",
     "assumption.",
+    "something.",
+    "",
+    "reflexivity.",
+    "auto.",
+    "auto.",
 ];
 
 export const mockChat: AnalyzedChatHistory = {
     chat: [{ role: "system", content: "Generate proofs." }],
     estimatedTokens: 10,
+};
+
+export const mockProofGenerationContext: ProofGenerationContext = {
+    completionTarget: "forall n : nat, 0 + n = n",
+    contextTheorems: [],
 };
 
 export interface EventsTracker {
@@ -35,7 +54,7 @@ export interface EventsTracker {
 export function subscribeToTrackEvents(
     testEventLogger: EventLogger,
     mockService: MockLLMService,
-    mockChat: AnalyzedChatHistory
+    mockChat?: AnalyzedChatHistory
 ): EventsTracker {
     const eventsTracker: EventsTracker = {
         mockGenerationEventsN: 0,
@@ -45,7 +64,11 @@ export function subscribeToTrackEvents(
     testEventLogger.subscribeToLogicEvent(
         mockService.generationFromChatEvent,
         (chatData) => {
-            expect(chatData as ChatHistory).toEqual(mockChat.chat);
+            if (mockChat === undefined) {
+                expect((chatData as ChatHistory) !== null).toBeTruthy();
+            } else {
+                expect(chatData as ChatHistory).toEqual(mockChat.chat);
+            }
             eventsTracker.mockGenerationEventsN += 1;
         }
     );
@@ -95,6 +118,39 @@ export function expectLogs(
         };
     });
     expect(actualRecordsUnwrapped).toEqual(expectedRecordsUnwrapped);
+}
+
+export interface ExpectedGeneratedProof {
+    proof: string;
+    versionNumber: number;
+    proofVersions: ProofVersion[];
+    nextVersionCanBeGenerated?: boolean;
+    canBeFixed?: Boolean;
+}
+
+export function expectGeneratedProof(
+    actual: GeneratedProof,
+    expected: ExpectedGeneratedProof
+) {
+    const mockGeneratedProof = actual as MockLLMGeneratedProof;
+    expect(mockGeneratedProof.proof()).toEqual(expected.proof);
+    expect(mockGeneratedProof.versionNumber()).toEqual(expected.versionNumber);
+    expect(mockGeneratedProof.proofVersions).toEqual(expected.proofVersions);
+    if (expected.nextVersionCanBeGenerated !== undefined) {
+        expect(mockGeneratedProof.nextVersionCanBeGenerated()).toEqual(
+            expected.nextVersionCanBeGenerated
+        );
+    }
+    if (expected.canBeFixed !== undefined) {
+        expect(mockGeneratedProof.canBeFixed()).toEqual(expected.canBeFixed);
+    }
+}
+
+export function toProofVersion(
+    proof: string,
+    diagnostic: string | undefined = undefined
+): ProofVersion {
+    return { proof: proof, diagnostic: diagnostic };
 }
 
 export function enhanceMockParams(
