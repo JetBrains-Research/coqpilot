@@ -18,10 +18,12 @@ import { EventLogger } from "../../../logging/eventLogger";
 
 export interface MockLLMUserModelParams extends UserModelParams {
     proofsToGenerate: string[];
+    workerId?: number;
 }
 
 export interface MockLLMModelParams extends ModelParams {
     proofsToGenerate: string[];
+    workerId: number;
     resolvedWithMockLLMService: boolean;
 }
 
@@ -40,8 +42,16 @@ export class MockLLMService extends LLMService {
         super("MockLLMService", requestsLogsFilePath, eventLogger, debug);
     }
 
-    // Set this property to make 1 next generation throw the specified error.
-    throwErrorOnNextGeneration: Error | undefined = undefined;
+    private throwErrorOnNextGenerationMap: Map<number, Error | undefined> =
+        new Map();
+
+    /*
+     * Set this property to make 1 next generation (for the specified worker) throw the specified error.
+     * Workers are meant to be any external entities that would like to separate their behaviour.
+     */
+    throwErrorOnNextGeneration(error: Error, workerId: number = 0) {
+        this.throwErrorOnNextGenerationMap.set(workerId, error);
+    }
 
     readonly generationFromChatEvent = "mockllm-generation-from-chat";
     readonly systemPromptToOverrideWith = "unique mock-llm system prompt";
@@ -81,8 +91,8 @@ export class MockLLMService extends LLMService {
      * Generally, `generateFromChatImpl` simply returns first `choices` proofs from the `MockLLMModelParams.proofsToGenerate`.
      * Each `generateFromChatImpl` call sends logic `this.generationFromChatEvent` event to the `eventLogger`.
      * Special behaviour:
-     * - If `this.throwErrorOnNextGenereation` is specified,
-     *   `generateFromChatImpl` throws this error and then resets `this.throwErrorOnNextGenereation`.
+     * - If `throwErrorOnNextGenereation` was registered for `MockLLMModelParams.workerId`,
+     *   `generateFromChatImpl` throws this error and then resets this behaviour for the next call.
      * - If `chat` contains special control message (see `transformChatToSkipFirstNProofs`),
      *   several proofs from the beggining of `MockLLMModelParams.proofsToGenerate` will be skipped.
      *   Practically, it provides a way to generate different proofs depending on the `chat` (while `modelParams` stay the same).
@@ -95,13 +105,19 @@ export class MockLLMService extends LLMService {
         choices: number
     ): Promise<string[]> {
         this.eventLogger?.logLogicEvent(this.generationFromChatEvent, chat);
-
         const mockLLMServiceParams = params as MockLLMModelParams;
-        if (this.throwErrorOnNextGeneration !== undefined) {
+
+        const throwError = this.throwErrorOnNextGenerationMap.get(
+            mockLLMServiceParams.workerId
+        );
+        if (throwError !== undefined) {
             try {
-                throw this.throwErrorOnNextGeneration;
+                throw throwError;
             } finally {
-                this.throwErrorOnNextGeneration = undefined;
+                this.throwErrorOnNextGenerationMap.set(
+                    mockLLMServiceParams.workerId,
+                    undefined
+                );
             }
         }
 
@@ -147,14 +163,19 @@ export class MockLLMService extends LLMService {
     /*
      * `MockLLMService` parameters resolution does 2 changes to `params`:
      * - overrides original `systemPrompt` to `this.systemPromptToOverrideWith`;
+     * - resolves undefined `workerId` to 0;
      * - adds extra `resolvedWithMockLLMService: true` property.
      * Then `resolveParametersWithDefaults` is called.
      */
     resolveParameters(params: UserModelParams): ModelParams {
         const unresolvedParams = params as MockLLMUserModelParams;
-        unresolvedParams.systemPrompt = this.systemPromptToOverrideWith;
         return this.resolveParametersWithDefaults({
             ...unresolvedParams,
+            systemPrompt: this.systemPromptToOverrideWith,
+            workerId:
+                unresolvedParams.workerId === undefined
+                    ? 0
+                    : unresolvedParams.workerId,
             resolvedWithMockLLMService: true,
         } as MockLLMUserModelParams);
     }

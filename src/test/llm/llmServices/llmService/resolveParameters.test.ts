@@ -79,12 +79,18 @@ suite("[LLMService] Test UserModelParams to ModelParams resolution", () => {
                 tokensLimit: 1000,
                 proofsToGenerate: ["auto.", "avto."],
             };
-            // MockLLMService always overrides `systemPrompt` and adds `resolvedWithMockLLMService`.
-            // Everything else should be resolved with defaults, if needed.
+            /*
+             * MockLLMService always:
+             * - overrides `systemPrompt;
+             * - adds `resolvedWithMockLLMService`;
+             * - resolves undefined `workerId` to 0.
+             * Everything else should be resolved with defaults, if needed.
+             */
             const expectedResolvedMockParams = {
                 ...unresolvedMockUserParams,
                 multiroundProfile: defaultMultiroundProfile,
                 systemPrompt: mockService.systemPromptToOverrideWith,
+                workerId: 0,
                 resolvedWithMockLLMService: true,
             } as MockLLMModelParams;
 

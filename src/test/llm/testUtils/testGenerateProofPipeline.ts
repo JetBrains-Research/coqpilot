@@ -193,6 +193,7 @@ export async function withMockLLMService(
                 proofFixPrompt: "Fix proof",
             },
             proofsToGenerate: proofsToGenerate,
+            workerId: 0,
             resolvedWithMockLLMService: true,
         };
         await block(mockService, basicMockParams, testEventLogger);

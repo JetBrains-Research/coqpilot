@@ -74,8 +74,10 @@ export class GrazieService extends LLMService {
     }
 
     resolveParameters(params: UserModelParams): ModelParams {
-        params.newMessageMaxTokens = this.newMessageMaxTokens;
-        return this.resolveParametersWithDefaults(params);
+        return this.resolveParametersWithDefaults({
+            ...params,
+            newMessageMaxTokens: this.newMessageMaxTokens,
+        });
     }
 }
 

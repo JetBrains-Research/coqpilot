@@ -70,8 +70,9 @@ suite("[LLMService] Test `generateFromChat`", () => {
                     const internalGenerationError = Error(
                         "tokens limit exceeded"
                     );
-                    mockService.throwErrorOnNextGeneration =
-                        internalGenerationError;
+                    mockService.throwErrorOnNextGeneration(
+                        internalGenerationError
+                    );
                     await testGenerationBlock(
                         mockService,
                         basicMockParams,

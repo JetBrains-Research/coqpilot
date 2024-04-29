@@ -2,7 +2,11 @@ import { expect } from "earl";
 
 import { GeneratedProof } from "../../../../llm/llmServices/llmService";
 
-import { MockLLMService } from "../../testUtils/mockLLMService";
+import { EventLogger } from "../../../../logging/eventLogger";
+import {
+    MockLLMModelParams,
+    MockLLMService,
+} from "../../testUtils/mockLLMService";
 import {
     EventsTracker,
     ExpectedRecord,
@@ -67,7 +71,7 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
                 );
 
                 const connectionError = Error("failed to reach server");
-                mockService.throwErrorOnNextGeneration = connectionError;
+                mockService.throwErrorOnNextGeneration(connectionError);
                 const noGeneratedProofs = await mockService.generateProof(
                     mockProofGenerationContext,
                     basicMockParams,
@@ -158,10 +162,13 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
     function throwErrorOnNextGeneration(
         probability: number,
         mockService: MockLLMService,
-        error: Error
+        error: Error,
+        workerId: number
     ): Error | undefined {
         const coin = tossCoin(probability);
-        mockService.throwErrorOnNextGeneration = coin ? error : undefined;
+        if (coin) {
+            mockService.throwErrorOnNextGeneration(error, workerId);
+        }
         return coin ? error : undefined;
     }
 
@@ -170,110 +177,111 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
         generatedProofs: GeneratedProof[],
         expectedProofsLength: number,
         expectedEvents: EventsTracker,
-        expectedLogs: ExpectedRecord[]
+        expectedLogs?: ExpectedRecord[]
     ) {
         expectedEvents.mockGenerationEventsN += 1;
         if (errorWasThrown !== undefined) {
             expect(generatedProofs).toHaveLength(0);
             expectedEvents.failedGenerationEventsN += 1;
-            expectedLogs.push({
+            expectedLogs?.push({
                 status: "FAILED",
                 error: errorWasThrown,
             });
         } else {
             expect(generatedProofs).toHaveLength(expectedProofsLength);
             expectedEvents.successfulGenerationEventsN += 1;
-            expectedLogs.push({ status: "SUCCESS" });
+            expectedLogs?.push({ status: "SUCCESS" });
         }
     }
 
     function checkExpectations(
-        eventsTracker: EventsTracker,
+        actualEvents: EventsTracker,
         expectedEvents: EventsTracker,
         expectedLogs: ExpectedRecord[],
         mockService: MockLLMService
     ) {
-        expect(eventsTracker).toEqual(expectedEvents);
+        expect(actualEvents).toEqual(expectedEvents);
         expectLogs(expectedLogs, mockService);
     }
 
-    function updateAndCheckExpectations(
-        errorWasThrown: Error | undefined,
-        generatedProofs: GeneratedProof[],
-        expectedProofsLength: number,
-        expectedEvents: EventsTracker,
-        expectedLogs: ExpectedRecord[],
-        eventsTracker: EventsTracker,
-        mockService: MockLLMService
-    ) {
-        updateExpectations(
-            errorWasThrown,
-            generatedProofs,
-            expectedProofsLength,
-            expectedEvents,
-            expectedLogs
-        );
-        checkExpectations(
-            eventsTracker,
-            expectedEvents,
-            expectedLogs,
-            mockService
-        );
+    interface StressTestParams {
+        workersN: number;
+        iterationsPerWorker: number;
+        newProofsOnEachIteration: number;
+        proofFixChoices: number;
+        tryToFixProbability: number;
+        failedGenerationProbability: number;
     }
 
-    test("Stress test: multiround with random failures, default settings", async () => {
-        await withMockLLMService(
-            async (mockService, basicMockParams, testEventLogger) => {
-                const eventsTracker = subscribeToTrackEvents(
-                    testEventLogger,
-                    mockService
-                );
-                const expectedEvents: EventsTracker = {
-                    mockGenerationEventsN: 0,
-                    successfulGenerationEventsN: 0,
-                    failedGenerationEventsN: 0,
+    async function stressTest(
+        testParams: StressTestParams,
+        mockService: MockLLMService,
+        basicMockParams: MockLLMModelParams,
+        testEventLogger: EventLogger,
+        expectLogsAndCheckExpectations: boolean
+    ): Promise<[EventsTracker, EventsTracker, ExpectedRecord[] | undefined]> {
+        const actualEvents = subscribeToTrackEvents(
+            testEventLogger,
+            mockService
+        );
+        const expectedEvents: EventsTracker = {
+            mockGenerationEventsN: 0,
+            successfulGenerationEventsN: 0,
+            failedGenerationEventsN: 0,
+        };
+        const expectedLogs: ExpectedRecord[] | undefined =
+            expectLogsAndCheckExpectations ? [] : undefined;
+
+        expect(testParams.newProofsOnEachIteration).toBeLessThanOrEqual(
+            basicMockParams.proofsToGenerate.length
+        );
+        basicMockParams.multiroundProfile.proofFixChoices =
+            testParams.proofFixChoices;
+
+        const connectionError = Error("failed to reach server");
+        const diagnostic = "Proof is incorrect.";
+
+        const workers: Promise<string>[] = [];
+        for (let w = 0; w < testParams.workersN; w++) {
+            const work = async () => {
+                const workerMockParams: MockLLMModelParams = {
+                    ...basicMockParams,
+                    workerId: w,
                 };
-                const expectedLogs: ExpectedRecord[] = [];
 
-                const iterations = 1000;
-                const newProofsOnEachIteration = 10;
-                expect(newProofsOnEachIteration).toBeLessThanOrEqual(
-                    basicMockParams.proofsToGenerate.length
-                );
-                basicMockParams.multiroundProfile.proofFixChoices = 4;
-
-                const tryToFixProbability = 0.5;
-                const failedGenerationProbability = 0.5;
-
-                const connectionError = Error("failed to reach server");
-                const diagnostic = "Proof is incorrect.";
                 let toFixCandidates: GeneratedProof[] = [];
-
-                for (let i = 0; i < iterations; i++) {
+                for (let i = 0; i < testParams.iterationsPerWorker; i++) {
                     const throwError = throwErrorOnNextGeneration(
-                        failedGenerationProbability,
+                        testParams.failedGenerationProbability,
                         mockService,
-                        connectionError
+                        connectionError,
+                        w
                     );
                     const generatedProofs = await mockService.generateProof(
                         mockProofGenerationContext,
-                        basicMockParams,
-                        newProofsOnEachIteration
+                        workerMockParams,
+                        testParams.newProofsOnEachIteration
                     );
-                    updateAndCheckExpectations(
+                    updateExpectations(
                         throwError,
                         generatedProofs,
-                        newProofsOnEachIteration,
+                        testParams.newProofsOnEachIteration,
                         expectedEvents,
-                        expectedLogs,
-                        eventsTracker,
-                        mockService
+                        expectedLogs
                     );
+                    if (expectedLogs !== undefined) {
+                        checkExpectations(
+                            actualEvents,
+                            expectedEvents,
+                            expectedLogs,
+                            mockService
+                        );
+                    }
 
                     toFixCandidates = [toFixCandidates, generatedProofs]
                         .flat()
                         .filter((_generatedProof) => {
-                            tossCoin(tryToFixProbability);
+                            tossCoin(testParams.tryToFixProbability);
                         });
 
                     const newlyGeneratedProofs = [];
@@ -287,28 +295,101 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
                             ).toThrow();
                         } else {
                             const throwError = throwErrorOnNextGeneration(
-                                failedGenerationProbability,
+                                testParams.failedGenerationProbability,
                                 mockService,
-                                connectionError
+                                connectionError,
+                                w
                             );
                             const fixedGeneratedProofs =
                                 await generatedProofToFix.fixProof(diagnostic);
 
-                            updateAndCheckExpectations(
+                            updateExpectations(
                                 throwError,
                                 fixedGeneratedProofs,
                                 basicMockParams.multiroundProfile
                                     .proofFixChoices,
                                 expectedEvents,
-                                expectedLogs,
-                                eventsTracker,
-                                mockService
+                                expectedLogs
                             );
+                            if (expectedLogs !== undefined) {
+                                checkExpectations(
+                                    actualEvents,
+                                    expectedEvents,
+                                    expectedLogs,
+                                    mockService
+                                );
+                            }
                             newlyGeneratedProofs.push(...fixedGeneratedProofs);
                         }
                     }
                     toFixCandidates = newlyGeneratedProofs;
                 }
+                return "done";
+            };
+            workers.push(work());
+        }
+
+        const results = await Promise.all(workers);
+        expect(results).toEqual(new Array(testParams.workersN).fill("done"));
+        return [actualEvents, expectedEvents, expectedLogs];
+    }
+
+    test("Stress test with sync worker (multiround with random failures, default settings)", async () => {
+        await withMockLLMService(
+            async (mockService, basicMockParams, testEventLogger) => {
+                const [_actualEvents, _expectedEvents, _expectedLogs] =
+                    await stressTest(
+                        {
+                            workersN: 1,
+                            iterationsPerWorker: 1000,
+                            newProofsOnEachIteration: 10,
+                            proofFixChoices: 4,
+                            tryToFixProbability: 0.5,
+                            failedGenerationProbability: 0.5,
+                        },
+                        mockService,
+                        basicMockParams,
+                        testEventLogger,
+                        true
+                    );
+            }
+        );
+    }).timeout(10000);
+
+    test("Stress test with async workers (multiround with random failures, default settings)", async () => {
+        await withMockLLMService(
+            async (mockService, basicMockParams, testEventLogger) => {
+                const [actualEvents, expectedEvents, _undefined] =
+                    await stressTest(
+                        {
+                            workersN: 10,
+                            iterationsPerWorker: 100,
+                            newProofsOnEachIteration: 10,
+                            proofFixChoices: 4,
+                            tryToFixProbability: 0.5,
+                            failedGenerationProbability: 0.5,
+                        },
+                        mockService,
+                        basicMockParams,
+                        testEventLogger,
+                        false
+                    );
+
+                expect(actualEvents).toEqual(expectedEvents);
+
+                const logs = mockService.readRequestsLogs();
+                const successLogsN = logs.filter(
+                    (record) => record.responseStatus === "SUCCESS"
+                ).length;
+                const failureLogsN = logs.filter(
+                    (record) => record.responseStatus === "FAILED"
+                ).length;
+                expect(successLogsN).toEqual(
+                    expectedEvents.successfulGenerationEventsN
+                );
+                expect(failureLogsN).toEqual(
+                    expectedEvents.failedGenerationEventsN
+                );
             }
         );
     }).timeout(10000);
