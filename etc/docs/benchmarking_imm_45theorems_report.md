@@ -116,6 +116,8 @@ The `multiroundProfile` used for all the models:
 }
 ```
 
+The temperature parameter in all models was set to `1`.
+
 ## Results
 
 In the table below you can find the results of our experiments. For each of the theorems we show its group  and the methods which proved the theorem during our experiments.
