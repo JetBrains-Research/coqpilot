@@ -31,7 +31,7 @@ export class OpenAiService extends LLMService {
         );
     }
 
-    async generateFromChatImpl(
+    protected async generateFromChatImpl(
         chat: ChatHistory,
         params: ModelParams,
         choices: number

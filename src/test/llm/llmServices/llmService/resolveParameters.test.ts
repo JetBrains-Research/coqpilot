@@ -1,4 +1,5 @@
 import { expect } from "earl";
+import * as tmp from "tmp";
 
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 import {
@@ -8,12 +9,10 @@ import {
 } from "../../../../llm/llmServices/utils/defaultParametersResolver";
 import { UserModelParams } from "../../../../llm/userModelParams";
 
-import {
-    createMockLLMService,
-    gptTurboModel,
-} from "../../testUtils/commonTestFunctions";
+import { gptTurboModel } from "../../testUtils/commonTestFunctions";
 import {
     MockLLMModelParams,
+    MockLLMService,
     MockLLMUserModelParams,
 } from "../../testUtils/mockLLMService";
 
@@ -70,7 +69,7 @@ suite("[LLMService] Test UserModelParams to ModelParams resolution", () => {
     });
 
     test("Test resolution by LLMService", () => {
-        const mockService = createMockLLMService();
+        const mockService = new MockLLMService(tmp.fileSync().name);
         try {
             const unresolvedMockUserParams: MockLLMUserModelParams = {
                 modelName: "mock model",

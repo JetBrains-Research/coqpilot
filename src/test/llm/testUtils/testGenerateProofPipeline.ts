@@ -16,6 +16,7 @@ import { UserMultiroundProfile } from "../../../llm/userModelParams";
 
 import { EventLogger } from "../../../logging/eventLogger";
 
+import { EventsTracker } from "./commonTestFunctions";
 import {
     MockLLMGeneratedProof,
     MockLLMModelParams,
@@ -45,18 +46,16 @@ export const mockProofGenerationContext: ProofGenerationContext = {
     contextTheorems: [],
 };
 
-export interface EventsTracker {
+export interface MockEventsTracker extends EventsTracker {
     mockGenerationEventsN: number;
-    successfulGenerationEventsN: number;
-    failedGenerationEventsN: number;
 }
 
-export function subscribeToTrackEvents(
+export function subscribeToTrackMockEvents(
     testEventLogger: EventLogger,
     mockService: MockLLMService,
     mockChat?: AnalyzedChatHistory
-): EventsTracker {
-    const eventsTracker: EventsTracker = {
+): MockEventsTracker {
+    const eventsTracker: MockEventsTracker = {
         mockGenerationEventsN: 0,
         successfulGenerationEventsN: 0,
         failedGenerationEventsN: 0,
@@ -96,16 +95,14 @@ export interface ExpectedRecord {
 
 export function expectLogs(
     expectedRecords: ExpectedRecord[],
-    mockService: MockLLMService
+    service: LLMService
 ) {
-    const actualRecordsUnwrapped = mockService
-        .readRequestsLogs()
-        .map((record) => {
-            return {
-                status: record.responseStatus,
-                error: record.error,
-            };
-        });
+    const actualRecordsUnwrapped = service.readRequestsLogs().map((record) => {
+        return {
+            status: record.responseStatus,
+            error: record.error,
+        };
+    });
     const expectedRecordsUnwrapped = expectedRecords.map((record) => {
         return {
             status: record.status,
@@ -117,6 +114,21 @@ export function expectLogs(
                 : undefined,
         };
     });
+    expect(actualRecordsUnwrapped).toHaveLength(
+        expectedRecordsUnwrapped.length
+    );
+    // if exact error is not expected, ignore it in the actual records
+    for (let i = 0; i < expectedRecordsUnwrapped.length; i++) {
+        const expected = expectedRecordsUnwrapped[i];
+        const actual = actualRecordsUnwrapped[i];
+        if (
+            expected.status === "FAILED" &&
+            actual.status === "FAILED" &&
+            expected.error === undefined
+        ) {
+            actual.error = undefined;
+        }
+    }
     expect(actualRecordsUnwrapped).toEqual(expectedRecordsUnwrapped);
 }
 

@@ -28,7 +28,7 @@ export class LMStudioService extends LLMService {
         );
     }
 
-    async generateFromChatImpl(
+    protected async generateFromChatImpl(
         chat: ChatHistory,
         params: LMStudioModelParams,
         choices: number

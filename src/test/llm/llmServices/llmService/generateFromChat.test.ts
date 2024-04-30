@@ -12,7 +12,7 @@ import {
     expectLogs,
     mockChat,
     proofsToGenerate,
-    subscribeToTrackEvents,
+    subscribeToTrackMockEvents,
     withMockLLMService,
 } from "../../testUtils/testGenerateProofPipeline";
 
@@ -24,7 +24,7 @@ suite("[LLMService] Test `generateFromChat`", () => {
         test(`Test successful generation, ${errorsHandlingMode}`, async () => {
             await withMockLLMService(
                 async (mockService, basicMockParams, testEventLogger) => {
-                    const eventsTracker = subscribeToTrackEvents(
+                    const eventsTracker = subscribeToTrackMockEvents(
                         testEventLogger,
                         mockService,
                         mockChat
@@ -61,7 +61,7 @@ suite("[LLMService] Test `generateFromChat`", () => {
         test(`Test failed generation, ${errorsHandlingMode}`, async () => {
             await withMockLLMService(
                 async (mockService, basicMockParams, testEventLogger) => {
-                    const eventsTracker = subscribeToTrackEvents(
+                    const eventsTracker = subscribeToTrackMockEvents(
                         testEventLogger,
                         mockService,
                         mockChat

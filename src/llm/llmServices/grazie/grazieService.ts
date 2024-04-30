@@ -11,7 +11,7 @@ import { GrazieApi, GrazieChatRole, GrazieFormattedHistory } from "./grazieApi";
 export class GrazieService extends LLMService {
     private api: GrazieApi;
     // Is constant (now) as specified in Grazie REST API
-    private readonly newMessageMaxTokens = 1024;
+    readonly newMessageMaxTokens = 1024;
 
     constructor(
         requestsLogsFilePath: string,
@@ -37,7 +37,7 @@ export class GrazieService extends LLMService {
         );
     }
 
-    async generateFromChatImpl(
+    protected async generateFromChatImpl(
         chat: ChatHistory,
         params: ModelParams,
         choices: number

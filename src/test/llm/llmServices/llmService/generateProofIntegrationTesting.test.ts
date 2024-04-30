@@ -8,14 +8,14 @@ import {
     MockLLMService,
 } from "../../testUtils/mockLLMService";
 import {
-    EventsTracker,
     ExpectedRecord,
+    MockEventsTracker,
     enhanceMockParams,
     expectGeneratedProof,
     expectLogs,
     mockProofGenerationContext,
     proofsToGenerate,
-    subscribeToTrackEvents,
+    subscribeToTrackMockEvents,
     toProofVersion,
     withMockLLMService,
 } from "../../testUtils/testGenerateProofPipeline";
@@ -31,7 +31,7 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
     test("Test success, 1 round and default settings", async () => {
         await withMockLLMService(
             async (mockService, basicMockParams, testEventLogger) => {
-                const eventsTracker = subscribeToTrackEvents(
+                const eventsTracker = subscribeToTrackMockEvents(
                     testEventLogger,
                     mockService
                 );
@@ -65,7 +65,7 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
     test("Test failure, default error handling", async () => {
         await withMockLLMService(
             async (mockService, basicMockParams, testEventLogger) => {
-                const eventsTracker = subscribeToTrackEvents(
+                const eventsTracker = subscribeToTrackMockEvents(
                     testEventLogger,
                     mockService
                 );
@@ -96,7 +96,7 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
     test("Test successful 2-round generation, default settings", async () => {
         await withMockLLMService(
             async (mockService, basicMockParams, testEventLogger) => {
-                const eventsTracker = subscribeToTrackEvents(
+                const eventsTracker = subscribeToTrackMockEvents(
                     testEventLogger,
                     mockService
                 );
@@ -176,7 +176,7 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
         errorWasThrown: Error | undefined,
         generatedProofs: GeneratedProof[],
         expectedProofsLength: number,
-        expectedEvents: EventsTracker,
+        expectedEvents: MockEventsTracker,
         expectedLogs?: ExpectedRecord[]
     ) {
         expectedEvents.mockGenerationEventsN += 1;
@@ -195,8 +195,8 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
     }
 
     function checkExpectations(
-        actualEvents: EventsTracker,
-        expectedEvents: EventsTracker,
+        actualEvents: MockEventsTracker,
+        expectedEvents: MockEventsTracker,
         expectedLogs: ExpectedRecord[],
         mockService: MockLLMService
     ) {
@@ -219,12 +219,14 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
         basicMockParams: MockLLMModelParams,
         testEventLogger: EventLogger,
         expectLogsAndCheckExpectations: boolean
-    ): Promise<[EventsTracker, EventsTracker, ExpectedRecord[] | undefined]> {
-        const actualEvents = subscribeToTrackEvents(
+    ): Promise<
+        [MockEventsTracker, MockEventsTracker, ExpectedRecord[] | undefined]
+    > {
+        const actualEvents = subscribeToTrackMockEvents(
             testEventLogger,
             mockService
         );
-        const expectedEvents: EventsTracker = {
+        const expectedEvents: MockEventsTracker = {
             mockGenerationEventsN: 0,
             successfulGenerationEventsN: 0,
             failedGenerationEventsN: 0,
@@ -292,7 +294,7 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
                                     await generatedProofToFix.fixProof(
                                         diagnostic
                                     )
-                            ).toThrow();
+                            ).toBeRejected();
                         } else {
                             const throwError = throwErrorOnNextGeneration(
                                 testParams.failedGenerationProbability,

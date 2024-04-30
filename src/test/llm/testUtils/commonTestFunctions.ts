@@ -1,6 +1,5 @@
 import { expect } from "earl";
 import { TiktokenModel, encoding_for_model } from "tiktoken";
-import * as tmp from "tmp";
 
 import {
     ErrorsHandlingMode,
@@ -8,12 +7,11 @@ import {
 } from "../../../llm/llmServices/llmService";
 import { UserModelParams } from "../../../llm/userModelParams";
 
+import { EventLogger } from "../../../logging/eventLogger";
 import {
     checkTheoremProven,
     prepareEnvironmentWithContexts,
 } from "../../commonTestFunctions";
-
-import { MockLLMService } from "./mockLLMService";
 
 export const gptTurboModel = "gpt-3.5-turbo-0301";
 
@@ -31,8 +29,34 @@ export function approxCalculateTokens(text: string): number {
     return (text.length / 4) >> 0;
 }
 
-export function createMockLLMService(): MockLLMService {
-    return new MockLLMService(tmp.fileSync().name);
+export interface EventsTracker {
+    successfulGenerationEventsN: number;
+    failedGenerationEventsN: number;
+}
+
+export function subscribeToTrackEvents(
+    testEventLogger: EventLogger,
+    targetService: LLMService
+): EventsTracker {
+    const eventsTracker: EventsTracker = {
+        successfulGenerationEventsN: 0,
+        failedGenerationEventsN: 0,
+    };
+    testEventLogger.subscribeToLogicEvent(
+        LLMService.generationSucceededEvent,
+        (service) => {
+            expect(service).toEqual(targetService);
+            eventsTracker.successfulGenerationEventsN += 1;
+        }
+    );
+    testEventLogger.subscribeToLogicEvent(
+        LLMService.generationFailedEvent,
+        (service) => {
+            expect(service).toEqual(targetService);
+            eventsTracker.failedGenerationEventsN += 1;
+        }
+    );
+    return eventsTracker;
 }
 
 export async function testLLMServiceCompletesAdmitFromFile(

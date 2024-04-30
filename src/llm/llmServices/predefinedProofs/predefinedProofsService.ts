@@ -43,7 +43,7 @@ export class PredefinedProofsService extends LLMService {
         );
     }
 
-    generateFromChatImpl(
+    protected generateFromChatImpl(
         _chat: ChatHistory,
         _params: ModelParams,
         _choices: number
@@ -147,5 +147,9 @@ export class PredefinedProof extends GeneratedProof {
 
     fixProof(_diagnostic: string, _choices: number): Promise<GeneratedProof[]> {
         throw new Error("PredefinedProof cannot be fixed");
+    }
+
+    canBeFixed(): Boolean {
+        return false;
     }
 }
