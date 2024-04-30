@@ -129,10 +129,12 @@ export abstract class LLMService {
 
     /**
      * Estimates the expected time for service to become available.
-     * To do this, analyzes the logs from `requestsLogger` and computes the time.
+     * To do this, analyzes the logs from `this.requestsLogger` and computes the time.
      */
     estimateTimeToBecomeAvailable(): Time {
-        return estimateTimeToBecomeAvailableDefault(this.requestsLogger);
+        return estimateTimeToBecomeAvailableDefault(
+            this.requestsLogger.readLogsSinceLastSuccess()
+        );
     }
 
     readRequestsLogs(sinceLastSuccess: boolean = false): LoggerRecord[] {

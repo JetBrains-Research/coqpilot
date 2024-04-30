@@ -1,4 +1,4 @@
-import { RequestsLogger } from "./requestsLogger/requestsLogger";
+import { LoggerRecord } from "./requestsLogger/loggerRecord";
 import {
     Time,
     millisToTime,
@@ -9,6 +9,7 @@ import {
 } from "./time";
 
 export const defaultHeuristicEstimationsMillis = [
+    time(1, "second"),
     time(5, "second"),
     time(10, "second"),
     time(30, "second"),
@@ -22,7 +23,7 @@ export const defaultHeuristicEstimationsMillis = [
 
 /**
  * Estimates the expected time for service to become available.
- * To do this, analyzes the logs from `requestsLogger` and computes the time.
+ * To do this, analyzes the logs since the last success and computes the time.
  * The default algorithm does the following:
  * - if the last attempt is successful => don't wait;
  * - if there is only one failed attemp => wait 1 second;
@@ -34,10 +35,10 @@ export const defaultHeuristicEstimationsMillis = [
  *     returns the estimation by itself.
  */
 export function estimateTimeToBecomeAvailableDefault(
-    requestsLogger: RequestsLogger
+    logsSinceLastSuccess: LoggerRecord[],
+    nowMillis: number = nowTimestampMillis()
 ): Time {
-    const [_lastSuccess, ...failures] =
-        requestsLogger.readLogsSinceLastSuccess();
+    const failures = validateInputLogs(logsSinceLastSuccess);
 
     if (failures.length === 0) {
         return timeZero;
@@ -55,7 +56,7 @@ export function estimateTimeToBecomeAvailableDefault(
     const maxInterval = Math.max(...intervals);
     let currentEstimationIndex = 0;
     while (
-        currentEstimationIndex < defaultHeuristicEstimationsMillis.length &&
+        currentEstimationIndex < defaultHeuristicEstimationsMillis.length - 1 &&
         maxInterval >= defaultHeuristicEstimationsMillis[currentEstimationIndex]
     ) {
         currentEstimationIndex++;
@@ -64,7 +65,7 @@ export function estimateTimeToBecomeAvailableDefault(
         defaultHeuristicEstimationsMillis[currentEstimationIndex];
 
     const timeFromLastAttempt =
-        nowTimestampMillis() - failures[failures.length - 1].timestampMillis;
+        nowMillis - failures[failures.length - 1].timestampMillis;
 
     if (timeFromLastAttempt < currentEstimation) {
         // if `timeFromLastAttempt` is small enough, return the estimation by itself
@@ -75,4 +76,26 @@ export function estimateTimeToBecomeAvailableDefault(
         return millisToTime(currentEstimation - timeFromLastAttempt);
     }
     return timeZero;
+}
+
+function validateInputLogs(
+    logsSinceLastSuccess: LoggerRecord[]
+): LoggerRecord[] {
+    if (logsSinceLastSuccess.length === 0) {
+        throw Error("invalid input logs: empty logs");
+    }
+    const [lastSuccess, ...failures] = logsSinceLastSuccess;
+    if (lastSuccess.responseStatus !== "SUCCESS") {
+        throw Error(
+            `invalid input logs: the first record since last success is a failed one;\n\`${lastSuccess}\``
+        );
+    }
+    for (const failure of failures) {
+        if (failure.responseStatus !== "FAILED") {
+            throw Error(
+                `invalid input logs: a non-first record is not a failed one;\n\`${failure}\``
+            );
+        }
+    }
+    return failures;
 }

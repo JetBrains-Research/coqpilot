@@ -47,6 +47,41 @@ export const timeZero: Time = {
     days: 0,
 };
 
+export function timeToString(time: Time): string {
+    if (time === timeZero) {
+        return "0 ms";
+    }
+    const resolvedTime = millisToTime(timeToMillis(time));
+
+    const days = `${resolvedTime.days} d`;
+    const hours = `${resolvedTime.hours} h`;
+    const minutes = `${resolvedTime.minutes} m`;
+    const seconds = `${resolvedTime.seconds} s`;
+    const millis = `${resolvedTime.millis} ms`;
+
+    const orderedTimeItems = [
+        [resolvedTime.days, days],
+        [resolvedTime.hours, hours],
+        [resolvedTime.minutes, minutes],
+        [resolvedTime.seconds, seconds],
+        [resolvedTime.millis, millis],
+    ];
+    const fromIndex = orderedTimeItems.findIndex(
+        ([timeValue, _timeString]) => timeValue !== 0
+    );
+    const toIndex =
+        orderedTimeItems.length -
+        orderedTimeItems
+            .reverse()
+            .findIndex(([timeValue, _timeString]) => timeValue !== 0);
+
+    return orderedTimeItems
+        .reverse()
+        .slice(fromIndex, toIndex)
+        .map(([_timeValue, timeString]) => timeString)
+        .join(", ");
+}
+
 function timeInUnitsToMillis(value: number, unit: TimeUnit = "second"): number {
     switch (unit) {
         case "millisecond":

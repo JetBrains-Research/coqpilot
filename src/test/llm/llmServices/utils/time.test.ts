@@ -5,6 +5,8 @@ import {
     millisToTime,
     time,
     timeToMillis,
+    timeToString,
+    timeZero,
 } from "../../../../llm/llmServices/utils/time";
 
 suite("[LLMService-s utils] Time utils test", () => {
@@ -64,6 +66,14 @@ suite("[LLMService-s utils] Time utils test", () => {
         days: 8,
     };
 
+    const withBothEndZeros: Time = {
+        millis: 0,
+        seconds: 0,
+        minutes: 40,
+        hours: 2,
+        days: 0,
+    };
+
     test("Test `timeToMillis`", () => {
         expect(timeToMillis(zero)).toEqual(0);
         expect(timeToMillis(fiveSeconds)).toEqual(5000);
@@ -93,5 +103,16 @@ suite("[LLMService-s utils] Time utils test", () => {
         expect(time(5000, "millisecond")).toEqual(fiveSeconds);
         expect(time(2, "day")).toEqual(twoDays);
         expect(time(2 * 24 * 60, "minute")).toEqual(twoDays);
+    });
+
+    test("Test `timeToString`", () => {
+        expect(timeToString(timeZero)).toEqual("0 ms");
+        expect(timeToString(fiveSeconds)).toEqual("5 s");
+        expect(timeToString(fiveSecondsInMillis)).toEqual("5 s");
+        expect(timeToString(twoDays)).toEqual("2 d");
+        expect(timeToString(mixedResolved)).toEqual(
+            "10 d, 20 h, 30 m, 40 s, 100 ms"
+        );
+        expect(timeToString(withBothEndZeros)).toEqual("2 h, 40 m");
     });
 });
