@@ -1,5 +1,17 @@
+import { expect } from "earl";
 import { TiktokenModel, encoding_for_model } from "tiktoken";
 import * as tmp from "tmp";
+
+import {
+    ErrorsHandlingMode,
+    LLMService,
+} from "../../../llm/llmServices/llmService";
+import { UserModelParams } from "../../../llm/userModelParams";
+
+import {
+    checkTheoremProven,
+    prepareEnvironmentWithContexts,
+} from "../../commonTestFunctions";
 
 import { MockLLMService } from "./mockLLMService";
 
@@ -21,4 +33,29 @@ export function approxCalculateTokens(text: string): number {
 
 export function createMockLLMService(): MockLLMService {
     return new MockLLMService(tmp.fileSync().name);
+}
+
+export async function testLLMServiceCompletesAdmitFromFile(
+    service: LLMService,
+    userParams: UserModelParams,
+    inputFileName: string,
+    choices: number
+) {
+    const params = service.resolveParameters(userParams);
+    const [environment, [[completionContext, proofGenerationContext]]] =
+        await prepareEnvironmentWithContexts(inputFileName);
+    try {
+        const generatedProofs = await service.generateProof(
+            proofGenerationContext,
+            params,
+            choices,
+            ErrorsHandlingMode.RETHROW_ERRORS
+        );
+        expect(generatedProofs).toHaveLength(choices);
+        expect(
+            checkTheoremProven(generatedProofs, completionContext, environment)
+        ).toBeTruthy();
+    } finally {
+        service.dispose();
+    }
 }

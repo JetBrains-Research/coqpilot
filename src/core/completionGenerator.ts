@@ -70,8 +70,8 @@ export async function generateCompletion(
 ): Promise<GenerationResult> {
     const context = buildProofGenerationContext(
         completionContext,
-        sourceFileEnvironment,
-        processEnvironment
+        sourceFileEnvironment.fileTheorems,
+        processEnvironment.theoremRanker
     );
     eventLogger?.log(
         "proof-gen-context-create",
@@ -264,7 +264,7 @@ function getFirstValidProof(
     return undefined;
 }
 
-function prepareProofToCheck(proof: string) {
+export function prepareProofToCheck(proof: string) {
     // 1. Remove backtiks -- coq-lsp dies from backticks randomly
     let preparedProof = proof.replace(/`/g, "");
 
@@ -290,23 +290,21 @@ function goalToTargetLemma(proofGoal: Goal<PpString>): string {
     return `Lemma helper_theorem ${theoremIndeces} :\n   ${auxTheoremConcl}.`;
 }
 
-function buildProofGenerationContext(
+export function buildProofGenerationContext(
     completionContext: CompletionContext,
-    sourceFileEnvironment: SourceFileEnvironment,
-    processEnvironment: ProcessEnvironment
+    fileTheorems: Theorem[],
+    theoremRanker?: ContextTheoremsRanker
 ): ProofGenerationContext {
     const rankedTheorems =
-        processEnvironment.theoremRanker?.rankContextTheorems(
-            sourceFileEnvironment.fileTheorems,
-            completionContext
-        ) ?? sourceFileEnvironment.fileTheorems;
+        theoremRanker?.rankContextTheorems(fileTheorems, completionContext) ??
+        fileTheorems;
     return {
         contextTheorems: rankedTheorems,
         completionTarget: goalToTargetLemma(completionContext.proofGoal),
     };
 }
 
-function getTextBeforePosition(
+export function getTextBeforePosition(
     textLines: string[],
     position: Position
 ): string[] {
