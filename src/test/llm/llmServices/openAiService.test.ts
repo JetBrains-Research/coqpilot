@@ -3,23 +3,18 @@ import * as tmp from "tmp";
 import { OpenAiService } from "../../../llm/llmServices/openai/openAiService";
 import { OpenAiUserModelParams } from "../../../llm/userModelParams";
 
-import { color, testIf } from "../../commonTestFunctions";
+import { testIf } from "../../commonTestFunctions";
 import { testLLMServiceCompletesAdmitFromFile } from "../testUtils/commonTestFunctions";
 
-const suiteName = "[LLMService] Test `OpenAiService`";
-
-suite(suiteName, () => {
+suite("[LLMService] Test `OpenAiService`", function () {
     const apiKey = process.env.OPENAI_API_KEY;
-    if (apiKey === undefined) {
-        console.warn(
-            `${color("WARNING", "yellow")}: suite "${suiteName}" will be skipped, because \`OPENAI_API_KEY\` is not specified`
-        );
-    }
     const choices = 15;
     const inputFile = ["small_document.v"];
 
     testIf(
         apiKey !== undefined,
+        "`OPENAI_API_KEY` is not specified",
+        this.title,
         `Simple generation: 1 request, ${choices} choices`,
         async () => {
             const userParams: OpenAiUserModelParams = {
