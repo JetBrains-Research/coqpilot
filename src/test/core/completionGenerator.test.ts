@@ -1,5 +1,4 @@
 import { expect } from "earl";
-import * as path from "path";
 
 import { disposeServices } from "../../llm/llmServices";
 
@@ -11,15 +10,11 @@ import {
 } from "../../core/completionGenerator";
 import { ProcessEnvironment } from "../../core/completionGenerator";
 import { SuccessGenerationResult } from "../../core/completionGenerator";
-import { CoqProofChecker } from "../../core/coqProofChecker";
-import { inspectSourceFile } from "../../core/inspectSourceFile";
 
-import { Uri } from "../../utils/uri";
 import {
-    createCoqLspClient,
     createDefaultServices,
     createSinglePredefinedProofsModelsParams,
-    getResourceFolder,
+    prepareEnvironment,
 } from "../commonTestFunctions";
 
 suite("Completion generation tests", () => {
@@ -28,37 +23,28 @@ suite("Completion generation tests", () => {
         predefinedProofs: string[],
         projectRootPath?: string[]
     ): Promise<GenerationResult[]> {
-        const filePath = path.join(getResourceFolder(), ...resourcePath);
-        const rootDir = path.join(
-            getResourceFolder(),
-            ...(projectRootPath ?? [])
+        const environment = await prepareEnvironment(
+            resourcePath,
+            projectRootPath
         );
-
-        const fileUri = Uri.fromPath(filePath);
-        const client = createCoqLspClient(rootDir);
-        const coqProofChecker = new CoqProofChecker(client);
-        await client.openTextDocument(fileUri);
-        const [completionContexts, sourceFileEnvironment] =
-            await inspectSourceFile(1, (_hole) => true, fileUri, client);
-        await client.closeTextDocument(fileUri);
-
         const processEnvironment: ProcessEnvironment = {
-            coqProofChecker: coqProofChecker,
+            coqProofChecker: environment.coqProofChecker,
             modelsParams:
                 createSinglePredefinedProofsModelsParams(predefinedProofs),
             services: createDefaultServices(),
         };
         try {
             return Promise.all(
-                completionContexts.map(async (completionContext) => {
-                    const result = await generateCompletion(
-                        completionContext,
-                        sourceFileEnvironment,
-                        processEnvironment
-                    );
-
-                    return result;
-                })
+                environment.completionContexts.map(
+                    async (completionContext) => {
+                        const result = await generateCompletion(
+                            completionContext,
+                            environment.sourceFileEnvironment,
+                            processEnvironment
+                        );
+                        return result;
+                    }
+                )
             );
         } finally {
             disposeServices(processEnvironment.services);

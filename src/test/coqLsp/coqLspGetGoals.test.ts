@@ -1,10 +1,12 @@
 import { expect } from "earl";
-import * as path from "path";
 
 import { Goal, PpString } from "../../coqLsp/coqLspTypes";
 
 import { Uri } from "../../utils/uri";
-import { createCoqLspClient, getResourceFolder } from "../commonTestFunctions";
+import {
+    createCoqLspClient,
+    resolveResourcesDir,
+} from "../commonTestFunctions";
 
 suite("Retrieve goals from Coq file", () => {
     async function getGoalsAtPoints(
@@ -12,15 +14,13 @@ suite("Retrieve goals from Coq file", () => {
         resourcePath: string[],
         projectRootPath?: string[]
     ): Promise<(Goal<PpString> | Error)[]> {
-        const filePath = path.join(getResourceFolder(), ...resourcePath);
-        const rootDir = path.join(
-            getResourceFolder(),
-            ...(projectRootPath ?? [])
+        const [filePath, rootDir] = resolveResourcesDir(
+            resourcePath,
+            projectRootPath
         );
-
         const fileUri = Uri.fromPath(filePath);
-        const client = createCoqLspClient(rootDir);
 
+        const client = createCoqLspClient(rootDir);
         await client.openTextDocument(fileUri);
         const goals = await Promise.all(
             points.map(async (point) => {

@@ -16,7 +16,7 @@ suite(suiteName, () => {
         );
     }
     const choices = 15;
-    const inputFileName = "small_document.v";
+    const inputFile = ["small_document.v"];
 
     testIf(
         apiKey !== undefined,
@@ -33,7 +33,7 @@ suite(suiteName, () => {
             await testLLMServiceCompletesAdmitFromFile(
                 openAiService,
                 userParams,
-                inputFileName,
+                inputFile,
                 choices
             );
         }

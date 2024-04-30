@@ -38,12 +38,12 @@ export function createMockLLMService(): MockLLMService {
 export async function testLLMServiceCompletesAdmitFromFile(
     service: LLMService,
     userParams: UserModelParams,
-    inputFileName: string,
+    resourcePath: string[],
     choices: number
 ) {
     const params = service.resolveParameters(userParams);
     const [environment, [[completionContext, proofGenerationContext]]] =
-        await prepareEnvironmentWithContexts(inputFileName);
+        await prepareEnvironmentWithContexts(resourcePath);
     try {
         const generatedProofs = await service.generateProof(
             proofGenerationContext,

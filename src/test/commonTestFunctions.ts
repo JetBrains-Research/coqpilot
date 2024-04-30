@@ -38,9 +38,47 @@ export function testIf(
     return condition ? test(testName, func) : undefined;
 }
 
-export function getResourceFolder() {
+export function getResourcesDir() {
     const dirname = path.dirname(path.dirname(__dirname));
     return path.join(dirname, "src", "test", "resources");
+}
+
+export function resolveResourcesDir(
+    resourcePath: string[],
+    projectRootPath?: string[]
+): [string, string] {
+    const filePath = path.join(getResourcesDir(), ...resourcePath);
+    const rootDir = path.join(getResourcesDir(), ...(projectRootPath ?? []));
+    return [filePath, rootDir];
+}
+
+export function createCoqLspClient(workspaceRootPath?: string): CoqLspClient {
+    const coqLspServerConfig = CoqLspConfig.createServerConfig();
+    const coqLspClientConfig = CoqLspConfig.createClientConfig(
+        process.env.COQ_LSP_PATH || "coq-lsp",
+        workspaceRootPath
+    );
+
+    return new CoqLspClient(coqLspServerConfig, coqLspClientConfig);
+}
+
+export async function parseTheoremsFromCoqFile(
+    resourcePath: string[],
+    projectRootPath?: string[]
+): Promise<Theorem[]> {
+    const [filePath, rootDir] = resolveResourcesDir(
+        resourcePath,
+        projectRootPath
+    );
+
+    const fileUri = Uri.fromPath(filePath);
+    const client = createCoqLspClient(rootDir);
+
+    await client.openTextDocument(fileUri);
+    const document = await parseCoqFile(fileUri, client);
+    await client.closeTextDocument(fileUri);
+
+    return document;
 }
 
 export interface PreparedEnvironment {
@@ -52,11 +90,13 @@ export interface PreparedEnvironment {
 
 // Note: both paths should be relative to `src/test/resources/` folder.
 export async function prepareEnvironment(
-    resourcePath: string,
-    projectRootPath?: string
+    resourcePath: string[],
+    projectRootPath?: string[]
 ): Promise<PreparedEnvironment> {
-    const filePath = path.join(getResourceFolder(), resourcePath);
-    const rootDir = path.join(getResourceFolder(), projectRootPath ?? "");
+    const [filePath, rootDir] = resolveResourcesDir(
+        resourcePath,
+        projectRootPath
+    );
     const fileUri = Uri.fromPath(filePath);
 
     const client = createCoqLspClient(rootDir);
@@ -80,8 +120,8 @@ export async function prepareEnvironment(
 }
 
 export async function prepareEnvironmentWithContexts(
-    resourcePath: string,
-    projectRootPath?: string
+    resourcePath: string[],
+    projectRootPath?: string[]
 ): Promise<
     [PreparedEnvironment, [CompletionContext, ProofGenerationContext][]]
 > {
@@ -132,16 +172,6 @@ export async function checkTheoremProven(
         (checkResult) => checkResult.isValid
     ).length;
     return validProofs >= 1;
-}
-
-export function createCoqLspClient(workspaceRootPath?: string): CoqLspClient {
-    const coqLspServerConfig = CoqLspConfig.createServerConfig();
-    const coqLspClientConfig = CoqLspConfig.createClientConfig(
-        process.env.COQ_LSP_PATH || "coq-lsp",
-        workspaceRootPath
-    );
-
-    return new CoqLspClient(coqLspServerConfig, coqLspClientConfig);
 }
 
 export function createDefaultServices(): LLMServices {
@@ -198,23 +228,6 @@ export function createPredefinedProofsModel(
         modelName: modelName,
         tactics: predefinedProofs,
     };
-}
-
-export async function parseTheoremsFromCoqFile(
-    resourcePath: string[],
-    projectRootPath?: string[]
-): Promise<Theorem[]> {
-    const filePath = path.join(getResourceFolder(), ...resourcePath);
-    const rootDir = path.join(getResourceFolder(), ...(projectRootPath ?? []));
-
-    const fileUri = Uri.fromPath(filePath);
-    const client = createCoqLspClient(rootDir);
-
-    await client.openTextDocument(fileUri);
-    const document = await parseCoqFile(fileUri, client);
-    await client.closeTextDocument(fileUri);
-
-    return document;
 }
 
 export type Color = "red" | "green" | "yellow" | "blue" | "magenta" | "reset";
