@@ -359,7 +359,10 @@
     "pretest": "npm run compile && npm run lint",
     "test": "node ./out/test/runTest.js",
     "test-ci": "npm test -- -g=\"--non-ci\" -i=true",
-    "clean": "rm -rf out"
+    "clean": "rm -rf out",
+    "rebuild-test-resources": "cd ./src/test/resources/coqProj && make clean && make",
+    "preclean-test": "npm run clean && npm run rebuild-test-resources && npm run compile && npm run lint",
+    "clean-test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
