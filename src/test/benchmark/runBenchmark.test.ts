@@ -32,43 +32,27 @@ class DatasetItem {
     }
 }
 
-// const simpleAutoBenchmark: Benchmark = {
-//     name: "Complete simple examples with `auto`",
-//     items: [new DatasetItem("auto_benchmark.v")],
-//     modelsParams: onlyAutoModelsParams,
-//     requireAllAdmitsCompleted: true,
-//     benchmarkFullTheorems: true,
-//     benchmarkAdmits: true,
-//     timeoutMinutes: 1,
-// };
+const simpleAutoBenchmark: Benchmark = {
+    name: "Complete simple examples with `auto`",
+    items: [new DatasetItem("auto_benchmark.v")],
+    modelsParams: onlyAutoModelsParams,
+    requireAllAdmitsCompleted: true,
+    benchmarkFullTheorems: true,
+    benchmarkAdmits: true,
+    timeoutMinutes: 1,
+};
 
-// const mixedAutoBenchmark: Benchmark = {
-//     name: "Complete mixed examples (both simple & hard) with `auto`",
-//     items: [new DatasetItem("mixed_benchmark.v")],
-//     modelsParams: onlyAutoModelsParams,
-//     requireAllAdmitsCompleted: false,
-//     benchmarkFullTheorems: true,
-//     benchmarkAdmits: true,
-//     timeoutMinutes: 1,
-// };
-
-const immBenchmark: Benchmark = {
-    name: "Complete imm with auto",
-    items: [
-        new DatasetItem(
-            "imm/src/basic/Execution_eco.v",
-            ["rf_rmw_ct_in_co"],
-            "imm"
-        ),
-    ],
+const mixedAutoBenchmark: Benchmark = {
+    name: "Complete mixed examples (both simple & hard) with `auto`",
+    items: [new DatasetItem("mixed_benchmark.v")],
     modelsParams: onlyAutoModelsParams,
     requireAllAdmitsCompleted: false,
     benchmarkFullTheorems: true,
-    benchmarkAdmits: false,
-    timeoutMinutes: 60,
+    benchmarkAdmits: true,
+    timeoutMinutes: 1,
 };
 
-const benchmarks: Benchmark[] = [immBenchmark];
+const benchmarks: Benchmark[] = [simpleAutoBenchmark, mixedAutoBenchmark];
 
 suite("Benchmark", () => {
     const datasetDir = getDatasetDir();
