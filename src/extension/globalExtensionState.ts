@@ -1,4 +1,6 @@
 import * as fs from "fs";
+import * as path from "path";
+import * as tmp from "tmp";
 import { WorkspaceConfiguration, workspace } from "vscode";
 
 import { LLMServices, disposeServices } from "../llm/llmServices";
@@ -19,24 +21,26 @@ export class GlobalExtensionState {
         this.parseLoggingVerbosity(workspace.getConfiguration(pluginId))
     );
 
-    // TODO: find a proper directory to store logs
-    // private readonly llmServicesLogsDirName = "llm-services-logs/";
-    public readonly llmServicesLogsDir = "TODO";
+    public readonly llmServicesLogsDir = path.join(
+        tmp.dirSync.name,
+        "llm-services-logs"
+    );
 
     public readonly llmServices: LLMServices = {
         openAiService: new OpenAiService(
-            `${this.llmServicesLogsDir}openai-logs.txt`,
+            path.join(this.llmServicesLogsDir, "openai-logs.txt"),
             this.eventLogger
         ),
         grazieService: new GrazieService(
-            `${this.llmServicesLogsDir}grazie-logs.txt`,
+            path.join(this.llmServicesLogsDir, "grazie-logs.txt"),
             this.eventLogger
         ),
         predefinedProofsService: new PredefinedProofsService(
-            `${this.llmServicesLogsDir}predefined-proofs-logs.txt`
+            path.join(this.llmServicesLogsDir, "predefined-proofs-logs.txt"),
+            this.eventLogger
         ),
         lmStudioService: new LMStudioService(
-            `${this.llmServicesLogsDir}lmstudio-logs.txt`,
+            path.join(this.llmServicesLogsDir, "lmstudio-logs.txt"),
             this.eventLogger
         ),
     };
