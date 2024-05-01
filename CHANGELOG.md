@@ -3,7 +3,7 @@
 ### 2.1.0
 Major: 
 - Create a (still in development and improvement) benchmarking system. A guide on how to use it is in the README.
-- Conduct an experiment on the performance of different LLMs, using the developed infrastructure. Benchmarking report is located in the [docs folder](etc/docs/benchmarking_report.md).
+- Conduct an experiment on the performance of different LLMs, using the developed infrastructure. Benchmarking report is located in the [docs folder](etc/docs/benchmarking_report01.md).
 - Correctly handle and display settings which occur when the user settings are not correctly set.
 
 Minor: 
