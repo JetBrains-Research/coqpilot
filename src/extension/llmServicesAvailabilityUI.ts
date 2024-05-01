@@ -111,27 +111,6 @@ function reactToGenerationFailedEvent(
     };
 }
 
-function formatTimeToUIString(time: Time): string {
-    const days = `${time.days} days`;
-    const hours = `${time.hours} hours`;
-    const minutes = `${time.minutes} minutes`;
-    const seconds = `${time.seconds} seconds`;
-
-    if (time.days === 0) {
-        if (time.hours === 0) {
-            if (time.minutes === 0) {
-                return `${seconds}`;
-            } else {
-                return `${minutes}, ${seconds}`;
-            }
-        } else {
-            return `${hours}, ${minutes}`;
-        }
-    } else {
-        return `${days}, ${hours}`;
-    }
-}
-
 function reactToGenerationSucceededEvent(
     llmServiceToUIState: LLMServiceToUIState
 ): (data: any) => void {
@@ -173,4 +152,30 @@ function parseLLMServiceLogicEventData(
         throw Error(`no UI state for \`${serviceName}\``);
     }
     return [llmService, uiState];
+}
+
+function formatTimeToUIString(time: Time): string {
+    const days = formatTimeItem(time.days, "day");
+    const hours = formatTimeItem(time.hours, "hour");
+    const minutes = formatTimeItem(time.minutes, "minute");
+    const seconds = formatTimeItem(time.seconds, "second");
+
+    if (time.days === 0) {
+        if (time.hours === 0) {
+            if (time.minutes === 0) {
+                return `${seconds}`;
+            } else {
+                return `${minutes}, ${seconds}`;
+            }
+        } else {
+            return `${hours}, ${minutes}`;
+        }
+    } else {
+        return `${days}, ${hours}`;
+    }
+}
+
+function formatTimeItem(value: number, name: string): string {
+    const suffix = value === 1 ? "" : "s";
+    return `${value} ${name}${suffix}`;
 }
