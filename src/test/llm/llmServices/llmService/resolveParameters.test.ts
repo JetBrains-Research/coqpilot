@@ -9,12 +9,12 @@ import {
 } from "../../../../llm/llmServices/utils/defaultParametersResolver";
 import { UserModelParams } from "../../../../llm/userModelParams";
 
-import { gptTurboModel } from "../../testUtils/commonTestFunctions";
+import { gptTurboModel } from "../../llmSpecificTestUtils/constants";
 import {
     MockLLMModelParams,
     MockLLMService,
     MockLLMUserModelParams,
-} from "../../testUtils/mockLLMService";
+} from "../../llmSpecificTestUtils/mockLLMService";
 
 suite("[LLMService] Test UserModelParams to ModelParams resolution", () => {
     test("Test resolve with defaults: basic", () => {

@@ -21,11 +21,9 @@ import {
 import { ProofGenerationContext } from "../../../../llm/proofGenerationContext";
 
 import { Theorem } from "../../../../coqParser/parsedTypes";
-import { parseTheoremsFromCoqFile } from "../../../commonTestFunctions";
-import {
-    calculateTokensViaTikToken,
-    gptTurboModel,
-} from "../../testUtils/commonTestFunctions";
+import { parseTheoremsFromCoqFile } from "../../../commonTestFunctions/coqFileParser";
+import { calculateTokensViaTikToken } from "../../llmSpecificTestUtils/calculateTokens";
+import { gptTurboModel } from "../../llmSpecificTestUtils/constants";
 
 /*
  * Note: if in the future some of the tests will act against experiments with chats,

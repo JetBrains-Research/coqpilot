@@ -3,8 +3,8 @@ import * as tmp from "tmp";
 import { LMStudioService } from "../../../llm/llmServices/lmStudio/lmStudioService";
 import { LMStudioUserModelParams } from "../../../llm/userModelParams";
 
-import { testIf } from "../../commonTestFunctions";
-import { testLLMServiceCompletesAdmitFromFile } from "../testUtils/commonTestFunctions";
+import { testIf } from "../../commonTestFunctions/conditionalTest";
+import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testAdmitCompletion";
 
 suite("[LLMService] Test `LMStudioService`", function () {
     const lmStudioPort = process.env.LMSTUDIO_PORT;

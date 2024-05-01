@@ -12,9 +12,9 @@ import { EventLogger } from "../../../logging/eventLogger";
 import {
     EventsTracker,
     subscribeToTrackEvents,
-    testLLMServiceCompletesAdmitFromFile,
-} from "../testUtils/commonTestFunctions";
-import { expectLogs } from "../testUtils/testGenerateProofPipeline";
+} from "../llmSpecificTestUtils/eventsTracker";
+import { expectLogs } from "../llmSpecificTestUtils/expectLogs";
+import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testAdmitCompletion";
 
 suite("[LLMService] Test `PredefinedProofsService`", function () {
     const simpleTactics = ["auto.", "intros.", "reflexivity."];

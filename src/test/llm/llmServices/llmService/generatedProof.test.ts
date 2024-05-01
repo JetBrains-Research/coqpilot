@@ -4,19 +4,21 @@ import { AnalyzedChatHistory } from "../../../../llm/llmServices/chat";
 import { ErrorsHandlingMode } from "../../../../llm/llmServices/llmService";
 
 import {
-    MockLLMGeneratedProof,
-    MockLLMModelParams,
-    MockLLMService,
-} from "../../testUtils/mockLLMService";
-import {
-    enhanceMockParams,
-    expectGeneratedProof,
     mockChat,
     mockProofGenerationContext,
     proofsToGenerate,
+} from "../../llmSpecificTestUtils/constants";
+import {
+    expectGeneratedProof,
     toProofVersion,
-    withMockLLMService,
-} from "../../testUtils/testGenerateProofPipeline";
+} from "../../llmSpecificTestUtils/expectGeneratedProof";
+import {
+    MockLLMGeneratedProof,
+    MockLLMModelParams,
+    MockLLMService,
+} from "../../llmSpecificTestUtils/mockLLMService";
+import { enhanceMockParams } from "../../llmSpecificTestUtils/transformParams";
+import { withMockLLMService } from "../../llmSpecificTestUtils/withMockLLMService";
 
 /*
  * Note: fitting context (theorems, diagnostics) into chats is tested in

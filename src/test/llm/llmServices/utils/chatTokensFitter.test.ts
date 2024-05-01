@@ -5,12 +5,12 @@ import { ChatTokensFitter } from "../../../../llm/llmServices/utils/chatTokensFi
 import { chatItemToContent } from "../../../../llm/llmServices/utils/chatUtils";
 
 import { Theorem } from "../../../../coqParser/parsedTypes";
-import { parseTheoremsFromCoqFile } from "../../../commonTestFunctions";
+import { parseTheoremsFromCoqFile } from "../../../commonTestFunctions/coqFileParser";
 import {
     approxCalculateTokens,
     calculateTokensViaTikToken,
-    gptTurboModel,
-} from "../../testUtils/commonTestFunctions";
+} from "../../llmSpecificTestUtils/calculateTokens";
+import { gptTurboModel } from "../../llmSpecificTestUtils/constants";
 
 suite("[LLMService-s utils] ChatTokensFitter test", () => {
     async function readTwoTheorems(): Promise<Theorem[]> {

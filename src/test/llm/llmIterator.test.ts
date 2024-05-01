@@ -9,7 +9,7 @@ import {
     createDefaultServices,
     createPredefinedProofsModel,
     createTrivialModelsParams,
-} from "../commonTestFunctions";
+} from "../commonTestFunctions/defaultLLMServicesBuilder";
 
 suite("LLM Iterator test", () => {
     const predefinedModel1 = createPredefinedProofsModel("first model");

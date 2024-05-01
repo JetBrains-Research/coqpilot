@@ -1,0 +1,67 @@
+import * as tmp from "tmp";
+
+import { LLMServices } from "../../llm/llmServices";
+import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
+import { LMStudioService } from "../../llm/llmServices/lmStudio/lmStudioService";
+import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
+import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
+import {
+    PredefinedProofsUserModelParams,
+    UserModelsParams,
+} from "../../llm/userModelParams";
+
+export function createDefaultServices(): LLMServices {
+    const openAiService = new OpenAiService(tmp.fileSync().name);
+    const grazieService = new GrazieService(tmp.fileSync().name);
+    const predefinedProofsService = new PredefinedProofsService(
+        tmp.fileSync().name
+    );
+    const lmStudioService = new LMStudioService(tmp.fileSync().name);
+    return {
+        openAiService,
+        grazieService,
+        predefinedProofsService,
+        lmStudioService,
+    };
+}
+
+export function createTrivialModelsParams(
+    predefinedProofsModelParams: PredefinedProofsUserModelParams[] = []
+): UserModelsParams {
+    return {
+        openAiParams: [],
+        grazieParams: [],
+        predefinedProofsModelParams: predefinedProofsModelParams,
+        lmStudioParams: [],
+    };
+}
+
+export function createPredefinedProofsModel(
+    modelName: string = "predefined-proofs",
+    predefinedProofs: string[] = [
+        "intros.",
+        "reflexivity.",
+        "auto.",
+        "assumption. intros.",
+        "left. reflexivity.",
+    ]
+): PredefinedProofsUserModelParams {
+    return {
+        modelName: modelName,
+        tactics: predefinedProofs,
+    };
+}
+
+export function createPredefinedProofsModelsParams(
+    predefinedProofs: string[] = [
+        "intros.",
+        "reflexivity.",
+        "auto.",
+        "assumption. intros.",
+        "left. reflexivity.",
+    ]
+): UserModelsParams {
+    return createTrivialModelsParams([
+        createPredefinedProofsModel("predefined-proofs", predefinedProofs),
+    ]);
+}

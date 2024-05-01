@@ -4,21 +4,27 @@ import { GeneratedProof } from "../../../../llm/llmServices/llmService";
 
 import { EventLogger } from "../../../../logging/eventLogger";
 import {
-    MockLLMModelParams,
-    MockLLMService,
-} from "../../testUtils/mockLLMService";
-import {
-    ExpectedRecord,
-    MockEventsTracker,
-    enhanceMockParams,
-    expectGeneratedProof,
-    expectLogs,
     mockProofGenerationContext,
     proofsToGenerate,
+} from "../../llmSpecificTestUtils/constants";
+import {
+    MockEventsTracker,
     subscribeToTrackMockEvents,
+} from "../../llmSpecificTestUtils/eventsTracker";
+import {
+    expectGeneratedProof,
     toProofVersion,
-    withMockLLMService,
-} from "../../testUtils/testGenerateProofPipeline";
+} from "../../llmSpecificTestUtils/expectGeneratedProof";
+import {
+    ExpectedRecord,
+    expectLogs,
+} from "../../llmSpecificTestUtils/expectLogs";
+import {
+    MockLLMModelParams,
+    MockLLMService,
+} from "../../llmSpecificTestUtils/mockLLMService";
+import { enhanceMockParams } from "../../llmSpecificTestUtils/transformParams";
+import { withMockLLMService } from "../../llmSpecificTestUtils/withMockLLMService";
 
 /*
  * Note:

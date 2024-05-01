@@ -1,6 +1,6 @@
 import { expect } from "earl";
 
-import { parseTheoremsFromCoqFile } from "../commonTestFunctions";
+import { parseTheoremsFromCoqFile } from "../commonTestFunctions/coqFileParser";
 
 suite("Coq file parser tests", () => {
     test("Parse simple small document", async () => {

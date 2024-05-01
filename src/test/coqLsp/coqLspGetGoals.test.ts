@@ -3,10 +3,8 @@ import { expect } from "earl";
 import { Goal, PpString } from "../../coqLsp/coqLspTypes";
 
 import { Uri } from "../../utils/uri";
-import {
-    createCoqLspClient,
-    resolveResourcesDir,
-} from "../commonTestFunctions";
+import { createCoqLspClient } from "../commonTestFunctions/coqLspBuilder";
+import { resolveResourcesDir } from "../commonTestFunctions/pathsResolver";
 
 suite("Retrieve goals from Coq file", () => {
     async function getGoalsAtPoints(

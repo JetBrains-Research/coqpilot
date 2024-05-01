@@ -4,17 +4,19 @@ import { GenerationFromChatFailedError } from "../../../../llm/llmServiceErrors"
 import { ErrorsHandlingMode } from "../../../../llm/llmServices/llmService";
 
 import {
-    MockLLMModelParams,
-    MockLLMService,
-} from "../../testUtils/mockLLMService";
+    mockChat,
+    proofsToGenerate,
+} from "../../llmSpecificTestUtils/constants";
+import { subscribeToTrackMockEvents } from "../../llmSpecificTestUtils/eventsTracker";
 import {
     ExpectedRecord,
     expectLogs,
-    mockChat,
-    proofsToGenerate,
-    subscribeToTrackMockEvents,
-    withMockLLMService,
-} from "../../testUtils/testGenerateProofPipeline";
+} from "../../llmSpecificTestUtils/expectLogs";
+import {
+    MockLLMModelParams,
+    MockLLMService,
+} from "../../llmSpecificTestUtils/mockLLMService";
+import { withMockLLMService } from "../../llmSpecificTestUtils/withMockLLMService";
 
 suite("[LLMService] Test `generateFromChat`", () => {
     [

@@ -4,8 +4,8 @@ import * as tmp from "tmp";
 import { GrazieService } from "../../../llm/llmServices/grazie/grazieService";
 import { GrazieUserModelParams } from "../../../llm/userModelParams";
 
-import { testIf } from "../../commonTestFunctions";
-import { testLLMServiceCompletesAdmitFromFile } from "../testUtils/commonTestFunctions";
+import { testIf } from "../../commonTestFunctions/conditionalTest";
+import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testAdmitCompletion";
 
 suite("[LLMService] Test `GrazieService`", function () {
     const apiKey = process.env.GRAZIE_API_KEY;

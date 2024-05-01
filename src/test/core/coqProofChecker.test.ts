@@ -5,10 +5,8 @@ import * as path from "path";
 import { CoqProofChecker } from "../../core/coqProofChecker";
 import { ProofCheckResult } from "../../core/coqProofChecker";
 
-import {
-    createCoqLspClient,
-    resolveResourcesDir,
-} from "../commonTestFunctions";
+import { createCoqLspClient } from "../commonTestFunctions/coqLspBuilder";
+import { resolveResourcesDir } from "../commonTestFunctions/pathsResolver";
 
 suite("Coq Proof Checker tests", () => {
     async function checkProofsForAdmitsFromFile(

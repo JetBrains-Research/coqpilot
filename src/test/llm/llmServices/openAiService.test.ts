@@ -3,8 +3,8 @@ import * as tmp from "tmp";
 import { OpenAiService } from "../../../llm/llmServices/openai/openAiService";
 import { OpenAiUserModelParams } from "../../../llm/userModelParams";
 
-import { testIf } from "../../commonTestFunctions";
-import { testLLMServiceCompletesAdmitFromFile } from "../testUtils/commonTestFunctions";
+import { testIf } from "../../commonTestFunctions/conditionalTest";
+import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testAdmitCompletion";
 
 suite("[LLMService] Test `OpenAiService`", function () {
     const apiKey = process.env.OPENAI_API_KEY;

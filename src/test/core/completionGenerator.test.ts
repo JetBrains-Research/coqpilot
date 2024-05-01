@@ -13,9 +13,9 @@ import { SuccessGenerationResult } from "../../core/completionGenerator";
 
 import {
     createDefaultServices,
-    createSinglePredefinedProofsModelsParams,
-    prepareEnvironment,
-} from "../commonTestFunctions";
+    createPredefinedProofsModelsParams,
+} from "../commonTestFunctions/defaultLLMServicesBuilder";
+import { prepareEnvironment } from "../commonTestFunctions/prepareEnvironment";
 
 suite("Completion generation tests", () => {
     async function generateCompletionForAdmitsFromFile(
@@ -29,8 +29,7 @@ suite("Completion generation tests", () => {
         );
         const processEnvironment: ProcessEnvironment = {
             coqProofChecker: environment.coqProofChecker,
-            modelsParams:
-                createSinglePredefinedProofsModelsParams(predefinedProofs),
+            modelsParams: createPredefinedProofsModelsParams(predefinedProofs),
             services: createDefaultServices(),
         };
         try {
