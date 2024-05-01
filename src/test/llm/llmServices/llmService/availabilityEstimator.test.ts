@@ -15,12 +15,13 @@ import {
 } from "../../../../llm/llmServices/utils/time";
 
 suite("[LLMService] Test default availability estimator", () => {
-    function buildBasicRecord(
+    function buildNextRecord(
         timestampMillis: number,
-        responseStatus: ResponseStatus
+        timeDelta: Time,
+        responseStatus: ResponseStatus = "FAILED"
     ): LoggerRecord {
         return new LoggerRecord(
-            timestampMillis,
+            timestampMillis + timeToMillis(timeDelta),
             "test model",
             responseStatus,
             5,
@@ -31,16 +32,6 @@ suite("[LLMService] Test default availability estimator", () => {
                       message: "connection error",
                   }
                 : undefined
-        );
-    }
-
-    function buildNextFailureRecord(
-        timeDelta: Time,
-        prevRecord: LoggerRecord
-    ): LoggerRecord {
-        return buildBasicRecord(
-            prevRecord.timestampMillis + timeToMillis(timeDelta),
-            "FAILED"
         );
     }
 
@@ -56,24 +47,20 @@ suite("[LLMService] Test default availability estimator", () => {
         expect(actualEstimation).toEqual(expectedEstimation);
     }
 
-    const startMillis = nowTimestampMillis();
-    const startSuccess = buildBasicRecord(startMillis, "SUCCESS");
+    const lastSuccessMillis = nowTimestampMillis();
 
     test("No failures", () => {
-        testAvailabilityEstimation([startSuccess], timeZero);
+        testAvailabilityEstimation([], timeZero);
     });
 
     [time(100, "millisecond"), time(1, "second"), time(1, "day")].forEach(
         (failureTimeDelta) => {
             test(`Single failure in <${timeToString(failureTimeDelta)}>`, () => {
-                const failure = buildNextFailureRecord(
-                    failureTimeDelta,
-                    startSuccess
+                const failure = buildNextRecord(
+                    lastSuccessMillis,
+                    failureTimeDelta
                 );
-                testAvailabilityEstimation(
-                    [startSuccess, failure],
-                    time(1, "second")
-                );
+                testAvailabilityEstimation([failure], time(1, "second"));
             });
         }
     );
@@ -91,16 +78,16 @@ suite("[LLMService] Test default availability estimator", () => {
         [time(2, "day"), timeZero, time(1, "day")], // check out-of-heuristic-estimations interval
     ].forEach(([interval, timeFromLastAttempt, expectedEstimate]) => {
         test(`Two failures with <${timeToString(interval)}> interval, <${timeToString(timeFromLastAttempt)}> from last attempt`, () => {
-            const firstFailure = buildNextFailureRecord(
-                time(1, "second"),
-                startSuccess
+            const firstFailure = buildNextRecord(
+                lastSuccessMillis,
+                time(1, "second")
             );
-            const secondFailure = buildNextFailureRecord(
-                interval,
-                firstFailure
+            const secondFailure = buildNextRecord(
+                firstFailure.timestampMillis,
+                interval
             );
             testAvailabilityEstimation(
-                [startSuccess, firstFailure, secondFailure],
+                [firstFailure, secondFailure],
                 expectedEstimate,
                 secondFailure.timestampMillis +
                     timeToMillis(timeFromLastAttempt)
@@ -108,32 +95,31 @@ suite("[LLMService] Test default availability estimator", () => {
         });
     });
 
-    function buildFailureRecordsSequence(
-        timeDeltas: Time[],
-        startRecord: LoggerRecord
-    ): LoggerRecord[] {
-        const records = [startRecord];
+    function buildFailureRecordsSequence(timeDeltas: Time[]): LoggerRecord[] {
+        const records: LoggerRecord[] = [
+            buildNextRecord(lastSuccessMillis, time(1, "second")),
+        ];
         for (const timeDelta of timeDeltas) {
             records.push(
-                buildNextFailureRecord(timeDelta, records[records.length - 1])
+                buildNextRecord(
+                    records[records.length - 1].timestampMillis,
+                    timeDelta
+                )
             );
         }
         return records;
     }
 
     test(`Many failures`, () => {
-        const records = buildFailureRecordsSequence(
-            [
-                time(1, "second"),
-                time(20, "second"),
-                time(3, "minute"),
-                time(1, "second"),
-                time(1, "second"),
-                time(4, "minute"), // max interval
-                time(1, "minute"),
-            ],
-            startSuccess
-        );
+        const records = buildFailureRecordsSequence([
+            time(1, "second"),
+            time(20, "second"),
+            time(3, "minute"),
+            time(1, "second"),
+            time(1, "second"),
+            time(4, "minute"), // max interval
+            time(1, "minute"),
+        ]);
         testAvailabilityEstimation(
             records,
             time(5, "minute"), // max interval between failures is 4 minutes
@@ -144,16 +130,7 @@ suite("[LLMService] Test default availability estimator", () => {
     test("Throw on invalid input logs", () => {
         expect(() =>
             estimateTimeToBecomeAvailableDefault([
-                buildBasicRecord(startMillis, "FAILED"),
-            ])
-        ).toThrow();
-        expect(() =>
-            estimateTimeToBecomeAvailableDefault([
-                startSuccess,
-                buildBasicRecord(
-                    startSuccess.timestampMillis + 1000,
-                    "SUCCESS"
-                ),
+                buildNextRecord(lastSuccessMillis, timeZero, "SUCCESS"),
             ])
         ).toThrow();
     });

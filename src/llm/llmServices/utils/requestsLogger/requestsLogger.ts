@@ -107,14 +107,15 @@ export class RequestsLogger {
         );
     }
 
+    // Note: EXCLUSIVE! I.e. last success record (if it exists) is not included in the result.
     readLogsSinceLastSuccess(): LoggerRecord[] {
         const records = this.readLogs();
         const invertedRow = [];
         for (let i = records.length - 1; i >= 0; i--) {
-            invertedRow.push(records[i]);
             if (records[i].responseStatus === "SUCCESS") {
                 break;
             }
+            invertedRow.push(records[i]);
         }
         return invertedRow.reverse();
     }

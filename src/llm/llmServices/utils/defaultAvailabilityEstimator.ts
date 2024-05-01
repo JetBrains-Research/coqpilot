@@ -38,7 +38,7 @@ export function estimateTimeToBecomeAvailableDefault(
     logsSinceLastSuccess: LoggerRecord[],
     nowMillis: number = nowTimestampMillis()
 ): Time {
-    const failures = validateInputLogs(logsSinceLastSuccess);
+    const failures = validateInputLogsAreFailures(logsSinceLastSuccess);
 
     if (failures.length === 0) {
         return timeZero;
@@ -78,24 +78,15 @@ export function estimateTimeToBecomeAvailableDefault(
     return timeZero;
 }
 
-function validateInputLogs(
+function validateInputLogsAreFailures(
     logsSinceLastSuccess: LoggerRecord[]
 ): LoggerRecord[] {
-    if (logsSinceLastSuccess.length === 0) {
-        throw Error("invalid input logs: empty logs");
-    }
-    const [lastSuccess, ...failures] = logsSinceLastSuccess;
-    if (lastSuccess.responseStatus !== "SUCCESS") {
-        throw Error(
-            `invalid input logs: the first record since last success is a failed one;\n\`${lastSuccess}\``
-        );
-    }
-    for (const failure of failures) {
-        if (failure.responseStatus !== "FAILED") {
+    for (const record of logsSinceLastSuccess) {
+        if (record.responseStatus !== "FAILED") {
             throw Error(
-                `invalid input logs: a non-first record is not a failed one;\n\`${failure}\``
+                `invalid input logs: a non-first record is not a failed one;\n\`${record}\``
             );
         }
     }
-    return failures;
+    return logsSinceLastSuccess;
 }

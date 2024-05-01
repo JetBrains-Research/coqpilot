@@ -66,7 +66,7 @@ suite("[LLMService-s utils] RequestsLogger test", () => {
             Error("tokens limit exceeded\nunfortunately, many times")
         );
     }
-    const logsSinceLastSuccessCnt = 3;
+    const logsSinceLastSuccessInclusiveCnt = 3;
     const logsWrittenInTotalCnt = 5;
 
     function readAndCheckLogs(
@@ -90,9 +90,12 @@ suite("[LLMService-s utils] RequestsLogger test", () => {
 
         test(`Test \`readLogsSinceLastSuccess\` ${testNamePostfix}`, async () => {
             requestsLogger.resetLogs();
+            const noRecords = requestsLogger.readLogsSinceLastSuccess();
+            expect(noRecords).toHaveLength(0);
+
             await writeLogs(requestsLogger);
             const records = requestsLogger.readLogsSinceLastSuccess();
-            expect(records).toHaveLength(logsSinceLastSuccessCnt);
+            expect(records).toHaveLength(logsSinceLastSuccessInclusiveCnt - 1);
         });
 
         test(`Pseudo-concurrent write-read ${testNamePostfix}`, async () => {
@@ -106,7 +109,7 @@ suite("[LLMService-s utils] RequestsLogger test", () => {
             readAndCheckLogs(
                 loggerDebugMode
                     ? logsWrittenInTotalCnt * logsWritersN
-                    : logsSinceLastSuccessCnt,
+                    : logsSinceLastSuccessInclusiveCnt,
                 requestsLogger
             );
         });
