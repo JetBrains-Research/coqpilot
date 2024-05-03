@@ -16,7 +16,7 @@ The list of the chosen theorems divided by groups you can find in the table prov
 
 ## Methods
 
-In our experiments we compared different methods which can be used by CoqPilot:  Predefined tactic (`auto`, `intuition`, `easy`), OpenAI GPT-4, OpenAI GPT-3.5, LLaMA-2 13B Chat, Anthropic Claude. We have used following parameters for each of the models:
+In our experiments we compared different methods which can be used by CoqPilot:  Predefined tactic (`firstorder auto with *.`), OpenAI GPT-4, OpenAI GPT-3.5, LLaMA-2 13B Chat, Anthropic Claude. We have used following parameters for each of the models:
 
 ### OpenAI GPT-4 
 
