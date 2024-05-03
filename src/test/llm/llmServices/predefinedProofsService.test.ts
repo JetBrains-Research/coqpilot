@@ -5,10 +5,12 @@ import { InvalidRequestError } from "../../../llm/llmServiceErrors";
 import { ErrorsHandlingMode } from "../../../llm/llmServices/llmService";
 import { PredefinedProofsModelParams } from "../../../llm/llmServices/modelParams";
 import { PredefinedProofsService } from "../../../llm/llmServices/predefinedProofs/predefinedProofsService";
+import { timeZero } from "../../../llm/llmServices/utils/time";
 import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { PredefinedProofsUserModelParams } from "../../../llm/userModelParams";
 
 import { EventLogger } from "../../../logging/eventLogger";
+import { delay } from "../../commonTestFunctions/delay";
 import {
     EventsTracker,
     subscribeToTrackEvents,
@@ -161,4 +163,32 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
             }
         );
     });
+
+    test("Test time to become available is zero", async () => {
+        await withPredefinedProofsService(
+            async (predefinedProofsService, _testEventLogger) => {
+                const resolvedParams =
+                    predefinedProofsService.resolveParameters(
+                        userParams
+                    ) as PredefinedProofsModelParams;
+                await predefinedProofsService.generateProof(
+                    proofGenerationContext,
+                    resolvedParams,
+                    resolvedParams.tactics.length + 1,
+                    ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
+                );
+                await delay(4000);
+                await predefinedProofsService.generateProof(
+                    proofGenerationContext,
+                    resolvedParams,
+                    resolvedParams.tactics.length + 1,
+                    ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
+                );
+                // despite 2 failures with >= 4 secs interval, should be available right now
+                expect(
+                    predefinedProofsService.estimateTimeToBecomeAvailable()
+                ).toEqual(timeZero);
+            }
+        );
+    }).timeout(6000);
 });

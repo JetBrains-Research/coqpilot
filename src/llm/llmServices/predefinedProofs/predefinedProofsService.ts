@@ -14,6 +14,7 @@ import {
 } from "../llmService";
 import { LLMService } from "../llmService";
 import { ModelParams, PredefinedProofsModelParams } from "../modelParams";
+import { Time, timeZero } from "../utils/time";
 
 export class PredefinedProofsService extends LLMService {
     constructor(
@@ -99,6 +100,10 @@ export class PredefinedProofsService extends LLMService {
                 return command + ".";
             }
         });
+    }
+
+    estimateTimeToBecomeAvailable(): Time {
+        return timeZero; // predefined proofs are always available
     }
 
     resolveParameters(params: UserModelParams): ModelParams {
