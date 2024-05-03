@@ -127,20 +127,20 @@ In the table below you can find the results of our experiments. For each of the 
 |-------|------|--------------|-------------------|--------------|----------------|------------------|------------------|
 | A | [basic/Execution_eco.v](https://github.com/weakmemory/imm/tree/coq819/src/basic/Execution_eco.v) | `rf_rmw_ct_in_co`| &#x2717; | [&#x2713;](#rf_rmw_ct_in_co) | [&#x2713;](#rf_rmw_ct_in_co) | &#x2717; | &#x2717; |
 | A | [imm/imm_hb.v](https://github.com/weakmemory/imm/tree/coq819/src/imm/imm_hb.v) | `cr_hb_hb`| &#x2717; | [&#x2713;](#cr_hb_hb) | [&#x2713;](#cr_hb_hb) | &#x2717; | [&#x2713;](#cr_hb_hb) |
-| A | [basic/FinExecution.v](https://github.com/weakmemory/imm/tree/coq819/src/basic/FinExecution.v) | `fin_exec_same_events`| &#x2717; | [&#x2713;](#fin_exec_same_events) | [&#x2713;](#fin_exec_same_events) | &#x2717; | [&#x2713;](#fin_exec_same_events) |
+| A | [basic/FinExecution.v](https://github.com/weakmemory/imm/tree/coq819/src/basic/FinExecution.v) | `fin_exec_same_events`| [&#x2713;](#fin_exec_same_events) | [&#x2713;](#fin_exec_same_events) | [&#x2713;](#fin_exec_same_events) | &#x2717; | [&#x2713;](#fin_exec_same_events) |
 | A | [basic/Execution.v](https://github.com/weakmemory/imm/tree/coq819/src/basic/Execution.v) | `sb_trans`| &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
 | A | [basic/Execution.v](https://github.com/weakmemory/imm/tree/coq819/src/basic/Execution.v) | `sb_same_loc_W_trans`| &#x2717; | [&#x2713;](#sb_same_loc_w_trans) | [&#x2713;](#sb_same_loc_w_trans) | &#x2717; | &#x2717; |
 | A | [basic/Events.v](https://github.com/weakmemory/imm/tree/coq819/src/basic/Events.v) | `restr_eq_rel_same_loc`| [&#x2713;](#restr_eq_rel_same_loc) | [&#x2713;](#restr_eq_rel_same_loc) | [&#x2713;](#restr_eq_rel_same_loc) | [&#x2713;](#restr_eq_rel_same_loc) | [&#x2713;](#restr_eq_rel_same_loc) |
-| A | [basic/Events.v](https://github.com/weakmemory/imm/tree/coq819/src/basic/Events.v) | `same_loc_loceq`| &#x2717; | [&#x2713;](#same_loc_loceq) | [&#x2713;](#same_loc_loceq) | &#x2717; | &#x2717; |
+| A | [basic/Events.v](https://github.com/weakmemory/imm/tree/coq819/src/basic/Events.v) | `same_loc_loceq`| [&#x2713;](#same_loc_loceq) | [&#x2713;](#same_loc_loceq) | [&#x2713;](#same_loc_loceq) | &#x2717; | &#x2717; |
 | A | [traversal/TraversalConfigAltOld.v](https://github.com/weakmemory/imm/tree/coq819/src/traversal/TraversalConfigAltOld.v) | `otc_I_ar_rfrmw_I_implied_helper_2`| &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
 | A | [simhelpers/CertCOhelper.v](https://github.com/weakmemory/imm/tree/coq819/src/simhelpers/CertCOhelper.v) | `wf_colD`| &#x2717; | [&#x2713;](#wf_cold) | [&#x2713;](#wf_cold) | &#x2717; | &#x2717; |
 | A | [imm/SubExecution.v](https://github.com/weakmemory/imm/tree/coq819/src/imm/SubExecution.v) | `sub_rfe`| &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
 | A | [imm/SubExecution.v](https://github.com/weakmemory/imm/tree/coq819/src/imm/SubExecution.v) | `sub_Rel`| &#x2717; | [&#x2713;](#sub_rel) | &#x2717; | &#x2717; | &#x2717; |
 | A | [imm/imm_s.v](https://github.com/weakmemory/imm/tree/coq819/src/imm/imm_s.v) | `wf_rfirmwsf`| &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
-| A | [traversal/TraversalConfig.v](https://github.com/weakmemory/imm/tree/coq819/src/traversal/TraversalConfig.v) | `issuableW`| &#x2717; | &#x2717; | [&#x2713;](#issuablew) | &#x2717; | [&#x2713;](#issuablew) |
+| A | [traversal/TraversalConfig.v](https://github.com/weakmemory/imm/tree/coq819/src/traversal/TraversalConfig.v) | `issuableW`| [&#x2713;](#issuablew) | &#x2717; | [&#x2713;](#issuablew) | &#x2717; | [&#x2713;](#issuablew) |
 | A | [traversal/TraversalConfig.v](https://github.com/weakmemory/imm/tree/coq819/src/traversal/TraversalConfig.v) | `w_coverable_issued`| &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
 | A | [traversal/TraversalConfig.v](https://github.com/weakmemory/imm/tree/coq819/src/traversal/TraversalConfig.v) | `ar_rfrmw_rt_CI_in_I`| &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
-| A | [hardware/imm_sToARM.v](https://github.com/weakmemory/imm/tree/coq819/src/hardware/imm_sToARM.v) | `WF`| &#x2717; | [&#x2713;](#wf) | &#x2717; | &#x2717; | [&#x2713;](#wf) |
+| A | [hardware/imm_sToARM.v](https://github.com/weakmemory/imm/tree/coq819/src/hardware/imm_sToARM.v) | `WF`| [&#x2713;](#wf) | [&#x2713;](#wf) | &#x2717; | &#x2717; | [&#x2713;](#wf) |
 | A | [travorder/TraversalOrder.v](https://github.com/weakmemory/imm/tree/coq819/src/travorder/TraversalOrder.v) | `FWBOBFWBOB`| &#x2717; | [&#x2713;](#fwbobfwbob) | [&#x2713;](#fwbobfwbob) | &#x2717; | &#x2717; |
 | A | [travorder/EventsTraversalOrder.v](https://github.com/weakmemory/imm/tree/coq819/src/travorder/EventsTraversalOrder.v) | `dom_rfe_acq_sb_issued`| &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
 | A | [travorder/EventsTraversalOrder.v](https://github.com/weakmemory/imm/tree/coq819/src/travorder/EventsTraversalOrder.v) | `rfrmw_coverable_in_I`| &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
@@ -149,7 +149,7 @@ In the table below you can find the results of our experiments. For each of the 
 | B | [travorder/TraversalOrder.v](https://github.com/weakmemory/imm/tree/coq819/src/travorder/TraversalOrder.v) | `event_issue_finite_inj`| &#x2717; | [&#x2713;](#event_issue_finite_inj) | [&#x2713;](#event_issue_finite_inj) | &#x2717; | &#x2717; |
 | B | [basic/ProgToExecutionProperties.v](https://github.com/weakmemory/imm/tree/coq819/src/basic/ProgToExecutionProperties.v) | `ectrl_increasing`| &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
 | B | [imm/Sc_opt.v](https://github.com/weakmemory/imm/tree/coq819/src/imm/Sc_opt.v) | `scb_in_hb_eco`| &#x2717; | &#x2717; | &#x2717; | &#x2717; | [&#x2713;](#scb_in_hb_eco) |
-| B | [travorder/TLSCoherency.v](https://github.com/weakmemory/imm/tree/coq819/src/travorder/TLSCoherency.v) | `tls_coherent_ext_union`| &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
+| B | [travorder/TLSCoherency.v](https://github.com/weakmemory/imm/tree/coq819/src/travorder/TLSCoherency.v) | `tls_coherent_ext_union`| [&#x2713;](#tls_coherent_ext_union) | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
 | B | [ldrf/LDRF_Fsc.v](https://github.com/weakmemory/imm/tree/coq819/src/ldrf/LDRF_Fsc.v) | `RFE1`| &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
 | B | [imm/imm_hb.v](https://github.com/weakmemory/imm/tree/coq819/src/imm/imm_hb.v) | `wf_swD`| &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
 | B | [imm/imm_s_ppo.v](https://github.com/weakmemory/imm/tree/coq819/src/imm/imm_s_ppo.v) | `ar_int_rfe_ct_rfrmw_rt_in_ar_int_rfe_ct`| &#x2717; | &#x2717; | [&#x2713;](#ar_int_rfe_ct_rfrmw_rt_in_ar_int_rfe_ct) | &#x2717; | &#x2717; |
@@ -224,6 +224,10 @@ by rewrite eco_trans; eauto using eco_irr.
 #### Theorem name: 
 #### `fin_exec_same_events`
 
+#### Firstorder tactic Proof:
+
+    firstorder auto with *.
+
 #### OpenAI GPT-4 Proof:
 
     red in FIN.
@@ -269,9 +273,9 @@ by rewrite eco_trans; eauto using eco_irr.
 #### Theorem name: 
 #### `restr_eq_rel_same_loc`
 
-#### Predefined Tactic Proof:
+#### Firstorder tactic Proof:
 
-    auto.
+    firstorder auto with *.
 
 #### OpenAI GPT-4 Proof:
 
@@ -291,6 +295,10 @@ by rewrite eco_trans; eauto using eco_irr.
 
 #### Theorem name: 
 #### `same_loc_loceq`
+
+#### Firstorder tactic Proof:
+
+    firstorder auto with *.
 
 #### OpenAI GPT-4 Proof:
 
@@ -318,6 +326,8 @@ by rewrite eco_trans; eauto using eco_irr.
 
 #### Theorem name:  
 #### `issuableW`
+#### Firstorder tactic Proof:
+    firstorder auto with *.
 #### OpenAI GPT-3.5 Proof:
     unfold issuable.
     basic_solver.
@@ -327,6 +337,8 @@ by rewrite eco_trans; eauto using eco_irr.
 
 #### Theorem name:  
 #### `WF`
+#### Firstorder tactic Proof:
+    firstorder auto with *.
 #### OpenAI GPT-4 Proof:
     by apply CON.
 #### Claude Proof:
@@ -369,6 +381,11 @@ by rewrite eco_trans; eauto using eco_irr.
     red in IN0.
     destruct x as [[]]; ins; auto.
 
+#### Theorem name: 
+#### `tls_coherent_ext_union`
+
+#### Firstorder tactic Proof:
+    firstorder auto with *.
 
 #### Theorem name: 
 #### `scb_in_hb_eco`
