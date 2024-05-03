@@ -9,6 +9,7 @@ import { AnalyzedChatHistory, ChatHistory } from "../chat";
 import {
     ErrorsHandlingMode,
     GeneratedProof,
+    LLMServiceInternal,
     Proof,
     ProofVersion,
 } from "../llmService";
@@ -17,40 +18,23 @@ import { ModelParams, PredefinedProofsModelParams } from "../modelParams";
 import { Time, timeZero } from "../utils/time";
 
 export class PredefinedProofsService extends LLMService {
+    protected readonly internal: PredefinedProofsServiceInternal;
+
     constructor(
-        requestsLogsFilePath: string,
         eventLogger?: EventLogger,
-        debug: boolean = false
+        debug: boolean = false,
+        requestsLogsFilePath?: string
     ) {
         super(
             "PredefinedProofsService",
-            requestsLogsFilePath,
             eventLogger,
-            debug
+            debug,
+            requestsLogsFilePath
         );
-    }
-
-    constructGeneratedProof(
-        proof: string,
-        proofGenerationContext: ProofGenerationContext,
-        modelParams: ModelParams,
-        _previousProofVersions?: ProofVersion[]
-    ): GeneratedProof {
-        return new PredefinedProof(
-            proof,
-            proofGenerationContext,
-            modelParams as PredefinedProofsModelParams,
-            this
-        );
-    }
-
-    protected generateFromChatImpl(
-        _chat: ChatHistory,
-        _params: ModelParams,
-        _choices: number
-    ): Promise<string[]> {
-        throw new Error(
-            "PredefinedProofsService does not support generation from chat"
+        this.internal = new PredefinedProofsServiceInternal(
+            this,
+            this.eventLoggerGetter,
+            this.requestsLoggerBuilder
         );
     }
 
@@ -64,7 +48,7 @@ export class PredefinedProofsService extends LLMService {
             return [];
         }
         const predefinedProofsParams = params as PredefinedProofsModelParams;
-        const proofs = await this.logRequestsAndHandleErrors(
+        const proofs = await this.internal.logRequestsAndHandleErrors(
             {
                 params: params,
                 choices: choices,
@@ -84,7 +68,7 @@ export class PredefinedProofsService extends LLMService {
             errorsHandlingMode
         );
         return proofs.map((proof) =>
-            this.constructGeneratedProof(
+            this.internal.constructGeneratedProof(
                 proof,
                 proofGenerationContext,
                 predefinedProofsParams
@@ -136,9 +120,9 @@ export class PredefinedProof extends GeneratedProof {
         proof: Proof,
         proofGenerationContext: ProofGenerationContext,
         modelParams: PredefinedProofsModelParams,
-        llmService: PredefinedProofsService
+        llmServiceInternal: PredefinedProofsServiceInternal
     ) {
-        super(proof, proofGenerationContext, modelParams, llmService);
+        super(proof, proofGenerationContext, modelParams, llmServiceInternal);
     }
 
     protected generateNextVersion(
@@ -156,5 +140,31 @@ export class PredefinedProof extends GeneratedProof {
 
     canBeFixed(): Boolean {
         return false;
+    }
+}
+
+class PredefinedProofsServiceInternal extends LLMServiceInternal {
+    constructGeneratedProof(
+        proof: string,
+        proofGenerationContext: ProofGenerationContext,
+        modelParams: ModelParams,
+        _previousProofVersions?: ProofVersion[]
+    ): GeneratedProof {
+        return new PredefinedProof(
+            proof,
+            proofGenerationContext,
+            modelParams as PredefinedProofsModelParams,
+            this
+        );
+    }
+
+    generateFromChatImpl(
+        _chat: ChatHistory,
+        _params: ModelParams,
+        _choices: number
+    ): Promise<string[]> {
+        throw new Error(
+            "PredefinedProofsService does not support generation from chat"
+        );
     }
 }

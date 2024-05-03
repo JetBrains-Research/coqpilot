@@ -43,10 +43,10 @@ suite("[LLMService] Test `GeneratedProof`", () => {
         };
     }
 
-    function constructInitialGeneratedProof(
+    async function constructInitialGeneratedProof(
         basicMockParams: MockLLMModelParams,
         mockService: MockLLMService
-    ): MockLLMGeneratedProof {
+    ): Promise<MockLLMGeneratedProof> {
         const unlimitedTokensWithFixesMockParams = enhanceMockParams(
             basicMockParams,
             {
@@ -56,23 +56,27 @@ suite("[LLMService] Test `GeneratedProof`", () => {
                 proofFixChoices: 1,
 
                 // makes MockLLMService generate `Fixed.` proofs if is found in sent chat
-                proofFixPrompt: mockService.proofFixPrompt,
+                proofFixPrompt: MockLLMService.proofFixPrompt,
             }
         );
-        return mockService.constructGeneratedProof(
-            proofsToGenerate[0],
+        const generatedProofs = await mockService.generateProof(
             mockProofGenerationContext,
-            unlimitedTokensWithFixesMockParams
-        ) as MockLLMGeneratedProof;
+            unlimitedTokensWithFixesMockParams,
+            1,
+            ErrorsHandlingMode.RETHROW_ERRORS
+        );
+        expect(generatedProofs).toHaveLength(1);
+        return generatedProofs[0] as MockLLMGeneratedProof;
     }
 
     test("Build initial version", async () => {
         await withMockLLMService(
             async (mockService, basicMockParams, _testEventLogger) => {
-                const initialGeneratedProof = constructInitialGeneratedProof(
-                    basicMockParams,
-                    mockService
-                );
+                const initialGeneratedProof =
+                    await constructInitialGeneratedProof(
+                        basicMockParams,
+                        mockService
+                    );
                 expectGeneratedProof(initialGeneratedProof, {
                     proof: proofsToGenerate[0],
                     versionNumber: 1,
@@ -87,10 +91,11 @@ suite("[LLMService] Test `GeneratedProof`", () => {
     test("Generate next version", async () => {
         await withMockLLMService(
             async (mockService, basicMockParams, _testEventLogger) => {
-                const initialGeneratedProof = constructInitialGeneratedProof(
-                    basicMockParams,
-                    mockService
-                );
+                const initialGeneratedProof =
+                    await constructInitialGeneratedProof(
+                        basicMockParams,
+                        mockService
+                    );
 
                 const newVersionChoices = 3;
                 const secondVersionGeneratedProofs =
@@ -128,10 +133,11 @@ suite("[LLMService] Test `GeneratedProof`", () => {
     test("Fix proof", async () => {
         await withMockLLMService(
             async (mockService, basicMockParams, _testEventLogger) => {
-                const initialGeneratedProof = constructInitialGeneratedProof(
-                    basicMockParams,
-                    mockService
-                );
+                const initialGeneratedProof =
+                    await constructInitialGeneratedProof(
+                        basicMockParams,
+                        mockService
+                    );
 
                 const fixedVersionChoices = 3;
                 const initialProofDiagnostic = `Proof \`${initialGeneratedProof.proof()}\` was incorrect...`;
@@ -148,7 +154,7 @@ suite("[LLMService] Test `GeneratedProof`", () => {
                     toProofVersion(proofsToGenerate[0], initialProofDiagnostic),
                 ]);
 
-                const expectedFixedProof = mockService.fixedProofString;
+                const expectedFixedProof = MockLLMService.fixedProofString;
                 fixedGeneratedProofs.forEach((fixedGeneratedProof) => {
                     expectGeneratedProof(fixedGeneratedProof, {
                         proof: expectedFixedProof,

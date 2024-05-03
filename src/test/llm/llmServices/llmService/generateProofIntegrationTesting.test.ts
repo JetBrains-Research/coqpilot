@@ -112,7 +112,7 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
                     proofFixChoices: 3,
 
                     // makes MockLLMService generate `Fixed.` proofs if is found in sent chat
-                    proofFixPrompt: mockService.proofFixPrompt,
+                    proofFixPrompt: MockLLMService.proofFixPrompt,
                 });
 
                 const generatedProofs = await mockService.generateProof(
@@ -133,13 +133,13 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
 
                     fixedGeneratedProofs.forEach((fixedGeneratedProof) => {
                         expectGeneratedProof(fixedGeneratedProof, {
-                            proof: mockService.fixedProofString,
+                            proof: MockLLMService.fixedProofString,
                             proofVersions: [
                                 toProofVersion(
                                     generatedProof.proof(),
                                     diagnostic
                                 ),
-                                toProofVersion(mockService.fixedProofString),
+                                toProofVersion(MockLLMService.fixedProofString),
                             ],
                             versionNumber: 2,
                             canBeFixed: false,

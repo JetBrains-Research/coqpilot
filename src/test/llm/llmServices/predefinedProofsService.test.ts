@@ -1,5 +1,4 @@
 import { expect } from "earl";
-import * as tmp from "tmp";
 
 import { InvalidRequestError } from "../../../llm/llmServiceErrors";
 import { ErrorsHandlingMode } from "../../../llm/llmServices/llmService";
@@ -37,7 +36,6 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
     ) {
         const testEventLogger = new EventLogger();
         const predefinedProofsService = new PredefinedProofsService(
-            tmp.fileSync().name,
             testEventLogger,
             true
         );
@@ -52,9 +50,7 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
     const inputFile = ["small_document.v"];
 
     test("Simple generation: prove with `auto.`", async () => {
-        const predefinedProofsService = new PredefinedProofsService(
-            tmp.fileSync().name
-        );
+        const predefinedProofsService = new PredefinedProofsService();
         await testLLMServiceCompletesAdmitFromFile(
             predefinedProofsService,
             userParams,

@@ -1,5 +1,3 @@
-import * as tmp from "tmp";
-
 import { LLMServices } from "../../llm/llmServices";
 import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
 import { LMStudioService } from "../../llm/llmServices/lmStudio/lmStudioService";
@@ -11,12 +9,10 @@ import {
 } from "../../llm/userModelParams";
 
 export function createDefaultServices(): LLMServices {
-    const openAiService = new OpenAiService(tmp.fileSync().name);
-    const grazieService = new GrazieService(tmp.fileSync().name);
-    const predefinedProofsService = new PredefinedProofsService(
-        tmp.fileSync().name
-    );
-    const lmStudioService = new LMStudioService(tmp.fileSync().name);
+    const openAiService = new OpenAiService();
+    const grazieService = new GrazieService();
+    const predefinedProofsService = new PredefinedProofsService();
+    const lmStudioService = new LMStudioService();
     return {
         openAiService,
         grazieService,

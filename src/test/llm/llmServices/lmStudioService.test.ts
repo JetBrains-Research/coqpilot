@@ -1,5 +1,3 @@
-import * as tmp from "tmp";
-
 import { LMStudioService } from "../../../llm/llmServices/lmStudio/lmStudioService";
 import { LMStudioUserModelParams } from "../../../llm/userModelParams";
 
@@ -24,7 +22,7 @@ suite("[LLMService] Test `LMStudioService`", function () {
                 newMessageMaxTokens: 2000,
                 tokensLimit: 4000,
             };
-            const lmStudioService = new LMStudioService(tmp.fileSync().name);
+            const lmStudioService = new LMStudioService();
             await testLLMServiceCompletesAdmitFromFile(
                 lmStudioService,
                 userParams,

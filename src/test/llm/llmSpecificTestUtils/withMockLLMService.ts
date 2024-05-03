@@ -1,5 +1,3 @@
-import * as tmp from "tmp";
-
 import { EventLogger } from "../../../logging/eventLogger";
 
 import { proofsToGenerate } from "./constants";
@@ -13,15 +11,11 @@ export async function withMockLLMService(
     ) => Promise<void>
 ) {
     const testEventLogger = new EventLogger();
-    const mockService = new MockLLMService(
-        tmp.fileSync().name,
-        testEventLogger,
-        true
-    );
+    const mockService = new MockLLMService(testEventLogger, true);
     try {
         const basicMockParams: MockLLMModelParams = {
             modelName: "mock model",
-            systemPrompt: mockService.systemPromptToOverrideWith,
+            systemPrompt: MockLLMService.systemPromptToOverrideWith,
             newMessageMaxTokens: 100,
             tokensLimit: 1000,
             multiroundProfile: {

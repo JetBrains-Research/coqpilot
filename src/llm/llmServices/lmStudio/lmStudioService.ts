@@ -1,34 +1,67 @@
 import { EventLogger, Severity } from "../../../logging/eventLogger";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { ChatHistory } from "../chat";
-import { GeneratedProof, LLMService, Proof, ProofVersion } from "../llmService";
-import { LMStudioModelParams } from "../modelParams";
+import {
+    GeneratedProof,
+    LLMService,
+    LLMServiceInternal,
+    Proof,
+    ProofVersion,
+} from "../llmService";
+import { LMStudioModelParams, ModelParams } from "../modelParams";
 
 export class LMStudioService extends LLMService {
-    constructor(
-        requestsLogsFilePath: string,
-        eventLogger?: EventLogger,
-        debug: boolean = false
-    ) {
-        super("LMStudioService", requestsLogsFilePath, eventLogger, debug);
-    }
+    protected readonly internal: LMStudioServiceInternal;
 
-    constructGeneratedProof(
-        proof: string,
+    constructor(
+        eventLogger?: EventLogger,
+        debug: boolean = false,
+        requestsLogsFilePath?: string
+    ) {
+        super("LMStudioService", eventLogger, debug, requestsLogsFilePath);
+        this.internal = new LMStudioServiceInternal(
+            this,
+            this.eventLoggerGetter,
+            this.requestsLoggerBuilder
+        );
+    }
+}
+
+export class LMStudioGeneratedProof extends GeneratedProof {
+    constructor(
+        proof: Proof,
         proofGenerationContext: ProofGenerationContext,
         modelParams: LMStudioModelParams,
+        llmServiceInternal: LMStudioServiceInternal,
         previousProofVersions?: ProofVersion[]
-    ): LMStudioGeneratedProof {
-        return new LMStudioGeneratedProof(
+    ) {
+        super(
             proof,
             proofGenerationContext,
             modelParams,
+            llmServiceInternal,
+            previousProofVersions
+        );
+    }
+}
+
+class LMStudioServiceInternal extends LLMServiceInternal {
+    constructGeneratedProof(
+        proof: string,
+        proofGenerationContext: ProofGenerationContext,
+        modelParams: ModelParams,
+        previousProofVersions?: ProofVersion[] | undefined
+    ): GeneratedProof {
+        return new LMStudioGeneratedProof(
+            proof,
+            proofGenerationContext,
+            modelParams as LMStudioModelParams,
             this,
             previousProofVersions
         );
     }
 
-    protected async generateFromChatImpl(
+    async generateFromChatImpl(
         chat: ChatHistory,
         params: LMStudioModelParams,
         choices: number
@@ -89,23 +122,5 @@ export class LMStudioService extends LLMService {
 
     private endpoint(params: LMStudioModelParams): string {
         return `http://localhost:${params.port}/v1/chat/completions`;
-    }
-}
-
-export class LMStudioGeneratedProof extends GeneratedProof {
-    constructor(
-        proof: Proof,
-        proofGenerationContext: ProofGenerationContext,
-        modelParams: LMStudioModelParams,
-        llmService: LMStudioService,
-        previousProofVersions?: ProofVersion[]
-    ) {
-        super(
-            proof,
-            proofGenerationContext,
-            modelParams,
-            llmService,
-            previousProofVersions
-        );
     }
 }

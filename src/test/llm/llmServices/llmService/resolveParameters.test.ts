@@ -1,5 +1,4 @@
 import { expect } from "earl";
-import * as tmp from "tmp";
 
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 import {
@@ -69,7 +68,7 @@ suite("[LLMService] Test UserModelParams to ModelParams resolution", () => {
     });
 
     test("Test resolution by LLMService", () => {
-        const mockService = new MockLLMService(tmp.fileSync().name);
+        const mockService = new MockLLMService();
         try {
             const unresolvedMockUserParams: MockLLMUserModelParams = {
                 modelName: "mock model",
@@ -88,7 +87,7 @@ suite("[LLMService] Test UserModelParams to ModelParams resolution", () => {
             const expectedResolvedMockParams = {
                 ...unresolvedMockUserParams,
                 multiroundProfile: defaultMultiroundProfile,
-                systemPrompt: mockService.systemPromptToOverrideWith,
+                systemPrompt: MockLLMService.systemPromptToOverrideWith,
                 workerId: 0,
                 resolvedWithMockLLMService: true,
             } as MockLLMModelParams;

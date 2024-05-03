@@ -1,4 +1,5 @@
 import * as assert from "assert";
+import * as tmp from "tmp";
 
 import { EventLogger } from "../../logging/eventLogger";
 import {
@@ -38,40 +39,29 @@ export enum ErrorsHandlingMode {
 }
 
 export abstract class LLMService {
-    protected readonly requestsLogger: RequestsLogger;
+    protected abstract readonly internal: LLMServiceInternal;
+    protected readonly eventLoggerGetter: () => EventLogger | undefined;
+    protected readonly requestsLoggerBuilder: () => RequestsLogger;
 
     constructor(
-        public readonly serviceName: string,
-        requestsLogsFilePath: string,
-        protected readonly eventLogger?: EventLogger,
-        debug: boolean = false
+        readonly serviceName: string,
+        eventLogger: EventLogger | undefined,
+        debug: boolean,
+        requestsLogsFilePath: string | undefined
     ) {
-        this.requestsLogger = new RequestsLogger(requestsLogsFilePath, debug);
+        this.eventLoggerGetter = () => eventLogger;
+        this.requestsLoggerBuilder = () =>
+            new RequestsLogger(
+                requestsLogsFilePath ?? tmp.fileSync().name,
+                debug
+            );
     }
 
     static readonly generationFailedEvent = `generation-failed`;
     static readonly generationSucceededEvent = `generation-succeeded`;
 
-    abstract constructGeneratedProof(
-        proof: Proof,
-        proofGenerationContext: ProofGenerationContext,
-        modelParams: ModelParams,
-        previousProofVersions?: ProofVersion[]
-    ): GeneratedProof;
-
     /*
-     * This method should be only a pure implementation of
-     * the generation from chat, namely, its happy path.
-     * In case something goes wrong, it should just throw an `Error`.
-     */
-    protected abstract generateFromChatImpl(
-        chat: ChatHistory,
-        params: ModelParams,
-        choices: number
-    ): Promise<string[]>;
-
-    /*
-     * Unlike the unsafe version, this method handles the errors.
+     * Unlike the internal version, this method handles the errors.
      * Namely, the default implementation catches an error,
      * then logs the corresponding event and, finally,
      * rethrows the wrapped error further if needed.
@@ -85,7 +75,7 @@ export abstract class LLMService {
         choices: number,
         errorsHandlingMode: ErrorsHandlingMode
     ): Promise<string[]> {
-        return this.logRequestsAndHandleErrors(
+        return this.internal.logRequestsAndHandleErrors(
             {
                 chat: analyzedChat.chat,
                 estimatedTokens: analyzedChat.estimatedTokens,
@@ -93,7 +83,7 @@ export abstract class LLMService {
                 choices: choices,
             } as FromChatGenerationRequest,
             async () =>
-                await this.generateFromChatImpl(
+                await this.internal.generateFromChatImpl(
                     analyzedChat.chat,
                     params,
                     choices
@@ -123,7 +113,11 @@ export abstract class LLMService {
             errorsHandlingMode
         );
         return proofs.map((proof: string) =>
-            this.constructGeneratedProof(proof, proofGenerationContext, params)
+            this.internal.constructGeneratedProof(
+                proof,
+                proofGenerationContext,
+                params
+            )
         );
     }
 
@@ -133,18 +127,18 @@ export abstract class LLMService {
      */
     estimateTimeToBecomeAvailable(): Time {
         return estimateTimeToBecomeAvailableDefault(
-            this.requestsLogger.readLogsSinceLastSuccess()
+            this.internal.requestsLogger.readLogsSinceLastSuccess()
         );
     }
 
     readRequestsLogs(sinceLastSuccess: boolean = false): LoggerRecord[] {
         return sinceLastSuccess
-            ? this.requestsLogger.readLogsSinceLastSuccess()
-            : this.requestsLogger.readLogs();
+            ? this.internal.requestsLogger.readLogsSinceLastSuccess()
+            : this.internal.requestsLogger.readLogs();
     }
 
     dispose(): void {
-        this.requestsLogger.dispose();
+        this.internal.dispose();
     }
 
     resolveParameters(params: UserModelParams): ModelParams {
@@ -154,8 +148,40 @@ export abstract class LLMService {
     protected readonly resolveParametersWithDefaults = (
         params: UserModelParams
     ): ModelParams => resolveParametersWithDefaultsImpl(params);
+}
 
-    protected async logRequestsAndHandleErrors(
+export abstract class LLMServiceInternal {
+    readonly eventLogger: EventLogger | undefined;
+    readonly requestsLogger: RequestsLogger;
+
+    constructor(
+        readonly llmService: LLMService,
+        eventLoggerGetter: () => EventLogger | undefined,
+        requestsLoggerBuilder: () => RequestsLogger
+    ) {
+        this.eventLogger = eventLoggerGetter();
+        this.requestsLogger = requestsLoggerBuilder();
+    }
+
+    abstract constructGeneratedProof(
+        proof: Proof,
+        proofGenerationContext: ProofGenerationContext,
+        modelParams: ModelParams,
+        previousProofVersions?: ProofVersion[]
+    ): GeneratedProof;
+
+    /*
+     * This method should be only a pure implementation of
+     * the generation from chat, namely, its happy path.
+     * In case something goes wrong, it should just throw an `Error`.
+     */
+    abstract generateFromChatImpl(
+        chat: ChatHistory,
+        params: ModelParams,
+        choices: number
+    ): Promise<string[]>;
+
+    async logRequestsAndHandleErrors(
         request: GenerationRequest,
         generateProofs: () => Promise<string[]>,
         wrapError: (error: Error) => LLMServiceError,
@@ -166,7 +192,7 @@ export abstract class LLMService {
             this.requestsLogger.logRequestSucceeded(request, proofs);
             this.eventLogger?.logLogicEvent(
                 LLMService.generationSucceededEvent,
-                this
+                this.llmService
             );
             return proofs;
         } catch (e) {
@@ -185,7 +211,7 @@ export abstract class LLMService {
                     }
                     this.eventLogger.logLogicEvent(
                         LLMService.generationFailedEvent,
-                        this
+                        this.llmService
                     );
                     return [];
                 case ErrorsHandlingMode.RETHROW_ERRORS:
@@ -197,10 +223,14 @@ export abstract class LLMService {
             }
         }
     }
+
+    dispose(): void {
+        this.requestsLogger.dispose();
+    }
 }
 
 export abstract class GeneratedProof {
-    readonly llmService: LLMService;
+    readonly llmServiceInternal: LLMServiceInternal;
     readonly modelParams: ModelParams;
     readonly maxRoundsNumber: number;
 
@@ -211,10 +241,10 @@ export abstract class GeneratedProof {
         proof: Proof,
         proofGenerationContext: ProofGenerationContext,
         modelParams: ModelParams,
-        llmService: LLMService,
+        llmServiceInternal: LLMServiceInternal,
         previousProofVersions?: ProofVersion[]
     ) {
-        this.llmService = llmService;
+        this.llmServiceInternal = llmServiceInternal;
         this.modelParams = modelParams;
 
         this.proofGenerationContext = proofGenerationContext;
@@ -256,14 +286,15 @@ export abstract class GeneratedProof {
         if (choices <= 0 || !this.nextVersionCanBeGenerated()) {
             return [];
         }
-        const newProofs = await this.llmService.generateFromChat(
-            analyzedChat,
-            this.modelParams,
-            choices,
-            errorsHandlingMode
-        );
+        const newProofs =
+            await this.llmServiceInternal.llmService.generateFromChat(
+                analyzedChat,
+                this.modelParams,
+                choices,
+                errorsHandlingMode
+            );
         return newProofs.map((proof: string) =>
-            this.llmService.constructGeneratedProof(
+            this.llmServiceInternal.constructGeneratedProof(
                 postprocessProof(proof),
                 this.proofGenerationContext,
                 this.modelParams,

@@ -2,25 +2,64 @@ import { EventLogger } from "../../../logging/eventLogger";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { UserModelParams } from "../../userModelParams";
 import { ChatHistory, ChatMessage } from "../chat";
-import { GeneratedProof, Proof, ProofVersion } from "../llmService";
+import {
+    GeneratedProof,
+    LLMServiceInternal,
+    Proof,
+    ProofVersion,
+} from "../llmService";
 import { LLMService } from "../llmService";
 import { GrazieModelParams, ModelParams } from "../modelParams";
 
 import { GrazieApi, GrazieChatRole, GrazieFormattedHistory } from "./grazieApi";
 
 export class GrazieService extends LLMService {
-    private api: GrazieApi;
-    // Is constant (now) as specified in Grazie REST API
-    readonly newMessageMaxTokens = 1024;
+    protected readonly internal: GrazieServiceInternal;
 
     constructor(
-        requestsLogsFilePath: string,
         eventLogger?: EventLogger,
-        debug: boolean = false
+        debug: boolean = false,
+        requestsLogsFilePath?: string
     ) {
-        super("GrazieService", requestsLogsFilePath, eventLogger, debug);
-        this.api = new GrazieApi(eventLogger);
+        super("GrazieService", eventLogger, debug, requestsLogsFilePath);
+        this.internal = new GrazieServiceInternal(
+            this,
+            this.eventLoggerGetter,
+            this.requestsLoggerBuilder
+        );
     }
+
+    // Is constant (for now) as specified in Grazie REST API
+    readonly newMessageMaxTokens = 1024;
+
+    resolveParameters(params: UserModelParams): ModelParams {
+        return this.resolveParametersWithDefaults({
+            ...params,
+            newMessageMaxTokens: this.newMessageMaxTokens,
+        });
+    }
+}
+
+export class GrazieGeneratedProof extends GeneratedProof {
+    constructor(
+        proof: Proof,
+        proofGenerationContext: ProofGenerationContext,
+        modelParams: GrazieModelParams,
+        llmServiceInternal: GrazieServiceInternal,
+        previousProofVersions?: ProofVersion[]
+    ) {
+        super(
+            proof,
+            proofGenerationContext,
+            modelParams,
+            llmServiceInternal,
+            previousProofVersions
+        );
+    }
+}
+
+class GrazieServiceInternal extends LLMServiceInternal {
+    readonly api = new GrazieApi(this.eventLogger);
 
     constructGeneratedProof(
         proof: string,
@@ -37,7 +76,7 @@ export class GrazieService extends LLMService {
         );
     }
 
-    protected async generateFromChatImpl(
+    async generateFromChatImpl(
         chat: ChatHistory,
         params: ModelParams,
         choices: number
@@ -71,30 +110,5 @@ export class GrazieService extends LLMService {
                 text: message.content,
             };
         });
-    }
-
-    resolveParameters(params: UserModelParams): ModelParams {
-        return this.resolveParametersWithDefaults({
-            ...params,
-            newMessageMaxTokens: this.newMessageMaxTokens,
-        });
-    }
-}
-
-export class GrazieGeneratedProof extends GeneratedProof {
-    constructor(
-        proof: Proof,
-        proofGenerationContext: ProofGenerationContext,
-        modelParams: GrazieModelParams,
-        llmService: GrazieService,
-        previousProofVersions?: ProofVersion[]
-    ) {
-        super(
-            proof,
-            proofGenerationContext,
-            modelParams,
-            llmService,
-            previousProofVersions
-        );
     }
 }

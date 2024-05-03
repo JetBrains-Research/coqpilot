@@ -28,24 +28,26 @@ export class GlobalExtensionState {
 
     public readonly llmServices: LLMServices = {
         openAiService: new OpenAiService(
-            path.join(this.llmServicesLogsDir, "openai-logs.txt"),
-            this.eventLogger
+            this.eventLogger,
+            false,
+            path.join(this.llmServicesLogsDir, "openai-logs.txt")
         ),
         grazieService: new GrazieService(
-            path.join(this.llmServicesLogsDir, "grazie-logs.txt"),
-            this.eventLogger
+            this.eventLogger,
+            false,
+            path.join(this.llmServicesLogsDir, "grazie-logs.txt")
         ),
         predefinedProofsService: new PredefinedProofsService(
-            path.join(this.llmServicesLogsDir, "predefined-proofs-logs.txt"),
-            this.eventLogger
+            this.eventLogger,
+            false,
+            path.join(this.llmServicesLogsDir, "predefined-proofs-logs.txt")
         ),
         lmStudioService: new LMStudioService(
-            path.join(this.llmServicesLogsDir, "lmstudio-logs.txt"),
-            this.eventLogger
+            this.eventLogger,
+            false,
+            path.join(this.llmServicesLogsDir, "lmstudio-logs.txt")
         ),
     };
-
-    constructor() {}
 
     private parseLoggingVerbosity(config: WorkspaceConfiguration): Severity {
         const verbosity = config.get("loggingVerbosity");

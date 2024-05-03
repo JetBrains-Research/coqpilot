@@ -3,24 +3,56 @@ import OpenAI from "openai";
 import { EventLogger, Severity } from "../../../logging/eventLogger";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { ChatHistory } from "../chat";
-import { GeneratedProof, LLMService, ProofVersion } from "../llmService";
+import {
+    GeneratedProof,
+    LLMService,
+    LLMServiceInternal,
+    ProofVersion,
+} from "../llmService";
 import { Proof } from "../llmService";
 import { ModelParams, OpenAiModelParams } from "../modelParams";
 
 export class OpenAiService extends LLMService {
-    constructor(
-        requestsLogsFilePath: string,
-        eventLogger?: EventLogger,
-        debug: boolean = false
-    ) {
-        super("OpenAiService", requestsLogsFilePath, eventLogger, debug);
-    }
+    protected readonly internal: OpenAiServiceInternal;
 
+    constructor(
+        eventLogger?: EventLogger,
+        debug: boolean = false,
+        requestsLogsFilePath?: string
+    ) {
+        super("OpenAiService", eventLogger, debug, requestsLogsFilePath);
+        this.internal = new OpenAiServiceInternal(
+            this,
+            this.eventLoggerGetter,
+            this.requestsLoggerBuilder
+        );
+    }
+}
+
+export class OpenAiGeneratedProof extends GeneratedProof {
+    constructor(
+        proof: Proof,
+        proofGenerationContext: ProofGenerationContext,
+        modelParams: OpenAiModelParams,
+        llmServiceInternal: OpenAiServiceInternal,
+        previousProofVersions?: ProofVersion[]
+    ) {
+        super(
+            proof,
+            proofGenerationContext,
+            modelParams,
+            llmServiceInternal,
+            previousProofVersions
+        );
+    }
+}
+
+class OpenAiServiceInternal extends LLMServiceInternal {
     constructGeneratedProof(
         proof: string,
         proofGenerationContext: ProofGenerationContext,
         modelParams: ModelParams,
-        previousProofVersions?: ProofVersion[]
+        previousProofVersions?: ProofVersion[] | undefined
     ): GeneratedProof {
         return new OpenAiGeneratedProof(
             proof,
@@ -31,7 +63,7 @@ export class OpenAiService extends LLMService {
         );
     }
 
-    protected async generateFromChatImpl(
+    async generateFromChatImpl(
         chat: ChatHistory,
         params: ModelParams,
         choices: number
@@ -59,23 +91,5 @@ export class OpenAiService extends LLMService {
         });
 
         return completion.choices.map((choice: any) => choice.message.content);
-    }
-}
-
-export class OpenAiGeneratedProof extends GeneratedProof {
-    constructor(
-        proof: Proof,
-        proofGenerationContext: ProofGenerationContext,
-        modelParams: OpenAiModelParams,
-        llmService: OpenAiService,
-        previousProofVersions?: ProofVersion[]
-    ) {
-        super(
-            proof,
-            proofGenerationContext,
-            modelParams,
-            llmService,
-            previousProofVersions
-        );
     }
 }

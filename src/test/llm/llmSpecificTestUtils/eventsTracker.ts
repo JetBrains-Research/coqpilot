@@ -55,7 +55,7 @@ export function subscribeToTrackMockEvents(
         failedGenerationEventsN: 0,
     };
     testEventLogger.subscribeToLogicEvent(
-        mockService.generationFromChatEvent,
+        MockLLMService.generationFromChatEvent,
         (chatData) => {
             if (mockChat === undefined) {
                 expect((chatData as ChatHistory) !== null).toBeTruthy();

@@ -1,5 +1,3 @@
-import * as tmp from "tmp";
-
 import { OpenAiService } from "../../../llm/llmServices/openai/openAiService";
 import { OpenAiUserModelParams } from "../../../llm/userModelParams";
 
@@ -24,7 +22,7 @@ suite("[LLMService] Test `OpenAiService`", function () {
                 newMessageMaxTokens: 2000,
                 tokensLimit: 4000,
             };
-            const openAiService = new OpenAiService(tmp.fileSync().name);
+            const openAiService = new OpenAiService();
             await testLLMServiceCompletesAdmitFromFile(
                 openAiService,
                 userParams,

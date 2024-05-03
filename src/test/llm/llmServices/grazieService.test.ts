@@ -1,5 +1,4 @@
 import { expect } from "earl";
-import * as tmp from "tmp";
 
 import { GrazieService } from "../../../llm/llmServices/grazie/grazieService";
 import { GrazieUserModelParams } from "../../../llm/userModelParams";
@@ -24,7 +23,7 @@ suite("[LLMService] Test `GrazieService`", function () {
                 newMessageMaxTokens: 2000,
                 tokensLimit: 4000,
             };
-            const grazieService = new GrazieService(tmp.fileSync().name);
+            const grazieService = new GrazieService();
             await testLLMServiceCompletesAdmitFromFile(
                 grazieService,
                 userParams,
@@ -41,7 +40,7 @@ suite("[LLMService] Test `GrazieService`", function () {
             newMessageMaxTokens: 6666, // should be overriden by GrazieService
             tokensLimit: 4000,
         };
-        const grazieService = new GrazieService(tmp.fileSync().name);
+        const grazieService = new GrazieService();
         try {
             const resolvedParams = grazieService.resolveParameters(userParams);
             expect(resolvedParams.newMessageMaxTokens).toEqual(
