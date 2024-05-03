@@ -102,7 +102,7 @@ Comment: Such files are not visible in the vscode explorer, because plugin adds 
 
 This extension contributes the following settings:
 
-* `coqpilot.contextTheoremsRankerType` : The type of theorems ranker that will be used to select theorems for proof generation (when context is smaller than taking all of them). Either randomly or by distance from the theorem, with the currently generated admit. 
+* `coqpilot.contextTheoremsRankerType` : The type of theorems ranker that will be used to select theorems for proof generation (when context is smaller than taking all of them). Either randomly, by Jacard index (similarity metric) or by distance from the theorem, with the currently observed admit. 
 * `coqpilot.loggingVerbosity` : Verbosity of the logs. Could be `info`, `debug`.
 
 * `coqpilot.openAiModelsParameters`, `coqpilot.predefinedProofsModelsParameters`, `coqpilot.grazieModelsParameters` and `coqpilot.lmStudioModelsParameters`:
