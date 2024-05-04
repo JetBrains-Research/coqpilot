@@ -1,3 +1,4 @@
+import { ConfigurationError } from "../../../llm/llmServiceErrors";
 import {
     AnalyzedChatHistory,
     ChatHistory,
@@ -8,7 +9,6 @@ import {
     GeneratedProof,
     LLMService,
     LLMServiceInternal,
-    Proof,
     ProofVersion,
 } from "../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
@@ -28,36 +28,43 @@ export interface MockLLMModelParams extends ModelParams {
     resolvedWithMockLLMService: boolean;
 }
 
-/*
+/**
  * This class implements `LLMService` the same way as most of the services do,
  * so as to reuse the default implementations as much as possible.
+ *
  * However, to make tests cover more corner cases, `MockLLMService` provides additional features.
- * Check the documentation of the methods below.
+ * Check the documentation of its methods below.
  */
 export class MockLLMService extends LLMService {
     protected readonly internal: MockLLMServiceInternal;
 
     constructor(
         eventLogger?: EventLogger,
-        debug: boolean = false,
-        requestsLogsFilePath?: string
+        debugLogs: boolean = false,
+        generationsLogsFilePath?: string
     ) {
-        super("MockLLMService", eventLogger, debug, requestsLogsFilePath);
+        super(
+            "MockLLMService",
+            eventLogger,
+            debugLogs,
+            generationsLogsFilePath
+        );
         this.internal = new MockLLMServiceInternal(
             this,
             this.eventLoggerGetter,
-            this.requestsLoggerBuilder
+            this.generationsLoggerBuilder
         );
     }
 
     static readonly generationFromChatEvent = "mockllm-generation-from-chat";
+
     static readonly systemPromptToOverrideWith =
         "unique mock-llm system prompt";
 
     static readonly proofFixPrompt = "Generate `Fixed.` instead of proof.";
     static readonly fixedProofString = "Fixed.";
 
-    /*
+    /**
      * Use this method to make 1 next generation (for the specified worker) throw the specified error.
      * Workers are meant to be any external entities that would like to separate their behaviour.
      */
@@ -65,6 +72,10 @@ export class MockLLMService extends LLMService {
         this.internal.throwErrorOnNextGenerationMap.set(workerId, error);
     }
 
+    /**
+     * Adds special control message to the chat, so it would make `MockLLMService`
+     * skip first `skipFirstNProofs` proofs at the generation stage.
+     */
     transformChatToSkipFirstNProofs(
         baseChat: ChatHistory,
         skipFirstNProofs: number
@@ -76,7 +87,7 @@ export class MockLLMService extends LLMService {
         return [...baseChat, controlMessage];
     }
 
-    /*
+    /**
      * `MockLLMService` parameters resolution does 2 changes to `params`:
      * - overrides original `systemPrompt` to `this.systemPromptToOverrideWith`;
      * - resolves undefined `workerId` to 0;
@@ -99,7 +110,7 @@ export class MockLLMService extends LLMService {
 
 export class MockLLMGeneratedProof extends GeneratedProof {
     constructor(
-        proof: Proof,
+        proof: string,
         proofGenerationContext: ProofGenerationContext,
         modelParams: MockLLMModelParams,
         llmServiceInternal: MockLLMServiceInternal,
@@ -114,24 +125,43 @@ export class MockLLMGeneratedProof extends GeneratedProof {
         );
     }
 
-    // This method just makes the default `generateNextVersion` visible to the tester.
+    /**
+     * Mocks the procces of the implementation of a new regeneration method.
+     * Namely, checks whether it is possible.
+     */
+    nextVersionCanBeGenerated(): Boolean {
+        return super.nextVersionCanBeGenerated();
+    }
+
+    /**
+     * Mocks the process of the implementation of a new regeneration method.
+     * Namely, performs the generation using `LLMServiceInternal.generateFromChatWrapped`.
+     */
     async generateNextVersion(
         analyzedChat: AnalyzedChatHistory,
         choices: number,
-        errorsHandlingMode: ErrorsHandlingMode,
-        postprocessProof: (proof: string) => string = (proof) => proof
+        errorsHandlingMode: ErrorsHandlingMode
     ): Promise<GeneratedProof[]> {
-        return super.generateNextVersion(
-            analyzedChat,
+        return this.llmServiceInternal.generateFromChatWrapped(
+            this.modelParams,
             choices,
             errorsHandlingMode,
-            postprocessProof
+            () => {
+                if (!this.nextVersionCanBeGenerated()) {
+                    throw new ConfigurationError(
+                        `next version could not be generated: version ${this.versionNumber()} >= max rounds number ${this.maxRoundsNumber}`
+                    );
+                }
+                return analyzedChat;
+            },
+            (proof: string) =>
+                this.llmServiceInternal.constructGeneratedProof(
+                    proof,
+                    this.proofGenerationContext,
+                    this.modelParams,
+                    this.proofVersions
+                )
         );
-    }
-
-    // The same trick to make the default `nextVersionCanBeGenerated` visible.
-    nextVersionCanBeGenerated(): Boolean {
-        return super.nextVersionCanBeGenerated();
     }
 }
 
@@ -153,7 +183,7 @@ class MockLLMServiceInternal extends LLMServiceInternal {
         );
     }
 
-    /*
+    /**
      * Generally, `generateFromChatImpl` simply returns first `choices` proofs from the `MockLLMModelParams.proofsToGenerate`.
      * Each `generateFromChatImpl` call sends logic `this.generationFromChatEvent` event to the `eventLogger`.
      * Special behaviour:

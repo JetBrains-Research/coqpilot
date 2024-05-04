@@ -4,16 +4,16 @@ import * as tmp from "tmp";
 
 import { PredefinedProofsModelParams } from "../../../../../llm/llmServices/modelParams";
 import {
+    FromChatGenerationRequest,
+    GenerationsLogger,
+} from "../../../../../llm/llmServices/utils/generationsLogger/generationsLogger";
+import {
     DebugLoggerRecord,
     LoggerRecord,
-} from "../../../../../llm/llmServices/utils/requestsLogger/loggerRecord";
-import {
-    FromChatGenerationRequest,
-    RequestsLogger,
-} from "../../../../../llm/llmServices/utils/requestsLogger/requestsLogger";
+} from "../../../../../llm/llmServices/utils/generationsLogger/loggerRecord";
 import { nowTimestampMillis } from "../../../../../llm/llmServices/utils/time";
 
-suite("[LLMService-s utils] RequestsLogger test", () => {
+suite("[LLMService-s utils] GenerationsLogger test", () => {
     const logsTestDir = tmp.dirSync().name;
     const filePath = path.join(logsTestDir, "testLogs.txt");
 
@@ -56,12 +56,23 @@ suite("[LLMService-s utils] RequestsLogger test", () => {
     };
     const mockGeneratedProofs = ["auto.\nintro.", "auto."];
 
-    async function writeLogs(requestsLogger: RequestsLogger): Promise<void> {
-        requestsLogger.logRequestSucceeded(mockRequest, mockGeneratedProofs);
-        requestsLogger.logRequestFailed(mockRequest, Error("dns error"));
-        requestsLogger.logRequestSucceeded(mockRequest, mockGeneratedProofs);
-        requestsLogger.logRequestFailed(mockRequest, Error("network failed"));
-        requestsLogger.logRequestFailed(
+    async function writeLogs(
+        generationsLogger: GenerationsLogger
+    ): Promise<void> {
+        generationsLogger.logGenerationSucceeded(
+            mockRequest,
+            mockGeneratedProofs
+        );
+        generationsLogger.logGenerationFailed(mockRequest, Error("dns error"));
+        generationsLogger.logGenerationSucceeded(
+            mockRequest,
+            mockGeneratedProofs
+        );
+        generationsLogger.logGenerationFailed(
+            mockRequest,
+            Error("network failed")
+        );
+        generationsLogger.logGenerationFailed(
             mockRequest,
             Error("tokens limit exceeded\nunfortunately, many times")
         );
@@ -71,46 +82,49 @@ suite("[LLMService-s utils] RequestsLogger test", () => {
 
     function readAndCheckLogs(
         expectedRecordsLength: number,
-        requestsLogger: RequestsLogger
+        generationsLogger: GenerationsLogger
     ) {
-        const records = requestsLogger.readLogs();
+        const records = generationsLogger.readLogs();
         expect(records).toHaveLength(expectedRecordsLength);
     }
 
     [false, true].forEach((loggerDebugMode) => {
-        const requestsLogger = new RequestsLogger(filePath, loggerDebugMode);
+        const generationsLogger = new GenerationsLogger(
+            filePath,
+            loggerDebugMode
+        );
         const testNamePostfix = loggerDebugMode
             ? "[debug true]"
             : "[debug false]";
         test(`Simple write-read ${testNamePostfix}`, async () => {
-            requestsLogger.resetLogs();
-            await writeLogs(requestsLogger);
-            readAndCheckLogs(loggerDebugMode ? 5 : 3, requestsLogger);
+            generationsLogger.resetLogs();
+            await writeLogs(generationsLogger);
+            readAndCheckLogs(loggerDebugMode ? 5 : 3, generationsLogger);
         });
 
         test(`Test \`readLogsSinceLastSuccess\` ${testNamePostfix}`, async () => {
-            requestsLogger.resetLogs();
-            const noRecords = requestsLogger.readLogsSinceLastSuccess();
+            generationsLogger.resetLogs();
+            const noRecords = generationsLogger.readLogsSinceLastSuccess();
             expect(noRecords).toHaveLength(0);
 
-            await writeLogs(requestsLogger);
-            const records = requestsLogger.readLogsSinceLastSuccess();
+            await writeLogs(generationsLogger);
+            const records = generationsLogger.readLogsSinceLastSuccess();
             expect(records).toHaveLength(logsSinceLastSuccessInclusiveCnt - 1);
         });
 
         test(`Pseudo-concurrent write-read ${testNamePostfix}`, async () => {
-            requestsLogger.resetLogs();
+            generationsLogger.resetLogs();
             const logsWriters = [];
             const logsWritersN = 50;
             for (let i = 0; i < logsWritersN; i++) {
-                logsWriters.push(writeLogs(requestsLogger));
+                logsWriters.push(writeLogs(generationsLogger));
             }
             Promise.all(logsWriters);
             readAndCheckLogs(
                 loggerDebugMode
                     ? logsWrittenInTotalCnt * logsWritersN
                     : logsSinceLastSuccessInclusiveCnt,
-                requestsLogger
+                generationsLogger
             );
         });
     });
@@ -145,7 +159,7 @@ suite("[LLMService-s utils] RequestsLogger test", () => {
         const loggerRecord = new LoggerRecord(
             nowTimestampMillis(),
             mockParams.modelName,
-            "FAILED",
+            "FAILURE",
             mockRequest.choices,
             mockRequest.estimatedTokens,
             {

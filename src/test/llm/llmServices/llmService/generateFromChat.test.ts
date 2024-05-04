@@ -1,6 +1,6 @@
 import { expect } from "earl";
 
-import { GenerationFromChatFailedError } from "../../../../llm/llmServiceErrors";
+import { GenerationFailedError } from "../../../../llm/llmServiceErrors";
 import { ErrorsHandlingMode } from "../../../../llm/llmServices/llmService";
 
 import {
@@ -89,7 +89,7 @@ suite("[LLMService] Test `generateFromChat`", () => {
                     });
 
                     const failureRecord: ExpectedRecord = {
-                        status: "FAILED",
+                        status: "FAILURE",
                         error: internalGenerationError,
                     };
                     expectLogs([failureRecord], mockService);
@@ -144,7 +144,7 @@ suite("[LLMService] Test `generateFromChat`", () => {
                     ErrorsHandlingMode.RETHROW_ERRORS
                 );
             } catch (e) {
-                const wrappedError = e as GenerationFromChatFailedError;
+                const wrappedError = e as GenerationFailedError;
                 expect(wrappedError).toBeTruthy();
                 expect(wrappedError.cause).toEqual(internalGenerationError);
             }

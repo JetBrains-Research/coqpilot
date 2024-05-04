@@ -1,7 +1,7 @@
 import { expect } from "earl";
 
 import { LLMService } from "../../../llm/llmServices/llmService";
-import { ResponseStatus } from "../../../llm/llmServices/utils/requestsLogger/loggerRecord";
+import { ResponseStatus } from "../../../llm/llmServices/utils/generationsLogger/loggerRecord";
 
 export interface ExpectedRecord {
     status: ResponseStatus;
@@ -12,12 +12,14 @@ export function expectLogs(
     expectedRecords: ExpectedRecord[],
     service: LLMService
 ) {
-    const actualRecordsUnwrapped = service.readRequestsLogs().map((record) => {
-        return {
-            status: record.responseStatus,
-            error: record.error,
-        };
-    });
+    const actualRecordsUnwrapped = service
+        .readGenerationsLogs()
+        .map((record) => {
+            return {
+                status: record.responseStatus,
+                error: record.error,
+            };
+        });
     const expectedRecordsUnwrapped = expectedRecords.map((record) => {
         return {
             status: record.status,
@@ -37,8 +39,8 @@ export function expectLogs(
         const expected = expectedRecordsUnwrapped[i];
         const actual = actualRecordsUnwrapped[i];
         if (
-            expected.status === "FAILED" &&
-            actual.status === "FAILED" &&
+            expected.status === "FAILURE" &&
+            actual.status === "FAILURE" &&
             expected.error === undefined
         ) {
             actual.error = undefined;

@@ -1,6 +1,6 @@
 import { expect } from "earl";
 
-import { InvalidRequestError } from "../../../llm/llmServiceErrors";
+import { ConfigurationError } from "../../../llm/llmServiceErrors";
 import { ErrorsHandlingMode } from "../../../llm/llmServices/llmService";
 import { PredefinedProofsModelParams } from "../../../llm/llmServices/modelParams";
 import { PredefinedProofsService } from "../../../llm/llmServices/predefinedProofs/predefinedProofsService";
@@ -87,7 +87,7 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                         expect(errorsHandlingMode).toEqual(
                             ErrorsHandlingMode.RETHROW_ERRORS
                         );
-                        const error = e as InvalidRequestError;
+                        const error = e as ConfigurationError;
                         expect(error).toBeTruthy();
                     }
 
@@ -100,7 +100,9 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                                 : 0,
                     };
                     expect(eventsTracker).toEqual(expectedEvents);
-                    expectLogs([{ status: "FAILED" }], predefinedProofsService);
+
+                    // ConfigurationError should not be logged!
+                    expectLogs([], predefinedProofsService);
 
                     // successful generation
                     const generatedProofs =
@@ -116,7 +118,7 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                     expectedEvents.successfulGenerationEventsN += 1;
                     expect(eventsTracker).toEqual(expectedEvents);
                     expectLogs(
-                        [{ status: "FAILED" }, { status: "SUCCESS" }],
+                        [{ status: "SUCCESS" }],
                         predefinedProofsService
                     );
                 }

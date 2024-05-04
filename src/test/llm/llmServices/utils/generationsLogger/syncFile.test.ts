@@ -1,7 +1,7 @@
 import { expect } from "earl";
 import * as tmp from "tmp";
 
-import { SyncFile } from "../../../../../llm/llmServices/utils/requestsLogger/syncFile";
+import { SyncFile } from "../../../../../llm/llmServices/utils/generationsLogger/syncFile";
 
 suite("[LLMService-s utils] SyncFile test", () => {
     const filePath = tmp.fileSync().name;

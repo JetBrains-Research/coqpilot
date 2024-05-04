@@ -1,5 +1,6 @@
 import { expect } from "earl";
 
+import { LLMServiceError } from "../../../llm/llmServiceErrors";
 import {
     AnalyzedChatHistory,
     ChatHistory,
@@ -24,16 +25,18 @@ export function subscribeToTrackEvents(
         failedGenerationEventsN: 0,
     };
     testEventLogger.subscribeToLogicEvent(
-        LLMService.generationSucceededEvent,
+        LLMService.generationRequestSucceededEvent,
         (service) => {
             expect(service).toEqual(targetService);
             eventsTracker.successfulGenerationEventsN += 1;
         }
     );
     testEventLogger.subscribeToLogicEvent(
-        LLMService.generationFailedEvent,
-        (service) => {
-            expect(service).toEqual(targetService);
+        LLMService.generationRequestFailedEvent,
+        (data) => {
+            const serviceAndError = data as [LLMService, LLMServiceError];
+            expect(serviceAndError).toBeTruthy();
+            expect(serviceAndError[0]).toEqual(targetService);
             eventsTracker.failedGenerationEventsN += 1;
         }
     );
@@ -66,16 +69,18 @@ export function subscribeToTrackMockEvents(
         }
     );
     testEventLogger.subscribeToLogicEvent(
-        LLMService.generationSucceededEvent,
+        LLMService.generationRequestSucceededEvent,
         (service) => {
             expect(service as MockLLMService).toEqual(mockService);
             eventsTracker.successfulGenerationEventsN += 1;
         }
     );
     testEventLogger.subscribeToLogicEvent(
-        LLMService.generationFailedEvent,
-        (service) => {
-            expect(service as MockLLMService).toEqual(mockService);
+        LLMService.generationRequestFailedEvent,
+        (data) => {
+            const serviceAndError = data as [MockLLMService, LLMServiceError];
+            expect(serviceAndError).toBeTruthy();
+            expect(serviceAndError[0]).toEqual(mockService);
             eventsTracker.failedGenerationEventsN += 1;
         }
     );

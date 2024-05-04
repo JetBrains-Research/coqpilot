@@ -4,7 +4,7 @@ import { estimateTimeToBecomeAvailableDefault } from "../../../../llm/llmService
 import {
     LoggerRecord,
     ResponseStatus,
-} from "../../../../llm/llmServices/utils/requestsLogger/loggerRecord";
+} from "../../../../llm/llmServices/utils/generationsLogger/loggerRecord";
 import {
     Time,
     nowTimestampMillis,
@@ -18,7 +18,7 @@ suite("[LLMService] Test default availability estimator", () => {
     function buildNextRecord(
         timestampMillis: number,
         timeDelta: Time,
-        responseStatus: ResponseStatus = "FAILED"
+        responseStatus: ResponseStatus = "FAILURE"
     ): LoggerRecord {
         return new LoggerRecord(
             timestampMillis + timeToMillis(timeDelta),
@@ -26,7 +26,7 @@ suite("[LLMService] Test default availability estimator", () => {
             responseStatus,
             5,
             undefined,
-            responseStatus === "FAILED"
+            responseStatus === "FAILURE"
                 ? {
                       typeName: Error.name,
                       message: "connection error",

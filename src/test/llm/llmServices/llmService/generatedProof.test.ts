@@ -88,7 +88,7 @@ suite("[LLMService] Test `GeneratedProof`", () => {
         );
     });
 
-    test("Generate next version", async () => {
+    test("Mock regeneration: generate next version", async () => {
         await withMockLLMService(
             async (mockService, basicMockParams, _testEventLogger) => {
                 const initialGeneratedProof =
@@ -102,8 +102,7 @@ suite("[LLMService] Test `GeneratedProof`", () => {
                     await initialGeneratedProof.generateNextVersion(
                         transformChatToSkipProofs(mockChat, mockService, 1),
                         newVersionChoices,
-                        ErrorsHandlingMode.RETHROW_ERRORS,
-                        (proof) => proof
+                        ErrorsHandlingMode.RETHROW_ERRORS
                     );
                 expect(secondVersionGeneratedProofs).toHaveLength(
                     newVersionChoices

@@ -91,7 +91,7 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
                     failedGenerationEventsN: 1,
                 });
                 const failureRecord: ExpectedRecord = {
-                    status: "FAILED",
+                    status: "FAILURE",
                     error: connectionError,
                 };
                 expectLogs([failureRecord], mockService);
@@ -190,7 +190,7 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
             expect(generatedProofs).toHaveLength(0);
             expectedEvents.failedGenerationEventsN += 1;
             expectedLogs?.push({
-                status: "FAILED",
+                status: "FAILURE",
                 error: errorWasThrown,
             });
         } else {
@@ -385,12 +385,12 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
 
                 expect(actualEvents).toEqual(expectedEvents);
 
-                const logs = mockService.readRequestsLogs();
+                const logs = mockService.readGenerationsLogs();
                 const successLogsN = logs.filter(
                     (record) => record.responseStatus === "SUCCESS"
                 ).length;
                 const failureLogsN = logs.filter(
-                    (record) => record.responseStatus === "FAILED"
+                    (record) => record.responseStatus === "FAILURE"
                 ).length;
                 expect(successLogsN).toEqual(
                     expectedEvents.successfulGenerationEventsN
