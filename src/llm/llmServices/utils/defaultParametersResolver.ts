@@ -1,3 +1,4 @@
+import { ParametersResolutionError } from "../../llmServiceErrors";
 import { UserModelParams } from "../../userModelParams";
 import { ModelParams, MultiroundProfile } from "../modelParams";
 
@@ -7,7 +8,7 @@ export function resolveParametersWithDefaultsImpl(
     const newMessageMaxTokens =
         params.newMessageMaxTokens ??
         defaultNewMessageMaxTokens[params.modelName];
-    const tokensLimits =
+    const tokensLimit =
         params.tokensLimit ?? defaultTokensLimits[params.modelName];
     const systemMessageContent =
         params.systemPrompt ?? defaultSystemMessageContent;
@@ -22,8 +23,17 @@ export function resolveParametersWithDefaultsImpl(
             params.multiroundProfile?.proofFixPrompt ??
             defaultMultiroundProfile.proofFixPrompt,
     };
-    if (newMessageMaxTokens === undefined || tokensLimits === undefined) {
-        throw Error(`user model parameters cannot be resolved: ${params}`);
+    if (newMessageMaxTokens === undefined) {
+        throw new ParametersResolutionError(
+            "no default value for `newMessageMaxTokens`",
+            params
+        );
+    }
+    if (tokensLimit === undefined) {
+        throw new ParametersResolutionError(
+            "no default value for `tokensLimit`",
+            params
+        );
     }
 
     /** NOTE: it's important to pass `...params` first
@@ -35,7 +45,7 @@ export function resolveParametersWithDefaultsImpl(
         ...params,
         systemPrompt: systemMessageContent,
         newMessageMaxTokens: newMessageMaxTokens,
-        tokensLimit: tokensLimits,
+        tokensLimit: tokensLimit,
         multiroundProfile: multiroundProfile,
     };
 }
@@ -54,10 +64,15 @@ export const defaultTokensLimits: {
 export const defaultSystemMessageContent: string =
     "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'.";
 
-// its properties can be used separately
+/**
+ * Properties of `defaultMultiroundProfile` can be used separately.
+ * - Multiround is disabled by default.
+ * - 1 fix version per proof by default.
+ * - Default `proofFixPrompt` includes `${diagnostic}` message.
+ */
 export const defaultMultiroundProfile: MultiroundProfile = {
-    maxRoundsNumber: 1, // multiround is disabled by default
-    proofFixChoices: 1, // 1 fix version per proof by default
+    maxRoundsNumber: 1,
+    proofFixChoices: 1,
     proofFixPrompt:
         "Unfortunately, the last proof is not correct. Here is the compiler's feedback: '${diagnostic}'. Please, fix the proof.",
 };

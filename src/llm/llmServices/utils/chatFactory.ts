@@ -1,4 +1,5 @@
 import { Theorem } from "../../../coqParser/parsedTypes";
+import { ConfigurationError } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { AnalyzedChatHistory, ChatHistory, ChatMessage } from "../chat";
 import { ProofVersion } from "../llmService";
@@ -46,7 +47,9 @@ export function buildChat(
     chat = chat.concat(...chats);
     const [isValid, errorMessage] = validateChat(chat);
     if (!isValid) {
-        throw new Error(`built chat is invalid: ${errorMessage};\n\`${chat}\``);
+        throw new ConfigurationError(
+            `built chat is invalid: ${errorMessage};\n\`${chat}\``
+        );
     }
     return chat;
 }
@@ -185,8 +188,10 @@ export function buildTheoremsChat(theorems: Theorem[]): ChatHistory {
     return itemizedChatToHistory(theorems.map(theoremToChatItem));
 }
 
-// note: be careful, the order of the roles should be the opposite (when built as a chat),
-// i.e. first goes the proof as `assistant` message and then the diagnostic as a `user` one
+/**
+ * Note: be careful, the order of the roles should be the opposite (when built as a chat),
+ * i.e. first goes the proof as `assistant` message and then the diagnostic as a `user` one.
+ */
 export function proofVersionToChatItem(
     proofVersion: ProofVersion
 ): UserAssistantChatItem {

@@ -1,20 +1,20 @@
 import { EventLogger } from "../../../logging/eventLogger";
-import { InvalidRequestError, LLMServiceError } from "../../llmServiceErrors";
+import { ConfigurationError } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import {
     PredefinedProofsUserModelParams,
     UserModelParams,
 } from "../../userModelParams";
-import { AnalyzedChatHistory, ChatHistory } from "../chat";
+import { ChatHistory } from "../chat";
 import {
     ErrorsHandlingMode,
     GeneratedProof,
     LLMServiceInternal,
-    Proof,
     ProofVersion,
 } from "../llmService";
 import { LLMService } from "../llmService";
 import { ModelParams, PredefinedProofsModelParams } from "../modelParams";
+import { GenerationRequest } from "../utils/generationsLogger/generationsLogger";
 import { Time, timeZero } from "../utils/time";
 
 export class PredefinedProofsService extends LLMService {
@@ -22,19 +22,19 @@ export class PredefinedProofsService extends LLMService {
 
     constructor(
         eventLogger?: EventLogger,
-        debug: boolean = false,
-        requestsLogsFilePath?: string
+        debugLogs: boolean = false,
+        generationsLogsFilePath?: string
     ) {
         super(
             "PredefinedProofsService",
             eventLogger,
-            debug,
-            requestsLogsFilePath
+            debugLogs,
+            generationsLogsFilePath
         );
         this.internal = new PredefinedProofsServiceInternal(
             this,
             this.eventLoggerGetter,
-            this.requestsLoggerBuilder
+            this.generationsLoggerBuilder
         );
     }
 
@@ -44,35 +44,37 @@ export class PredefinedProofsService extends LLMService {
         choices: number,
         errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
     ): Promise<GeneratedProof[]> {
-        if (choices <= 0) {
-            return [];
-        }
         const predefinedProofsParams = params as PredefinedProofsModelParams;
-        const proofs = await this.internal.logRequestsAndHandleErrors(
-            {
-                params: params,
-                choices: choices,
-            },
-            async () => {
-                const tactics = predefinedProofsParams.tactics;
-                if (choices > tactics.length) {
-                    throw new InvalidRequestError(
-                        `invalid choices ${choices}: there are only ${tactics.length} predefined tactics available`
+        return this.internal.logGenerationAndHandleErrors(
+            errorsHandlingMode,
+            () => {
+                if (choices <= 0) {
+                    throw new ConfigurationError(
+                        `bad choices: ${choices} <= 0`
                     );
                 }
-                return this.formatCoqSentences(tactics.slice(0, choices)).map(
-                    (tactic) => `Proof. ${tactic} Qed.`
-                );
+                const tactics = predefinedProofsParams.tactics;
+                if (choices > tactics.length) {
+                    throw new ConfigurationError(
+                        `bad choices ${choices}: there are only ${tactics.length} predefined tactics available`
+                    );
+                }
+                return {
+                    params: params,
+                    choices: choices,
+                } as GenerationRequest;
             },
-            (error) => error as LLMServiceError,
-            errorsHandlingMode
-        );
-        return proofs.map((proof) =>
-            this.internal.constructGeneratedProof(
-                proof,
-                proofGenerationContext,
-                predefinedProofsParams
-            )
+            async (_request) => {
+                return this.formatCoqSentences(
+                    predefinedProofsParams.tactics.slice(0, choices)
+                ).map((tactic) => `Proof. ${tactic} Qed.`);
+            },
+            (proof) =>
+                this.internal.constructGeneratedProof(
+                    proof,
+                    proofGenerationContext,
+                    predefinedProofsParams
+                )
         );
     }
 
@@ -117,7 +119,7 @@ export class PredefinedProofsService extends LLMService {
 
 export class PredefinedProof extends GeneratedProof {
     constructor(
-        proof: Proof,
+        proof: string,
         proofGenerationContext: ProofGenerationContext,
         modelParams: PredefinedProofsModelParams,
         llmServiceInternal: PredefinedProofsServiceInternal
@@ -125,17 +127,16 @@ export class PredefinedProof extends GeneratedProof {
         super(proof, proofGenerationContext, modelParams, llmServiceInternal);
     }
 
-    protected generateNextVersion(
-        _analyzedChat: AnalyzedChatHistory,
-        _choices: number
+    async fixProof(
+        _diagnostic: string,
+        _choices: number,
+        errorsHandlingMode: ErrorsHandlingMode
     ): Promise<GeneratedProof[]> {
-        throw new Error(
-            "PredefinedProof does not support next version generation"
+        this.llmServiceInternal.unsupportedMethod(
+            "PredefinedProof cannot be fixed",
+            errorsHandlingMode
         );
-    }
-
-    fixProof(_diagnostic: string, _choices: number): Promise<GeneratedProof[]> {
-        throw new Error("PredefinedProof cannot be fixed");
+        return [];
     }
 
     canBeFixed(): Boolean {
@@ -163,7 +164,7 @@ class PredefinedProofsServiceInternal extends LLMServiceInternal {
         _params: ModelParams,
         _choices: number
     ): Promise<string[]> {
-        throw new Error(
+        throw new ConfigurationError(
             "PredefinedProofsService does not support generation from chat"
         );
     }

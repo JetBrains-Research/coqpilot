@@ -1,11 +1,11 @@
-import { EventLogger, Severity } from "../../../logging/eventLogger";
+import { EventLogger } from "../../../logging/eventLogger";
+import { ConfigurationError } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { ChatHistory } from "../chat";
 import {
     GeneratedProof,
     LLMService,
     LLMServiceInternal,
-    Proof,
     ProofVersion,
 } from "../llmService";
 import { LMStudioModelParams, ModelParams } from "../modelParams";
@@ -15,21 +15,26 @@ export class LMStudioService extends LLMService {
 
     constructor(
         eventLogger?: EventLogger,
-        debug: boolean = false,
-        requestsLogsFilePath?: string
+        debugLogs: boolean = false,
+        generationsLogsFilePath?: string
     ) {
-        super("LMStudioService", eventLogger, debug, requestsLogsFilePath);
+        super(
+            "LMStudioService",
+            eventLogger,
+            debugLogs,
+            generationsLogsFilePath
+        );
         this.internal = new LMStudioServiceInternal(
             this,
             this.eventLoggerGetter,
-            this.requestsLoggerBuilder
+            this.generationsLoggerBuilder
         );
     }
 }
 
 export class LMStudioGeneratedProof extends GeneratedProof {
     constructor(
-        proof: Proof,
+        proof: string,
         proofGenerationContext: ProofGenerationContext,
         modelParams: LMStudioModelParams,
         llmServiceInternal: LMStudioServiceInternal,
@@ -66,15 +71,14 @@ class LMStudioServiceInternal extends LLMServiceInternal {
         params: LMStudioModelParams,
         choices: number
     ): Promise<string[]> {
-        this.eventLogger?.log(
-            "lm-studio-fetch-started",
-            "Completion from LmStudio requested",
-            { history: chat },
-            Severity.DEBUG
-        );
+        if (choices <= 0) {
+            throw new ConfigurationError(`bad choices: ${choices} <= 0`);
+        }
         let attempts = choices * 2;
         const completions: string[] = [];
+        this.debug.logEvent("Completion requested", { history: chat });
 
+        let lastErrorThrown: Error | undefined = undefined;
         while (completions.length < choices && attempts > 0) {
             try {
                 const responce = await fetch(this.endpoint(params), {
@@ -84,24 +88,27 @@ class LMStudioServiceInternal extends LLMServiceInternal {
                 });
                 if (responce.ok) {
                     const res = await responce.json();
-                    completions.push(res.choices[0].message.content);
+                    const newCompletion = res.choices[0].message.content;
+                    completions.push(newCompletion);
+                    this.debug.logEvent("Completion succeeded", {
+                        newCompletion: newCompletion,
+                    });
                 }
-                this.eventLogger?.log(
-                    "lm-studio-fetch-success",
-                    "Completion from LmStudio succeeded",
-                    { completions: completions }
-                );
             } catch (err) {
-                this.eventLogger?.log(
-                    "lm-studio-fetch-failed",
-                    "Completion from LmStudio failed",
-                    { error: err }
-                );
-                // TODO: rethrow error?
+                this.debug.logEvent("Completion failed", {
+                    error: err,
+                });
+                if ((err as Error) === null) {
+                    throw err;
+                }
+                lastErrorThrown = err as Error;
             }
             attempts--;
         }
 
+        if (completions.length < choices) {
+            throw lastErrorThrown;
+        }
         return completions;
     }
 

@@ -2,7 +2,7 @@
 import axios from "axios";
 import { ResponseType } from "axios";
 
-import { EventLogger, Severity } from "../../../logging/eventLogger";
+import { DebugWrappers } from "../llmService";
 import { GrazieModelParams } from "../modelParams";
 
 export type GrazieChatRole = "User" | "System" | "Assistant";
@@ -14,15 +14,12 @@ interface GrazieConfig {
 }
 
 export class GrazieApi {
-    private readonly config: GrazieConfig;
+    private readonly config: GrazieConfig = {
+        chatUrl: "v5/llm/chat/stream/v3",
+        gateawayUrl: "https://api.app.stgn.grazie.aws.intellij.net/service/",
+    };
 
-    constructor(private readonly eventLogger?: EventLogger) {
-        this.config = {
-            chatUrl: "v5/llm/chat/stream/v3",
-            gateawayUrl:
-                "https://api.app.stgn.grazie.aws.intellij.net/service/",
-        };
-    }
+    constructor(private readonly debug: DebugWrappers) {}
 
     async requestChatCompletion(
         params: GrazieModelParams,
@@ -51,16 +48,12 @@ export class GrazieApi {
     ): Promise<string> {
         const headers = this.createHeaders(apiToken);
         headers["Content-Length"] = body.length;
-        this.eventLogger?.log(
-            "grazie-fetch-started",
-            "Completion from Grazie requested",
-            {
-                url: url,
-                body: body,
-                headers: headers,
-            },
-            Severity.DEBUG
-        );
+
+        this.debug.logEvent("Completion requested", {
+            url: url,
+            body: body,
+            headers: headers,
+        });
 
         const response = await this.fetchAndProcessEvents(
             this.config.gateawayUrl + url,

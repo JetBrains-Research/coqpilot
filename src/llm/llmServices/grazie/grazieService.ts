@@ -1,11 +1,11 @@
 import { EventLogger } from "../../../logging/eventLogger";
+import { ConfigurationError } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { UserModelParams } from "../../userModelParams";
 import { ChatHistory, ChatMessage } from "../chat";
 import {
     GeneratedProof,
     LLMServiceInternal,
-    Proof,
     ProofVersion,
 } from "../llmService";
 import { LLMService } from "../llmService";
@@ -18,14 +18,14 @@ export class GrazieService extends LLMService {
 
     constructor(
         eventLogger?: EventLogger,
-        debug: boolean = false,
-        requestsLogsFilePath?: string
+        debugLogs: boolean = false,
+        generationsLogsFilePath?: string
     ) {
-        super("GrazieService", eventLogger, debug, requestsLogsFilePath);
+        super("GrazieService", eventLogger, debugLogs, generationsLogsFilePath);
         this.internal = new GrazieServiceInternal(
             this,
             this.eventLoggerGetter,
-            this.requestsLoggerBuilder
+            this.generationsLoggerBuilder
         );
     }
 
@@ -42,7 +42,7 @@ export class GrazieService extends LLMService {
 
 export class GrazieGeneratedProof extends GeneratedProof {
     constructor(
-        proof: Proof,
+        proof: string,
         proofGenerationContext: ProofGenerationContext,
         modelParams: GrazieModelParams,
         llmServiceInternal: GrazieServiceInternal,
@@ -59,7 +59,7 @@ export class GrazieGeneratedProof extends GeneratedProof {
 }
 
 class GrazieServiceInternal extends LLMServiceInternal {
-    readonly api = new GrazieApi(this.eventLogger);
+    readonly api = new GrazieApi(this.debug);
 
     constructGeneratedProof(
         proof: string,
@@ -82,7 +82,7 @@ class GrazieServiceInternal extends LLMServiceInternal {
         choices: number
     ): Promise<string[]> {
         if (choices <= 0) {
-            return [];
+            throw new ConfigurationError(`bad choices: ${choices} <= 0`);
         }
         let attempts = choices * 2;
         const completions: Promise<string>[] = [];

@@ -1,4 +1,4 @@
-import { LoggerRecord } from "./requestsLogger/loggerRecord";
+import { LoggerRecord } from "./generationsLogger/loggerRecord";
 import {
     Time,
     millisToTime,
@@ -82,7 +82,7 @@ function validateInputLogsAreFailures(
     logsSinceLastSuccess: LoggerRecord[]
 ): LoggerRecord[] {
     for (const record of logsSinceLastSuccess) {
-        if (record.responseStatus !== "FAILED") {
+        if (record.responseStatus !== "FAILURE") {
             throw Error(
                 `invalid input logs: a non-first record is not a failed one;\n\`${record}\``
             );

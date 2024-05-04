@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 
-import { EventLogger, Severity } from "../../../logging/eventLogger";
+import { EventLogger } from "../../../logging/eventLogger";
+import { ConfigurationError } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { ChatHistory } from "../chat";
 import {
@@ -9,7 +10,6 @@ import {
     LLMServiceInternal,
     ProofVersion,
 } from "../llmService";
-import { Proof } from "../llmService";
 import { ModelParams, OpenAiModelParams } from "../modelParams";
 
 export class OpenAiService extends LLMService {
@@ -17,21 +17,21 @@ export class OpenAiService extends LLMService {
 
     constructor(
         eventLogger?: EventLogger,
-        debug: boolean = false,
-        requestsLogsFilePath?: string
+        debugLogs: boolean = false,
+        generationsLogsFilePath?: string
     ) {
-        super("OpenAiService", eventLogger, debug, requestsLogsFilePath);
+        super("OpenAiService", eventLogger, debugLogs, generationsLogsFilePath);
         this.internal = new OpenAiServiceInternal(
             this,
             this.eventLoggerGetter,
-            this.requestsLoggerBuilder
+            this.generationsLoggerBuilder
         );
     }
 }
 
 export class OpenAiGeneratedProof extends GeneratedProof {
     constructor(
-        proof: Proof,
+        proof: string,
         proofGenerationContext: ProofGenerationContext,
         modelParams: OpenAiModelParams,
         llmServiceInternal: OpenAiServiceInternal,
@@ -70,17 +70,12 @@ class OpenAiServiceInternal extends LLMServiceInternal {
     ): Promise<string[]> {
         // TODO: support retries
         if (choices <= 0) {
-            return [];
+            throw new ConfigurationError(`bad choices: ${choices} <= 0`);
         }
         const openAiParams = params as OpenAiModelParams;
         const openai = new OpenAI({ apiKey: openAiParams.apiKey });
+        this.debug.logEvent("Completion requested", { history: chat });
 
-        this.eventLogger?.log(
-            "openai-fetch-started",
-            "Generate with OpenAI",
-            { history: chat },
-            Severity.DEBUG
-        );
         const completion = await openai.chat.completions.create({
             messages: chat,
             model: openAiParams.modelName,

@@ -1,5 +1,6 @@
 import { Tiktoken, TiktokenModel, encoding_for_model } from "tiktoken";
 
+import { ConfigurationError } from "../../llmServiceErrors";
 import { ChatMessage } from "../chat";
 
 export class ChatTokensFitter {
@@ -16,7 +17,7 @@ export class ChatTokensFitter {
     ) {
         this.tokensLimit = tokensLimit;
         if (this.tokensLimit < newMessageMaxTokens) {
-            throw Error(
+            throw new ConfigurationError(
                 `tokens limit ${this.tokensLimit} is not enough to generate a new message that needs up to ${newMessageMaxTokens}`
             );
         }
@@ -39,7 +40,9 @@ export class ChatTokensFitter {
         this.encoder?.free();
     }
 
-    // includes `newMessageMaxTokens`
+    /**
+     * Includes `newMessageMaxTokens`.
+     */
     estimateTokens(): number {
         return this.tokens;
     }
@@ -69,7 +72,7 @@ export class ChatTokensFitter {
     private fitRequired(...contents: string[]) {
         const contentTokens = this.countContentTokens(...contents);
         if (this.tokens + contentTokens > this.tokensLimit) {
-            throw Error(
+            throw new ConfigurationError(
                 `required content cannot be fitted into tokens limit: '${contents}' require ${contentTokens} + previous ${this.tokens} tokens > max ${this.tokensLimit}`
             );
         }

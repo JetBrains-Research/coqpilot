@@ -37,20 +37,20 @@ export function subscribeToLLMServicesUIEvents(
     const llmServiceToUIState: LLMServiceToUIState =
         createLLMServiceToUIState(llmServices);
     const generationFailedSubscriptionId = eventLogger.subscribeToLogicEvent(
-        LLMService.generationFailedEvent,
+        LLMService.generationRequestFailedEvent,
         reactToGenerationFailedEvent(llmServiceToUIState)
     );
     const generationSucceededSubscriptionId = eventLogger.subscribeToLogicEvent(
-        LLMService.generationSucceededEvent,
+        LLMService.generationRequestSucceededEvent,
         reactToGenerationSucceededEvent(llmServiceToUIState)
     );
     return () => {
         eventLogger.unsubscribe(
-            LLMService.generationFailedEvent,
+            LLMService.generationRequestFailedEvent,
             generationFailedSubscriptionId
         );
         eventLogger.unsubscribe(
-            LLMService.generationSucceededEvent,
+            LLMService.generationRequestSucceededEvent,
             generationSucceededSubscriptionId
         );
     };
@@ -138,6 +138,7 @@ function reactToGenerationSucceededEvent(
     };
 }
 
+// TODO: update parsing according to newer events specification
 function parseLLMServiceLogicEventData(
     data: any,
     llmServiceToUIState: LLMServiceToUIState
