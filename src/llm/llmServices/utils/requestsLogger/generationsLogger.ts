@@ -21,11 +21,21 @@ function isFromChatGenerationRequest(
     return "chat" in object && "estimatedTokens" in object;
 }
 
-export class RequestsLogger {
+/**
+ * This class is responsible for logging the actual generations.
+ * I.e. errors caused by the user or the extension are not the target ones.
+ *
+ * The main function of `GenerationLogger` is to keep the logs since the last success,
+ * in order to provide them for the analysis of the time
+ * needed to `LLMService` to become available again.
+ *
+ * Also, due to the `debug` mode, `GenerationLogger` can be used for debug purposes.
+ */
+export class GenerationsLogger {
     private readonly logsFile: SyncFile;
     private readonly recordsDelim = "@@@ ";
 
-    /*
+    /**
      * - When `debug` is false, logs only the necessary info:
      * timestamp, model name, response status and request info (choices and number of tokens sent).
      * Logs are being cleaned every time the last request succeeds.
@@ -44,7 +54,7 @@ export class RequestsLogger {
         }
     }
 
-    logRequestSucceeded(request: GenerationRequest, proofs: string[]) {
+    logGenerationSucceeded(request: GenerationRequest, proofs: string[]) {
         let record = new LoggerRecord(
             nowTimestampMillis(),
             request.params.modelName,
@@ -71,11 +81,11 @@ export class RequestsLogger {
         }
     }
 
-    logRequestFailed(request: GenerationRequest, error: Error) {
+    logGenerationFailed(request: GenerationRequest, error: Error) {
         let record = new LoggerRecord(
             nowTimestampMillis(),
             request.params.modelName,
-            "FAILED",
+            "FAILURE",
             request.choices,
             isFromChatGenerationRequest(request)
                 ? request.estimatedTokens
@@ -107,7 +117,10 @@ export class RequestsLogger {
         );
     }
 
-    // Note: EXCLUSIVE! I.e. last success record (if it exists) is not included in the result.
+    /**
+     * This method returns logs since the last success exclusively!
+     * In other words, the last success record (if it exists) is not included in the result.
+     */
     readLogsSinceLastSuccess(): LoggerRecord[] {
         const records = this.readLogs();
         const invertedRow = [];
@@ -120,6 +133,9 @@ export class RequestsLogger {
         return invertedRow.reverse();
     }
 
+    /**
+     * Clears the logs file or creates it if it doesn't exist.
+     */
     resetLogs() {
         this.logsFile.createReset();
     }

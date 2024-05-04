@@ -1,7 +1,7 @@
 import { ChatHistory, ChatRole } from "../../chat";
 import { ModelParams } from "../../modelParams";
 
-export type ResponseStatus = "SUCCESS" | "FAILED";
+export type ResponseStatus = "SUCCESS" | "FAILURE";
 
 export interface LoggedError {
     typeName: string;
@@ -16,7 +16,14 @@ export class ParsingError extends Error {
 }
 
 export class LoggerRecord {
-    readonly timestampMillis: number; // is always floored to the seconds (i.e. % 1000 === 0)
+    /**
+     * Even though this value is in millis, effectively it represents seconds.
+     * I.e. this value is always floored to the seconds (`value % 1000 === 0`).
+     *
+     * The reason is that, unfortunately, the current serialization-deserialization
+     * cycle neglects milliseconds.
+     */
+    readonly timestampMillis: number;
 
     protected static floorMillisToSeconds(millis: number): number {
         return millis - (millis % 1000);
@@ -24,11 +31,11 @@ export class LoggerRecord {
 
     constructor(
         timestampMillis: number,
-        public readonly modelName: string,
-        public readonly responseStatus: ResponseStatus,
-        public readonly choices: number,
-        public readonly estimatedTokens: number | undefined = undefined,
-        public readonly error: LoggedError | undefined = undefined
+        readonly modelName: string,
+        readonly responseStatus: ResponseStatus,
+        readonly choices: number,
+        readonly estimatedTokens: number | undefined = undefined,
+        readonly error: LoggedError | undefined = undefined
     ) {
         this.timestampMillis =
             LoggerRecord.floorMillisToSeconds(timestampMillis);
@@ -41,7 +48,7 @@ export class LoggerRecord {
         return `${introInfo}${errorInfo}${requestInfo}`;
     }
 
-    public toString(): string {
+    toString(): string {
         return this.serializeToString();
     }
 
@@ -210,9 +217,9 @@ export class LoggerRecord {
 export class DebugLoggerRecord extends LoggerRecord {
     constructor(
         baseRecord: LoggerRecord,
-        public readonly chat: ChatHistory | undefined,
-        public readonly params: ModelParams,
-        public readonly generatedProofs: string[] | undefined = undefined
+        readonly chat: ChatHistory | undefined,
+        readonly params: ModelParams,
+        readonly generatedProofs: string[] | undefined = undefined
     ) {
         super(
             baseRecord.timestampMillis,

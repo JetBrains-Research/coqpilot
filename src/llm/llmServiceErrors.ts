@@ -1,3 +1,6 @@
+/**
+ * Base class for the errors thrown by `LLMService`.
+ */
 export abstract class LLMServiceError extends Error {
     constructor(
         message: string = "",
@@ -13,14 +16,22 @@ export abstract class LLMServiceError extends Error {
     }
 }
 
-export class GenerationFromChatFailedError extends LLMServiceError {
-    constructor(cause: Error) {
-        super("", cause);
+/**
+ * Represents the failure of the generation request caused by invalid parameters
+ * configured by the user or the plugin.
+ */
+export class ConfigurationError extends LLMServiceError {
+    constructor(message: string) {
+        super(message);
     }
 }
 
-export class InvalidRequestError extends LLMServiceError {
-    constructor(message: string) {
-        super(message);
+/**
+ * Represents the failure of the actual proof-generation process,
+ * i.e. after all parameters validation has been performed.
+ */
+export class GenerationFailedError extends LLMServiceError {
+    constructor(cause: Error) {
+        super("", cause);
     }
 }
