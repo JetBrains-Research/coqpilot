@@ -18,27 +18,18 @@ export interface EventsTracker {
 
 export function subscribeToTrackEvents(
     testEventLogger: EventLogger,
-    targetService: LLMService
+    targetService: LLMService,
+    expectedError?: LLMServiceError
 ): EventsTracker {
     const eventsTracker: EventsTracker = {
         successfulGenerationEventsN: 0,
         failedGenerationEventsN: 0,
     };
-    testEventLogger.subscribeToLogicEvent(
-        LLMService.generationRequestSucceededEvent,
-        (service) => {
-            expect(service).toEqual(targetService);
-            eventsTracker.successfulGenerationEventsN += 1;
-        }
-    );
-    testEventLogger.subscribeToLogicEvent(
-        LLMService.generationRequestFailedEvent,
-        (data) => {
-            const serviceAndError = data as [LLMService, LLMServiceError];
-            expect(serviceAndError).toBeTruthy();
-            expect(serviceAndError[0]).toEqual(targetService);
-            eventsTracker.failedGenerationEventsN += 1;
-        }
+    subscribeToLogicEvents(
+        eventsTracker,
+        testEventLogger,
+        targetService,
+        expectedError
     );
     return eventsTracker;
 }
@@ -50,7 +41,8 @@ export interface MockEventsTracker extends EventsTracker {
 export function subscribeToTrackMockEvents(
     testEventLogger: EventLogger,
     mockService: MockLLMService,
-    mockChat?: AnalyzedChatHistory
+    mockChat?: AnalyzedChatHistory,
+    expectedError?: LLMServiceError
 ): MockEventsTracker {
     const eventsTracker: MockEventsTracker = {
         mockGenerationEventsN: 0,
@@ -68,21 +60,46 @@ export function subscribeToTrackMockEvents(
             eventsTracker.mockGenerationEventsN += 1;
         }
     );
+    subscribeToLogicEvents(
+        eventsTracker,
+        testEventLogger,
+        mockService,
+        expectedError
+    );
+    return eventsTracker;
+}
+
+function subscribeToLogicEvents<T>(
+    eventsTracker: EventsTracker,
+    testEventLogger: EventLogger,
+    targetService: T,
+    expectedError?: LLMServiceError
+) {
     testEventLogger.subscribeToLogicEvent(
         LLMService.generationRequestSucceededEvent,
         (service) => {
-            expect(service as MockLLMService).toEqual(mockService);
+            expect(service).toEqual(targetService);
             eventsTracker.successfulGenerationEventsN += 1;
         }
     );
     testEventLogger.subscribeToLogicEvent(
         LLMService.generationRequestFailedEvent,
         (data) => {
-            const serviceAndError = data as [MockLLMService, LLMServiceError];
-            expect(serviceAndError).toBeTruthy();
-            expect(serviceAndError[0]).toEqual(mockService);
+            checkRequestFailedEventData(data, targetService, expectedError);
             eventsTracker.failedGenerationEventsN += 1;
         }
     );
-    return eventsTracker;
+}
+
+function checkRequestFailedEventData<T>(
+    data: any,
+    targetService: T,
+    expectedError?: LLMServiceError
+) {
+    const serviceAndError = data as [T, LLMServiceError];
+    expect(serviceAndError).toBeTruthy();
+    expect(serviceAndError[0]).toEqual(targetService);
+    if (expectedError !== undefined) {
+        expect(serviceAndError[1]).toEqual(expectedError);
+    }
 }

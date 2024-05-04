@@ -106,6 +106,10 @@ export class MockLLMService extends LLMService {
             resolvedWithMockLLMService: true,
         } as MockLLMUserModelParams);
     }
+
+    clearGenerationLogs() {
+        this.internal.generationsLogger.resetLogs();
+    }
 }
 
 export class MockLLMGeneratedProof extends GeneratedProof {

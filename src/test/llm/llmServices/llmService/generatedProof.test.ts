@@ -1,7 +1,10 @@
 import { expect } from "earl";
 
 import { AnalyzedChatHistory } from "../../../../llm/llmServices/chat";
-import { ErrorsHandlingMode } from "../../../../llm/llmServices/llmService";
+import {
+    ErrorsHandlingMode,
+    GeneratedProof,
+} from "../../../../llm/llmServices/llmService";
 
 import {
     mockChat,
@@ -17,6 +20,7 @@ import {
     MockLLMModelParams,
     MockLLMService,
 } from "../../llmSpecificTestUtils/mockLLMService";
+import { testFailedGenerationCompletely } from "../../llmSpecificTestUtils/testFailedGeneration";
 import { enhanceMockParams } from "../../llmSpecificTestUtils/transformParams";
 import { withMockLLMService } from "../../llmSpecificTestUtils/withMockLLMService";
 
@@ -44,8 +48,8 @@ suite("[LLMService] Test `GeneratedProof`", () => {
     }
 
     async function constructInitialGeneratedProof(
-        basicMockParams: MockLLMModelParams,
-        mockService: MockLLMService
+        mockService: MockLLMService,
+        basicMockParams: MockLLMModelParams
     ): Promise<MockLLMGeneratedProof> {
         const unlimitedTokensWithFixesMockParams = enhanceMockParams(
             basicMockParams,
@@ -74,8 +78,8 @@ suite("[LLMService] Test `GeneratedProof`", () => {
             async (mockService, basicMockParams, _testEventLogger) => {
                 const initialGeneratedProof =
                     await constructInitialGeneratedProof(
-                        basicMockParams,
-                        mockService
+                        mockService,
+                        basicMockParams
                     );
                 expectGeneratedProof(initialGeneratedProof, {
                     proof: proofsToGenerate[0],
@@ -88,13 +92,13 @@ suite("[LLMService] Test `GeneratedProof`", () => {
         );
     });
 
-    test("Mock regeneration: generate next version", async () => {
+    test("Mock multiround: generate next version, happy path", async () => {
         await withMockLLMService(
             async (mockService, basicMockParams, _testEventLogger) => {
                 const initialGeneratedProof =
                     await constructInitialGeneratedProof(
-                        basicMockParams,
-                        mockService
+                        mockService,
+                        basicMockParams
                     );
 
                 const newVersionChoices = 3;
@@ -129,13 +133,13 @@ suite("[LLMService] Test `GeneratedProof`", () => {
         );
     });
 
-    test("Fix proof", async () => {
+    test("Fix proof, happy path", async () => {
         await withMockLLMService(
             async (mockService, basicMockParams, _testEventLogger) => {
                 const initialGeneratedProof =
                     await constructInitialGeneratedProof(
-                        basicMockParams,
-                        mockService
+                        mockService,
+                        basicMockParams
                     );
 
                 const fixedVersionChoices = 3;
@@ -171,4 +175,45 @@ suite("[LLMService] Test `GeneratedProof`", () => {
             }
         );
     });
+
+    async function fixProof(
+        _mockService: MockLLMService,
+        _mockParams: MockLLMModelParams,
+        errorsHandlingMode: ErrorsHandlingMode,
+        preparedData?: any
+    ): Promise<string[]> {
+        const initialGeneratedProof = preparedData as GeneratedProof;
+        expect(initialGeneratedProof).toBeTruthy();
+
+        const fixedGeneratedProofs = await initialGeneratedProof.fixProof(
+            "Proof was incorrect",
+            1,
+            errorsHandlingMode
+        );
+
+        return fixedGeneratedProofs.map((generatedProof) =>
+            generatedProof.proof()
+        );
+    }
+
+    async function prepareData(
+        mockService: MockLLMService,
+        basicMockParams: MockLLMModelParams
+    ): Promise<GeneratedProof> {
+        const initialGeneratedProof = await constructInitialGeneratedProof(
+            mockService,
+            basicMockParams
+        );
+        mockService.clearGenerationLogs();
+        return initialGeneratedProof;
+    }
+
+    testFailedGenerationCompletely(
+        fixProof,
+        {
+            proofsToGenerate: [MockLLMService.fixedProofString],
+            testTargetName: "Fix proof, failed generation",
+        },
+        prepareData
+    );
 });

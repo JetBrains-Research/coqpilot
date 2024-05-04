@@ -1,6 +1,5 @@
 import { expect } from "earl";
 
-import { GenerationFailedError } from "../../../../llm/llmServiceErrors";
 import { ErrorsHandlingMode } from "../../../../llm/llmServices/llmService";
 
 import {
@@ -8,14 +7,12 @@ import {
     proofsToGenerate,
 } from "../../llmSpecificTestUtils/constants";
 import { subscribeToTrackMockEvents } from "../../llmSpecificTestUtils/eventsTracker";
-import {
-    ExpectedRecord,
-    expectLogs,
-} from "../../llmSpecificTestUtils/expectLogs";
+import { expectLogs } from "../../llmSpecificTestUtils/expectLogs";
 import {
     MockLLMModelParams,
     MockLLMService,
 } from "../../llmSpecificTestUtils/mockLLMService";
+import { testFailedGenerationCompletely } from "../../llmSpecificTestUtils/testFailedGeneration";
 import { withMockLLMService } from "../../llmSpecificTestUtils/withMockLLMService";
 
 suite("[LLMService] Test `generateFromChat`", () => {
@@ -23,7 +20,7 @@ suite("[LLMService] Test `generateFromChat`", () => {
         ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS,
         ErrorsHandlingMode.RETHROW_ERRORS,
     ].forEach((errorsHandlingMode) => {
-        test(`Test successful generation, ${errorsHandlingMode}`, async () => {
+        test(`Test successful generation: ${errorsHandlingMode}`, async () => {
             await withMockLLMService(
                 async (mockService, basicMockParams, testEventLogger) => {
                     const eventsTracker = subscribeToTrackMockEvents(
@@ -51,103 +48,21 @@ suite("[LLMService] Test `generateFromChat`", () => {
         });
     });
 
-    function testFailedGeneration(
-        errorsHandlingMode: ErrorsHandlingMode,
-        expectedFailedGenerationEventsN: number,
-        testGenerationBlock: (
-            mockService: MockLLMService,
-            erroneousMockParams: MockLLMModelParams,
-            internalGenerationError: Error
-        ) => Promise<void>
-    ) {
-        test(`Test failed generation, ${errorsHandlingMode}`, async () => {
-            await withMockLLMService(
-                async (mockService, basicMockParams, testEventLogger) => {
-                    const eventsTracker = subscribeToTrackMockEvents(
-                        testEventLogger,
-                        mockService,
-                        mockChat
-                    );
-
-                    const internalGenerationError = Error(
-                        "tokens limit exceeded"
-                    );
-                    mockService.throwErrorOnNextGeneration(
-                        internalGenerationError
-                    );
-                    await testGenerationBlock(
-                        mockService,
-                        basicMockParams,
-                        internalGenerationError
-                    );
-
-                    expect(eventsTracker).toEqual({
-                        mockGenerationEventsN: 1,
-                        successfulGenerationEventsN: 0,
-                        failedGenerationEventsN:
-                            expectedFailedGenerationEventsN,
-                    });
-
-                    const failureRecord: ExpectedRecord = {
-                        status: "FAILURE",
-                        error: internalGenerationError,
-                    };
-                    expectLogs([failureRecord], mockService);
-
-                    // check if service stays available after an error thrown
-                    const generatedProofs = await mockService.generateFromChat(
-                        mockChat,
-                        basicMockParams,
-                        proofsToGenerate.length,
-                        errorsHandlingMode
-                    );
-                    expect(generatedProofs).toEqual(proofsToGenerate);
-                    expect(eventsTracker).toEqual({
-                        mockGenerationEventsN: 2,
-                        successfulGenerationEventsN: 1,
-                        failedGenerationEventsN:
-                            expectedFailedGenerationEventsN,
-                    });
-                    // `mockLLM` was created with `debug = true`, so logs are not cleaned on success
-                    expectLogs(
-                        [failureRecord, { status: "SUCCESS" }],
-                        mockService
-                    );
-                }
-            );
-        });
+    async function generateFromChat(
+        mockService: MockLLMService,
+        mockParams: MockLLMModelParams,
+        errorsHandlingMode: ErrorsHandlingMode
+    ): Promise<string[]> {
+        return mockService.generateFromChat(
+            mockChat,
+            mockParams,
+            proofsToGenerate.length,
+            errorsHandlingMode
+        );
     }
 
-    testFailedGeneration(
-        ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS,
-        1,
-        async (mockService, erroneousMockParams, _internalGenerationError) => {
-            const noGeneratedProofs = await mockService.generateFromChat(
-                mockChat,
-                erroneousMockParams,
-                proofsToGenerate.length,
-                ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
-            );
-            expect(noGeneratedProofs).toHaveLength(0);
-        }
-    );
-
-    testFailedGeneration(
-        ErrorsHandlingMode.RETHROW_ERRORS,
-        0, // `ErrorsHandlingMode.RETHROW_ERRORS` doesn't use failed-generation events
-        async (mockService, erroneousMockParams, internalGenerationError) => {
-            try {
-                await mockService.generateFromChat(
-                    mockChat,
-                    erroneousMockParams,
-                    proofsToGenerate.length,
-                    ErrorsHandlingMode.RETHROW_ERRORS
-                );
-            } catch (e) {
-                const wrappedError = e as GenerationFailedError;
-                expect(wrappedError).toBeTruthy();
-                expect(wrappedError.cause).toEqual(internalGenerationError);
-            }
-        }
-    );
+    testFailedGenerationCompletely(generateFromChat, {
+        expectedChatOfMockEvent: mockChat,
+        proofsToGenerate: proofsToGenerate,
+    });
 });

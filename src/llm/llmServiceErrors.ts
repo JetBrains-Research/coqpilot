@@ -6,7 +6,7 @@ import { UserModelParams } from "./userModelParams";
 export abstract class LLMServiceError extends Error {
     constructor(
         message: string = "",
-        public readonly cause: Error | undefined = undefined
+        readonly cause: Error | undefined = undefined
     ) {
         let errorMessage = message;
         if (cause !== undefined) {
@@ -44,7 +44,7 @@ export class ConfigurationError extends LLMServiceError {
  * i.e. after all parameters validation has been performed.
  */
 export class GenerationFailedError extends LLMServiceError {
-    constructor(cause: Error) {
+    constructor(readonly cause: Error) {
         super("", cause);
     }
 }

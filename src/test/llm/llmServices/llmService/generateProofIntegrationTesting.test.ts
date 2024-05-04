@@ -1,6 +1,9 @@
 import { expect } from "earl";
 
-import { GeneratedProof } from "../../../../llm/llmServices/llmService";
+import {
+    ErrorsHandlingMode,
+    GeneratedProof,
+} from "../../../../llm/llmServices/llmService";
 
 import { EventLogger } from "../../../../logging/eventLogger";
 import {
@@ -23,15 +26,17 @@ import {
     MockLLMModelParams,
     MockLLMService,
 } from "../../llmSpecificTestUtils/mockLLMService";
+import {
+    testFailedGenerationCompletely,
+    testFailureAtChatBuilding,
+} from "../../llmSpecificTestUtils/testFailedGeneration";
 import { enhanceMockParams } from "../../llmSpecificTestUtils/transformParams";
 import { withMockLLMService } from "../../llmSpecificTestUtils/withMockLLMService";
 
 /*
- * Note:
- * - fitting context (theorems, diagnostics) into chats is tested in
- * `chatFactory.test.ts` and `chatTokensFitter.test.ts`;
- * - handling of different `ErrorsHandlingMode`-s is tested in `generateFromChat.test.ts`.
- * Therefore, in this suite testing of these items will be omitted.
+ * Note: fitting context (theorems, diagnostics) into chats is tested in
+ * `chatFactory.test.ts` and `chatTokensFitter.test.ts`.
+ * Therefore, in this suite testing of context-fitting will be omitted.
  */
 suite("[LLMService] Integration testing of `generateProof`", () => {
     test("Test success, 1 round and default settings", async () => {
@@ -68,35 +73,27 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
         );
     });
 
-    test("Test failure, default error handling", async () => {
-        await withMockLLMService(
-            async (mockService, basicMockParams, testEventLogger) => {
-                const eventsTracker = subscribeToTrackMockEvents(
-                    testEventLogger,
-                    mockService
-                );
+    async function generateProof(
+        mockService: MockLLMService,
+        mockParams: MockLLMModelParams,
+        errorsHandlingMode: ErrorsHandlingMode
+    ): Promise<string[]> {
+        return (
+            await mockService.generateProof(
+                mockProofGenerationContext,
+                mockParams,
+                proofsToGenerate.length,
+                errorsHandlingMode
+            )
+        ).map((generatedProof) => generatedProof.proof());
+    }
 
-                const connectionError = Error("failed to reach server");
-                mockService.throwErrorOnNextGeneration(connectionError);
-                const noGeneratedProofs = await mockService.generateProof(
-                    mockProofGenerationContext,
-                    basicMockParams,
-                    proofsToGenerate.length
-                );
-                expect(noGeneratedProofs).toHaveLength(0);
+    testFailedGenerationCompletely(generateProof, {
+        proofsToGenerate: proofsToGenerate,
+    });
 
-                expect(eventsTracker).toEqual({
-                    mockGenerationEventsN: 1,
-                    successfulGenerationEventsN: 0,
-                    failedGenerationEventsN: 1,
-                });
-                const failureRecord: ExpectedRecord = {
-                    status: "FAILURE",
-                    error: connectionError,
-                };
-                expectLogs([failureRecord], mockService);
-            }
-        );
+    testFailureAtChatBuilding(generateProof, {
+        proofsToGenerate: proofsToGenerate,
     });
 
     test("Test successful 2-round generation, default settings", async () => {
@@ -362,7 +359,7 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
                     );
             }
         );
-    }).timeout(10000);
+    }).timeout(15000);
 
     test("Stress test with async workers (multiround with random failures, default settings)", async () => {
         await withMockLLMService(
@@ -400,5 +397,5 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
                 );
             }
         );
-    }).timeout(10000);
+    }).timeout(5000);
 });

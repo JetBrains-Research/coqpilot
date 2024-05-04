@@ -512,12 +512,16 @@ export abstract class LLMServiceInternal {
             const error = LLMServiceInternal.asError(e);
             if (error instanceof ConfigurationError) {
                 this.handleError(error, errorsHandlingMode);
+            } else if (error instanceof GenerationFailedError) {
+                this.generationsLogger.logGenerationFailed(
+                    request,
+                    error.cause
+                );
+                this.handleError(error, errorsHandlingMode);
             } else {
                 this.generationsLogger.logGenerationFailed(request, error);
                 this.handleError(
-                    error instanceof GenerationFailedError
-                        ? error
-                        : new GenerationFailedError(error),
+                    new GenerationFailedError(error),
                     errorsHandlingMode
                 );
             }
