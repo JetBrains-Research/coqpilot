@@ -79,18 +79,14 @@ npm install
 npm run compile
 ```
 
-To run the extension, you can press `F5` in the vscode. It will open a new window with the extension running.
+To run the extension from the vscode, you can press `F5` or click on `Run extension` in the `Run and Debug` section. It will open a new window with the extension running.
 
-To run tests you should go to the `src/test/resources/coqProj` directory and run make:
+To run all tests properly (i.e. with rebuilding the resources and the code first), execute the following task:
 ```bash
-make 
-```
-Some tests depend on the small coq project, that is expected to be built. After that run: 
-```bash
-npm run test
+npm run clean-test
 ```
 
-Otherwise, if you do not want to build that small project, you can run: 
+If you do not want to build test resources (a small coq project), to execute all the tests that don't use them you can run: 
 ```bash
 npm run test-ci
 ```
@@ -123,7 +119,7 @@ This extension contributes the following settings:
 
 * `coqpilot.openAiModelsParameters`, `coqpilot.predefinedProofsModelsParameters`, `coqpilot.grazieModelsParameters` and `coqpilot.lmStudioModelsParameters`:
 
-Each of these settings are modified in `settings.json` and contain an array of models from this service. Each model will be used for generation independantly. Multiple models for a single service could be defined. For example, you can define parameters for two open-ai gpt models. One would be using `gpt-3.5` and the other one `gpt-4`. CoqPilot will first try to generate proofs using the first model, and if it fails, it will try the second one. This way coqpilot iterates over all services (currently 4 of them) and for each service it iterates over all models. 
+Each of these settings are modified in `settings.json` and contain an array of models from this service. Each model will be used for generation independantly. Multiple models for a single service could be defined. For example, you can define parameters for two open-ai gpt models. One would be using `gpt-3.5` and the other one `gpt-4`. CoqPilot will first try to generate proofs using the first model, and if it doesn't succeed, it will try the second one. This way coqpilot iterates over all services (currently 4 of them) and for each service it iterates over all models. 
 
 ## Guide to Model Configuration
 
@@ -150,7 +146,7 @@ The simplest service to configure is `predefinedProofs`:
 {
     "coqpilot.predefinedProofsModelsParameters": [
         {
-            "modelName": "Any name",
+            "modelId": "predefined proofs",
             "tactics": [
                 "reflexivity.",
                 "simpl. reflexivity.",
@@ -160,19 +156,20 @@ The simplest service to configure is `predefinedProofs`:
     ]
 }
 ```
-Model name here is only used for convinience inside code, so may be any string. 
+The `modelId` property may be any string you like, but it should be unique for each model. This way, CoqPilot will be able to correctly tell you which model might have configuration issues.
 
 The most commonly used service is `open-ai` (`grazie` and `lmStudio` are configured very similarly). 
 ```json
 {
     "coqpilot.openAiModelsParameters": [
         {
+            "modelId": "openai-gpt-3.5",
+            "modelName": "gpt-3.5-turbo-0301",
             "temperature": 1,
             "apiKey": "***your-api-key***",
-            "modelName": "gpt-3.5-turbo-0301",
             "choices": 10,
             "systemPrompt": "Generate proof...",
-            "newMessageMaxTokens": 2000,
+            "maxTokensToGenerate": 2000,
             "tokensLimit": 4096,
             "multiroundProfile": {
                 "maxRoundsNumber": 1,
