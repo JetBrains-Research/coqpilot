@@ -12,6 +12,10 @@ export interface ModelParams {
     multiroundProfile: MultiroundProfile;
 }
 
+export interface PredefinedProofsModelParams extends ModelParams {
+    tactics: string[];
+}
+
 export interface OpenAiModelParams extends ModelParams {
     modelName: string;
     temperature: number;
@@ -21,11 +25,6 @@ export interface OpenAiModelParams extends ModelParams {
 export interface GrazieModelParams extends ModelParams {
     modelName: string;
     apiKey: string;
-}
-
-export interface PredefinedProofsModelParams extends ModelParams {
-    // A list of tactics to try to solve the goal with.
-    tactics: string[];
 }
 
 export interface LMStudioModelParams extends ModelParams {

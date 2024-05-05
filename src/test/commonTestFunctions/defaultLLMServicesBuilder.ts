@@ -9,14 +9,14 @@ import {
 } from "../../llm/userModelParams";
 
 export function createDefaultServices(): LLMServices {
+    const predefinedProofsService = new PredefinedProofsService();
     const openAiService = new OpenAiService();
     const grazieService = new GrazieService();
-    const predefinedProofsService = new PredefinedProofsService();
     const lmStudioService = new LMStudioService();
     return {
+        predefinedProofsService,
         openAiService,
         grazieService,
-        predefinedProofsService,
         lmStudioService,
     };
 }
@@ -25,9 +25,9 @@ export function createTrivialModelsParams(
     predefinedProofsModelParams: PredefinedProofsUserModelParams[] = []
 ): UserModelsParams {
     return {
+        predefinedProofsModelParams: predefinedProofsModelParams,
         openAiParams: [],
         grazieParams: [],
-        predefinedProofsModelParams: predefinedProofsModelParams,
         lmStudioParams: [],
     };
 }

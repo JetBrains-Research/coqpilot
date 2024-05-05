@@ -27,6 +27,11 @@ export class GlobalExtensionState {
     );
 
     public readonly llmServices: LLMServices = {
+        predefinedProofsService: new PredefinedProofsService(
+            this.eventLogger,
+            false,
+            path.join(this.llmServicesLogsDir, "predefined-proofs-logs.txt")
+        ),
         openAiService: new OpenAiService(
             this.eventLogger,
             false,
@@ -36,11 +41,6 @@ export class GlobalExtensionState {
             this.eventLogger,
             false,
             path.join(this.llmServicesLogsDir, "grazie-logs.txt")
-        ),
-        predefinedProofsService: new PredefinedProofsService(
-            this.eventLogger,
-            false,
-            path.join(this.llmServicesLogsDir, "predefined-proofs-logs.txt")
         ),
         lmStudioService: new LMStudioService(
             this.eventLogger,

@@ -45,6 +45,10 @@ suite("Parse UserModelParams from JSON test", () => {
         multiroundProfile: validMultiroundProfileComplete,
     };
 
+    const validPredefinedProofsUserModelParamsComplete = {
+        ...validUserModelParamsCompelete,
+        tactics: ["auto.", "auto. intro."],
+    };
     const validOpenAiUserModelParamsComplete = {
         ...validUserModelParamsCompelete,
         modelName: "gpt-model",
@@ -55,10 +59,6 @@ suite("Parse UserModelParams from JSON test", () => {
         ...validUserModelParamsCompelete,
         modelName: "gpt-model",
         apiKey: "api-key",
-    };
-    const validPredefinedProofsUserModelParamsComplete = {
-        ...validUserModelParamsCompelete,
-        tactics: ["auto.", "auto. intro."],
     };
     const validLMStudioUserModelParamsComplete = {
         ...validUserModelParamsCompelete,
@@ -116,6 +116,13 @@ suite("Parse UserModelParams from JSON test", () => {
         isInvalidJSON(invalidAdditionalProp, userMultiroundProfileSchema);
     });
 
+    test("Validate `PredefinedProofsUserModelParams`", () => {
+        isValidJSON(
+            validPredefinedProofsUserModelParamsComplete,
+            predefinedProofsUserModelParamsSchema
+        );
+    });
+
     test("Validate `OpenAiUserModelParams`", () => {
         isValidJSON(
             validOpenAiUserModelParamsComplete,
@@ -127,13 +134,6 @@ suite("Parse UserModelParams from JSON test", () => {
         isValidJSON(
             validGrazieUserModelParamsComplete,
             grazieUserModelParamsSchema
-        );
-    });
-
-    test("Validate `PredefinedProofsUserModelParams`", () => {
-        isValidJSON(
-            validPredefinedProofsUserModelParamsComplete,
-            predefinedProofsUserModelParamsSchema
         );
     });
 

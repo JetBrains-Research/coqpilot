@@ -77,5 +77,5 @@ export const defaultMultiroundProfile: MultiroundProfile = {
     maxRoundsNumber: 1,
     proofFixChoices: 1,
     proofFixPrompt:
-        "Unfortunately, the last proof is not correct. Here is the compiler's feedback: '${diagnostic}'. Please, fix the proof.",
+        "Unfortunately, the last proof is not correct. Here is the compiler's feedback: `${diagnostic}`. Please, fix the proof.",
 };

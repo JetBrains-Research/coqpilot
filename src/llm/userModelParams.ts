@@ -40,6 +40,13 @@ export interface UserModelParams {
     multiroundProfile?: UserMultiroundProfile;
 }
 
+export interface PredefinedProofsUserModelParams extends UserModelParams {
+    /**
+     * List of tactics to try to solve the goal with.
+     */
+    tactics: string[];
+}
+
 export interface OpenAiUserModelParams extends UserModelParams {
     modelName: string;
     temperature: number;
@@ -51,20 +58,15 @@ export interface GrazieUserModelParams extends UserModelParams {
     apiKey: string;
 }
 
-export interface PredefinedProofsUserModelParams extends UserModelParams {
-    // A list of tactics to try to solve the goal with.
-    tactics: string[];
-}
-
 export interface LMStudioUserModelParams extends UserModelParams {
     temperature: number;
     port: number;
 }
 
 export interface UserModelsParams {
+    predefinedProofsModelParams: PredefinedProofsUserModelParams[];
     openAiParams: OpenAiUserModelParams[];
     grazieParams: GrazieUserModelParams[];
-    predefinedProofsModelParams: PredefinedProofsUserModelParams[];
     lmStudioParams: LMStudioUserModelParams[];
 }
 
@@ -100,6 +102,20 @@ export const userModelParamsSchema: JSONSchemaType<UserModelParams> = {
     required: ["modelId"],
 };
 
+export const predefinedProofsUserModelParamsSchema: JSONSchemaType<PredefinedProofsUserModelParams> =
+    {
+        title: "predefinedProofsModelsParameters",
+        type: "object",
+        properties: {
+            tactics: {
+                type: "array",
+                items: { type: "string" },
+            },
+            ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
+        },
+        required: ["modelId", "tactics"],
+    };
+
 export const openAiUserModelParamsSchema: JSONSchemaType<OpenAiUserModelParams> =
     {
         title: "openAiModelsParameters",
@@ -123,20 +139,6 @@ export const grazieUserModelParamsSchema: JSONSchemaType<GrazieUserModelParams> 
             ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
         },
         required: ["modelId", "modelName", "apiKey"],
-    };
-
-export const predefinedProofsUserModelParamsSchema: JSONSchemaType<PredefinedProofsUserModelParams> =
-    {
-        title: "predefinedProofsModelsParameters",
-        type: "object",
-        properties: {
-            tactics: {
-                type: "array",
-                items: { type: "string" },
-            },
-            ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
-        },
-        required: ["modelId", "tactics"],
     };
 
 export const lmStudioUserModelParamsSchema: JSONSchemaType<LMStudioUserModelParams> =

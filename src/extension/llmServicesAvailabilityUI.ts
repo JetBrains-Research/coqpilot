@@ -76,15 +76,15 @@ function createLLMServiceToUIState(
     llmServices: LLMServices
 ): LLMServiceToUIState {
     return {
+        [llmServices.predefinedProofsService.serviceName]: {
+            availabilityState: LLMServiceAvailablityState.AVAILABLE,
+            messagesShownState: LLMServiceMessagesShownState.NO_MESSAGES_SHOWN,
+        },
         [llmServices.openAiService.serviceName]: {
             availabilityState: LLMServiceAvailablityState.AVAILABLE,
             messagesShownState: LLMServiceMessagesShownState.NO_MESSAGES_SHOWN,
         },
         [llmServices.grazieService.serviceName]: {
-            availabilityState: LLMServiceAvailablityState.AVAILABLE,
-            messagesShownState: LLMServiceMessagesShownState.NO_MESSAGES_SHOWN,
-        },
-        [llmServices.predefinedProofsService.serviceName]: {
             availabilityState: LLMServiceAvailablityState.AVAILABLE,
             messagesShownState: LLMServiceMessagesShownState.NO_MESSAGES_SHOWN,
         },

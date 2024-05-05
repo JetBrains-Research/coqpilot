@@ -70,6 +70,14 @@ export function parseAndValidateUserModelsParams(
     config: WorkspaceConfiguration,
     jsonSchemaValidator: Ajv
 ): UserModelsParams {
+    const predefinedProofsParams: PredefinedProofsUserModelParams[] =
+        config.predefinedProofsModelsParameters.map((params: any) =>
+            validateAndParseJson(
+                params,
+                predefinedProofsUserModelParamsSchema,
+                jsonSchemaValidator
+            )
+        );
     const openAiParams: OpenAiUserModelParams[] =
         config.openAiModelsParameters.map((params: any) =>
             validateAndParseJson(
@@ -86,14 +94,6 @@ export function parseAndValidateUserModelsParams(
                 jsonSchemaValidator
             )
         );
-    const predefinedProofsParams: PredefinedProofsUserModelParams[] =
-        config.predefinedProofsModelsParameters.map((params: any) =>
-            validateAndParseJson(
-                params,
-                predefinedProofsUserModelParamsSchema,
-                jsonSchemaValidator
-            )
-        );
     const lmStudioParams: LMStudioUserModelParams[] =
         config.lmStudioModelsParameters.map((params: any) =>
             validateAndParseJson(
@@ -103,9 +103,9 @@ export function parseAndValidateUserModelsParams(
             )
         );
     const allModels = [
+        ...predefinedProofsParams,
         ...openAiParams,
         ...grazieParams,
-        ...predefinedProofsParams,
         ...lmStudioParams,
     ];
 
@@ -114,9 +114,9 @@ export function parseAndValidateUserModelsParams(
     validateApiKeysAreProvided(openAiParams, grazieParams);
 
     return {
+        predefinedProofsModelParams: predefinedProofsParams,
         openAiParams: openAiParams,
         grazieParams: grazieParams,
-        predefinedProofsModelParams: predefinedProofsParams,
         lmStudioParams: lmStudioParams,
     };
 }
