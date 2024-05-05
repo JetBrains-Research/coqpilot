@@ -6,6 +6,7 @@ import {
     LMStudioUserModelParams,
     OpenAiUserModelParams,
     PredefinedProofsUserModelParams,
+    UserModelParams,
     UserModelsParams,
     grazieUserModelParamsSchema,
     lmStudioUserModelParamsSchema,
@@ -85,6 +86,13 @@ export function parseUserModelsParams(
             )
         );
 
+    validateIdsAreUnique([
+        ...openAiParams,
+        ...grazieParams,
+        ...predefinedProofsParams,
+        ...lmStudioParams,
+    ]);
+
     return {
         openAiParams: openAiParams,
         grazieParams: grazieParams,
@@ -108,4 +116,18 @@ function validateAndParseJson<T>(
     }
 
     return instance;
+}
+
+function validateIdsAreUnique(modelsParams: UserModelParams[]) {
+    const modelIds = modelsParams.map((params) => params.modelId);
+    const uniqueModelIds = new Set<string>();
+    for (const modelId of modelIds) {
+        if (uniqueModelIds.has(modelId)) {
+            throw Error(
+                `Models' identifiers are not unique: several models have \`modelId: "${modelId}"\``
+            );
+        } else {
+            uniqueModelIds.add(modelId);
+        }
+    }
 }
