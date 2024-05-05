@@ -43,14 +43,17 @@ export enum ErrorsHandlingMode {
  * can be further regenerated (fixed / shortened / etc), also keeping their previous versions.
  *
  * All proofs-generation methods support errors handling and logging.
- * - Each successfull generation is logged both by `GenerationsLogger` and `EventsLogger`.
+ * - Each successfull generation is logged both by `GenerationsLogger` and `EventLogger`.
  * - If error occurs, it is catched and then:
- *   - in case of <LOG_EVENTS_AND_SWALLOW_ERRORS>, it's only logged by `EventsLogger`;
- *   - in case of <RETHROW_ERRORS>, it's wrapped into `LLMServiceError` and then rethrown.
- * `EventsLogger` sends `generationRequestSucceededEvent` and `generationRequestFailedEvent`,
- * which can be handled then, for example, by the UI.
- * `GenerationsLogger` maintains the logs used for the further estimation of the service availability
- * See the `estimateTimeToBecomeAvailable` method.
+ *   - is wrapped into `LLMServiceError` and then...
+ *   - in case of <LOG_EVENTS_AND_SWALLOW_ERRORS>, it's only logged by `EventLogger`;
+ *   - in case of <RETHROW_ERRORS>, it's rethrown.
+ * `EventLogger` sends `generationRequestSucceededEvent` and `generationRequestFailedEvent`
+ *  (along with the service and error objects), which can be handled then, for example, by the UI.
+ *
+ * Regardless the errors handling modes and `EventLogger` work,
+ * `GenerationsLogger` maintains the logs of both successful and failed generations
+ * used for the further estimation of the service availability. See the `estimateTimeToBecomeAvailable` method.
  *
  * Moreover, `LLMService` is capable of resolving partially-undefined `UserModelParams`
  * to complete `ModelParams`. See the `resolveParameters` method.
@@ -62,7 +65,7 @@ export enum ErrorsHandlingMode {
  * I.e. `LLMServiceInternal` is effectively the only interface needed to be actually implemented.
  *
  * If proofs-generation is not supposed to be based on chats,
- * the methods of `LLMService` should be overriden directly.
+ * the methods of `LLMService` should be overriden directly too.
  */
 export abstract class LLMService {
     protected abstract readonly internal: LLMServiceInternal;
@@ -93,7 +96,8 @@ export abstract class LLMService {
     static readonly generationRequestFailedEvent = `generation-request-failed`;
 
     /**
-     * Generates proofs from chat. This method performs errors-handling and logging, check `LLMService` docs for more details.
+     * Generates proofs from chat.
+     * This method performs errors-handling and logging, check `LLMService` docs for more details.
      *
      * @returns generated raw proofs as strings.
      */
@@ -118,7 +122,7 @@ export abstract class LLMService {
      *
      * The default implementation is based on the generation from chat, namely,
      * it calls `LLMServiceInternal.generateFromChatImpl`.
-     * If it is not the desired way, this method should be overriden.
+     * If it is not the desired way, `generateProof` should be overriden.
      *
      * @returns generated proofs as `GeneratedProof`-s.
      */
@@ -167,7 +171,7 @@ export abstract class LLMService {
 
     /**
      * Resolves possibly-incomplete `UserModelParams` to complete `ModelParams`.
-     * If it is not possible, an error will be thrown.
+     * If it is not possible, a `ParametersResolutionError` error will be thrown.
      *
      * First, parameters might be resolved by `LLMService` implementation,
      * then everything unresolved is resolved with defaults (by `resolveParametersWithDefaults` method).
@@ -194,8 +198,8 @@ export abstract class LLMService {
  *
  * Regeneration (in other words, multiround-generation) parameters are specified at `ModelParams.multiroundProfile`.
  *
- * Same to `LLMService`, regeneration methods performs errors handling and logging (in the same way).
- * Same to `LLMService`, these methods could be overriden to change the regeneration behaviour.
+ * Same to `LLMService`, regeneration methods perform errors handling and logging (in the same way).
+ * Same to `LLMService`, these methods could be overriden to change the behaviour (of the regeneration).
  *
  * Finally, `GeneratedProof` keeps the previous proof versions (but not the future ones).
  */
@@ -255,7 +259,7 @@ export abstract class GeneratedProof {
     }
 
     /**
-     * Initially generated proofs has version number equal to 1.
+     * Initially generated proofs have version number equal to 1.
      * Each regeneration (multiround generation) creates `GeneratedProofs`
      * with version = `this.versionNumber() + 1`.
      *
@@ -339,7 +343,7 @@ export abstract class GeneratedProof {
  * This class represents the inner resources and implementations of `LLMService`.
  *
  * Its main goals are to:
- * - separate an actual logic from the facade `LLMService` class;
+ * - separate an actual logic and implementation wrappers from the facade `LLMService` class;
  * - make `GeneratedProof` effectively an inner class of `LLMService`,
  * capable of reaching its internal resources.
  *
@@ -396,7 +400,7 @@ export abstract class LLMServiceInternal {
     /**
      * All the resources that `LLMServiceInternal` is responsible for should be disposed.
      * But only them!
-     * For example, `this.requestsLogger` is created and maintained by `LLMServiceInternal`,
+     * For example, `this.generationsLogger` is created and maintained by `LLMServiceInternal`,
      * so it should be disposed in this method.
      * On the contrary, `this.eventLogger` is maintained by the external classes,
      * it is only passed to the `LLMService`; thus, it should not be disposed here.
@@ -445,33 +449,38 @@ export abstract class LLMServiceInternal {
      * This is a helper function that wraps the implementation calls,
      * providing generation logging and errors handling.
      * Many `LLMService` invariants are provided by this function;
-     * thus, it is final.
+     * thus, its implementation is final.
      * It should be called only in `LLMService` or `GeneratedProof`,
      * to help with overriding the default public methods implementation.
      *
      * Invariants TL;DR:
-     * - `this.generationsLogger` logs only generation errors or success and not `ConfigurationError`-s;
-     * - `this.eventsLogger` always logs every success and logs any error in case of `LOG_EVENTS_AND_SWALLOW_ERRORS`;
+     * - any thrown error will be of `LLMServiceError` type: if the error is not of that type originally, it'd be wrapped;
      * - errors are rethrown only in case of `RETHROW_ERRORS`;
-     * - any thrown error will be of `LLMServiceError` type: if the error is not of that type originally, it'd be wrapped.
+     * - `this.generationsLogger` logs only generation errors or success and not `ConfigurationError`-s;
+     *     - errors logged by `this.generationsLogger` are not wrapped into `LLMServiceError`;
+     * - `this.eventLogger` always logs every success and logs any error in case of `LOG_EVENTS_AND_SWALLOW_ERRORS`;
+     *     - in case of success, event's `data` is the `LLMService` instance;
+     *     - in case of failure, event's data is an array, where the first element is the `LLMService` instance
+     *       and the second one is the wrapped error of `LLMServiceError` type;
      *
      * Invariants, the full version.
      * - `buildAndValidateRequest` can throw any error:
      *     - if it is not `ConfigurationError` already, its message will be wrapped into `ConfigurationError`;
-     *     - then, it will be handled according to `errorsHandlingMode` (*);
+     *     - then, it will be handled according to `errorsHandlingMode` `(*)`;
      * - If the request is successfully built, then the proofs generation will be performed.
      *     - If no error is thrown:
      *         - generation will be logged as successful one via `this.generationsLogger`;
-     *         - `LLMService.generationRequestSucceededEvent` (with `this` as data) will be logged via `this.eventsLogger`.
-     *     - If `ConfigurationError` is thrown, it will be handled according to `errorsHandlingMode` (*).
+     *         - `LLMService.generationRequestSucceededEvent` (with `this.llmService` as data) will be logged via `this.eventLogger`.
+     *     - If `ConfigurationError` is thrown, it will be handled according to `errorsHandlingMode` `(*)`.
      *     - Otherwise:
      *         - generation will be logged as failed one via `this.generationsLogger`;
      *         - the error will be wrapped into `GenerationFailedError` (if it is not of this type already);
-     *         - it will be handled according to `errorsHandlingMode` (*).
+     *         - it will be handled according to `errorsHandlingMode` `(*)`.
      *
-     * (*) means:
+     * `(*)` means:
      * - if `errorsHandlingMode === ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS`,
-     *     - `LLMService.generationRequestFailedEvent` (with `[this, error]` as data) will be logged via `this.eventsLogger`.
+     *     - `LLMService.generationRequestFailedEvent` (with `[this.llmService, error wrapped into LLMServiceError]` as data)
+     *       will be logged via `this.eventLogger`;
      *     - the error will not be rethrown.
      * - if `errorsHandlingMode === ErrorsHandlingMode.RETHROW_ERRORS`,
      *     - the error will be rethrown.
