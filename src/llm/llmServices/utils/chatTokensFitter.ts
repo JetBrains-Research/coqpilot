@@ -11,9 +11,9 @@ export class ChatTokensFitter {
     private readonly countTokens: (text: string) => number;
 
     constructor(
-        modelName: string,
         newMessageMaxTokens: number,
-        tokensLimit: number
+        tokensLimit: number,
+        modelName?: string
     ) {
         this.tokensLimit = tokensLimit;
         if (this.tokensLimit < newMessageMaxTokens) {

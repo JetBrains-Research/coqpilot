@@ -100,7 +100,7 @@ export class PredefinedProofsService extends LLMService {
             );
         }
         const modelParams: PredefinedProofsModelParams = {
-            modelName: params.modelName,
+            modelId: params.modelId,
             newMessageMaxTokens: Math.max(
                 ...castedParams.tactics.map((tactic) => tactic.length)
             ),

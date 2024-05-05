@@ -2,6 +2,7 @@ import { OpenAiService } from "../../../llm/llmServices/openai/openAiService";
 import { OpenAiUserModelParams } from "../../../llm/userModelParams";
 
 import { testIf } from "../../commonTestFunctions/conditionalTest";
+import { testModelId } from "../llmSpecificTestUtils/constants";
 import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testAdmitCompletion";
 
 suite("[LLMService] Test `OpenAiService`", function () {
@@ -16,6 +17,7 @@ suite("[LLMService] Test `OpenAiService`", function () {
         `Simple generation: 1 request, ${choices} choices`,
         async () => {
             const userParams: OpenAiUserModelParams = {
+                modelId: testModelId,
                 modelName: "gpt-3.5-turbo-0301",
                 temperature: 1,
                 apiKey: apiKey!,

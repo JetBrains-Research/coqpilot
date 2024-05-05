@@ -5,7 +5,7 @@ export interface MultiroundProfile {
 }
 
 export interface ModelParams {
-    modelName: string;
+    modelId: string;
     systemPrompt: string;
     newMessageMaxTokens: number;
     tokensLimit: number;
@@ -13,11 +13,13 @@ export interface ModelParams {
 }
 
 export interface OpenAiModelParams extends ModelParams {
+    modelName: string;
     temperature: number;
     apiKey: string;
 }
 
 export interface GrazieModelParams extends ModelParams {
+    modelName: string;
     apiKey: string;
 }
 

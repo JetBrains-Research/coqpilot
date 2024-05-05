@@ -57,7 +57,7 @@ export class GenerationsLogger {
     logGenerationSucceeded(request: GenerationRequest, proofs: string[]) {
         let record = new LoggerRecord(
             nowTimestampMillis(),
-            request.params.modelName,
+            request.params.modelId,
             "SUCCESS",
             request.choices,
             isFromChatGenerationRequest(request)
@@ -84,7 +84,7 @@ export class GenerationsLogger {
     logGenerationFailed(request: GenerationRequest, error: Error) {
         let record = new LoggerRecord(
             nowTimestampMillis(),
-            request.params.modelName,
+            request.params.modelId,
             "FAILURE",
             request.choices,
             isFromChatGenerationRequest(request)

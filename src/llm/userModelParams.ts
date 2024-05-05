@@ -2,18 +2,30 @@ import { JSONSchemaType } from "ajv";
 import { PropertiesSchema } from "ajv/dist/types/json-schema";
 
 export interface UserMultiroundProfile {
-    // cannot be overriden: proof will always be updated no more than `maxRoundsNumber` times
+    /**
+     * Cannot be overriden in calls, i.e.
+     * proof will always be regenerated no more than `maxRoundsNumber` times.
+     */
     maxRoundsNumber?: number;
 
-    // can be overriden in the `fixProof` call with the `choices` parameter
+    /**
+     * Can be overriden in the `fixProof` call with the `choices` parameter.
+     */
     proofFixChoices?: number;
 
-    // use `${diagnostic}` syntax to include a diagnostic message into the prompt
+    /**
+     * Use `${diagnostic}` syntax to include a diagnostic message into the prompt.
+     */
     proofFixPrompt?: string;
 }
 
 export interface UserModelParams {
-    modelName: string;
+    /**
+     * Can be any string, but must be unique for each specified model.
+     * It is used only to distinguish models from each other.
+     */
+    modelId: string;
+
     choices?: number;
 
     systemPrompt?: string;
@@ -25,11 +37,13 @@ export interface UserModelParams {
 }
 
 export interface OpenAiUserModelParams extends UserModelParams {
+    modelName: string;
     temperature: number;
     apiKey: string;
 }
 
 export interface GrazieUserModelParams extends UserModelParams {
+    modelName: string;
     apiKey: string;
 }
 
@@ -65,7 +79,7 @@ export const userMultiroundProfileSchema: JSONSchemaType<UserMultiroundProfile> 
 export const userModelParamsSchema: JSONSchemaType<UserModelParams> = {
     type: "object",
     properties: {
-        modelName: { type: "string" },
+        modelId: { type: "string" },
         choices: { type: "number", nullable: true },
 
         systemPrompt: { type: "string", nullable: true },
@@ -79,7 +93,7 @@ export const userModelParamsSchema: JSONSchemaType<UserModelParams> = {
             nullable: true,
         },
     },
-    required: ["modelName"],
+    required: ["modelId"],
 };
 
 export const openAiUserModelParamsSchema: JSONSchemaType<OpenAiUserModelParams> =
@@ -87,11 +101,12 @@ export const openAiUserModelParamsSchema: JSONSchemaType<OpenAiUserModelParams> 
         title: "openAiModelsParameters",
         type: "object",
         properties: {
+            modelName: { type: "string" },
             temperature: { type: "number" },
             apiKey: { type: "string" },
             ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
         },
-        required: ["modelName", "temperature", "apiKey"],
+        required: ["modelId", "modelName", "temperature", "apiKey"],
     };
 
 export const grazieUserModelParamsSchema: JSONSchemaType<GrazieUserModelParams> =
@@ -99,10 +114,11 @@ export const grazieUserModelParamsSchema: JSONSchemaType<GrazieUserModelParams> 
         title: "grazieModelsParameters",
         type: "object",
         properties: {
+            modelName: { type: "string" },
             apiKey: { type: "string" },
             ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
         },
-        required: ["modelName", "apiKey"],
+        required: ["modelId", "modelName", "apiKey"],
     };
 
 export const predefinedProofsUserModelParamsSchema: JSONSchemaType<PredefinedProofsUserModelParams> =
@@ -116,7 +132,7 @@ export const predefinedProofsUserModelParamsSchema: JSONSchemaType<PredefinedPro
             },
             ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
         },
-        required: ["modelName", "tactics"],
+        required: ["modelId", "tactics"],
     };
 
 export const lmStudioUserModelParamsSchema: JSONSchemaType<LMStudioUserModelParams> =
@@ -128,5 +144,5 @@ export const lmStudioUserModelParamsSchema: JSONSchemaType<LMStudioUserModelPara
             port: { type: "number" },
             ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
         },
-        required: ["modelName", "temperature", "port"],
+        required: ["modelId", "temperature", "port"],
     };

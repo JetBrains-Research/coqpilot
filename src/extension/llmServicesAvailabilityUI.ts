@@ -1,5 +1,7 @@
+import { LLMServiceError } from "../llm/llmServiceErrors";
 import { LLMServices } from "../llm/llmServices";
 import { LLMService } from "../llm/llmServices/llmService";
+import { ModelParams } from "../llm/llmServices/modelParams";
 import { Time } from "../llm/llmServices/utils/time";
 
 import { EventLogger } from "../logging/eventLogger";
@@ -28,6 +30,18 @@ type LLMServiceToUIState = {
     [key: string]: LLMServiceUIState;
 };
 
+class FailedModelsSet {
+    private readonly modelAsJSONIsFailed: Map<string, boolean> = new Map();
+
+    add(model: ModelParams) {
+        this.modelAsJSONIsFailed.set(JSON.stringify(model), true);
+    }
+
+    has(model: ModelParams) {
+        this.modelAsJSONIsFailed.has(JSON.stringify(model));
+    }
+}
+
 export type UnsubscribeFromLLMServicesUIEventsCallback = () => void;
 
 export function subscribeToLLMServicesUIEvents(
@@ -36,22 +50,24 @@ export function subscribeToLLMServicesUIEvents(
 ): UnsubscribeFromLLMServicesUIEventsCallback {
     const llmServiceToUIState: LLMServiceToUIState =
         createLLMServiceToUIState(llmServices);
-    const generationFailedSubscriptionId = eventLogger.subscribeToLogicEvent(
-        LLMService.generationRequestFailedEvent,
-        reactToGenerationFailedEvent(llmServiceToUIState)
-    );
-    const generationSucceededSubscriptionId = eventLogger.subscribeToLogicEvent(
+    const failedModels = new FailedModelsSet();
+
+    const succeededSubscriptionId = eventLogger.subscribeToLogicEvent(
         LLMService.generationRequestSucceededEvent,
-        reactToGenerationSucceededEvent(llmServiceToUIState)
+        reactToGenerationRequestSucceededEvent(llmServiceToUIState)
+    );
+    const failedSubscriptionId = eventLogger.subscribeToLogicEvent(
+        LLMService.generationRequestFailedEvent,
+        reactToGenerationRequestFailedEvent(llmServiceToUIState, failedModels)
     );
     return () => {
         eventLogger.unsubscribe(
-            LLMService.generationRequestFailedEvent,
-            generationFailedSubscriptionId
+            LLMService.generationRequestSucceededEvent,
+            succeededSubscriptionId
         );
         eventLogger.unsubscribe(
-            LLMService.generationRequestSucceededEvent,
-            generationSucceededSubscriptionId
+            LLMService.generationRequestFailedEvent,
+            failedSubscriptionId
         );
     };
 }
@@ -79,12 +95,42 @@ function createLLMServiceToUIState(
     };
 }
 
-function reactToGenerationFailedEvent(
+function reactToGenerationRequestSucceededEvent(
     llmServiceToUIState: LLMServiceToUIState
 ): (data: any) => void {
     return (data: any) => {
-        const [llmService, uiState] = parseLLMServiceLogicEventData(
+        const [llmService, _, uiState] = parseLLMServiceLogicEventData(
             data,
+            false,
+            llmServiceToUIState
+        );
+        const serviceName = llmService.serviceName;
+        if (
+            uiState.availabilityState === LLMServiceAvailablityState.UNAVAILABLE
+        ) {
+            llmServiceToUIState[serviceName].availabilityState =
+                LLMServiceAvailablityState.AVAILABLE;
+            if (
+                uiState.messagesShownState ===
+                LLMServiceMessagesShownState.BECOME_UNAVAILABLE_MESSAGE_SHOWN
+            ) {
+                showMessageToUser(
+                    `\`${serviceName}\` is available again!`,
+                    "info"
+                );
+            }
+        }
+    };
+}
+
+function reactToGenerationRequestFailedEvent(
+    llmServiceToUIState: LLMServiceToUIState,
+    _failedModels: FailedModelsSet
+): (data: any) => void {
+    return (data: any) => {
+        const [llmService, _, uiState] = parseLLMServiceLogicEventData(
+            data,
+            true,
             llmServiceToUIState
         );
         const serviceName = llmService.serviceName;
@@ -111,48 +157,38 @@ function reactToGenerationFailedEvent(
     };
 }
 
-function reactToGenerationSucceededEvent(
-    llmServiceToUIState: LLMServiceToUIState
-): (data: any) => void {
-    return (data: any) => {
-        const [llmService, uiState] = parseLLMServiceLogicEventData(
-            data,
-            llmServiceToUIState
-        );
-        const serviceName = llmService.serviceName;
-        if (
-            uiState.availabilityState === LLMServiceAvailablityState.UNAVAILABLE
-        ) {
-            llmServiceToUIState[serviceName].availabilityState =
-                LLMServiceAvailablityState.AVAILABLE;
-            if (
-                uiState.messagesShownState ===
-                LLMServiceMessagesShownState.BECOME_UNAVAILABLE_MESSAGE_SHOWN
-            ) {
-                showMessageToUser(
-                    `\`${serviceName}\` is available again!`,
-                    "info"
-                );
-            }
-        }
-    };
-}
-
-// TODO: update parsing according to newer events specification
+// TODO: pass and parse model
+// use Map instead of primitive map
 function parseLLMServiceLogicEventData(
     data: any,
+    isFailure: boolean,
     llmServiceToUIState: LLMServiceToUIState
-): [LLMService, LLMServiceUIState] {
-    const llmService = data as LLMService;
-    if (llmService === null) {
-        throw Error("data of the generation event should be a LLMService");
+): [LLMService, LLMServiceError | undefined, LLMServiceUIState] {
+    let llmService: LLMService | undefined = undefined;
+    let llmServiceError: LLMServiceError | undefined = undefined;
+    if (isFailure) {
+        const llmServiceAndError = data as [LLMService, LLMServiceError];
+        if (llmServiceAndError === null) {
+            throw Error(
+                `data of the failed generation request event should be a \`[LLMService, LLMServiceError]\`, data = \`${data}\``
+            );
+        }
+        [llmService, llmServiceError] = llmServiceAndError;
+    } else {
+        llmService = data as LLMService;
+        if (llmService === null) {
+            throw Error(
+                `data of the succeeded generation request event should be a \`LLMService\`, data = \`${data}\``
+            );
+        }
     }
+
     const serviceName = llmService.serviceName;
     const uiState = llmServiceToUIState[serviceName];
     if (uiState === undefined) {
         throw Error(`no UI state for \`${serviceName}\``);
     }
-    return [llmService, uiState];
+    return [llmService, llmServiceError, uiState];
 }
 
 function formatTimeToUIString(time: Time): string {
@@ -161,6 +197,7 @@ function formatTimeToUIString(time: Time): string {
     const minutes = formatTimeItem(time.minutes, "minute");
     const seconds = formatTimeItem(time.seconds, "second");
 
+    // TODO: for algorithm
     if (time.days === 0) {
         if (time.hours === 0) {
             if (time.minutes === 0) {

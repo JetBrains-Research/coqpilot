@@ -14,7 +14,9 @@ export const proofsToGenerate = [
     "auto.",
 ];
 
-export const gptTurboModel = "gpt-3.5-turbo-0301";
+export const testModelId = "test model";
+
+export const gptTurboModelName = "gpt-3.5-turbo-0301";
 
 export const mockChat: AnalyzedChatHistory = {
     chat: [{ role: "system", content: "Generate proofs." }],

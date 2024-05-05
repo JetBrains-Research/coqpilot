@@ -4,6 +4,7 @@ import { GrazieService } from "../../../llm/llmServices/grazie/grazieService";
 import { GrazieUserModelParams } from "../../../llm/userModelParams";
 
 import { testIf } from "../../commonTestFunctions/conditionalTest";
+import { testModelId } from "../llmSpecificTestUtils/constants";
 import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testAdmitCompletion";
 
 suite("[LLMService] Test `GrazieService`", function () {
@@ -18,6 +19,7 @@ suite("[LLMService] Test `GrazieService`", function () {
         `Simple generation: 1 request, ${choices} choices`,
         async () => {
             const userParams: GrazieUserModelParams = {
+                modelId: testModelId,
                 modelName: "openai-gpt-4",
                 apiKey: apiKey!,
                 newMessageMaxTokens: 2000,
@@ -35,6 +37,7 @@ suite("[LLMService] Test `GrazieService`", function () {
 
     test("Resolve parameters with constant `newMessageMaxTokens`", () => {
         const userParams: GrazieUserModelParams = {
+            modelId: testModelId,
             modelName: "openai-gpt-4",
             apiKey: "",
             newMessageMaxTokens: 6666, // should be overriden by GrazieService

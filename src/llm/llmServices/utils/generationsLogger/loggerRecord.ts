@@ -31,7 +31,7 @@ export class LoggerRecord {
 
     constructor(
         timestampMillis: number,
-        readonly modelName: string,
+        readonly modelId: string,
         readonly responseStatus: ResponseStatus,
         readonly choices: number,
         readonly estimatedTokens: number | undefined = undefined,
@@ -54,7 +54,7 @@ export class LoggerRecord {
 
     protected buildStatusLine(): string {
         const timestamp = new Date(this.timestampMillis).toLocaleString();
-        return `[${timestamp}] \`${this.modelName}\` model: ${this.responseStatus}\n`;
+        return `[${timestamp}] \`${this.modelId}\` model: ${this.responseStatus}\n`;
     }
 
     protected buildErrorInfo(): string {
@@ -82,16 +82,12 @@ export class LoggerRecord {
 
     static deserealizeFromString(rawRecord: string): [LoggerRecord, string] {
         let restRawRecord: string = rawRecord;
-        const [
-            rawTimestamp,
-            modelName,
-            rawResponseStatus,
-            afterIntroRawRecord,
-        ] = this.parseFirstLineByRegex(
-            this.introLinePattern,
-            restRawRecord,
-            "intro line"
-        );
+        const [rawTimestamp, modelId, rawResponseStatus, afterIntroRawRecord] =
+            this.parseFirstLineByRegex(
+                this.introLinePattern,
+                restRawRecord,
+                "intro line"
+            );
         const timestampMillis = this.parseTimestampMillis(rawTimestamp);
         const responseStatus = this.parseAsType<ResponseStatus>(
             rawResponseStatus,
@@ -129,7 +125,7 @@ export class LoggerRecord {
         return [
             new LoggerRecord(
                 timestampMillis,
-                modelName,
+                modelId,
                 responseStatus,
                 this.parseIntValue(rawChoices, "requested choices"),
                 this.parseIntValueOrUndefined(rawTokens, "request's tokens"),
@@ -223,7 +219,7 @@ export class DebugLoggerRecord extends LoggerRecord {
     ) {
         super(
             baseRecord.timestampMillis,
-            baseRecord.modelName,
+            baseRecord.modelId,
             baseRecord.responseStatus,
             baseRecord.choices,
             baseRecord.estimatedTokens,

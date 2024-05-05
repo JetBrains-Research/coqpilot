@@ -23,7 +23,10 @@ import { ProofGenerationContext } from "../../../../llm/proofGenerationContext";
 import { Theorem } from "../../../../coqParser/parsedTypes";
 import { parseTheoremsFromCoqFile } from "../../../commonTestFunctions/coqFileParser";
 import { calculateTokensViaTikToken } from "../../llmSpecificTestUtils/calculateTokens";
-import { gptTurboModel } from "../../llmSpecificTestUtils/constants";
+import {
+    gptTurboModelName,
+    testModelId,
+} from "../../llmSpecificTestUtils/constants";
 
 /*
  * Note: if in the future some of the tests will act against experiments with chats,
@@ -285,8 +288,8 @@ suite("[LLMService-s utils] Building chats test", () => {
             completionTarget: theorems.theoremToComplete.statement,
             contextTheorems: [theorems.plusTheorem, theorems.plusAssocTheorem],
         };
-        const unlimitedTokensModelParams: ModelParams = {
-            modelName: gptTurboModel,
+        const unlimitedTokensModelParams = {
+            modelId: testModelId,
             systemPrompt: messages.systemMessage.content,
             newMessageMaxTokens: 100,
             tokensLimit: 100_000, // = super many, so all context will be used
@@ -295,15 +298,16 @@ suite("[LLMService-s utils] Building chats test", () => {
                 proofFixChoices: 3,
                 proofFixPrompt: "Fix proof, please",
             },
+            modelName: gptTurboModelName,
         };
         const twoTheoremsChat = buildProofGenerationChat(
             proofGenerationContext,
-            unlimitedTokensModelParams
+            unlimitedTokensModelParams as ModelParams
         ).chat;
         expect(twoTheoremsChat).toEqual(messages.proofGenerationChat);
 
         const tokens = (text: string) => {
-            return calculateTokensViaTikToken(text, gptTurboModel);
+            return calculateTokensViaTikToken(text, gptTurboModelName);
         };
         const limitedTokensModelParams: ModelParams = {
             ...unlimitedTokensModelParams,
@@ -335,7 +339,7 @@ suite("[LLMService-s utils] Building chats test", () => {
             contextTheorems: [theorems.plusTheorem, theorems.plusAssocTheorem],
         };
         const unlimitedTokensModelParams: ModelParams = {
-            modelName: gptTurboModel,
+            modelId: testModelId,
             systemPrompt: messages.systemMessage.content,
             newMessageMaxTokens: 100,
             tokensLimit: 100_000, // = super many, so all context will be used

@@ -37,7 +37,7 @@ suite("Parse UserModelParams from JSON test", () => {
     };
 
     const validUserModelParamsCompelete = {
-        modelName: "model name",
+        modelId: "unique model id",
         choices: 30,
         systemPrompt: "generate proof",
         newMessageMaxTokens: 100,
@@ -47,11 +47,13 @@ suite("Parse UserModelParams from JSON test", () => {
 
     const validOpenAiUserModelParamsComplete = {
         ...validUserModelParamsCompelete,
+        modelName: "gpt-model",
         temperature: 36.6,
         apiKey: "api-key",
     };
     const validGrazieUserModelParamsComplete = {
         ...validUserModelParamsCompelete,
+        modelName: "gpt-model",
         apiKey: "api-key",
     };
     const validPredefinedProofsUserModelParamsComplete = {
@@ -92,16 +94,16 @@ suite("Parse UserModelParams from JSON test", () => {
 
     test("Validate `UserModelParams`", () => {
         isValidJSON(validUserModelParamsCompelete, userModelParamsSchema);
-        const validOnlyModelName = {
-            modelName: "the only model",
+        const validOnlyModelId = {
+            modelId: "the only id",
         };
-        isValidJSON(validOnlyModelName, userModelParamsSchema);
+        isValidJSON(validOnlyModelId, userModelParamsSchema);
 
-        const invalidNoModelName = {
+        const invalidNoModelId = {
             choices: 30,
             systemPrompt: "let's generate",
         };
-        isInvalidJSON(invalidNoModelName, userModelParamsSchema);
+        isInvalidJSON(invalidNoModelId, userModelParamsSchema);
         const invalidWrongTypeProp = {
             ...validMultiroundProfileComplete,
             tokensLimit: "no limits",

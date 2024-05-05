@@ -8,7 +8,10 @@ import {
 } from "../../../../llm/llmServices/utils/defaultParametersResolver";
 import { UserModelParams } from "../../../../llm/userModelParams";
 
-import { gptTurboModel } from "../../llmSpecificTestUtils/constants";
+import {
+    gptTurboModelName,
+    testModelId,
+} from "../../llmSpecificTestUtils/constants";
 import {
     MockLLMModelParams,
     MockLLMService,
@@ -17,10 +20,11 @@ import {
 
 suite("[LLMService] Test UserModelParams to ModelParams resolution", () => {
     test("Test resolve with defaults: basic", () => {
-        const unresolvedUserParams: UserModelParams = {
-            modelName: gptTurboModel,
+        const unresolvedUserParams = {
+            modelId: testModelId,
             systemPrompt: "Generate gorgeous Coq proofs!",
             newMessageMaxTokens: 100,
+            modelName: gptTurboModelName,
         };
         const expectedResolvedParams = {
             ...unresolvedUserParams,
@@ -28,14 +32,15 @@ suite("[LLMService] Test UserModelParams to ModelParams resolution", () => {
             multiroundProfile: defaultMultiroundProfile,
         } as ModelParams;
 
-        const actualResolvedParams =
-            resolveParametersWithDefaultsImpl(unresolvedUserParams);
+        const actualResolvedParams = resolveParametersWithDefaultsImpl(
+            unresolvedUserParams as UserModelParams
+        );
         expect(actualResolvedParams).toEqual(expectedResolvedParams);
     });
 
     test("Test resolve with defaults: partial MultiroundProfile", () => {
         const unresolvedUserParams: UserModelParams = {
-            modelName: gptTurboModel,
+            modelId: testModelId,
             systemPrompt: "Generate gorgeous Coq proofs!",
             newMessageMaxTokens: 100,
             tokensLimit: 1000,
@@ -59,9 +64,9 @@ suite("[LLMService] Test UserModelParams to ModelParams resolution", () => {
 
     test("Test resolve with defaults: could not be resolved", () => {
         const unresolvedUserParams: UserModelParams = {
-            modelName: "some unknown model",
+            modelId: testModelId,
         };
-        // there are no default values for token-related properties for unknown model
+        // there are no default values for token-related properties for a model without a name
         expect(() =>
             resolveParametersWithDefaultsImpl(unresolvedUserParams)
         ).toThrow();
@@ -71,7 +76,7 @@ suite("[LLMService] Test UserModelParams to ModelParams resolution", () => {
         const mockService = new MockLLMService();
         try {
             const unresolvedMockUserParams: MockLLMUserModelParams = {
-                modelName: "mock model",
+                modelId: testModelId,
                 systemPrompt: "This system prompt will be overriden by service",
                 newMessageMaxTokens: 100,
                 tokensLimit: 1000,

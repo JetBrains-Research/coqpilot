@@ -10,7 +10,7 @@ import {
     approxCalculateTokens,
     calculateTokensViaTikToken,
 } from "../../llmSpecificTestUtils/calculateTokens";
-import { gptTurboModel } from "../../llmSpecificTestUtils/constants";
+import { gptTurboModelName } from "../../llmSpecificTestUtils/constants";
 
 suite("[LLMService-s utils] ChatTokensFitter test", () => {
     async function readTwoTheorems(): Promise<Theorem[]> {
@@ -22,7 +22,7 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
     }
 
     interface TestParams {
-        model: string;
+        modelName?: string;
         newMessageMaxTokens: number;
         tokensLimit: number;
         systemMessage: string;
@@ -32,9 +32,9 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
 
     function countTheoremsPickedFromContext(testParams: TestParams): number {
         const fitter = new ChatTokensFitter(
-            testParams.model,
             testParams.newMessageMaxTokens,
-            testParams.tokensLimit
+            testParams.tokensLimit,
+            testParams.modelName
         );
         try {
             fitter.fitRequiredMessage({
@@ -45,7 +45,6 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
                 role: "user",
                 content: testParams.completionTarget,
             });
-
             const fittedTheorems = fitter.fitOptionalObjects(
                 testParams.contextTheorems,
                 (theorem) => chatItemToContent(theoremToChatItem(theorem))
@@ -58,7 +57,6 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
 
     test("No theorems", () => {
         const fittedTheoremsNumber = countTheoremsPickedFromContext({
-            model: "openai-gpt",
             newMessageMaxTokens: 100,
             tokensLimit: 1000,
             systemMessage: "You are a friendly assistant",
@@ -72,7 +70,6 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
         const twoTheorems = await readTwoTheorems();
         expect(() => {
             countTheoremsPickedFromContext({
-                model: "openai-gpt",
                 newMessageMaxTokens: 1000,
                 tokensLimit: 1000,
                 systemMessage: "You are a friendly assistant",
@@ -85,7 +82,6 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
     test("Two theorems, no overflow", async () => {
         const twoTheorems = await readTwoTheorems();
         const fittedTheoremsNumber = countTheoremsPickedFromContext({
-            model: "openai-gpt",
             newMessageMaxTokens: 1000,
             tokensLimit: 10000,
             systemMessage: "You are a friendly assistant",
@@ -101,7 +97,6 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
         const theoremProof = twoTheorems[0].proof?.onlyText() ?? "";
         const proofTokens = approxCalculateTokens(theoremProof);
         const fittedTheoremsNumber = countTheoremsPickedFromContext({
-            model: "invalid-model",
             newMessageMaxTokens: 1000,
             tokensLimit: 1000 + statementTokens + proofTokens,
             systemMessage: "",
@@ -117,7 +112,6 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
         const theoremProof = twoTheorems[0].proof?.onlyText() ?? "";
         const proofTokens = approxCalculateTokens(theoremProof);
         const fittedTheoremsNumber = countTheoremsPickedFromContext({
-            model: "invalid-model",
             newMessageMaxTokens: 1000,
             tokensLimit: 1000 + statementTokens + proofTokens - 1,
             systemMessage: "",
@@ -131,15 +125,15 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
         const twoTheorems = await readTwoTheorems();
         const statementTokens = calculateTokensViaTikToken(
             twoTheorems[0].statement,
-            gptTurboModel
+            gptTurboModelName
         );
         const theoremProof = twoTheorems[0].proof?.onlyText() ?? "";
         const proofTokens = calculateTokensViaTikToken(
             theoremProof,
-            gptTurboModel
+            gptTurboModelName
         );
         const fittedTheoremsNumber = countTheoremsPickedFromContext({
-            model: gptTurboModel,
+            modelName: gptTurboModelName,
             newMessageMaxTokens: 1000,
             tokensLimit: 1000 + statementTokens + proofTokens,
             systemMessage: "",
@@ -156,7 +150,7 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
     test("Test if two tokenizers are similar: short text", () => {
         const tiktokenTokens = calculateTokensViaTikToken(
             shortText,
-            gptTurboModel
+            gptTurboModelName
         );
         const approxTokens = approxCalculateTokens(shortText);
         expect(tiktokenTokens).toBeCloseTo(approxTokens, 2);
@@ -165,7 +159,7 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
     test("Test if two tokenizers are similar: long text", () => {
         const tiktokenTokens = calculateTokensViaTikToken(
             longText,
-            gptTurboModel
+            gptTurboModelName
         );
         const approxTokens = approxCalculateTokens(longText);
         expect(tiktokenTokens).toBeCloseTo(approxTokens, 20);
@@ -177,9 +171,9 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
         newMessageMaxTokens: number
     ): number {
         const fitter = new ChatTokensFitter(
-            modelName,
             newMessageMaxTokens,
-            1000000
+            1000000,
+            modelName
         );
         try {
             fitter.fitRequiredMessage({
@@ -195,12 +189,12 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
     test("Test `estimateTokens`", () => {
         const tiktokenTokens = calculateTokensViaTikToken(
             longText,
-            gptTurboModel
+            gptTurboModelName
         );
         const newMessageMaxTokens = 100;
         expect(
             estimateTokensWithFitter(
-                gptTurboModel,
+                gptTurboModelName,
                 longText,
                 newMessageMaxTokens
             )

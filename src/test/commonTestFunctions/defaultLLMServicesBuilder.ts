@@ -33,7 +33,7 @@ export function createTrivialModelsParams(
 }
 
 export function createPredefinedProofsModel(
-    modelName: string = "predefined-proofs",
+    modelId: string = "predefined-proofs",
     predefinedProofs: string[] = [
         "intros.",
         "reflexivity.",
@@ -43,7 +43,7 @@ export function createPredefinedProofsModel(
     ]
 ): PredefinedProofsUserModelParams {
     return {
-        modelName: modelName,
+        modelId: modelId,
         tactics: predefinedProofs,
     };
 }

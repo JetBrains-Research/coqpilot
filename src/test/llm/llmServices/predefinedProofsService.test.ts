@@ -10,6 +10,7 @@ import { PredefinedProofsUserModelParams } from "../../../llm/userModelParams";
 
 import { EventLogger } from "../../../logging/eventLogger";
 import { delay } from "../../commonTestFunctions/delay";
+import { testModelId } from "../llmSpecificTestUtils/constants";
 import {
     EventsTracker,
     subscribeToTrackEvents,
@@ -20,7 +21,7 @@ import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/te
 suite("[LLMService] Test `PredefinedProofsService`", function () {
     const simpleTactics = ["auto.", "intros.", "reflexivity."];
     const userParams: PredefinedProofsUserModelParams = {
-        modelName: "predefine proofs",
+        modelId: testModelId,
         tactics: simpleTactics,
     };
     const proofGenerationContext: ProofGenerationContext = {

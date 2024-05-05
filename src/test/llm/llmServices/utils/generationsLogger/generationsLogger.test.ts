@@ -13,6 +13,8 @@ import {
 } from "../../../../../llm/llmServices/utils/generationsLogger/loggerRecord";
 import { nowTimestampMillis } from "../../../../../llm/llmServices/utils/time";
 
+import { testModelId } from "../../../llmSpecificTestUtils/constants";
+
 suite("[LLMService-s utils] GenerationsLogger test", () => {
     const logsTestDir = tmp.dirSync().name;
     const filePath = path.join(logsTestDir, "testLogs.txt");
@@ -25,7 +27,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
     ];
     const mockParams: PredefinedProofsModelParams = {
         tactics: predefinedProofs,
-        modelName: "test model",
+        modelId: testModelId,
         systemPrompt: "hi system",
         newMessageMaxTokens: 10000,
         tokensLimit: 1000000,
@@ -132,7 +134,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
     test("Test record serialization-deserealization: `SUCCESS`", async () => {
         const loggerRecord = new LoggerRecord(
             nowTimestampMillis(),
-            mockParams.modelName,
+            mockParams.modelId,
             "SUCCESS",
             mockRequest.choices,
             mockRequest.estimatedTokens
@@ -158,7 +160,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
         const error = Error("bad things happen");
         const loggerRecord = new LoggerRecord(
             nowTimestampMillis(),
-            mockParams.modelName,
+            mockParams.modelId,
             "FAILURE",
             mockRequest.choices,
             mockRequest.estimatedTokens,
@@ -186,7 +188,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
     test("Test record serialization-deserealization: undefined-s", async () => {
         const loggerRecord = new LoggerRecord(
             nowTimestampMillis(),
-            mockParams.modelName,
+            mockParams.modelId,
             "SUCCESS",
             mockRequest.choices,
             undefined,

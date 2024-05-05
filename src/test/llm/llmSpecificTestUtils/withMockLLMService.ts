@@ -1,6 +1,6 @@
 import { EventLogger } from "../../../logging/eventLogger";
 
-import { proofsToGenerate } from "./constants";
+import { proofsToGenerate, testModelId } from "./constants";
 import { MockLLMModelParams, MockLLMService } from "./mockLLMService";
 
 export async function withMockLLMService(
@@ -14,7 +14,7 @@ export async function withMockLLMService(
     const mockService = new MockLLMService(testEventLogger, true);
     try {
         const basicMockParams: MockLLMModelParams = {
-            modelName: "mock model",
+            modelId: testModelId,
             systemPrompt: MockLLMService.systemPromptToOverrideWith,
             newMessageMaxTokens: 100,
             tokensLimit: 1000,

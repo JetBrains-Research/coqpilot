@@ -11,6 +11,7 @@ import {
     chatItemToContent,
     itemizedChatToHistory,
 } from "./chatUtils";
+import { modelName } from "./modelParamsAccessors";
 
 export function validateChat(chat: ChatHistory): [boolean, string] {
     if (chat.length < 1) {
@@ -69,9 +70,9 @@ function withFitter<T>(
     block: (fitter: ChatTokensFitter) => T
 ): T {
     const fitter = new ChatTokensFitter(
-        modelParams.modelName,
         modelParams.newMessageMaxTokens,
-        modelParams.tokensLimit
+        modelParams.tokensLimit,
+        modelName(modelParams)
     );
     try {
         return block(fitter);

@@ -2,14 +2,17 @@ import { ParametersResolutionError } from "../../llmServiceErrors";
 import { UserModelParams } from "../../userModelParams";
 import { ModelParams, MultiroundProfile } from "../modelParams";
 
+import { modelName } from "./modelParamsAccessors";
+
 export function resolveParametersWithDefaultsImpl(
     params: UserModelParams
 ): ModelParams {
+    const modelNameOrEmpty = modelName(params) ?? "";
     const newMessageMaxTokens =
         params.newMessageMaxTokens ??
-        defaultNewMessageMaxTokens[params.modelName];
+        defaultNewMessageMaxTokens[modelNameOrEmpty];
     const tokensLimit =
-        params.tokensLimit ?? defaultTokensLimits[params.modelName];
+        params.tokensLimit ?? defaultTokensLimits[modelNameOrEmpty];
     const systemMessageContent =
         params.systemPrompt ?? defaultSystemMessageContent;
     const multiroundProfile: MultiroundProfile = {
