@@ -37,15 +37,15 @@
     "commands": [
       {
         "command": "coqpilot.perform_completion_under_cursor",
-        "title": "Coqpilot: Try to generate proof for the goal under the cursor."
+        "title": "Coqpilot: Try to generate proof for the goal under the cursor"
       },
       {
         "command": "coqpilot.perform_completion_for_all_admits",
-        "title": "Coqpilot: Try to prove all holes (admitted goals) in the current file."
+        "title": "Coqpilot: Try to prove all holes (admitted goals) in the current file"
       },
       {
         "command": "coqpilot.perform_completion_in_selection",
-        "title": "Coqpilot: Try to prove holes (admitted goals) in selection."
+        "title": "Coqpilot: Try to prove holes (admitted goals) in the selection"
       }
     ],
     "menus": {
@@ -62,6 +62,39 @@
         "type": "object",
         "title": "CoqPilot",
         "properties": {
+          "coqpilot.predefinedProofsModelsParameters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "modelId": {
+                  "type": "string",
+                  "markdownDescription": "Unique identifier of this model to distinguish it from others. Could be any string.",
+                  "default": "predefined-auto"
+                },
+                "tactics": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "List of tactics to try to complete a hole with. Commands in the list must be valid Coq commands available in your environment.",
+                  "default": [
+                    "auto."
+                  ]
+                }
+              }
+            },
+            "default": [
+              {
+                "modelId": "predefined-auto",
+                "tactics": [
+                  "auto."
+                ]
+              }
+            ],
+            "markdownDescription": "List of configurations with sets of predefined proofs. CoqPilot will check these proofs when searching for completion.",
+            "order": 0
+          },
           "coqpilot.openAiModelsParameters": {
             "type": "array",
             "items": {
@@ -69,42 +102,42 @@
               "properties": {
                 "modelId": {
                   "type": "string",
-                  "markdownDescription": "The unique identifier of this model to distinguish it from others. Could be any string.",
+                  "markdownDescription": "Unique identifier of this model to distinguish it from others. Could be any string.",
                   "default": "openai-gpt-3.5"
                 },
                 "modelName": {
                   "type": "string",
-                  "markdownDescription": "The model to use from the open-ai platform: \n * gpt-4 \n * gpt-4-0314 \n * gpt-4-0613 \n * gpt-4-32k \n * gpt-4-32k-0314 \n * gpt-4-32k-0613 \n * gpt-3.5-turbo \n * gpt-3.5-turbo-16k \n * gpt-3.5-turbo-0301 \n * gpt-3.5-turbo-0613 \n * gpt-3.5-turbo-16k-0613",
+                  "markdownDescription": "Model to use from the OpenAI platform: \n * gpt-4 \n * gpt-4-0314 \n * gpt-4-0613 \n * gpt-4-32k \n * gpt-4-32k-0314 \n * gpt-4-32k-0613 \n * gpt-3.5-turbo \n * gpt-3.5-turbo-16k \n * gpt-3.5-turbo-0301 \n * gpt-3.5-turbo-0613 \n * gpt-3.5-turbo-16k-0613",
                   "default": "gpt-3.5-turbo-0301"
                 },
                 "temperature": {
                   "type": "number",
-                  "description": "The temperature of the open-ai model.",
+                  "description": "Temperature of the OpenAI model.",
                   "default": 1
                 },
                 "apiKey": {
                   "type": "string",
-                  "description": "An `open-ai` api key. Is used to communicate with the open-ai api. You can get one [here](https://platform.openai.com/account/api-keys).",
+                  "description": "Api key to communicate with the OpenAi api. You can get one [here](https://platform.openai.com/account/api-keys).",
                   "default": "None"
                 },
                 "choices": {
                   "type": "number",
-                  "description": "How many proof attempts should be generated for one theorem.",
+                  "description": "Number of attempts to generate proof for one hole with this model. All attempts are made as a single request, so this parameter should not have a significant impact on performance. However, more choices mean more tokens spent on generation.",
                   "default": 15
                 },
                 "systemPrompt": {
                   "type": "string",
-                  "description": "A prompt for the open-ai model.",
+                  "description": "Prompt for the OpenAI model to begin chat with. It is sent as a system message, which means it has more impact than other messages.",
                   "default": "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'."
                 },
                 "maxTokensToGenerate": {
                   "type": "number",
-                  "description": "How many tokens the model is allowed to generate as an answer message.",
+                  "description": "Number of tokens that the model is allowed to generate as a response message (i.e. message with proof).",
                   "default": 2000
                 },
                 "tokensLimit": {
                   "type": "number",
-                  "description": "The total length of input tokens and generated tokens. Is determined by the model. For open-ai models could be found [here](https://platform.openai.com/docs/models/).",
+                  "description": "Total length of input and generated tokens, it is determined by the model. For OpenAI models, tokens limits could be found [here](https://platform.openai.com/docs/models/).",
                   "default": 4096
                 },
                 "multiroundProfile": {
@@ -112,24 +145,24 @@
                   "properties": {
                     "maxRoundsNumber": {
                       "type": "number",
-                      "description": "The maximum number of rounds for the multiround completion.",
+                      "description": "Maximum number of rounds to generate and further fix the proof. Default value is 1, which means each proof will be only generated, but not fixed.",
                       "default": 1
                     },
                     "proofFixChoices": {
                       "type": "number",
-                      "description": "How many proof fixes should be generated for one proof.",
+                      "description": "Number of attempts to generate a proof fix for each proof in one round. Warning: increasing `proofFixChoices` can lead to exponential growth in generation requests if `maxRoundsNumber` is relatively large.",
                       "default": 1
                     },
                     "proofFixPrompt": {
                       "type": "string",
-                      "description": "A prompt for the fix request message.",
-                      "default": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: '${diagnostic}'. Please, fix the proof."
+                      "description": "Prompt for the proof-fix request that will be sent as a user chat message in response to an incorrect proof. It may include the `${diagnostic}` substring, which will be replaced by the actual compiler diagnostic.",
+                      "default": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: `${diagnostic}`. Please, fix the proof."
                     }
                   },
                   "default": {
                     "maxRoundsNumber": 1,
                     "proofFixChoices": 1,
-                    "proofFixPrompt": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: '${diagnostic}'. Please, fix the proof."
+                    "proofFixPrompt": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: `${diagnostic}`. Please, fix the proof."
                   }
                 }
               }
@@ -151,8 +184,8 @@
                 }
               }
             ],
-            "markdownDescription": "A list of parameters for open-ai models. Each object represents a single model's configuration. Each model will be fetched for completion independently in the order they are listed.",
-            "order": 0
+            "markdownDescription": "List of configurations for OpenAI models. Each configuration will be fetched for completions independently in the order they are listed.",
+            "order": 1
           },
           "coqpilot.grazieModelsParameters": {
             "type": "array",
@@ -161,37 +194,37 @@
               "properties": {
                 "modelId": {
                   "type": "string",
-                  "markdownDescription": "The unique identifier of this model to distinguish it from others. Could be any string.",
-                  "default": "grazie-gpt-4"
+                  "markdownDescription": "Unique identifier of this model to distinguish it from others. Could be any string.",
+                  "default": "openai-gpt-3.5"
                 },
                 "modelName": {
                   "type": "string",
-                  "markdownDescription": "The model to use from the grazie platform: \n * openai-gpt-4 \n * openai-chat-gpt \n * grazie-chat-llama-v2-7b \n * grazie-chat-llama-v2-13b \n * grazie-chat-zephyr-7b \n * qwen-turbo \n * qwen-plus",
+                  "markdownDescription": "Model to use from the Grazie platform: \n * openai-gpt-4 \n * openai-chat-gpt \n * grazie-chat-llama-v2-7b \n * grazie-chat-llama-v2-13b \n * grazie-chat-zephyr-7b \n * qwen-turbo \n * qwen-plus",
                   "default": "openai-gpt-4"
                 },
                 "apiKey": {
                   "type": "string",
-                  "description": "`Grazie` api key. Now available for JetBrains employees only.",
+                  "description": "Api key to communicate with the Grazie api. Now available for JetBrains employees only.",
                   "default": "None"
                 },
                 "choices": {
                   "type": "number",
-                  "description": "How many proof attempts should be generated for one theorem.",
+                  "description": "Number of attempts to generate proof for one hole with this model.",
                   "default": 15
                 },
                 "systemPrompt": {
                   "type": "string",
-                  "description": "A prompt for the grazie model.",
+                  "description": "Prompt for the Grazie model to begin chat with. It is sent as a system message, which means it has more impact than other messages.",
                   "default": "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'."
                 },
                 "maxTokensToGenerate": {
                   "type": "number",
-                  "description": "How many tokens the model is allowed to generate as an answer message.",
-                  "default": 2000
+                  "description": "Number of tokens that the model is allowed to generate as a response message (i.e. message with proof).",
+                  "default": 1024
                 },
                 "tokensLimit": {
                   "type": "number",
-                  "description": "The total length of input tokens and generated tokens. Is determined by the model. For open-ai models could be found [here](https://platform.openai.com/docs/models/).",
+                  "description": "Total length of input and generated tokens, it is determined by the model. For OpenAI models, tokens limits could be found [here](https://platform.openai.com/docs/models/).",
                   "default": 4096
                 },
                 "multiroundProfile": {
@@ -199,64 +232,32 @@
                   "properties": {
                     "maxRoundsNumber": {
                       "type": "number",
-                      "description": "The maximum number of rounds for the multiround completion.",
+                      "description": "Maximum number of rounds to generate and further fix the proof. Default value is 1, which means each proof will be only generated, but not fixed.",
                       "default": 1
                     },
                     "proofFixChoices": {
                       "type": "number",
-                      "description": "How many proof fixes should be generated for one proof.",
+                      "description": "Number of attempts to generate a proof fix for each proof in one round. Warning: increasing `proofFixChoices` can lead to exponential growth in generation requests if `maxRoundsNumber` is relatively large.",
                       "default": 1
                     },
                     "proofFixPrompt": {
                       "type": "string",
-                      "description": "A prompt for the fix request message.",
-                      "default": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: '${diagnostic}'. Please, fix the proof."
+                      "description": "Prompt for the proof-fix request that will be sent as a user chat message in response to an incorrect proof. It may include the `${diagnostic}` substring, which will be replaced by the actual compiler diagnostic.",
+                      "default": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: `${diagnostic}`. Please, fix the proof."
                     }
                   },
                   "default": {
                     "maxRoundsNumber": 1,
                     "proofFixChoices": 1,
-                    "proofFixPrompt": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: '${diagnostic}'. Please, fix the proof."
+                    "proofFixPrompt": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: `${diagnostic}`. Please, fix the proof."
                   }
                 }
               }
             },
-            "default": [],
-            "markdownDescription": "Now only available in beta for JetBrains employees. A list of parameters for grazie models. Each object represents a single model's configuration. Each model will be fetched for completion independently in the order they are listed.",
-            "order": 2
-          },
-          "coqpilot.predefinedProofsModelsParameters": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "modelId": {
-                  "type": "string",
-                  "markdownDescription": "The unique identifier of this model to distinguish it from others. Could be any string.",
-                  "default": "predefined-auto"
-                },
-                "tactics": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  },
-                  "description": "A list of tactics that would also be used to try generating proofs. Commands in the list must be valid coq commands available in your environment.",
-                  "default": [
-                    "auto."
-                  ]
-                }
-              }
-            },
             "default": [
-              {
-                "modelName": "predefined-auto",
-                "tactics": [
-                  "auto."
-                ]
-              }
             ],
-            "markdownDescription": "A list where each object represents a single model configuration. Here each model is configured with a set of predefined proofs, which coqpilot should try when searching for completion.",
-            "order": 1
+            "markdownDescription": "Now available in beta for JetBrains employees only. List of configurations for Grazie models. Each configuration will be fetched for completions independently in the order they are listed.",
+            "order": 2
           },
           "coqpilot.lmStudioModelsParameters": {
             "type": "array",
@@ -265,37 +266,37 @@
               "properties": {
                 "modelId": {
                   "type": "string",
-                  "markdownDescription": "The unique identifier of this model to distinguish it from others. Could be any string.",
-                  "default": "lmstudio"
+                  "markdownDescription": "Unique identifier of this model to distinguish it from others. Could be any string.",
+                  "default": "lm-studio"
                 },
                 "temperature": {
                   "type": "number",
-                  "description": "The temperature of the model.",
+                  "description": "Temperature of the LM Studio model.",
                   "default": 1
                 },
                 "port": {
                   "type": "number",
-                  "description": "A port on which you have launched the LM studio.",
+                  "description": "Port on which LM Studio is launched.",
                   "default": 1234
                 },
                 "choices": {
                   "type": "number",
-                  "description": "How many proof attempts should be generated for one theorem.",
+                  "description": "Number of attempts to generate proof for one hole with this model.",
                   "default": 15
                 },
                 "systemPrompt": {
                   "type": "string",
-                  "description": "A prompt for the lm-studio model.",
+                  "description": "Prompt for the LM Studio model to begin chat with. It is sent as a system message, which means it has more impact than other messages.",
                   "default": "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'."
                 },
                 "maxTokensToGenerate": {
                   "type": "number",
-                  "description": "How many tokens the model is allowed to generate as an answer message.",
+                  "description": "Number of tokens that the model is allowed to generate as a response message (i.e. message with proof).",
                   "default": 2000
                 },
                 "tokensLimit": {
                   "type": "number",
-                  "description": "The total length of input tokens and generated tokens. Is determined by the model. For open-ai models could be found [here](https://platform.openai.com/docs/models/).",
+                  "description": "Total length of input and generated tokens, usually it is determined by the model.",
                   "default": 2048
                 },
                 "multiroundProfile": {
@@ -303,30 +304,30 @@
                   "properties": {
                     "maxRoundsNumber": {
                       "type": "number",
-                      "description": "The maximum number of rounds for the multiround completion.",
+                      "description": "Maximum number of rounds to generate and further fix the proof. Default value is 1, which means each proof will be only generated, but not fixed.",
                       "default": 1
                     },
                     "proofFixChoices": {
                       "type": "number",
-                      "description": "How many proof fixes should be generated for one proof.",
+                      "description": "Number of attempts to generate a proof fix for each proof in one round. Warning: increasing `proofFixChoices` can lead to exponential growth in generation requests if `maxRoundsNumber` is relatively large.",
                       "default": 1
                     },
                     "proofFixPrompt": {
                       "type": "string",
-                      "description": "A prompt for the fix request message.",
-                      "default": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: '${diagnostic}'. Please, fix the proof."
+                      "description": "Prompt for the proof-fix request that will be sent as a user chat message in response to an incorrect proof. It may include the `${diagnostic}` substring, which will be replaced by the actual compiler diagnostic.",
+                      "default": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: `${diagnostic}`. Please, fix the proof."
                     }
                   },
                   "default": {
                     "maxRoundsNumber": 1,
                     "proofFixChoices": 1,
-                    "proofFixPrompt": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: '${diagnostic}'. Please, fix the proof."
+                    "proofFixPrompt": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: `${diagnostic}`. Please, fix the proof."
                   }
                 }
               }
             },
             "default": [],
-            "markdownDescription": "Configuration of models which fetch completions from locally running LLM inside the [LM studio](https://lmstudio.ai).",
+            "markdownDescription": "List of configurations that fetch completions from a locally running LLM inside [LM Studio](https://lmstudio.ai).",
             "order": 3
           },
           "coqpilot.contextTheoremsRankerType": {
