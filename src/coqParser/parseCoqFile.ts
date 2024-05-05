@@ -22,7 +22,7 @@ export async function parseCoqFile(
         })
         .catch((error) => {
             throw new CoqParsingError(
-                `Failed to parse file with Error: ${error.message}`
+                `failed to parse file with Error: ${error.message}`
             );
         });
 }
@@ -41,7 +41,7 @@ function parseFlecheDocument(
     textLines: string[]
 ): Theorem[] {
     if (doc === null) {
-        throw new Error("Could not parse file");
+        throw new Error("could not parse file");
     }
 
     const theorems: Theorem[] = [];
@@ -75,7 +75,7 @@ function parseFlecheDocument(
                         )
                     );
                 } else if (!nextExprVernac) {
-                    throw new CoqParsingError("Unable to parse proof.");
+                    throw new CoqParsingError("unable to parse proof");
                 } else if (
                     ![
                         Vernacexpr.VernacProof,
@@ -123,7 +123,7 @@ function getTheoremName(expr: any): string {
     try {
         return expr[2][0][0][0]["v"][1];
     } catch (error) {
-        throw new CoqParsingError("Invalid theorem name");
+        throw new CoqParsingError("invalid theorem name");
     }
 }
 
@@ -131,7 +131,7 @@ function getDefinitionName(expr: any): string {
     try {
         return expr[2][0]["v"][1][1];
     } catch (error) {
-        throw new CoqParsingError("Invalid definition name");
+        throw new CoqParsingError("invalid definition name");
     }
 }
 
@@ -142,7 +142,7 @@ function getName(expr: any): string {
         case Vernacexpr.VernacStartTheoremProof:
             return getTheoremName(expr);
         default:
-            throw new CoqParsingError("Invalid name");
+            throw new CoqParsingError(`invalid name for expression: "${expr}"`);
     }
 }
 
@@ -213,7 +213,7 @@ function parseProof(
         const vernacType = getVernacexpr(getExpr(span));
         if (!vernacType) {
             throw new CoqParsingError(
-                "Unable to derive the vernac type of the sentance"
+                "unable to derive the vernac type of the sentence"
             );
         }
 
@@ -254,7 +254,7 @@ function parseProof(
     }
 
     if (!proven || endPos === null) {
-        throw new CoqParsingError("Invalid or incomplete proof.");
+        throw new CoqParsingError("invalid or incomplete proof");
     }
 
     const proofObj = new TheoremProof(

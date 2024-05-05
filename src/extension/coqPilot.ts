@@ -32,7 +32,7 @@ import {
     SettingsValidationError,
     buildTheoremsRankerFromConfig,
     parseAndValidateUserModelsParams,
-} from "./configParsers";
+} from "./configParser";
 import {
     deleteTextFromRange,
     highlightTextInEditor,

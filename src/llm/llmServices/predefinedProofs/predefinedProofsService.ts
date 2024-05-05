@@ -133,7 +133,7 @@ export class PredefinedProof extends GeneratedProof {
         errorsHandlingMode: ErrorsHandlingMode
     ): Promise<GeneratedProof[]> {
         this.llmServiceInternal.unsupportedMethod(
-            "PredefinedProof cannot be fixed",
+            "`PredefinedProof` cannot be fixed",
             errorsHandlingMode
         );
         return [];
@@ -165,7 +165,7 @@ class PredefinedProofsServiceInternal extends LLMServiceInternal {
         _choices: number
     ): Promise<string[]> {
         throw new ConfigurationError(
-            "PredefinedProofsService does not support generation from chat"
+            "`PredefinedProofsService` does not support generation from chat"
         );
     }
 }

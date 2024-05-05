@@ -57,7 +57,7 @@ export class GlobalExtensionState {
             case "debug":
                 return Severity.DEBUG;
             default:
-                throw new Error(`Unknown logging verbosity: ${verbosity}`);
+                throw new Error(`unknown logging verbosity: ${verbosity}`);
         }
     }
 
