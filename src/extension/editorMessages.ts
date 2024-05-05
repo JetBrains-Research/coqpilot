@@ -1,6 +1,6 @@
 import { appendFile, existsSync, readFileSync } from "fs";
 import * as path from "path";
-import { commands, window, workspace } from "vscode";
+import { window, workspace } from "vscode";
 
 export namespace EditorMessages {
     export const timeoutError =
@@ -11,46 +11,21 @@ export namespace EditorMessages {
         "Coqpilot: An exception occured: " + errorMsg;
 }
 
-export function showMessageToUser(
+export type UIMessageSeverity = "error" | "info" | "warning";
+
+export function showMessageToUser<T extends string>(
     message: string,
-    severity: "error" | "info" | "warning" = "info"
-) {
+    severity: UIMessageSeverity = "info",
+    ...items: T[]
+): Thenable<T | undefined> {
     switch (severity) {
         case "error":
-            window.showErrorMessage(message);
-            break;
+            return window.showErrorMessage(message, ...items);
         case "info":
-            window.showInformationMessage(message);
-            break;
+            return window.showInformationMessage(message, ...items);
         case "warning":
-            window.showWarningMessage(message);
-            break;
+            return window.showWarningMessage(message, ...items);
     }
-}
-
-export function showApiKeyNotProvidedMessage(
-    service: "openai" | "grazie",
-    pluginId: string
-) {
-    const serviceParamSettingName =
-        service === "openai"
-            ? "openAiModelsParameters"
-            : "grazieModelsParameters";
-    const serviceName = service === "openai" ? "Open Ai" : "Grazie";
-
-    window
-        .showInformationMessage(
-            `Please set your ${serviceName} API key in the settings.`,
-            "Open settings"
-        )
-        .then((value) => {
-            if (value === "Open settings") {
-                commands.executeCommand(
-                    "workbench.action.openSettings",
-                    `${pluginId}.${serviceParamSettingName}`
-                );
-            }
-        });
 }
 
 export async function suggestAddingAuxFilesToGitignore() {

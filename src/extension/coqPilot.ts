@@ -29,9 +29,9 @@ import { ProofStep } from "../coqParser/parsedTypes";
 import { Uri } from "../utils/uri";
 
 import {
-    UserSettingsValidationError,
+    SettingsValidationError,
     buildTheoremsRankerFromConfig,
-    parseUserModelsParams,
+    parseAndValidateUserModelsParams,
 } from "./configParsers";
 import {
     deleteTextFromRange,
@@ -40,7 +40,6 @@ import {
 } from "./documentEditor";
 import {
     EditorMessages,
-    showApiKeyNotProvidedMessage,
     showMessageToUser,
     suggestAddingAuxFilesToGitignore,
 } from "./editorMessages";
@@ -106,28 +105,6 @@ export class CoqPilot {
         this.performSpecificCompletionsWithProgress((_hole) => true, editor);
     }
 
-    private checkUserProvidedApiKeys(
-        processEnvironment: ProcessEnvironment
-    ): boolean {
-        if (
-            processEnvironment.modelsParams.openAiParams.some(
-                (params) => params.apiKey === "None"
-            )
-        ) {
-            showApiKeyNotProvidedMessage("openai", pluginId);
-            return false;
-        } else if (
-            processEnvironment.modelsParams.grazieParams.some(
-                (params) => params.apiKey === "None"
-            )
-        ) {
-            showApiKeyNotProvidedMessage("grazie", pluginId);
-            return false;
-        }
-
-        return true;
-    }
-
     private async performSpecificCompletionsWithProgress(
         shouldCompleteHole: (hole: ProofStep) => boolean,
         editor: TextEditor
@@ -144,8 +121,8 @@ export class CoqPilot {
                         editor
                     );
                 } catch (error) {
-                    if (error instanceof UserSettingsValidationError) {
-                        showMessageToUser(error.toString(), "error");
+                    if (error instanceof SettingsValidationError) {
+                        error.showAsMessageToUser();
                     } else if (error instanceof Error) {
                         showMessageToUser(error.message, "error");
                         console.error(error);
@@ -165,10 +142,6 @@ export class CoqPilot {
                 editor.document.version,
                 editor.document.uri.fsPath
             );
-
-        if (!this.checkUserProvidedApiKeys(processEnvironment)) {
-            return;
-        }
 
         const unsubscribeFromLLMServicesUIEventsCallback =
             subscribeToLLMServicesUIEvents(
@@ -284,7 +257,7 @@ export class CoqPilot {
             );
         const processEnvironment: ProcessEnvironment = {
             coqProofChecker: coqProofChecker,
-            modelsParams: parseUserModelsParams(
+            modelsParams: parseAndValidateUserModelsParams(
                 workspace.getConfiguration(pluginId),
                 this.jsonSchemaValidator
             ),

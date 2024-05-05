@@ -1,5 +1,5 @@
 import Ajv, { JSONSchemaType } from "ajv";
-import { WorkspaceConfiguration, workspace } from "vscode";
+import { WorkspaceConfiguration, commands, workspace } from "vscode";
 
 import {
     GrazieUserModelParams,
@@ -19,37 +19,54 @@ import { DistanceContextTheoremsRanker } from "../core/contextTheoremRanker/dist
 import { RandomContextTheoremsRanker } from "../core/contextTheoremRanker/randomContextTheoremsRanker";
 
 import { pluginId } from "./coqPilot";
+import { UIMessageSeverity, showMessageToUser } from "./editorMessages";
+
+export class SettingsValidationError extends Error {
+    constructor(
+        errorMessage: string,
+        private readonly messageToShowToUser: string,
+        private readonly settingToOpenName: string = pluginId,
+        private readonly severity: UIMessageSeverity = "error"
+    ) {
+        super(errorMessage);
+    }
+
+    private static readonly openSettingsItem = "Open settings";
+
+    showAsMessageToUser() {
+        showMessageToUser(
+            this.messageToShowToUser,
+            this.severity,
+            SettingsValidationError.openSettingsItem
+        ).then((value) => {
+            if (value === SettingsValidationError.openSettingsItem) {
+                commands.executeCommand(
+                    "workbench.action.openSettings",
+                    this.settingToOpenName
+                );
+            }
+        });
+    }
+}
 
 export function buildTheoremsRankerFromConfig(): ContextTheoremsRanker {
     const workspaceConfig = workspace.getConfiguration(pluginId);
     const rankerType = workspaceConfig.contextTheoremsRankerType;
-
     switch (rankerType) {
         case "distance":
             return new DistanceContextTheoremsRanker();
         case "random":
             return new RandomContextTheoremsRanker();
         default:
-            throw new Error(
-                `Unknown context theorems ranker type: ${rankerType}`
+            throw new SettingsValidationError(
+                `Unknown context theorems ranker type: ${rankerType}`,
+                `Please select one of the existing theorems-ranker types: "distance" or "random".`,
+                "contextTheoremsRankerType"
             );
     }
 }
 
-export class UserSettingsValidationError extends Error {
-    constructor(
-        message: string,
-        public readonly settingsName: string
-    ) {
-        super(message);
-    }
-
-    toString(): string {
-        return `Unable to validate user settings for ${this.settingsName}. Please refer to the README for the correct settings format: https://github.com/JetBrains-Research/coqpilot/blob/main/README.md#guide-to-model-configuration.`;
-    }
-}
-
-export function parseUserModelsParams(
+export function parseAndValidateUserModelsParams(
     config: WorkspaceConfiguration,
     jsonSchemaValidator: Ajv
 ): UserModelsParams {
@@ -93,6 +110,8 @@ export function parseUserModelsParams(
         ...lmStudioParams,
     ]);
 
+    validateApiKeysAreProvided(openAiParams, grazieParams);
+
     return {
         openAiParams: openAiParams,
         grazieParams: grazieParams,
@@ -109,12 +128,18 @@ function validateAndParseJson<T>(
     const instance: T = json as T;
     const validate = jsonSchemaValidator.compile(targetClassSchema);
     if (!validate(instance)) {
-        throw new UserSettingsValidationError(
+        const settingsName = targetClassSchema.title;
+        if (settingsName === undefined) {
+            throw new Error(
+                `unknown \`targetClassSchema\`: "${targetClassSchema}"; while resolving json: "${json}"`
+            );
+        }
+        throw new SettingsValidationError(
             `Unable to validate json against the class: ${JSON.stringify(validate.errors)}`,
-            targetClassSchema.title ?? "Unknown"
+            `Unable to validate user settings for \`${settingsName}\`. Please refer to the README for the correct settings format: https://github.com/JetBrains-Research/coqpilot/blob/main/README.md#guide-to-model-configuration.`,
+            settingsName
         );
     }
-
     return instance;
 }
 
@@ -123,11 +148,36 @@ function validateIdsAreUnique(modelsParams: UserModelParams[]) {
     const uniqueModelIds = new Set<string>();
     for (const modelId of modelIds) {
         if (uniqueModelIds.has(modelId)) {
-            throw Error(
-                `Models' identifiers are not unique: several models have \`modelId: "${modelId}"\``
+            throw new SettingsValidationError(
+                `Models' identifiers are not unique: several models have \`modelId: "${modelId}"\``,
+                `Please make identifiers of the models unique ("${modelId}" is not unique).`
             );
         } else {
             uniqueModelIds.add(modelId);
         }
+    }
+}
+
+function validateApiKeysAreProvided(
+    openAiParams: OpenAiUserModelParams[],
+    grazieParams: GrazieUserModelParams[]
+) {
+    const buildApiKeyError = (
+        serviceName: string,
+        serviceSettingsName: string
+    ) => {
+        return new SettingsValidationError(
+            `At least one of the ${serviceName} models has \`apiKey: "None"\``,
+            `Please set your ${serviceName} API key in the settings.`,
+            `${pluginId}.${serviceSettingsName}ModelsParameters`,
+            "info"
+        );
+    };
+
+    if (openAiParams.some((params) => params.apiKey === "None")) {
+        throw buildApiKeyError("Open Ai", "openAi");
+    }
+    if (grazieParams.some((params) => params.apiKey === "None")) {
+        throw buildApiKeyError("Grazie", "grazie");
     }
 }
