@@ -101,7 +101,7 @@ export class PredefinedProofsService extends LLMService {
         }
         const modelParams: PredefinedProofsModelParams = {
             modelId: params.modelId,
-            newMessageMaxTokens: Math.max(
+            maxTokensToGenerate: Math.max(
                 ...castedParams.tactics.map((tactic) => tactic.length)
             ),
             tokensLimit: Number.POSITIVE_INFINITY,

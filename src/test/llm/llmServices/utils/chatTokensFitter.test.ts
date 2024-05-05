@@ -23,7 +23,7 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
 
     interface TestParams {
         modelName?: string;
-        newMessageMaxTokens: number;
+        maxTokensToGenerate: number;
         tokensLimit: number;
         systemMessage: string;
         completionTarget: string;
@@ -32,7 +32,7 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
 
     function countTheoremsPickedFromContext(testParams: TestParams): number {
         const fitter = new ChatTokensFitter(
-            testParams.newMessageMaxTokens,
+            testParams.maxTokensToGenerate,
             testParams.tokensLimit,
             testParams.modelName
         );
@@ -57,7 +57,7 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
 
     test("No theorems", () => {
         const fittedTheoremsNumber = countTheoremsPickedFromContext({
-            newMessageMaxTokens: 100,
+            maxTokensToGenerate: 100,
             tokensLimit: 1000,
             systemMessage: "You are a friendly assistant",
             completionTarget: "doesn't matter",
@@ -70,7 +70,7 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
         const twoTheorems = await readTwoTheorems();
         expect(() => {
             countTheoremsPickedFromContext({
-                newMessageMaxTokens: 1000,
+                maxTokensToGenerate: 1000,
                 tokensLimit: 1000,
                 systemMessage: "You are a friendly assistant",
                 completionTarget: "doesn't matter",
@@ -82,7 +82,7 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
     test("Two theorems, no overflow", async () => {
         const twoTheorems = await readTwoTheorems();
         const fittedTheoremsNumber = countTheoremsPickedFromContext({
-            newMessageMaxTokens: 1000,
+            maxTokensToGenerate: 1000,
             tokensLimit: 10000,
             systemMessage: "You are a friendly assistant",
             completionTarget: "doesn't matter",
@@ -97,7 +97,7 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
         const theoremProof = twoTheorems[0].proof?.onlyText() ?? "";
         const proofTokens = approxCalculateTokens(theoremProof);
         const fittedTheoremsNumber = countTheoremsPickedFromContext({
-            newMessageMaxTokens: 1000,
+            maxTokensToGenerate: 1000,
             tokensLimit: 1000 + statementTokens + proofTokens,
             systemMessage: "",
             completionTarget: "",
@@ -112,7 +112,7 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
         const theoremProof = twoTheorems[0].proof?.onlyText() ?? "";
         const proofTokens = approxCalculateTokens(theoremProof);
         const fittedTheoremsNumber = countTheoremsPickedFromContext({
-            newMessageMaxTokens: 1000,
+            maxTokensToGenerate: 1000,
             tokensLimit: 1000 + statementTokens + proofTokens - 1,
             systemMessage: "",
             completionTarget: "",
@@ -134,7 +134,7 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
         );
         const fittedTheoremsNumber = countTheoremsPickedFromContext({
             modelName: gptTurboModelName,
-            newMessageMaxTokens: 1000,
+            maxTokensToGenerate: 1000,
             tokensLimit: 1000 + statementTokens + proofTokens,
             systemMessage: "",
             completionTarget: "",
@@ -168,10 +168,10 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
     function estimateTokensWithFitter(
         modelName: string,
         text: string,
-        newMessageMaxTokens: number
+        maxTokensToGenerate: number
     ): number {
         const fitter = new ChatTokensFitter(
-            newMessageMaxTokens,
+            maxTokensToGenerate,
             1000000,
             modelName
         );
@@ -191,13 +191,13 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
             longText,
             gptTurboModelName
         );
-        const newMessageMaxTokens = 100;
+        const maxTokensToGenerate = 100;
         expect(
             estimateTokensWithFitter(
                 gptTurboModelName,
                 longText,
-                newMessageMaxTokens
+                maxTokensToGenerate
             )
-        ).toEqual(tiktokenTokens + newMessageMaxTokens);
+        ).toEqual(tiktokenTokens + maxTokensToGenerate);
     });
 });

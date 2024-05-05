@@ -22,7 +22,7 @@ suite("[LLMService] Test `GrazieService`", function () {
                 modelId: testModelId,
                 modelName: "openai-gpt-4",
                 apiKey: apiKey!,
-                newMessageMaxTokens: 2000,
+                maxTokensToGenerate: 2000,
                 tokensLimit: 4000,
             };
             const grazieService = new GrazieService();
@@ -35,19 +35,19 @@ suite("[LLMService] Test `GrazieService`", function () {
         }
     )?.timeout(6000);
 
-    test("Resolve parameters with constant `newMessageMaxTokens`", () => {
+    test("Resolve parameters with predefined `maxTokensToGenerate`", () => {
         const userParams: GrazieUserModelParams = {
             modelId: testModelId,
             modelName: "openai-gpt-4",
             apiKey: "",
-            newMessageMaxTokens: 6666, // should be overriden by GrazieService
+            maxTokensToGenerate: 6666, // should be overriden by GrazieService
             tokensLimit: 4000,
         };
         const grazieService = new GrazieService();
         try {
             const resolvedParams = grazieService.resolveParameters(userParams);
-            expect(resolvedParams.newMessageMaxTokens).toEqual(
-                grazieService.newMessageMaxTokens
+            expect(resolvedParams.maxTokensToGenerate).toEqual(
+                grazieService.maxTokensToGeneratePredefined
             );
         } finally {
             grazieService.dispose();

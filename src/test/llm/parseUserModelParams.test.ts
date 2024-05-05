@@ -40,7 +40,7 @@ suite("Parse UserModelParams from JSON test", () => {
         modelId: "unique model id",
         choices: 30,
         systemPrompt: "generate proof",
-        newMessageMaxTokens: 100,
+        maxTokensToGenerate: 100,
         tokensLimit: 2000,
         multiroundProfile: validMultiroundProfileComplete,
     };

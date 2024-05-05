@@ -20,7 +20,7 @@ suite("[LLMService] Test `LMStudioService`", function () {
                 modelId: testModelId,
                 temperature: 1,
                 port: parseInt(lmStudioPort!),
-                newMessageMaxTokens: 2000,
+                maxTokensToGenerate: 2000,
                 tokensLimit: 4000,
             };
             const lmStudioService = new LMStudioService();

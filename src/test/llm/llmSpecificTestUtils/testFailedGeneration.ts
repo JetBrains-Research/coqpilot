@@ -125,8 +125,8 @@ export function testFailureAtChatBuilding<T>(
             buildErroneousMockParams: (basicMockParams: MockLLMModelParams) => {
                 return {
                     ...basicMockParams,
+                    maxTokensToGenerate: 100,
                     tokensLimit: 10,
-                    newMessageMaxTokens: 100,
                 };
             },
             shouldFailBeforeGenerationIsStarted: true,

@@ -8,9 +8,9 @@ export function resolveParametersWithDefaultsImpl(
     params: UserModelParams
 ): ModelParams {
     const modelNameOrEmpty = modelName(params) ?? "";
-    const newMessageMaxTokens =
-        params.newMessageMaxTokens ??
-        defaultNewMessageMaxTokens[modelNameOrEmpty];
+    const maxTokensToGenerate =
+        params.maxTokensToGenerate ??
+        defaultMaxTokensToGenerate[modelNameOrEmpty];
     const tokensLimit =
         params.tokensLimit ?? defaultTokensLimits[modelNameOrEmpty];
     const systemMessageContent =
@@ -26,9 +26,9 @@ export function resolveParametersWithDefaultsImpl(
             params.multiroundProfile?.proofFixPrompt ??
             defaultMultiroundProfile.proofFixPrompt,
     };
-    if (newMessageMaxTokens === undefined) {
+    if (maxTokensToGenerate === undefined) {
         throw new ParametersResolutionError(
-            "no default value for `newMessageMaxTokens`",
+            "no default value for `maxTokensToGenerate`",
             params
         );
     }
@@ -41,19 +41,19 @@ export function resolveParametersWithDefaultsImpl(
 
     /** NOTE: it's important to pass `...params` first
      * because if so, then the omitted fields of the `params`
-     * (`systemPromt`, `newMessageMaxTokens`, `tokensLimit`, etc)
+     * (`systemPromt`, `maxTokensToGenerate`, `tokensLimit`, etc)
      * will be overriden - and not in the opposite way!
      */
     return {
         ...params,
         systemPrompt: systemMessageContent,
-        newMessageMaxTokens: newMessageMaxTokens,
+        maxTokensToGenerate: maxTokensToGenerate,
         tokensLimit: tokensLimit,
         multiroundProfile: multiroundProfile,
     };
 }
 
-export const defaultNewMessageMaxTokens: {
+export const defaultMaxTokensToGenerate: {
     [modelName: string]: number;
 } = {};
 

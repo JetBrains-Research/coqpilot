@@ -21,7 +21,7 @@ suite("[LLMService] Test `OpenAiService`", function () {
                 modelName: "gpt-3.5-turbo-0301",
                 temperature: 1,
                 apiKey: apiKey!,
-                newMessageMaxTokens: 2000,
+                maxTokensToGenerate: 2000,
                 tokensLimit: 4000,
             };
             const openAiService = new OpenAiService();

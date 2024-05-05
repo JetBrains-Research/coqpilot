@@ -291,7 +291,7 @@ suite("[LLMService-s utils] Building chats test", () => {
         const unlimitedTokensModelParams = {
             modelId: testModelId,
             systemPrompt: messages.systemMessage.content,
-            newMessageMaxTokens: 100,
+            maxTokensToGenerate: 100,
             tokensLimit: 100_000, // = super many, so all context will be used
             multiroundProfile: {
                 maxRoundsNumber: 1,
@@ -311,7 +311,7 @@ suite("[LLMService-s utils] Building chats test", () => {
         };
         const limitedTokensModelParams: ModelParams = {
             ...unlimitedTokensModelParams,
-            newMessageMaxTokens: 100,
+            maxTokensToGenerate: 100,
             tokensLimit:
                 100 +
                 tokens(messages.systemMessage.content) +
@@ -341,7 +341,7 @@ suite("[LLMService-s utils] Building chats test", () => {
         const unlimitedTokensModelParams: ModelParams = {
             modelId: testModelId,
             systemPrompt: messages.systemMessage.content,
-            newMessageMaxTokens: 100,
+            maxTokensToGenerate: 100,
             tokensLimit: 100_000, // = super many, so all context will be used
             multiroundProfile: {
                 maxRoundsNumber: 1,

@@ -7,7 +7,7 @@ export interface MultiroundProfile {
 export interface ModelParams {
     modelId: string;
     systemPrompt: string;
-    newMessageMaxTokens: number;
+    maxTokensToGenerate: number;
     tokensLimit: number;
     multiroundProfile: MultiroundProfile;
 }

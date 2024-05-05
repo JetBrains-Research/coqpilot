@@ -11,17 +11,17 @@ export class ChatTokensFitter {
     private readonly countTokens: (text: string) => number;
 
     constructor(
-        newMessageMaxTokens: number,
+        maxTokensToGenerate: number,
         tokensLimit: number,
         modelName?: string
     ) {
         this.tokensLimit = tokensLimit;
-        if (this.tokensLimit < newMessageMaxTokens) {
+        if (this.tokensLimit < maxTokensToGenerate) {
             throw new ConfigurationError(
-                `tokens limit ${this.tokensLimit} is not enough to generate a new message that needs up to ${newMessageMaxTokens}`
+                `tokens limit ${this.tokensLimit} is not for the model to generate a new message that needs up to ${maxTokensToGenerate}`
             );
         }
-        this.tokens += newMessageMaxTokens;
+        this.tokens += maxTokensToGenerate;
 
         this.encoder = undefined;
         try {
@@ -41,7 +41,7 @@ export class ChatTokensFitter {
     }
 
     /**
-     * Includes `newMessageMaxTokens`.
+     * Includes `maxTokensToGenerate`.
      */
     estimateTokens(): number {
         return this.tokens;

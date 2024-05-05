@@ -123,7 +123,7 @@ class LMStudioServiceInternal extends LLMServiceInternal {
             stream: false,
             temperature: params.temperature,
             // eslint-disable-next-line @typescript-eslint/naming-convention
-            max_tokens: params.newMessageMaxTokens,
+            max_tokens: params.maxTokensToGenerate,
         });
     }
 

@@ -23,7 +23,7 @@ suite("[LLMService] Test UserModelParams to ModelParams resolution", () => {
         const unresolvedUserParams = {
             modelId: testModelId,
             systemPrompt: "Generate gorgeous Coq proofs!",
-            newMessageMaxTokens: 100,
+            maxTokensToGenerate: 100,
             modelName: gptTurboModelName,
         };
         const expectedResolvedParams = {
@@ -42,7 +42,7 @@ suite("[LLMService] Test UserModelParams to ModelParams resolution", () => {
         const unresolvedUserParams: UserModelParams = {
             modelId: testModelId,
             systemPrompt: "Generate gorgeous Coq proofs!",
-            newMessageMaxTokens: 100,
+            maxTokensToGenerate: 100,
             tokensLimit: 1000,
             multiroundProfile: {
                 maxRoundsNumber: 1,
@@ -78,7 +78,7 @@ suite("[LLMService] Test UserModelParams to ModelParams resolution", () => {
             const unresolvedMockUserParams: MockLLMUserModelParams = {
                 modelId: testModelId,
                 systemPrompt: "This system prompt will be overriden by service",
-                newMessageMaxTokens: 100,
+                maxTokensToGenerate: 100,
                 tokensLimit: 1000,
                 proofsToGenerate: ["auto.", "avto."],
             };

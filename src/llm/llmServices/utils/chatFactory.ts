@@ -70,7 +70,7 @@ function withFitter<T>(
     block: (fitter: ChatTokensFitter) => T
 ): T {
     const fitter = new ChatTokensFitter(
-        modelParams.newMessageMaxTokens,
+        modelParams.maxTokensToGenerate,
         modelParams.tokensLimit,
         modelName(modelParams)
     );

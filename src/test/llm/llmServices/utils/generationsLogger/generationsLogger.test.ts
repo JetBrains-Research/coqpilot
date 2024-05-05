@@ -29,7 +29,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
         tactics: predefinedProofs,
         modelId: testModelId,
         systemPrompt: "hi system",
-        newMessageMaxTokens: 10000,
+        maxTokensToGenerate: 10000,
         tokensLimit: 1000000,
         multiroundProfile: {
             maxRoundsNumber: 1,

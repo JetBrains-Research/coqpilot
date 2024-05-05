@@ -30,7 +30,11 @@ export interface UserModelParams {
 
     systemPrompt?: string;
 
-    newMessageMaxTokens?: number;
+    maxTokensToGenerate?: number;
+    /**
+     * Includes tokens that the model generates as an answer message,
+     * i.e. should be greater than or equal to `maxTokensToGenerate`.
+     */
     tokensLimit?: number;
 
     multiroundProfile?: UserMultiroundProfile;
@@ -84,7 +88,7 @@ export const userModelParamsSchema: JSONSchemaType<UserModelParams> = {
 
         systemPrompt: { type: "string", nullable: true },
 
-        newMessageMaxTokens: { type: "number", nullable: true },
+        maxTokensToGenerate: { type: "number", nullable: true },
         tokensLimit: { type: "number", nullable: true },
 
         multiroundProfile: {

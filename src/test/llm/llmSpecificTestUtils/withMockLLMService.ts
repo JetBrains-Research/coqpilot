@@ -16,7 +16,7 @@ export async function withMockLLMService(
         const basicMockParams: MockLLMModelParams = {
             modelId: testModelId,
             systemPrompt: MockLLMService.systemPromptToOverrideWith,
-            newMessageMaxTokens: 100,
+            maxTokensToGenerate: 100,
             tokensLimit: 1000,
             multiroundProfile: {
                 maxRoundsNumber: 1,

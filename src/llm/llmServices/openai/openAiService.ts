@@ -82,7 +82,7 @@ class OpenAiServiceInternal extends LLMServiceInternal {
             n: choices,
             temperature: openAiParams.temperature,
             // eslint-disable-next-line @typescript-eslint/naming-convention
-            max_tokens: openAiParams.newMessageMaxTokens,
+            max_tokens: openAiParams.maxTokensToGenerate,
         });
 
         return completion.choices.map((choice: any) => choice.message.content);
