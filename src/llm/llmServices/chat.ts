@@ -6,5 +6,5 @@ export type ChatHistory = ChatMessage[];
 
 export interface AnalyzedChatHistory {
     chat: ChatHistory;
-    estimatedTokens: number;
+    estimatedTokens?: number;
 }

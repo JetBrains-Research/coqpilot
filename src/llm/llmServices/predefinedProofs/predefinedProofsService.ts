@@ -14,7 +14,6 @@ import {
 } from "../llmService";
 import { LLMService } from "../llmService";
 import { ModelParams, PredefinedProofsModelParams } from "../modelParams";
-import { GenerationRequest } from "../utils/generationsLogger/generationsLogger";
 import { Time, timeZero } from "../utils/time";
 
 export class PredefinedProofsService extends LLMService {
@@ -46,8 +45,10 @@ export class PredefinedProofsService extends LLMService {
     ): Promise<GeneratedProof[]> {
         const predefinedProofsParams = params as PredefinedProofsModelParams;
         return this.internal.logGenerationAndHandleErrors(
+            predefinedProofsParams,
+            choices,
             errorsHandlingMode,
-            () => {
+            (_request) => {
                 if (choices <= 0) {
                     throw new ConfigurationError(
                         `bad choices: ${choices} <= 0`
@@ -59,10 +60,6 @@ export class PredefinedProofsService extends LLMService {
                         `bad choices ${choices}: there are only ${tactics.length} predefined tactics available`
                     );
                 }
-                return {
-                    params: params,
-                    choices: choices,
-                } as GenerationRequest;
             },
             async (_request) => {
                 return this.formatCoqSentences(
@@ -129,11 +126,13 @@ export class PredefinedProof extends GeneratedProof {
 
     async fixProof(
         _diagnostic: string,
-        _choices: number,
+        choices: number,
         errorsHandlingMode: ErrorsHandlingMode
     ): Promise<GeneratedProof[]> {
         this.llmServiceInternal.unsupportedMethod(
             "`PredefinedProof` cannot be fixed",
+            this.modelParams,
+            choices,
             errorsHandlingMode
         );
         return [];

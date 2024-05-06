@@ -8,6 +8,8 @@ import { EventLogger } from "../logging/eventLogger";
 
 import { showMessageToUser } from "./editorMessages";
 
+// TODO: update this code in accordance to `LLMServiceRequest`-s
+
 /* eslint-disable @typescript-eslint/naming-convention */
 enum LLMServiceAvailablityState {
     AVAILABLE = "AVAILABLE",
@@ -53,20 +55,20 @@ export function subscribeToLLMServicesUIEvents(
     const failedModels = new FailedModelsSet();
 
     const succeededSubscriptionId = eventLogger.subscribeToLogicEvent(
-        LLMService.generationRequestSucceededEvent,
-        reactToGenerationRequestSucceededEvent(llmServiceToUIState)
+        LLMService.requestSucceededEvent,
+        reactToRequestSucceededEvent(llmServiceToUIState)
     );
     const failedSubscriptionId = eventLogger.subscribeToLogicEvent(
-        LLMService.generationRequestFailedEvent,
-        reactToGenerationRequestFailedEvent(llmServiceToUIState, failedModels)
+        LLMService.requestFailedEvent,
+        reactToRequestFailedEvent(llmServiceToUIState, failedModels)
     );
     return () => {
         eventLogger.unsubscribe(
-            LLMService.generationRequestSucceededEvent,
+            LLMService.requestSucceededEvent,
             succeededSubscriptionId
         );
         eventLogger.unsubscribe(
-            LLMService.generationRequestFailedEvent,
+            LLMService.requestFailedEvent,
             failedSubscriptionId
         );
     };
@@ -95,7 +97,7 @@ function createLLMServiceToUIState(
     };
 }
 
-function reactToGenerationRequestSucceededEvent(
+function reactToRequestSucceededEvent(
     llmServiceToUIState: LLMServiceToUIState
 ): (data: any) => void {
     return (data: any) => {
@@ -123,7 +125,7 @@ function reactToGenerationRequestSucceededEvent(
     };
 }
 
-function reactToGenerationRequestFailedEvent(
+function reactToRequestFailedEvent(
     llmServiceToUIState: LLMServiceToUIState,
     _failedModels: FailedModelsSet
 ): (data: any) => void {

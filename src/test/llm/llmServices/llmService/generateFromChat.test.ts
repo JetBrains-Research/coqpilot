@@ -26,6 +26,7 @@ suite("[LLMService] Test `generateFromChat`", () => {
                     const eventsTracker = subscribeToTrackMockEvents(
                         testEventLogger,
                         mockService,
+                        basicMockParams.modelId,
                         mockChat
                     );
 
@@ -38,9 +39,9 @@ suite("[LLMService] Test `generateFromChat`", () => {
                     expect(generatedProofs).toEqual(proofsToGenerate);
 
                     expect(eventsTracker).toEqual({
-                        mockGenerationEventsN: 1,
-                        successfulGenerationEventsN: 1,
-                        failedGenerationEventsN: 0,
+                        mockEventsN: 1,
+                        successfulRequestEventsN: 1,
+                        failedRequestEventsN: 0,
                     });
                     expectLogs([{ status: "SUCCESS" }], mockService);
                 }

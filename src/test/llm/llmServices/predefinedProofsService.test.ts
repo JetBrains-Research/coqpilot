@@ -69,7 +69,8 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                 async (predefinedProofsService, testEventLogger) => {
                     const eventsTracker = subscribeToTrackEvents(
                         testEventLogger,
-                        predefinedProofsService
+                        predefinedProofsService,
+                        userParams.modelId
                     );
                     const resolvedParams =
                         predefinedProofsService.resolveParameters(
@@ -93,8 +94,8 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                     }
 
                     const expectedEvents: EventsTracker = {
-                        successfulGenerationEventsN: 0,
-                        failedGenerationEventsN:
+                        successfulRequestEventsN: 0,
+                        failedRequestEventsN:
                             errorsHandlingMode ===
                             ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
                                 ? 1
@@ -116,7 +117,7 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                         resolvedParams.tactics.length
                     );
 
-                    expectedEvents.successfulGenerationEventsN += 1;
+                    expectedEvents.successfulRequestEventsN += 1;
                     expect(eventsTracker).toEqual(expectedEvents);
                     expectLogs(
                         [{ status: "SUCCESS" }],

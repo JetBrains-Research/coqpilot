@@ -44,7 +44,8 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
             async (mockService, basicMockParams, testEventLogger) => {
                 const eventsTracker = subscribeToTrackMockEvents(
                     testEventLogger,
-                    mockService
+                    mockService,
+                    basicMockParams.modelId
                 );
 
                 const generatedProofs = await mockService.generateProof(
@@ -64,9 +65,9 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
                 }
 
                 expect(eventsTracker).toEqual({
-                    mockGenerationEventsN: 1,
-                    successfulGenerationEventsN: 1,
-                    failedGenerationEventsN: 0,
+                    mockEventsN: 1,
+                    successfulRequestEventsN: 1,
+                    failedRequestEventsN: 0,
                 });
                 expectLogs([{ status: "SUCCESS" }], mockService);
             }
@@ -101,7 +102,8 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
             async (mockService, basicMockParams, testEventLogger) => {
                 const eventsTracker = subscribeToTrackMockEvents(
                     testEventLogger,
-                    mockService
+                    mockService,
+                    basicMockParams.modelId
                 );
 
                 const withFixesMockParams = enhanceMockParams(basicMockParams, {
@@ -146,9 +148,9 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
 
                 const generationsN = 1 + generatedProofs.length;
                 expect(eventsTracker).toEqual({
-                    mockGenerationEventsN: generationsN,
-                    successfulGenerationEventsN: generationsN,
-                    failedGenerationEventsN: 0,
+                    mockEventsN: generationsN,
+                    successfulRequestEventsN: generationsN,
+                    failedRequestEventsN: 0,
                 });
                 expectLogs(
                     new Array(generationsN).fill({ status: "SUCCESS" }),
@@ -182,17 +184,17 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
         expectedEvents: MockEventsTracker,
         expectedLogs?: ExpectedRecord[]
     ) {
-        expectedEvents.mockGenerationEventsN += 1;
+        expectedEvents.mockEventsN += 1;
         if (errorWasThrown !== undefined) {
             expect(generatedProofs).toHaveLength(0);
-            expectedEvents.failedGenerationEventsN += 1;
+            expectedEvents.failedRequestEventsN += 1;
             expectedLogs?.push({
                 status: "FAILURE",
                 error: errorWasThrown,
             });
         } else {
             expect(generatedProofs).toHaveLength(expectedProofsLength);
-            expectedEvents.successfulGenerationEventsN += 1;
+            expectedEvents.successfulRequestEventsN += 1;
             expectedLogs?.push({ status: "SUCCESS" });
         }
     }
@@ -227,12 +229,13 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
     > {
         const actualEvents = subscribeToTrackMockEvents(
             testEventLogger,
-            mockService
+            mockService,
+            basicMockParams.modelId
         );
         const expectedEvents: MockEventsTracker = {
-            mockGenerationEventsN: 0,
-            successfulGenerationEventsN: 0,
-            failedGenerationEventsN: 0,
+            mockEventsN: 0,
+            successfulRequestEventsN: 0,
+            failedRequestEventsN: 0,
         };
         const expectedLogs: ExpectedRecord[] | undefined =
             expectLogsAndCheckExpectations ? [] : undefined;
@@ -390,10 +393,10 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
                     (record) => record.responseStatus === "FAILURE"
                 ).length;
                 expect(successLogsN).toEqual(
-                    expectedEvents.successfulGenerationEventsN
+                    expectedEvents.successfulRequestEventsN
                 );
                 expect(failureLogsN).toEqual(
-                    expectedEvents.failedGenerationEventsN
+                    expectedEvents.failedRequestEventsN
                 );
             }
         );

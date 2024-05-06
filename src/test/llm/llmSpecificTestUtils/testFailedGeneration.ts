@@ -44,7 +44,7 @@ export function testFailedGenerationCompletely<T>(
                     ...commonTestParams,
                     errorsHandlingMode:
                         ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS,
-                    expectedFailedGenerationEventsN: 1,
+                    expectedFailedRequestEventsN: 1,
                 },
                 generate,
                 prepareDataBeforeTest
@@ -55,7 +55,7 @@ export function testFailedGenerationCompletely<T>(
                     ...commonTestParams,
                     errorsHandlingMode: ErrorsHandlingMode.RETHROW_ERRORS,
                     // `ErrorsHandlingMode.RETHROW_ERRORS` doesn't use failed-generation events
-                    expectedFailedGenerationEventsN: 0,
+                    expectedFailedRequestEventsN: 0,
 
                     expectedThrownError: expectedThrownError,
                 },
@@ -121,7 +121,7 @@ export function testFailureAtChatBuilding<T>(
                 ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS,
             failureName: "failure at chat building",
             expectedGenerationLogs: [],
-            expectedFailedGenerationEventsN: 1,
+            expectedFailedRequestEventsN: 1,
             buildErroneousMockParams: (basicMockParams: MockLLMModelParams) => {
                 return {
                     ...basicMockParams,
@@ -141,7 +141,7 @@ export interface FailedGenerationTestParams {
     errorsHandlingMode: ErrorsHandlingMode;
     failureName: string;
     expectedGenerationLogs: ExpectedRecord[];
-    expectedFailedGenerationEventsN: number;
+    expectedFailedRequestEventsN: number;
 
     errorToThrow?: Error;
     expectedErrorOfFailedEvent?: LLMServiceError;
@@ -188,6 +188,7 @@ export function testFailedGeneration<T>(
                 const eventsTracker = subscribeToTrackMockEvents(
                     testEventLogger,
                     mockService,
+                    basicMockParams.modelId,
                     testParams.expectedChatOfMockEvent,
                     testParams.expectedErrorOfFailedEvent
                 );
@@ -226,10 +227,10 @@ export function testFailedGeneration<T>(
                 const expectedMockEventsN =
                     testParams.shouldFailBeforeGenerationIsStarted ? 0 : 1;
                 expect(eventsTracker).toEqual({
-                    mockGenerationEventsN: expectedMockEventsN,
-                    successfulGenerationEventsN: 0,
-                    failedGenerationEventsN:
-                        testParams.expectedFailedGenerationEventsN,
+                    mockEventsN: expectedMockEventsN,
+                    successfulRequestEventsN: 0,
+                    failedRequestEventsN:
+                        testParams.expectedFailedRequestEventsN,
                 });
                 expectLogs(testParams.expectedGenerationLogs, mockService);
 
@@ -247,10 +248,10 @@ export function testFailedGeneration<T>(
                 }
 
                 expect(eventsTracker).toEqual({
-                    mockGenerationEventsN: expectedMockEventsN + 1,
-                    successfulGenerationEventsN: 1,
-                    failedGenerationEventsN:
-                        testParams.expectedFailedGenerationEventsN,
+                    mockEventsN: expectedMockEventsN + 1,
+                    successfulRequestEventsN: 1,
+                    failedRequestEventsN:
+                        testParams.expectedFailedRequestEventsN,
                 });
                 // `mockLLM` was created with `debugLogs = true`, so logs are not cleaned on success
                 expectLogs(

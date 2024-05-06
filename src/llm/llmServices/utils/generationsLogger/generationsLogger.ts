@@ -1,25 +1,15 @@
-import { ChatHistory } from "../../chat";
-import { ModelParams } from "../../modelParams";
+import {
+    GenerationFailedError,
+    LLMServiceError,
+} from "../../../llmServiceErrors";
+import {
+    LLMServiceRequestFailed,
+    LLMServiceRequestSuceeded,
+} from "../../llmService";
 import { nowTimestampMillis } from "../time";
 
-import { DebugLoggerRecord, LoggerRecord } from "./loggerRecord";
+import { DebugLoggerRecord, LoggedError, LoggerRecord } from "./loggerRecord";
 import { SyncFile } from "./syncFile";
-
-export interface GenerationRequest {
-    params: ModelParams;
-    choices: number;
-}
-
-export interface FromChatGenerationRequest extends GenerationRequest {
-    chat: ChatHistory;
-    estimatedTokens: number;
-}
-
-function isFromChatGenerationRequest(
-    object: any
-): object is FromChatGenerationRequest {
-    return "chat" in object && "estimatedTokens" in object;
-}
 
 /**
  * This class is responsible for logging the actual generations.
@@ -37,11 +27,10 @@ export class GenerationsLogger {
 
     /**
      * - When `debug` is false, logs only the necessary info:
-     * timestamp, model name, response status and request info (choices and number of tokens sent).
+     * timestamp, model name, response status and basic request info (choices and number of tokens sent).
      * Logs are being cleaned every time the last request succeeds.
-     * - When `debug` is true, logs:
-     * chat history, received completions and params of the model additionally.
-     * Also, the logs are never cleaned automatically.
+     * - When `debug` is true, logs chat history, received completions and params of the model additionally.
+     *   Also, the logs are never cleaned automatically.
      */
     constructor(
         filePath: string,
@@ -54,22 +43,20 @@ export class GenerationsLogger {
         }
     }
 
-    logGenerationSucceeded(request: GenerationRequest, proofs: string[]) {
+    logGenerationSucceeded(request: LLMServiceRequestSuceeded) {
         let record = new LoggerRecord(
             nowTimestampMillis(),
             request.params.modelId,
             "SUCCESS",
             request.choices,
-            isFromChatGenerationRequest(request)
-                ? request.estimatedTokens
-                : undefined
+            request.analyzedChat?.estimatedTokens
         );
         if (this.debug) {
             record = new DebugLoggerRecord(
                 record,
-                isFromChatGenerationRequest(request) ? request.chat : undefined,
+                request.analyzedChat?.chat,
                 request.params,
-                proofs
+                request.generatedRawProofs
             );
         }
 
@@ -81,24 +68,21 @@ export class GenerationsLogger {
         }
     }
 
-    logGenerationFailed(request: GenerationRequest, error: Error) {
+    logGenerationFailed(request: LLMServiceRequestFailed) {
         let record = new LoggerRecord(
             nowTimestampMillis(),
             request.params.modelId,
             "FAILURE",
             request.choices,
-            isFromChatGenerationRequest(request)
-                ? request.estimatedTokens
-                : undefined,
-            {
-                typeName: error.name,
-                message: error.message,
-            }
+            request.analyzedChat?.estimatedTokens,
+            this.toLoggedError(
+                this.extractAndValidateCause(request.llmServiceError)
+            )
         );
         if (this.debug) {
             record = new DebugLoggerRecord(
                 record,
-                isFromChatGenerationRequest(request) ? request.chat : undefined,
+                request.analyzedChat?.chat,
                 request.params
             );
         }
@@ -142,5 +126,27 @@ export class GenerationsLogger {
 
     dispose() {
         this.logsFile.delete();
+    }
+
+    private extractAndValidateCause(llmServiceError: LLMServiceError): Error {
+        if (!(llmServiceError instanceof GenerationFailedError)) {
+            throw Error(
+                `\`GenerationsLogger\` is capable of logging only generation errors, but got: "${this.toLoggedError(llmServiceError)}"`
+            );
+        }
+        const cause = llmServiceError.cause;
+        if (cause instanceof LLMServiceError) {
+            throw Error(
+                `received doubled-wrapped error to log, cause is instance of \`LLMServiceError\`: "${this.toLoggedError(llmServiceError)}"`
+            );
+        }
+        return cause;
+    }
+
+    private toLoggedError(error: Error): LoggedError {
+        return {
+            typeName: error.name,
+            message: error.message,
+        };
     }
 }
