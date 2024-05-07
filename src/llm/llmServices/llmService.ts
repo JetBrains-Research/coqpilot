@@ -261,7 +261,7 @@ export abstract class GeneratedProof {
         this.maxRoundsNumber =
             this.modelParams.multiroundProfile.maxRoundsNumber;
         if (this.maxRoundsNumber < this.proofVersions.length) {
-            throw new Error(
+            throw Error(
                 `proof cannot be instantiated: max rounds number (${this.maxRoundsNumber}) was already reached`
             );
         }

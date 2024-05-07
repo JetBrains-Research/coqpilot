@@ -40,7 +40,7 @@ export function switchByLLMServiceType<T>(
     } else if (llmService instanceof LMStudioService) {
         return onLMStudioService();
     } else {
-        throw new Error(
+        throw Error(
             `switch by unknown LLMService: "${llmService.serviceName}"`
         );
     }

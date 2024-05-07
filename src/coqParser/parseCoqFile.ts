@@ -41,7 +41,7 @@ function parseFlecheDocument(
     textLines: string[]
 ): Theorem[] {
     if (doc === null) {
-        throw new Error("could not parse file");
+        throw Error("could not parse file");
     }
 
     const theorems: Theorem[] = [];

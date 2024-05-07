@@ -218,9 +218,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
                 generationsLogger.logGenerationFailed(
                     failed(
                         mockRequest,
-                        new GenerationFailedError(
-                            new Error("double-wrapped error")
-                        )
+                        new GenerationFailedError(Error("double-wrapped error"))
                     )
                 )
             ).toThrow();

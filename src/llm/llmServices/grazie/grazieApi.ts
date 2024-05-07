@@ -93,7 +93,7 @@ export class GrazieApi {
                 const messageData = JSON.parse(validJSON);
                 messages.push(messageData.current);
             } else {
-                throw new Error(
+                throw Error(
                     "Unexpected chunk: " +
                         tokenWrapped +
                         ". Please report this error."

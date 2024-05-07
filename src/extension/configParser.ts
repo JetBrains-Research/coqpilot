@@ -103,7 +103,7 @@ function validateAndParseJson<T>(
     if (!validate(instance)) {
         const settingsName = targetClassSchema.title;
         if (settingsName === undefined) {
-            throw new Error(
+            throw Error(
                 `unknown \`targetClassSchema\`: "${targetClassSchema}"; while resolving json: "${json}"`
             );
         }

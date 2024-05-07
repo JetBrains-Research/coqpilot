@@ -152,7 +152,7 @@ function reactToRequestFailedEvent(
             return;
         }
         if (!(llmServiceError instanceof GenerationFailedError)) {
-            throw new Error(
+            throw Error(
                 `\`llmServiceError\` of the received ${LLMService.requestFailedEvent} event data is expected to be either a \` ConfigurationError\` or \`GenerationFailedError\`, but got: "${llmServiceError}"`
             );
         }

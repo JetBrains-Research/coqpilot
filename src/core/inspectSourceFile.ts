@@ -83,7 +83,7 @@ async function createSourceFileEnvironment(
     const fileText = readFileSync(fileUri.fsPath);
     const dirPath = getSourceFolderPath(fileUri);
     if (!dirPath) {
-        throw new Error(
+        throw Error(
             `unable to get source folder path from \`fileUri\`: ${fileUri}`
         );
     }
