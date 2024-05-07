@@ -11,11 +11,8 @@ export interface LLMServices {
     lmStudioService: LMStudioService;
 }
 
-export function disposeServices(services: LLMServices) {
-    services.predefinedProofsService.dispose();
-    services.openAiService.dispose();
-    services.grazieService.dispose();
-    services.lmStudioService.dispose();
+export function disposeServices(llmServices: LLMServices) {
+    asLLMServices(llmServices).forEach((service) => service.dispose());
 }
 
 export function asLLMServices(llmServices: LLMServices): LLMService[] {
@@ -25,4 +22,26 @@ export function asLLMServices(llmServices: LLMServices): LLMService[] {
         llmServices.grazieService,
         llmServices.lmStudioService,
     ];
+}
+
+export function switchByLLMServiceType<T>(
+    llmService: LLMService,
+    onPredefinedProofsService: () => T,
+    onOpenAiService: () => T,
+    onGrazieService: () => T,
+    onLMStudioService: () => T
+): T {
+    if (llmService instanceof PredefinedProofsService) {
+        return onPredefinedProofsService();
+    } else if (llmService instanceof OpenAiService) {
+        return onOpenAiService();
+    } else if (llmService instanceof GrazieService) {
+        return onGrazieService();
+    } else if (llmService instanceof LMStudioService) {
+        return onLMStudioService();
+    } else {
+        throw new Error(
+            `switch by unknown LLMService: "${llmService.serviceName}"`
+        );
+    }
 }

@@ -2,7 +2,11 @@ import {
     ConfigurationError,
     GenerationFailedError,
 } from "../llm/llmServiceErrors";
-import { LLMServices, asLLMServices } from "../llm/llmServices";
+import {
+    LLMServices,
+    asLLMServices,
+    switchByLLMServiceType,
+} from "../llm/llmServices";
 import {
     LLMService,
     LLMServiceRequest,
@@ -15,6 +19,7 @@ import { Time } from "../llm/llmServices/utils/time";
 import { EventLogger } from "../logging/eventLogger";
 import { SimpleSet } from "../utils/simpleSet";
 
+import { pluginId } from "./coqPilot";
 import { showMessageToUser } from "./editorMessages";
 import { showMessageToUserWithSettingsHint } from "./settingsValidationError";
 
@@ -141,7 +146,8 @@ function reactToRequestFailedEvent(
             seenIncorrectlyConfiguredModels.add(model);
             showMessageToUserWithSettingsHint(
                 `Model "${model.modelId}" is configured incorrectly: ${llmServiceError.message}. Thus, "${model.modelId}" will be skipped for this run. Please fix the model's configuration in the settings.`,
-                "error"
+                "error",
+                toSettingName(requestFailed.llmService)
             );
             return;
         }
@@ -190,6 +196,17 @@ function parseLLMServiceRequestEvent<T extends LLMServiceRequest>(
         throw Error(`no UI state for \`${serviceName}\``);
     }
     return [request, uiState];
+}
+
+function toSettingName(llmService: LLMService): string {
+    const serviceNameInSettings = switchByLLMServiceType(
+        llmService,
+        () => "predefinedProofs",
+        () => "openAi",
+        () => "grazie",
+        () => "lmStudio"
+    );
+    return `${pluginId}.${serviceNameInSettings}ModelsParameters`;
 }
 
 function formatTimeToUIString(time: Time): string {
