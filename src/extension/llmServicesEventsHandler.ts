@@ -169,7 +169,8 @@ function reactToRequestFailedEvent(
                     requestFailed.llmService.estimateTimeToBecomeAvailable()
                 );
                 const becameUnavailableMessage = `\`${requestFailed.llmService.serviceName}\` became unavailable for this generation.`;
-                const tryAgainMessage = `If you want to use it, try again in ~ ${formattedExpectedTime}.`;
+                const errorMessage = llmServiceError.cause.message;
+                const tryAgainMessage = `If you want to use it, try again in ~ ${formattedExpectedTime}. Caused by error: "${errorMessage}".`;
                 showMessageToUser(
                     `${becameUnavailableMessage} ${tryAgainMessage}`,
                     "warning"
