@@ -1,7 +1,6 @@
 import OpenAI from "openai";
 
 import { EventLogger } from "../../../logging/eventLogger";
-import { ConfigurationError } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { ChatHistory } from "../chat";
 import {
@@ -69,9 +68,7 @@ class OpenAiServiceInternal extends LLMServiceInternal {
         choices: number
     ): Promise<string[]> {
         // TODO: support retries
-        if (choices <= 0) {
-            throw new ConfigurationError(`bad choices: ${choices} <= 0`);
-        }
+        this.validateChoices(choices);
         const openAiParams = params as OpenAiModelParams;
         const openai = new OpenAI({ apiKey: openAiParams.apiKey });
         this.debug.logEvent("Completion requested", { history: chat });

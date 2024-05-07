@@ -561,18 +561,31 @@ export abstract class LLMServiceInternal {
         );
     }
 
+    /**
+     * Helper function to validate `choices` are positive.
+     *
+     * It is not used in the default implementations, since services
+     * might handle negative or zero `choices` in some special way.
+     * However, this validation is most likely needed in any normal `LLMServiceInternal` implementation.
+     */
+    validateChoices(choices: number) {
+        if (choices <= 0) {
+            throw new ConfigurationError("`choices` should be positive");
+        }
+    }
+
     private logSuccess(
         request: LLMServiceRequest,
         generatedRawProofs: string[]
     ) {
-        const requestSuceeded: LLMServiceRequestSuceeded = {
+        const requestSucceeded: LLMServiceRequestSucceeded = {
             ...request,
             generatedRawProofs: generatedRawProofs,
         };
-        this.generationsLogger.logGenerationSucceeded(requestSuceeded);
+        this.generationsLogger.logGenerationSucceeded(requestSucceeded);
         this.eventLogger?.logLogicEvent(
             LLMService.requestSucceededEvent,
-            requestSuceeded
+            requestSucceeded
         );
     }
 

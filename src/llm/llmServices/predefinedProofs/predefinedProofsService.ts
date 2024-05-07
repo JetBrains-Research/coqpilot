@@ -49,11 +49,7 @@ export class PredefinedProofsService extends LLMService {
             choices,
             errorsHandlingMode,
             (_request) => {
-                if (choices <= 0) {
-                    throw new ConfigurationError(
-                        `bad choices: ${choices} <= 0`
-                    );
-                }
+                this.internal.validateChoices(choices);
                 const tactics = predefinedProofsParams.tactics;
                 if (choices > tactics.length) {
                     throw new ConfigurationError(

@@ -1,5 +1,4 @@
 import { EventLogger } from "../../../logging/eventLogger";
-import { ConfigurationError } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { UserModelParams } from "../../userModelParams";
 import { ChatHistory, ChatMessage } from "../chat";
@@ -81,9 +80,7 @@ class GrazieServiceInternal extends LLMServiceInternal {
         params: ModelParams,
         choices: number
     ): Promise<string[]> {
-        if (choices <= 0) {
-            throw new ConfigurationError(`bad choices: ${choices} <= 0`);
-        }
+        this.validateChoices(choices);
         let attempts = choices * 2;
         const completions: Promise<string>[] = [];
         const formattedChat = this.formatChatHistory(chat);
