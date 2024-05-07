@@ -4,7 +4,7 @@ import {
 } from "../../../llmServiceErrors";
 import {
     LLMServiceRequestFailed,
-    LLMServiceRequestSuceeded,
+    LLMServiceRequestSucceeded,
 } from "../../llmService";
 import { nowTimestampMillis } from "../time";
 
@@ -43,7 +43,7 @@ export class GenerationsLogger {
         }
     }
 
-    logGenerationSucceeded(request: LLMServiceRequestSuceeded) {
+    logGenerationSucceeded(request: LLMServiceRequestSucceeded) {
         let record = new LoggerRecord(
             nowTimestampMillis(),
             request.params.modelId,

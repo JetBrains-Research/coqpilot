@@ -8,7 +8,7 @@ import {
 import {
     LLMService,
     LLMServiceRequestFailed,
-    LLMServiceRequestSuceeded,
+    LLMServiceRequestSucceeded,
 } from "../../../llm/llmServices/llmService";
 
 import { EventLogger } from "../../../logging/eventLogger";
@@ -87,7 +87,7 @@ function subscribeToLogicEvents<T extends LLMService>(
     testEventLogger.subscribeToLogicEvent(
         LLMService.requestSucceededEvent,
         (data) => {
-            const requestSucceeded = data as LLMServiceRequestSuceeded;
+            const requestSucceeded = data as LLMServiceRequestSucceeded;
             expect(requestSucceeded).toBeTruthy();
             expect(requestSucceeded.llmService).toEqual(expectedService);
             expect(requestSucceeded.params.modelId).toEqual(expectedModelId);

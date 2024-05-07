@@ -10,7 +10,7 @@ import { ChatHistory } from "../../../../../llm/llmServices/chat";
 import {
     LLMServiceRequest,
     LLMServiceRequestFailed,
-    LLMServiceRequestSuceeded,
+    LLMServiceRequestSucceeded,
 } from "../../../../../llm/llmServices/llmService";
 import { PredefinedProofsModelParams } from "../../../../../llm/llmServices/modelParams";
 import { GenerationsLogger } from "../../../../../llm/llmServices/utils/generationsLogger/generationsLogger";
@@ -91,7 +91,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
 
     function succeeded(
         mockRequest: LLMServiceRequest
-    ): LLMServiceRequestSuceeded {
+    ): LLMServiceRequestSucceeded {
         return {
             ...mockRequest,
             generatedRawProofs: mockProofs,

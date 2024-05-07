@@ -44,7 +44,7 @@ export interface LLMServiceRequest {
     analyzedChat?: AnalyzedChatHistory;
 }
 
-export interface LLMServiceRequestSuceeded extends LLMServiceRequest {
+export interface LLMServiceRequestSucceeded extends LLMServiceRequest {
     generatedRawProofs: string[];
 }
 

@@ -29,7 +29,6 @@ import { ProofStep } from "../coqParser/parsedTypes";
 import { Uri } from "../utils/uri";
 
 import {
-    SettingsValidationError,
     buildTheoremsRankerFromConfig,
     parseAndValidateUserModelsParams,
 } from "./configParser";
@@ -44,12 +43,13 @@ import {
     suggestAddingAuxFilesToGitignore,
 } from "./editorMessages";
 import { GlobalExtensionState } from "./globalExtensionState";
-import { subscribeToLLMServicesUIEvents } from "./llmServicesAvailabilityUI";
+import { subscribeToHandleLLMServicesEvents } from "./llmServicesEventsHandler";
 import {
     positionInRange,
     toVSCodePosition,
     toVSCodeRange,
 } from "./positionRangeUtils";
+import { SettingsValidationError } from "./settingsValidationError";
 import { cleanAuxFiles, hideAuxFiles } from "./tmpFilesCleanup";
 
 export const pluginId = "coqpilot";
@@ -143,8 +143,8 @@ export class CoqPilot {
                 editor.document.uri.fsPath
             );
 
-        const unsubscribeFromLLMServicesUIEventsCallback =
-            subscribeToLLMServicesUIEvents(
+        const unsubscribeFromLLMServicesEventsCallback =
+            subscribeToHandleLLMServicesEvents(
                 this.globalExtensionState.llmServices,
                 this.globalExtensionState.eventLogger
             );
@@ -163,7 +163,7 @@ export class CoqPilot {
 
             await Promise.all(completionPromises);
         } finally {
-            unsubscribeFromLLMServicesUIEventsCallback();
+            unsubscribeFromLLMServicesEventsCallback();
         }
     }
 

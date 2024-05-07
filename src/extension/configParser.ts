@@ -1,5 +1,5 @@
 import Ajv, { JSONSchemaType } from "ajv";
-import { WorkspaceConfiguration, commands, workspace } from "vscode";
+import { WorkspaceConfiguration, workspace } from "vscode";
 
 import {
     GrazieUserModelParams,
@@ -19,35 +19,7 @@ import { DistanceContextTheoremsRanker } from "../core/contextTheoremRanker/dist
 import { RandomContextTheoremsRanker } from "../core/contextTheoremRanker/randomContextTheoremsRanker";
 
 import { pluginId } from "./coqPilot";
-import { UIMessageSeverity, showMessageToUser } from "./editorMessages";
-
-export class SettingsValidationError extends Error {
-    constructor(
-        errorMessage: string,
-        private readonly messageToShowToUser: string,
-        private readonly settingToOpenName: string = pluginId,
-        private readonly severity: UIMessageSeverity = "error"
-    ) {
-        super(errorMessage);
-    }
-
-    private static readonly openSettingsItem = "Open settings";
-
-    showAsMessageToUser() {
-        showMessageToUser(
-            this.messageToShowToUser,
-            this.severity,
-            SettingsValidationError.openSettingsItem
-        ).then((value) => {
-            if (value === SettingsValidationError.openSettingsItem) {
-                commands.executeCommand(
-                    "workbench.action.openSettings",
-                    this.settingToOpenName
-                );
-            }
-        });
-    }
-}
+import { SettingsValidationError } from "./settingsValidationError";
 
 export function buildTheoremsRankerFromConfig(): ContextTheoremsRanker {
     const workspaceConfig = workspace.getConfiguration(pluginId);
