@@ -570,7 +570,7 @@ export abstract class LLMServiceInternal {
      */
     validateChoices(choices: number) {
         if (choices <= 0) {
-            throw new ConfigurationError("`choices` should be positive");
+            throw new ConfigurationError("choices number should be positive");
         }
     }
 

@@ -145,7 +145,7 @@ function reactToRequestFailedEvent(
             }
             seenIncorrectlyConfiguredModels.add(model);
             showMessageToUserWithSettingsHint(
-                `Model "${model.modelId}" is configured incorrectly: ${llmServiceError.message}. Thus, "${model.modelId}" will be skipped for this run. Please fix the model's configuration in the settings.`,
+                `Model "${model.modelId}" is configured incorrectly: ${llmServiceError.message}. Thus, "${model.modelId}" was skipped for this run. Please fix the model's configuration in the settings.`,
                 "error",
                 toSettingName(requestFailed.llmService)
             );

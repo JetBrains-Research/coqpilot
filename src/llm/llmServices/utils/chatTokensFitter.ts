@@ -18,7 +18,7 @@ export class ChatTokensFitter {
         this.tokensLimit = tokensLimit;
         if (this.tokensLimit < maxTokensToGenerate) {
             throw new ConfigurationError(
-                `tokens limit ${this.tokensLimit} is not for the model to generate a new message that needs up to ${maxTokensToGenerate}`
+                `tokens limit ${this.tokensLimit} is not enough for the model to generate a new message that needs up to ${maxTokensToGenerate}`
             );
         }
         this.tokens += maxTokensToGenerate;
