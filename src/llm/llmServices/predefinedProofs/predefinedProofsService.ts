@@ -51,6 +51,11 @@ export class PredefinedProofsService extends LLMService {
             (_request) => {
                 this.internal.validateChoices(choices);
                 const tactics = predefinedProofsParams.tactics;
+                if (tactics.length === 0) {
+                    throw new ConfigurationError(
+                        "zero predefined tactics specified"
+                    );
+                }
                 if (choices > tactics.length) {
                     throw new ConfigurationError(
                         `bad choices ${choices}: there are only ${tactics.length} predefined tactics available`
@@ -87,14 +92,10 @@ export class PredefinedProofsService extends LLMService {
 
     resolveParameters(params: UserModelParams): ModelParams {
         const castedParams = params as PredefinedProofsUserModelParams;
-        if (castedParams.tactics.length === 0) {
-            throw Error(
-                "no tactics are selected in the PredefinedProofsModelParams"
-            );
-        }
         const modelParams: PredefinedProofsModelParams = {
             modelId: params.modelId,
             maxTokensToGenerate: Math.max(
+                0,
                 ...castedParams.tactics.map((tactic) => tactic.length)
             ),
             tokensLimit: Number.POSITIVE_INFINITY,

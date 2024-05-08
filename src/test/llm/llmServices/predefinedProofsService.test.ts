@@ -128,6 +128,50 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
         });
     });
 
+    test("Test throws on invalid configurations", async () => {
+        await withPredefinedProofsService(
+            async (predefinedProofsService, _testEventLogger) => {
+                const resolvedParams =
+                    predefinedProofsService.resolveParameters(
+                        userParams
+                    ) as PredefinedProofsModelParams;
+
+                // non-positive choices
+                expect(async () => {
+                    await predefinedProofsService.generateProof(
+                        proofGenerationContext,
+                        resolvedParams,
+                        -1,
+                        ErrorsHandlingMode.RETHROW_ERRORS
+                    );
+                }).toBeRejected();
+
+                // empty tactics
+                expect(async () => {
+                    await predefinedProofsService.generateProof(
+                        proofGenerationContext,
+                        {
+                            ...resolvedParams,
+                            tactics: [],
+                        } as PredefinedProofsModelParams,
+                        -1,
+                        ErrorsHandlingMode.RETHROW_ERRORS
+                    );
+                }).toBeRejected();
+
+                // choices > tactics.length
+                expect(async () => {
+                    await predefinedProofsService.generateProof(
+                        proofGenerationContext,
+                        resolvedParams,
+                        resolvedParams.tactics.length + 1,
+                        ErrorsHandlingMode.RETHROW_ERRORS
+                    );
+                }).toBeRejected();
+            }
+        );
+    });
+
     test("Test chat-related features throw", async () => {
         await withPredefinedProofsService(
             async (predefinedProofsService, _testEventLogger) => {
