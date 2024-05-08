@@ -132,6 +132,6 @@ suite("[LLMService] Test default availability estimator", () => {
             estimateTimeToBecomeAvailableDefault([
                 buildNextRecord(lastSuccessMillis, timeZero, "SUCCESS"),
             ])
-        ).toThrow();
+        ).toThrow(Error);
     });
 });

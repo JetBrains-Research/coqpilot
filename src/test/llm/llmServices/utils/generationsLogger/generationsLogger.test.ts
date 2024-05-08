@@ -205,14 +205,14 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
                         new ConfigurationError("invalid params")
                     )
                 )
-            ).toThrow();
+            ).toThrow(Error);
 
             class DummyLLMServiceError extends LLMServiceError {}
             expect(() =>
                 generationsLogger.logGenerationFailed(
                     failed(mockRequest, new DummyLLMServiceError())
                 )
-            ).toThrow();
+            ).toThrow(Error);
 
             expect(() =>
                 generationsLogger.logGenerationFailed(
@@ -221,7 +221,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
                         new GenerationFailedError(Error("double-wrapped error"))
                     )
                 )
-            ).toThrow();
+            ).toThrow(Error);
         });
     });
 

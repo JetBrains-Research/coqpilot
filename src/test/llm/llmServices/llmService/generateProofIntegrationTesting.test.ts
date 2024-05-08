@@ -1,5 +1,6 @@
 import { expect } from "earl";
 
+import { ConfigurationError } from "../../../../llm/llmServiceErrors";
 import {
     ErrorsHandlingMode,
     GeneratedProof,
@@ -300,7 +301,10 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
                                     await generatedProofToFix.fixProof(
                                         diagnostic
                                     )
-                            ).toBeRejected();
+                            ).toBeRejectedWith(
+                                ConfigurationError,
+                                "could not be fixed"
+                            );
                         } else {
                             const throwError = throwErrorOnNextGeneration(
                                 testParams.failedGenerationProbability,

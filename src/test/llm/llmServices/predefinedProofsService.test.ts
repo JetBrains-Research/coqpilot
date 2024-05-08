@@ -144,7 +144,7 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                         -1,
                         ErrorsHandlingMode.RETHROW_ERRORS
                     );
-                }).toBeRejected();
+                }).toBeRejectedWith(ConfigurationError, "choices");
 
                 // empty tactics
                 expect(async () => {
@@ -154,10 +154,13 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                             ...resolvedParams,
                             tactics: [],
                         } as PredefinedProofsModelParams,
-                        -1,
+                        1,
                         ErrorsHandlingMode.RETHROW_ERRORS
                     );
-                }).toBeRejected();
+                }).toBeRejectedWith(
+                    ConfigurationError,
+                    "zero predefined tactics"
+                );
 
                 // choices > tactics.length
                 expect(async () => {
@@ -167,7 +170,7 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                         resolvedParams.tactics.length + 1,
                         ErrorsHandlingMode.RETHROW_ERRORS
                     );
-                }).toBeRejected();
+                }).toBeRejectedWith(ConfigurationError);
             }
         );
     });
@@ -187,7 +190,10 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                         choices,
                         ErrorsHandlingMode.RETHROW_ERRORS
                     );
-                }).toBeRejected();
+                }).toBeRejectedWith(
+                    ConfigurationError,
+                    "does not support generation from chat"
+                );
 
                 const [generatedProof] =
                     await predefinedProofsService.generateProof(
@@ -203,7 +209,7 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                             3,
                             ErrorsHandlingMode.RETHROW_ERRORS
                         )
-                ).toBeRejected();
+                ).toBeRejectedWith(ConfigurationError, "cannot be fixed");
             }
         );
     });

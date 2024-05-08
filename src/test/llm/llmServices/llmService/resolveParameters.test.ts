@@ -1,5 +1,6 @@
 import { expect } from "earl";
 
+import { ParametersResolutionError } from "../../../../llm/llmServiceErrors";
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 import {
     defaultMultiroundProfile,
@@ -69,7 +70,7 @@ suite("[LLMService] Test UserModelParams to ModelParams resolution", () => {
         // there are no default values for token-related properties for a model without a name
         expect(() =>
             resolveParametersWithDefaultsImpl(unresolvedUserParams)
-        ).toThrow();
+        ).toThrow(ParametersResolutionError);
     });
 
     test("Test resolution by LLMService", () => {

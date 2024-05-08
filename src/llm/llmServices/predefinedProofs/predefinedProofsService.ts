@@ -58,7 +58,7 @@ export class PredefinedProofsService extends LLMService {
                 }
                 if (choices > tactics.length) {
                     throw new ConfigurationError(
-                        `bad choices ${choices}: there are only ${tactics.length} predefined tactics available`
+                        `requested ${choices} choices, there are only ${tactics.length} predefined tactics available`
                     );
                 }
             },

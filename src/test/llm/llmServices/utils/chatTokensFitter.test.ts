@@ -1,5 +1,6 @@
 import { expect } from "earl";
 
+import { ConfigurationError } from "../../../../llm/llmServiceErrors";
 import { theoremToChatItem } from "../../../../llm/llmServices/utils/chatFactory";
 import { ChatTokensFitter } from "../../../../llm/llmServices/utils/chatTokensFitter";
 import { chatItemToContent } from "../../../../llm/llmServices/utils/chatUtils";
@@ -76,7 +77,7 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
                 completionTarget: "doesn't matter",
                 contextTheorems: twoTheorems,
             });
-        }).toThrow();
+        }).toThrow(ConfigurationError, "required content cannot be fitted");
     });
 
     test("Two theorems, no overflow", async () => {

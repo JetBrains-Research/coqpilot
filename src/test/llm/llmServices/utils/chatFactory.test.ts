@@ -1,5 +1,6 @@
 import { expect } from "earl";
 
+import { ConfigurationError } from "../../../../llm/llmServiceErrors";
 import { ChatHistory, ChatMessage } from "../../../../llm/llmServices/chat";
 import { ProofVersion } from "../../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
@@ -212,7 +213,7 @@ suite("[LLMService-s utils] Building chats test", () => {
 
         expect(() =>
             buildChat(messages.systemMessage, messages.systemMessage)
-        ).toThrow();
+        ).toThrow(ConfigurationError, "chat is invalid");
     });
 
     test("Test chat-item wrappers", async () => {
