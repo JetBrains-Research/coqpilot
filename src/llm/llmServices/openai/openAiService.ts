@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 
 import { EventLogger } from "../../../logging/eventLogger";
+import { ConfigurationError } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { ChatHistory } from "../chat";
 import {
@@ -67,21 +68,79 @@ class OpenAiServiceInternal extends LLMServiceInternal {
         params: ModelParams,
         choices: number
     ): Promise<string[]> {
-        // TODO: support retries
         this.validateChoices(choices);
         const openAiParams = params as OpenAiModelParams;
+        this.validateTemperature(openAiParams);
+
         const openai = new OpenAI({ apiKey: openAiParams.apiKey });
         this.debug.logEvent("Completion requested", { history: chat });
 
-        const completion = await openai.chat.completions.create({
-            messages: chat,
-            model: openAiParams.modelName,
-            n: choices,
-            temperature: openAiParams.temperature,
-            // eslint-disable-next-line @typescript-eslint/naming-convention
-            max_tokens: openAiParams.maxTokensToGenerate,
-        });
-
-        return completion.choices.map((choice: any) => choice.message.content);
+        try {
+            const completion = await openai.chat.completions.create({
+                messages: chat,
+                model: openAiParams.modelName,
+                n: choices,
+                temperature: openAiParams.temperature,
+                // eslint-disable-next-line @typescript-eslint/naming-convention
+                max_tokens: openAiParams.maxTokensToGenerate,
+            });
+            return completion.choices.map(
+                (choice: any) => choice.message.content
+            );
+        } catch (e) {
+            throw this.repackKnownError(e, openAiParams);
+        }
     }
+
+    private validateTemperature(openAiParams: OpenAiModelParams) {
+        const temperature = openAiParams.temperature;
+        if (temperature < 0 || temperature > 2) {
+            throw new ConfigurationError(
+                `invalid temperature "${temperature}", it should be in range between 0 and 2`
+            );
+        }
+    }
+
+    private repackKnownError(
+        caughtObject: any,
+        openAiParams: OpenAiModelParams
+    ): any {
+        const error = caughtObject as Error;
+        if (error === null) {
+            return caughtObject;
+        }
+        const errorMessage = error.message;
+
+        if (
+            this.matchesPattern(
+                OpenAiServiceInternal.unknownModelNamePattern,
+                errorMessage
+            )
+        ) {
+            return new ConfigurationError(
+                `invalid model name "${openAiParams.modelName}", such model does not exist or you do not have access to it`
+            );
+        }
+        if (
+            this.matchesPattern(
+                OpenAiServiceInternal.incorrectApiKeyPattern,
+                errorMessage
+            )
+        ) {
+            return new ConfigurationError(
+                `incorrect api key "${openAiParams.apiKey}" (check your API key at https://platform.openai.com/account/api-keys)`
+            );
+        }
+        return error;
+    }
+
+    private matchesPattern(pattern: RegExp, text: string): boolean {
+        return text.match(pattern) !== null;
+    }
+
+    private static unknownModelNamePattern =
+        /^The model `(.*)` does not exist or you do not have access to it\.$/;
+
+    private static incorrectApiKeyPattern =
+        /^Incorrect API key provided: (.*)\.(.*)$/;
 }
