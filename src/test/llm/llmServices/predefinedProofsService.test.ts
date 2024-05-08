@@ -10,6 +10,7 @@ import { PredefinedProofsUserModelParams } from "../../../llm/userModelParams";
 
 import { EventLogger } from "../../../logging/eventLogger";
 import { delay } from "../../commonTestFunctions/delay";
+import { withLLMService } from "../../commonTestFunctions/withLLMService";
 import { testModelId } from "../llmSpecificTestUtils/constants";
 import {
     EventsTracker,
@@ -36,15 +37,12 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
         ) => Promise<void>
     ) {
         const testEventLogger = new EventLogger();
-        const predefinedProofsService = new PredefinedProofsService(
-            testEventLogger,
-            true
+        return withLLMService(
+            new PredefinedProofsService(testEventLogger, true),
+            async (predefinedProofsService) => {
+                return block(predefinedProofsService, testEventLogger);
+            }
         );
-        try {
-            await block(predefinedProofsService, testEventLogger);
-        } finally {
-            predefinedProofsService.dispose();
-        }
     }
 
     const choices = simpleTactics.length;

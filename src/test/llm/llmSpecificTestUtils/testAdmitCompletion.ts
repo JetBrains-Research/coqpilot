@@ -16,7 +16,7 @@ export async function testLLMServiceCompletesAdmitFromFile(
     resourcePath: string[],
     choices: number
 ) {
-    await withLLMServiceAndParams(
+    return withLLMServiceAndParams(
         service,
         userParams,
         async (service, params) => {

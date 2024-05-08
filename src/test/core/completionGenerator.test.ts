@@ -33,7 +33,7 @@ suite("Completion generation tests", () => {
             services: createDefaultServices(),
         };
         try {
-            return Promise.all(
+            return await Promise.all(
                 environment.completionContexts.map(
                     async (completionContext) => {
                         const result = await generateCompletion(
