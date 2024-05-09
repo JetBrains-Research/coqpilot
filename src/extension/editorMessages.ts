@@ -3,12 +3,12 @@ import * as path from "path";
 import { window, workspace } from "vscode";
 
 export namespace EditorMessages {
-    export const timeoutError =
-        "Coqpilot: The proof checking process timed out. Please try again.";
+    export const timeoutExceeded =
+        "The proof checking process timed out. Please try again.";
     export const noProofsForAdmit = (admitIdentifier: any) =>
         `Coqpilot failed to find a proof for the admit at line ${admitIdentifier}.`;
-    export const exceptionError = (errorMsg: string) =>
-        "Coqpilot: An exception occured: " + errorMsg;
+    export const errorOccurred = (errorMsg: string) =>
+        `Coqpilot got an error: "${errorMsg}". Please make sure the environment is properly set and the plugin is configured correctly. For more information, see the README: https://github.com/JetBrains-Research/coqpilot/blob/main/README.md. If the error appears to be a bug, please report it by opening an issue on the Coqpilot GitHub repository.`;
 }
 
 export type UIMessageSeverity = "error" | "info" | "warning";

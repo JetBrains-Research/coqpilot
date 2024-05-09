@@ -57,8 +57,8 @@ export class FailureGenerationResult implements GenerationResult {
 }
 
 export enum FailureGenerationStatus {
-    excededTimeout,
-    exception,
+    timeoutExceeded,
+    errorOccurred,
     searchFailed,
 }
 
@@ -140,14 +140,24 @@ export async function generateCompletion(
             "No valid completions found"
         );
     } catch (e: any) {
+        const error = e as Error;
+        if (error === null) {
+            console.error(
+                `Object was thrown during completion generation: ${e}`
+            );
+        } else {
+            console.error(
+                `Error occurred during completion generation: "${error}".\n${error.stack ?? "<no stack available>"}`
+            );
+        }
         if (e instanceof CoqLspTimeoutError) {
             return new FailureGenerationResult(
-                FailureGenerationStatus.excededTimeout,
+                FailureGenerationStatus.timeoutExceeded,
                 e.message
             );
         } else {
             return new FailureGenerationResult(
-                FailureGenerationStatus.exception,
+                FailureGenerationStatus.errorOccurred,
                 e.message
             );
         }

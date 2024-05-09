@@ -205,12 +205,12 @@ export class CoqPilot {
             highlightTextInEditor(completionRange);
         } else if (result instanceof FailureGenerationResult) {
             switch (result.status) {
-                case FailureGenerationStatus.excededTimeout:
-                    showMessageToUser(EditorMessages.timeoutError, "info");
+                case FailureGenerationStatus.timeoutExceeded:
+                    showMessageToUser(EditorMessages.timeoutExceeded, "info");
                     break;
-                case FailureGenerationStatus.exception:
+                case FailureGenerationStatus.errorOccurred:
                     showMessageToUser(
-                        EditorMessages.exceptionError(result.message),
+                        EditorMessages.errorOccurred(result.message),
                         "error"
                     );
                     break;
