@@ -35,6 +35,9 @@
 
 		/* To Create decorators */
 		"experimentalDecorators": true,
+
+		/* For Ts.ED */
+		"emitDecoratorMetadata": true,
 	},
 	"exclude": [
 		"./_opam/**/*",
