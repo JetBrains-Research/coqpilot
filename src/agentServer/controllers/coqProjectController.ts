@@ -4,10 +4,10 @@ import {Controller, Get} from "@tsed/common";
 @Controller("/document")
 export class CoqProjectController {
     @Get()
-    findAll(): any {
+    getProjectRoot(): any {
         return {
-            id: "1",
-            name: "Project 1",
+            message: "Server is expecting the coq project to be with the same root as the server.",
+            projectRoot: process.cwd(),
         };
     }
 }

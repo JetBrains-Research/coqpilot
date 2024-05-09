@@ -21,6 +21,7 @@ Now `coqpilot` is in early beta and seeks for feedbacks. Please feel free to ope
   - 🎛 [How VsCode settings work](#how-vscode-settings-work)
   - 🧰 [Model Configuration](#model-configuration)
 - 📌 [Contributed Commands](#contributed-commands)
+- 🌐 [Local Server for AI Agents](#local-server-for-coq-project-observation) 
 - 🚧 [Planned Features](#planned-features)
 - 📜 [Release Notes](#release-notes)
 
@@ -106,6 +107,7 @@ The extension's architecture overview is stored in the [ARCHITECTURE.md](https:/
 Coqpilot generates aux files with `_cp_aux.v` suffix. Sometimes when generation fails with exception, it is possible that such file will not be deleted. When a project is open, extension shall show a window that asks if you want to add such files to the local project gitignore. 
 
 Moreover, this repository contains a script for your convenience that adds the format of such files to the global gitignore file on your system.  
+<!-- TODO Fix path -->
 - Copy the [`set_gitignore.sh`](https://github.com/K-dizzled/coqpilot/blob/main/set_gitignore.sh) file to your computer. Then: 
 ```bash 
 chmod +x set_gitignore.sh
@@ -194,6 +196,25 @@ Another thing to keep in mind: We are still in beta and changes in settings may 
 * `coqpilot.perform_completion_under_cursor`: Try to generate proof for the goal under the cursor.
 * `coqpilot.perform_completion_for_all_admits`: Try to prove all holes (admitted goals) in the current file.
 * `coqpilot.perform_completion_in_selection`: Try to prove holes (admitted goals) in selection.
+
+## Local Server for Coq project observation
+*IMPORTANT: In Development.*
+
+As a standalone feature from the main extension, we are developing a local server that could be run on the user's machine locally, connect to the CoqPilot OpenAI agent and work in tandem to generate proofs. This server answers questions about the project and typeschecks the generated proofs on demand from the agent.
+
+To run the server you need to hit: 
+```sh
+npm run server
+```
+This will start the server on the `localhost:8000`. The API documentation is available at `http://localhost:8000/docs/`.
+
+As we want to run the server from any place in the system, and run it from the Coq project root, we need to add the executable to the system path. On Linux/MacOS, you can run: 
+```sh
+chmod +x scripts/setup_server.sh
+./scripts/setup_server.sh
+```
+
+Then you would be able to run the server from any place in the system by typing `coqpilot-server`.
 
 ## Planned Features
 
