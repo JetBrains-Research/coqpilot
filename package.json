@@ -361,7 +361,8 @@
     "test": "node ./out/test/runTest.js",
     "test-ci": "npm test -- -g=\"--non-ci\" -i=true",
     "clean": "rm -rf out",
-    "server": "nodemon --watch \"src/**/*.ts\" --ignore \"node_modules/**/*\" --exec ts-node src/agentServer/boot.ts"
+    "preserver": "npm run clean && npm run compile",
+    "server": "node ./out/agentServer/runVsCodeElectron.js"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
@@ -408,7 +409,6 @@
     "i": "^0.3.7",
     "method-override": "^3.0.0",
     "mocha-param": "^2.0.1",
-    "nodemon": "^3.1.0",
     "npm": "^10.4.0",
     "openai": "^4.6.0",
     "path": "^0.12.7",
@@ -416,7 +416,6 @@
     "pino-pretty": "^10.2.0",
     "tiktoken": "^1.0.13",
     "toml": "^3.0.0",
-    "ts-node": "^10.9.2",
     "vscode-languageclient": "^9.0.1",
     "yargs": "^17.7.2"
   }

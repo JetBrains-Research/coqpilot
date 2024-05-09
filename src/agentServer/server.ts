@@ -31,7 +31,7 @@ const rootDir = __dirname;
     swagger: [
         {
             path: "/docs",
-            cssPath: `${rootDir}/spec/style.css`,
+            cssPath: `${rootDir}/../../src/agentServer/spec/style.css`,
         }
     ],
 })

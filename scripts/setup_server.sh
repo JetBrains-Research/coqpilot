@@ -10,8 +10,9 @@ printf "\033[0;32mCreating a shell script at $filepath...\033[0m\n"
 # create the bash script
 cat > "$filepath" << EOF
 #!/bin/bash
+run_root=\$(pwd)
 cd $current_dir
-npm run server
+npm run server -- SERVER_RUN_ROOT=\$run_root
 EOF
 
 printf "\033[0;32mMaking the script executable...\033[0m\n"

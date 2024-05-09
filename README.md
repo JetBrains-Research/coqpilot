@@ -216,6 +216,12 @@ chmod +x scripts/setup_server.sh
 
 Then you would be able to run the server from any place in the system by typing `coqpilot-server`.
 
+If you current project is built with nix, the command shall be run from the nix-shell.
+```sh
+nix-shell
+coqpilot-server
+```
+
 ## Planned Features
 
 - Add benchmarking options for various models: soon. 
