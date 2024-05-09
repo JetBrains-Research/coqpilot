@@ -13,11 +13,11 @@ async function main() {
             {} as { [key: string]: string | undefined }
         );
         const extensionDevelopmentPath = path.resolve(__dirname, "../../");
-        const extensionTestsPath = path.resolve(__dirname, "./boot");
+        const serverBootPath = path.resolve(__dirname, "./boot");
 
         await runTests({
             extensionDevelopmentPath,
-            extensionTestsPath,
+            extensionTestsPath: serverBootPath,
             extensionTestsEnv: envVals,
         });
     } catch (err) {

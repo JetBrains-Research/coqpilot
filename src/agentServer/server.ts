@@ -2,6 +2,8 @@ import {Configuration} from "@tsed/common";
 import "@tsed/platform-express";
 import "@tsed/swagger";
 import {CoqProjectController} from "./controllers/coqProjectController";
+import {Env} from "@tsed/core";
+import {GlobalErrorHandlerMiddleware} from "./middlewares/globalErrorHandlerMiddleware";
 
 const rootDir = __dirname;
 
@@ -27,6 +29,7 @@ const rootDir = __dirname;
         "json-parser",
         "compression",
         "method-override",
+        GlobalErrorHandlerMiddleware
     ],
     swagger: [
         {
@@ -34,5 +37,6 @@ const rootDir = __dirname;
             cssPath: `${rootDir}/../../src/agentServer/spec/style.css`,
         }
     ],
+    env: Env.DEV,
 })
 export class Server {}

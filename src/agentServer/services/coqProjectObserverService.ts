@@ -4,6 +4,13 @@ import { CoqLspConfig } from "../../coqLsp/coqLspConfig";
 import { Uri } from "../../utils/uri";
 import { parseCoqFile } from "../../coqParser/parseCoqFile";
 
+export class ServerError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "ServerError";
+    }
+}
+
 
 // eslint-disable-next-line prettier/prettier
 @Injectable()
@@ -37,7 +44,6 @@ export class CoqProjectObserverService {
     async getTheoremNamesFromFile(filePath: string): Promise<string[]> {
         const absolutePath = `${this.projectRoot}/${filePath}`;
         const fileUri = Uri.fromPath(absolutePath);
-
         await this.coqLspClient.openTextDocument(fileUri);
         const document = await parseCoqFile(fileUri, this.coqLspClient);
         await this.coqLspClient.closeTextDocument(fileUri);

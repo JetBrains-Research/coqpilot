@@ -416,6 +416,7 @@
     "pino-pretty": "^10.2.0",
     "tiktoken": "^1.0.13",
     "toml": "^3.0.0",
+    "ts-results": "^3.3.0",
     "vscode-languageclient": "^9.0.1",
     "yargs": "^17.7.2"
   }

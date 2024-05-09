@@ -1,4 +1,5 @@
-import {Controller, Get, PathParams} from "@tsed/common";
+import {Controller, Get, QueryParams, UseBefore} from "@tsed/common";
+import {FilePathMiddleware} from "../middlewares/filePathMiddleware";
 import {CoqProjectObserverService} from "../services/coqProjectObserverService";
 
 // eslint-disable-next-line prettier/prettier
@@ -14,8 +15,9 @@ export class CoqProjectController {
         };
     }
 
-    @Get("/theoremNames/:filePath")
-    async getTheoremNamesFromFile(@PathParams("filePath") filePath: string): Promise<any> {
+    @Get("/theoremNames")
+    @UseBefore(FilePathMiddleware)
+    async getTheoremNamesFromFile(@QueryParams("filePath") filePath: string): Promise<any> {
         return {
             message: "Theorem names from the file",
             theoremNames: await this.coqProjectObserverService.getTheoremNamesFromFile(filePath),
