@@ -1,32 +1,35 @@
-import {Err, ResponseErrorObject, Middleware, Req, Res, Constant} from "@tsed/common";
-import {Env} from "@tsed/core";
-import {Exception} from "@tsed/exceptions";
+import {
+    Constant,
+    Err,
+    Middleware,
+    Req,
+    Res,
+    ResponseErrorObject,
+} from "@tsed/common";
+import { Env } from "@tsed/core";
+import { Exception } from "@tsed/exceptions";
 
 const toHTML = (message = "") => message.replace(/\n/gi, "<br />");
 
 function getErrors(error: any) {
-  return [error, error.origin]
-    .filter(Boolean)
-    .reduce((errs, {errors}: ResponseErrorObject) => {
-        return [
-            ...errs,
-            ...errors || []
-        ];
-    }, []);
+    return [error, error.origin]
+        .filter(Boolean)
+        .reduce((errs, { errors }: ResponseErrorObject) => {
+            return [...errs, ...(errors || [])];
+        }, []);
 }
 
 function getHeaders(error: any) {
-  return [error, error.origin]
-    .filter(Boolean)
-    .reduce((obj, {headers}: ResponseErrorObject) => {
-        return {
-            ...obj,
-            ...headers || {}
-        };
-    }, {});
+    return [error, error.origin]
+        .filter(Boolean)
+        .reduce((obj, { headers }: ResponseErrorObject) => {
+            return {
+                ...obj,
+                ...(headers || {}),
+            };
+        }, {});
 }
 
-// eslint-disable-next-line prettier/prettier
 @Middleware()
 export class GlobalErrorHandlerMiddleware {
     @Constant("env")
@@ -55,25 +58,23 @@ export class GlobalErrorHandlerMiddleware {
         const err = this.mapError(error);
 
         logger.error({
-            error: err
+            error: err,
         });
 
         response
             .set(getHeaders(error))
-            .status(err.status).json(this.env === Env.PROD ? "InternalServerError" : err);
+            .status(err.status)
+            .json(this.env === Env.PROD ? "InternalServerError" : err);
     }
 
     protected handleException(error: any, request: Req, response: Res) {
         const logger = request.$ctx.logger;
         const err = this.mapError(error);
         logger.error({
-            error: err
+            error: err,
         });
 
-        response
-            .set(getHeaders(error))
-            .status(error.status)
-            .json(err);
+        response.set(getHeaders(error)).status(error.status).json(err);
     }
 
     protected mapError(error: any) {
@@ -82,10 +83,10 @@ export class GlobalErrorHandlerMiddleware {
             stack: this.env === Env.DEV ? error.stack : undefined,
             status: error.status || 500,
             origin: {
-                ...error.origin || {},
-                errors: undefined
+                ...(error.origin || {}),
+                errors: undefined,
             },
-            errors: getErrors(error)
+            errors: getErrors(error),
         };
     }
 }

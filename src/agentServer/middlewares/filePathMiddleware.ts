@@ -2,7 +2,6 @@ import { Middleware, QueryParams } from "@tsed/common";
 import { BadRequest, InternalServerError } from "@tsed/exceptions";
 import { existsSync } from "fs";
 
-// eslint-disable-next-line prettier/prettier
 @Middleware()
 export class FilePathMiddleware {
     async use(@QueryParams("filePath") filePath: string) {
@@ -12,8 +11,10 @@ export class FilePathMiddleware {
         }
 
         const absFilePath = `${projectRoot}/${filePath}`;
-        if (!existsSync(absFilePath)) {
+        if (!absFilePath.endsWith(".v")) {
+            throw new BadRequest("The file is not a Coq file");
+        } else if (!existsSync(absFilePath)) {
             throw new BadRequest("The file does not exist");
-        }   
+        }
     }
 }

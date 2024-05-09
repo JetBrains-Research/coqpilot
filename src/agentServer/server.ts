@@ -1,9 +1,10 @@
-import {Configuration} from "@tsed/common";
+import { Configuration } from "@tsed/common";
+import { Env } from "@tsed/core";
 import "@tsed/platform-express";
 import "@tsed/swagger";
-import {CoqProjectController} from "./controllers/coqProjectController";
-import {Env} from "@tsed/core";
-import {GlobalErrorHandlerMiddleware} from "./middlewares/globalErrorHandlerMiddleware";
+
+import { CoqProjectController } from "./controllers/coqProjectController";
+import { GlobalErrorHandlerMiddleware } from "./middlewares/globalErrorHandlerMiddleware";
 
 const rootDir = __dirname;
 
@@ -16,26 +17,24 @@ const rootDir = __dirname;
     logger: {
         debug: true,
         logRequest: true,
-        requestFields: ["method", "url", "headers", "query", "params"]
+        requestFields: ["method", "url", "headers", "query", "params"],
     },
     mount: {
         // eslint-disable-next-line @typescript-eslint/naming-convention
-        "/rest": [
-            CoqProjectController
-        ]
+        "/rest": [CoqProjectController],
     },
     middlewares: [
         "cors",
         "json-parser",
         "compression",
         "method-override",
-        GlobalErrorHandlerMiddleware
+        GlobalErrorHandlerMiddleware,
     ],
     swagger: [
         {
             path: "/docs",
             cssPath: `${rootDir}/../../src/agentServer/spec/style.css`,
-        }
+        },
     ],
     env: Env.DEV,
 })
