@@ -26,6 +26,9 @@ export interface UserModelParams {
      */
     modelId: string;
 
+    /**
+     * Can be overriden in the generation-method call with the `choices` parameter.
+     */
     choices?: number;
 
     systemPrompt?: string;

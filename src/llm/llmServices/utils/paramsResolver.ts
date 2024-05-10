@@ -1,6 +1,3 @@
-import { UserModelParams } from "../../userModelParams";
-import { ModelParams, MultiroundProfile } from "../modelParams";
-
 import {
     SingleParamResolutionResult,
     SingleParamResolver,
@@ -69,54 +66,3 @@ export class ParamsResolver<InputType, ResolveToType> {
         };
     }
 }
-
-export class BasicModelParamsResolver<
-    InputType extends UserModelParams,
-    ResolveToType extends ModelParams,
-> extends ParamsResolver<InputType, ResolveToType> {
-    readonly modelId = this.resolveParam<string>("modelId")
-        .requiredToBeConfigured()
-        .noValidationNeeded();
-
-    readonly systemPrompt = this.resolveParam<string>("systemPrompt")
-        .default((_) => defaultSystemMessageContent)
-        .noValidationNeeded();
-
-    readonly multiroundProfile = this.resolveParam<MultiroundProfile>(
-        "multiroundProfile"
-    )
-        .default((userModelParams) => {
-            const userMultiroundProfile = userModelParams.multiroundProfile;
-            return {
-                maxRoundsNumber:
-                    userMultiroundProfile?.maxRoundsNumber ??
-                    defaultMultiroundProfile.maxRoundsNumber,
-                proofFixChoices:
-                    userMultiroundProfile?.proofFixChoices ??
-                    defaultMultiroundProfile.proofFixChoices,
-                proofFixPrompt:
-                    userMultiroundProfile?.proofFixPrompt ??
-                    defaultMultiroundProfile.proofFixPrompt,
-            };
-        })
-        .validate(
-            [(profile) => profile.maxRoundsNumber > 0, "be positive"],
-            [(profile) => profile.proofFixChoices > 0, "be positive"]
-        );
-}
-
-export const defaultSystemMessageContent: string =
-    "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'.";
-
-/**
- * Properties of `defaultMultiroundProfile` can be used separately.
- * - Multiround is disabled by default.
- * - 1 fix version per proof by default.
- * - Default `proofFixPrompt` includes `${diagnostic}` message.
- */
-export const defaultMultiroundProfile: MultiroundProfile = {
-    maxRoundsNumber: 1,
-    proofFixChoices: 1,
-    proofFixPrompt:
-        "Unfortunately, the last proof is not correct. Here is the compiler's feedback: `${diagnostic}`. Please, fix the proof.",
-};

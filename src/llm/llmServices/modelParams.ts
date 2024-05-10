@@ -1,6 +1,12 @@
 export interface MultiroundProfile {
     maxRoundsNumber: number;
-    proofFixChoices: number;
+    /**
+     * Is handled the same way as `ModelParams.defaultChoices` is, i.e. `defaultProofFixChoices` is used
+     * only as a default `choices` value in the corresponding `fixProof` facade method.
+     *
+     * Do not use it inside the implementation, use the `choices` instead.
+     */
+    defaultProofFixChoices: number;
     proofFixPrompt: string;
 }
 
@@ -10,6 +16,14 @@ export interface ModelParams {
     maxTokensToGenerate: number;
     tokensLimit: number;
     multiroundProfile: MultiroundProfile;
+
+    /**
+     * Always overriden by the `choices` parameter at the call site, if one is specified.
+     * I.e. `defaultChoices` is used only as a default `choices` value in the corresponding facade methods.
+     *
+     * Do not use it inside the implementation, use the `choices` instead.
+     */
+    defaultChoices: number;
 }
 
 export interface PredefinedProofsModelParams extends ModelParams {

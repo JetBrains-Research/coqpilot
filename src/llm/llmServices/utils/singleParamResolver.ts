@@ -9,7 +9,11 @@ export type ValueBuilder<InputType, T> = (
     inputParams: InputType
 ) => T | undefined;
 
-export type ValidationRule<T> = [(value: T) => boolean, string];
+export type ValidationRule<InputType, T> = [Validator<InputType, T>, string];
+export type Validator<InputType, T> = (
+    value: T,
+    inputParams: InputType
+) => boolean;
 
 export interface SingleParamResolverBuilder<InputType, T> {
     override(
@@ -31,7 +35,7 @@ export interface SingleParamResolverBuilder<InputType, T> {
 
 export interface SingleParamWithValueResolverBuilder<InputType, T> {
     validate(
-        ...validationRules: ValidationRule<T>[]
+        ...validationRules: ValidationRule<InputType, T>[]
     ): SingleParamResolver<InputType, T>;
 
     noValidationNeeded(): SingleParamResolver<InputType, T>;
@@ -144,7 +148,7 @@ class SingleParamWithValueResolverBuilderImpl<InputType, T>
     ) {}
 
     validate(
-        ...validationRules: ValidationRule<T>[]
+        ...validationRules: ValidationRule<InputType, T>[]
     ): SingleParamResolver<InputType, T> {
         return new SingleParamResolverImpl(
             this.inputParamName,
@@ -175,7 +179,7 @@ class SingleParamResolverImpl<InputType, T>
         private readonly inputParamName: string,
         private readonly overrider?: Overrider<InputType, T>,
         private readonly defaultResolver?: DefaultResolver<InputType, T>,
-        private readonly validationRules: ValidationRule<T>[] = [],
+        private readonly validationRules: ValidationRule<InputType, T>[] = [],
         private readonly overridenWithMockValue: boolean = false
     ) {}
 
@@ -259,7 +263,7 @@ class SingleParamResolverImpl<InputType, T>
         // validate result value
         for (const [validateValue, paramShouldMessage] of this
             .validationRules) {
-            const validationResult = validateValue(value);
+            const validationResult = validateValue(value, inputParams);
             if (!validationResult) {
                 result.isInvalidCause = `${this.quotedName()} should ${paramShouldMessage}, but has value "${value}"`;
                 return result;

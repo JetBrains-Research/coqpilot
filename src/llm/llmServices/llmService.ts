@@ -131,12 +131,13 @@ export abstract class LLMService<
      * The default implementation is based on the `LLMServiceInternal.generateFromChatImpl`.
      * If it is not the desired way, `generateFromChat` should be overriden.
      *
+     * @param choices if specified, overrides `ModelParams.defaultChoices`.
      * @returns generated proofs as raw strings.
      */
     async generateFromChat(
         analyzedChat: AnalyzedChatHistory,
         params: ResolvedModelParams,
-        choices: number,
+        choices: number = params.defaultChoices,
         errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
     ): Promise<string[]> {
         return this.internal.generateFromChatWrapped(
@@ -156,12 +157,13 @@ export abstract class LLMService<
      * it calls `LLMServiceInternal.generateFromChatImpl`.
      * If it is not the desired way, `generateProof` should be overriden.
      *
+     * @param choices if specified, overrides `ModelParams.defaultChoices`.
      * @returns generated proofs as `GeneratedProof`-s.
      */
     async generateProof(
         proofGenerationContext: ProofGenerationContext,
         params: ResolvedModelParams,
-        choices: number,
+        choices: number = params.defaultChoices,
         errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
     ): Promise<GeneratedProof<ResolvedModelParams>[]> {
         return this.internal.generateFromChatWrapped(
@@ -328,11 +330,12 @@ export abstract class GeneratedProof<ResolvedModelParams extends ModelParams> {
      * If it is not the desired way, `fixProof` should be overriden.
      *
      * @param diagnostic diagnostic received from the compiler.
-     * @param choices if specified, overrides `ModelParams.multiroundProfile.fixedProofChoices`.
+     * @param choices if specified, overrides `ModelParams.multiroundProfile.defaultProofFixChoices`.
      */
     async fixProof(
         diagnostic: string,
-        choices: number = this.modelParams.multiroundProfile.proofFixChoices,
+        choices: number = this.modelParams.multiroundProfile
+            .defaultProofFixChoices,
         errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
     ): Promise<GeneratedProof<ResolvedModelParams>[]> {
         return this.llmServiceInternal.generateFromChatWrapped(
@@ -421,6 +424,8 @@ export abstract class LLMServiceInternal<
      * the generation from chat, namely, its happy path.
      * This function doesn't need to handle errors!
      *
+     * In case something goes wrong on the side of the external API, any error can be thrown.
+     *
      * However, if the generation failed due to the invalid configuration of the request
      * on the CoqPilot's side (for example: invalid token in `params`),
      * this implementation should through `ConfigurationError` whenever possible.
@@ -429,7 +434,8 @@ export abstract class LLMServiceInternal<
      * Important note: `ResolvedModelParams` are expected to be already validated by `LLMService.resolveParameters`,
      * so there is no need to perform this checks again. Report `ConfigurationError` only if something goes wrong during generation runtime.
      *
-     * In case something goes wrong on the side of the external API, any error can be thrown.
+     * Subnote: most likely you'd like to call `this.validateChoices` to validate `choices` parameter.
+     * Since it overrides `choices`-like parameters of already validated `params`, it might have any number value.
      */
     abstract generateFromChatImpl(
         chat: ChatHistory,

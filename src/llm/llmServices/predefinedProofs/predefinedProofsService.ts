@@ -43,7 +43,7 @@ export class PredefinedProofsService extends LLMService<
     async generateProof(
         proofGenerationContext: ProofGenerationContext,
         params: PredefinedProofsModelParams,
-        choices: number,
+        choices: number = params.defaultChoices,
         errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
     ): Promise<PredefinedProof[]> {
         return this.internal.logGenerationAndHandleErrors(
@@ -100,7 +100,8 @@ export class PredefinedProof extends GeneratedProof<PredefinedProofsModelParams>
 
     async fixProof(
         _diagnostic: string,
-        choices: number,
+        choices: number = this.modelParams.multiroundProfile
+            .defaultProofFixChoices,
         errorsHandlingMode: ErrorsHandlingMode
     ): Promise<PredefinedProof[]> {
         this.llmServiceInternal.unsupportedMethod(
