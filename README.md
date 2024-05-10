@@ -75,6 +75,13 @@ With coq-lsp, extension should have everything it needs to run.
 ### Building locally
 
 To build the extension locally, you will need to have `npm` installed. Then you can clone the repository and run the following commands:
+
+Preferably, install `nvm` and use the version of `node` that is specified in the `.nvmrc` file. 
+```bash
+nvm use
+```
+
+Then run:
 ```bash
 npm install
 npm run compile

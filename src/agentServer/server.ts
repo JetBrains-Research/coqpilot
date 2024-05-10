@@ -8,7 +8,6 @@ import { GlobalErrorHandlerMiddleware } from "./middlewares/globalErrorHandlerMi
 
 const rootDir = __dirname;
 
-// eslint-disable-next-line prettier/prettier
 @Configuration({
     rootDir,
     acceptMimes: ["application/json"],

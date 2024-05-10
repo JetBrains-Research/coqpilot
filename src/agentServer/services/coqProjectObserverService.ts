@@ -1,6 +1,6 @@
 import { Injectable } from "@tsed/di";
 import { BadRequest } from "@tsed/exceptions";
-import { lstatSync, readdirSync } from "fs";
+import { lstatSync, readFileSync, readdirSync } from "fs";
 import * as path from "path";
 
 import { CoqLspClient } from "../../coqLsp/coqLspClient";
@@ -10,6 +10,11 @@ import { parseCoqFile } from "../../coqParser/parseCoqFile";
 import { Theorem } from "../../coqParser/parsedTypes";
 import { Uri } from "../../utils/uri";
 import { CoqFile } from "../models/coqFile";
+
+import { CoqCodeExecutor, CoqCodeExecError } from "./coqCommandExecutor";
+import { Position } from "vscode-languageclient";
+import { ApiGoal } from "../models/apiGoal";
+import { Result } from "ts-results";
 
 @Injectable()
 export class CoqProjectObserverService {
@@ -97,5 +102,72 @@ export class CoqProjectObserverService {
 
         finder(this.projectRoot, this.projectRoot);
         return coqFiles;
+    }
+    
+    private getTextEndPosition(lines: string[]): Position {
+        return {
+            line: lines.length - 1,
+            character: lines[lines.length - 1].length
+        };
+    }
+
+    async runCoqCommand(
+        filePath: string,
+        command: string
+    ): Promise<string[]> {
+        const coqCodeExecutor = new CoqCodeExecutor(this.coqLspClient);
+        const result = await this.executeCoqCode(
+            filePath, 
+            command, 
+            coqCodeExecutor.executeCoqCommand.bind(coqCodeExecutor)
+        );
+
+        if (result.ok) {
+            return result.val;
+        } else {
+            throw new BadRequest(result.val);
+        }
+    }
+
+    async checkCoqProof(
+        filePath: string,
+        coqCode: string
+    ): Promise<ApiGoal | undefined> {
+        const coqCodeExecutor = new CoqCodeExecutor(this.coqLspClient);
+        const result = await this.executeCoqCode(
+            filePath, 
+            coqCode, 
+            coqCodeExecutor.getGoalAfterCoqCode.bind(coqCodeExecutor)
+        );
+
+        if (result.ok) {
+            const goal = result.val;
+            return {
+                hypothesis: goal.hyps.map((hyp) => `${hyp.names.join(" ")} : ${hyp.ty}`),
+                conclusion: goal.ty as string,
+            };
+        } else {
+            return undefined;
+        }
+    }
+
+    private async executeCoqCode<T>(
+        filePath: string,
+        coqCode: string,
+        coqCodeExecutor: (
+            fileParentDir: string, 
+            fileLines: string[], 
+            textEndPos: Position, 
+            coqCode: string
+        ) => Promise<Result<T, CoqCodeExecError>>,
+    ): Promise<Result<T, CoqCodeExecError>> { 
+        const absolutePath = `${this.projectRoot}/${filePath}`;
+        const fileParentDir = path.dirname(absolutePath);
+
+        const fileText = readFileSync(absolutePath).toString();
+        const fileLines = fileText.split("\n");
+        const textEndPos = this.getTextEndPosition(fileLines);
+
+        return coqCodeExecutor(fileParentDir, fileLines, textEndPos, coqCode);
     }
 }
