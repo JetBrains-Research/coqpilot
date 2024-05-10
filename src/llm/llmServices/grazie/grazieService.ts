@@ -29,12 +29,12 @@ export class GrazieService extends LLMService {
     }
 
     // Is constant (for now) as specified in Grazie REST API
-    readonly maxTokensToGeneratePredefined = 1024;
+    static readonly maxTokensToGeneratePredefined = 1024;
 
     resolveParameters(params: UserModelParams): ModelParams {
         return this.resolveParametersWithDefaults({
             ...params,
-            maxTokensToGenerate: this.maxTokensToGeneratePredefined,
+            maxTokensToGenerate: GrazieService.maxTokensToGeneratePredefined,
         });
     }
 }
