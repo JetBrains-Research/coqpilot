@@ -1,4 +1,3 @@
-import { ConfigurationError } from "../../llmServiceErrors";
 import { UserModelParams } from "../../userModelParams";
 import { ModelParams, MultiroundProfile } from "../modelParams";
 
@@ -60,7 +59,7 @@ export class ParamsResolver<InputType, ResolveToType> {
         }
         const resolvedParams = resolvedParamsObject as ResolveToType;
         if (resolvedParams === null) {
-            throw new ConfigurationError(
+            throw new Error(
                 `\`ModelParamsResolver\` is configured incorrectly: resulting "${JSON.stringify(resolvedParamsObject)}" could not be interpreted as \`ModelParams\` object`
             );
         }

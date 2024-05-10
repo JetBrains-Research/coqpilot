@@ -53,11 +53,6 @@ export class PredefinedProofsService extends LLMService<
             (_request) => {
                 this.internal.validateChoices(choices);
                 const tactics = params.tactics;
-                if (tactics.length === 0) {
-                    throw new ConfigurationError(
-                        "zero predefined tactics specified"
-                    );
-                }
                 if (choices > tactics.length) {
                     throw new ConfigurationError(
                         `requested ${choices} choices, there are only ${tactics.length} predefined tactics available`
