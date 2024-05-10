@@ -1,5 +1,6 @@
 import { EventLogger } from "../../../logging/eventLogger";
 import { ProofGenerationContext } from "../../proofGenerationContext";
+import { LMStudioUserModelParams } from "../../userModelParams";
 import { ChatHistory } from "../chat";
 import {
     GeneratedProof,
@@ -7,10 +8,15 @@ import {
     LLMServiceInternal,
     ProofVersion,
 } from "../llmService";
-import { LMStudioModelParams, ModelParams } from "../modelParams";
+import { LMStudioModelParams } from "../modelParams";
+import { LMStudioModelParamsResolver } from "../modelParamsResolvers";
 
-export class LMStudioService extends LLMService {
+export class LMStudioService extends LLMService<
+    LMStudioUserModelParams,
+    LMStudioModelParams
+> {
     protected readonly internal: LMStudioServiceInternal;
+    protected readonly modelParamsResolver = new LMStudioModelParamsResolver();
 
     constructor(
         eventLogger?: EventLogger,
@@ -31,7 +37,7 @@ export class LMStudioService extends LLMService {
     }
 }
 
-export class LMStudioGeneratedProof extends GeneratedProof {
+export class LMStudioGeneratedProof extends GeneratedProof<LMStudioModelParams> {
     constructor(
         proof: string,
         proofGenerationContext: ProofGenerationContext,
@@ -49,17 +55,17 @@ export class LMStudioGeneratedProof extends GeneratedProof {
     }
 }
 
-class LMStudioServiceInternal extends LLMServiceInternal {
+class LMStudioServiceInternal extends LLMServiceInternal<LMStudioModelParams> {
     constructGeneratedProof(
         proof: string,
         proofGenerationContext: ProofGenerationContext,
-        modelParams: ModelParams,
+        modelParams: LMStudioModelParams,
         previousProofVersions?: ProofVersion[] | undefined
-    ): GeneratedProof {
+    ): LMStudioGeneratedProof {
         return new LMStudioGeneratedProof(
             proof,
             proofGenerationContext,
-            modelParams as LMStudioModelParams,
+            modelParams,
             this,
             previousProofVersions
         );

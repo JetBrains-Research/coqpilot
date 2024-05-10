@@ -9,7 +9,7 @@ import {
     UserModelsParams,
 } from "./userModelParams";
 
-type GeneratedProofsBatch = GeneratedProof[];
+type GeneratedProofsBatch = GeneratedProof<any>[];
 type ProofsGenerationHook = () => Promise<GeneratedProofsBatch>;
 
 export class LLMSequentialIterator
@@ -79,7 +79,7 @@ export class LLMSequentialIterator
     private createLLMServiceHooks(
         proofGenerationContext: ProofGenerationContext,
         allModelParamsForService: UserModelParams[],
-        llmService: LLMService,
+        llmService: LLMService<any, any>,
         serviceLoggingName: string,
         resolveChoices: (userModelParams: UserModelParams) => number = (_) =>
             this.defaultGenerationChoices
@@ -87,6 +87,7 @@ export class LLMSequentialIterator
         const hooks = [];
         for (const userModelParams of allModelParamsForService) {
             hooks.push(() => {
+                // TODO: move params resolution to UI
                 const resolvedParams =
                     llmService.resolveParameters(userModelParams);
                 this.eventLogger?.log(
@@ -96,7 +97,7 @@ export class LLMSequentialIterator
                 );
                 return llmService.generateProof(
                     proofGenerationContext,
-                    resolvedParams,
+                    resolvedParams.resolvedParams!,
                     userModelParams.choices ?? resolveChoices(userModelParams)
                 );
             });
@@ -143,7 +144,7 @@ export class LLMSequentialIterator
         return { done: false, value: proofs };
     }
 
-    async nextProof(): Promise<IteratorResult<GeneratedProof, any>> {
+    async nextProof(): Promise<IteratorResult<GeneratedProof<any>, any>> {
         const finished = await this.prepareFetched();
         if (finished) {
             return { done: true, value: undefined };

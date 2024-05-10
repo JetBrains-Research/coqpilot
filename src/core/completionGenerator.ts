@@ -92,7 +92,7 @@ export async function generateCompletion(
     try {
         /** newlyGeneratedProofs = generatedProofsBatch from iterator +
          *  + all proofs fixed at the previous iteration */
-        let newlyGeneratedProofs: GeneratedProof[] = [];
+        let newlyGeneratedProofs: GeneratedProof<any>[] = [];
 
         for await (const generatedProofsBatch of iterator) {
             newlyGeneratedProofs.push(...generatedProofsBatch);
@@ -165,13 +165,13 @@ export async function generateCompletion(
 }
 
 export async function checkAndFixProofs(
-    newlyGeneratedProofs: GeneratedProof[],
+    newlyGeneratedProofs: GeneratedProof<any>[],
     sourceFileContentPrefix: string[],
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
     eventLogger?: EventLogger
-): Promise<GeneratedProof[] | SuccessGenerationResult> {
+): Promise<GeneratedProof<any>[] | SuccessGenerationResult> {
     // check proofs and finish with success if at least one is valid
     const proofCheckResults = await checkGeneratedProofs(
         newlyGeneratedProofs,
@@ -207,14 +207,14 @@ export async function checkAndFixProofs(
 }
 
 async function checkGeneratedProofs(
-    generatedProofs: GeneratedProof[],
+    generatedProofs: GeneratedProof<any>[],
     sourceFileContentPrefix: string[],
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment
 ): Promise<ProofCheckResult[]> {
     const preparedProofBatch = generatedProofs.map(
-        (generatedProof: GeneratedProof) =>
+        (generatedProof: GeneratedProof<any>) =>
             prepareProofToCheck(generatedProof.proof())
     );
     return processEnvironment.coqProofChecker.checkProofs(
@@ -226,13 +226,13 @@ async function checkGeneratedProofs(
 }
 
 interface ProofWithFeedback {
-    generatedProof: GeneratedProof;
+    generatedProof: GeneratedProof<any>;
     diagnostic: string;
 }
 
 async function fixProofs(
     proofsWithFeedback: ProofWithFeedback[]
-): Promise<GeneratedProof[]> {
+): Promise<GeneratedProof<any>[]> {
     const fixProofsPromises = [];
 
     // build fix promises

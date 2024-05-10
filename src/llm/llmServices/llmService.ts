@@ -16,9 +16,9 @@ import {
     buildProofGenerationChat,
 } from "./utils/chatFactory";
 import { estimateTimeToBecomeAvailableDefault } from "./utils/defaultAvailabilityEstimator";
-import { resolveParametersWithDefaultsImpl } from "./utils/defaultParametersResolver";
 import { GenerationsLogger } from "./utils/generationsLogger/generationsLogger";
 import { LoggerRecord } from "./utils/generationsLogger/loggerRecord";
+import { ParamsResolutionResult, ParamsResolver } from "./utils/paramsResolver";
 import { Time } from "./utils/time";
 
 export interface ProofVersion {
@@ -38,7 +38,7 @@ export enum ErrorsHandlingMode {
  * In addition, interfaces derived from it can be passed to loggers to record the requests' results.
  */
 export interface LLMServiceRequest {
-    llmService: LLMService;
+    llmService: LLMService<any, any>;
     params: ModelParams;
     choices: number;
     analyzedChat?: AnalyzedChatHistory;
@@ -58,34 +58,46 @@ export interface LLMServiceRequestFailed extends LLMServiceRequest {
  * Generated proofs are represented by `GeneratedProof` class and
  * can be further regenerated (fixed / shortened / etc), also keeping their previous versions.
  *
- * All proofs-generation methods support errors handling and logging.
- * - Each successfull generation is logged both by `GenerationsLogger` and `EventLogger`.
- * - If error occurs, it is catched and then:
- *   - is wrapped into `LLMServiceError` and then...
- *   - in case of <LOG_EVENTS_AND_SWALLOW_ERRORS>, it's only logged by `EventLogger`;
- *   - in case of <RETHROW_ERRORS>, it's rethrown.
+ * 1. All model parameters of the `ResolvedModelParams` type accepted by `LLMService`-related methods
+ * are expected to be resolved by `resolveParameters` method beforehand.
+ * This method resolves partially-undefined `InputModelParams` to complete and validated `ResolvedModelParams`.
+ * See the `resolveParameters` method for more details.
  *
- * `EventLogger` sends `requestSucceededEvent` and `requestFailedEvent`
- *  (along with `LLMServiceRequest` as data), which can be handled then, for example, by the UI.
+ * 2. All proofs-generation methods support errors handling and logging.
+ *    - Each successfull generation is logged both by `GenerationsLogger` and `EventLogger`.
+ *    - If error occurs, it is catched and then:
+ *        - is wrapped into `LLMServiceError` and then...
+ *        - in case of `LOG_EVENTS_AND_SWALLOW_ERRORS`, it's only logged by `EventLogger`;
+ *        - in case of `RETHROW_ERRORS`, it's rethrown.
  *
- * Regardless errors handling modes and `EventLogger` behaviour,
- * `GenerationsLogger` maintains the logs of both successful and failed generations
- * used for the further estimation of the service availability. See the `estimateTimeToBecomeAvailable` method.
+ *    `EventLogger` sends `requestSucceededEvent` and `requestFailedEvent`
+ *    (along with `LLMServiceRequest` as data), which can be handled then, for example, by the UI.
  *
- * Moreover, `LLMService` is capable of resolving partially-undefined `UserModelParams`
- * to complete `ModelParams`. See the `resolveParameters` method.
+ *     Regardless errors handling modes and `EventLogger` behaviour,
+ *     `GenerationsLogger` maintains the logs of both successful and failed generations
+ *     used for the further estimation of the service availability. See the `estimateTimeToBecomeAvailable` method.
  *
- * To implement a new `LLMService` based on generating proofs from chats, one should:
- * - declare custom `GeneratedProof`;
- * - implement custom `LLMServiceInternal`;
- * - finally, declare custom `LLMService`.
- * I.e. `LLMServiceInternal` is effectively the only interface needed to be actually implemented.
+ * 3. To implement a new `LLMService` based on generating proofs from chats, one should:
+ *    - declare the specification of models parameters via custom `UserModelParams` and `ModelParams` interfaces;
+ *    - implement custom `ParamsResolver` class, declaring the algorithm to resolve parameters with;
+ *    - declare custom `GeneratedProof`;
+ *    - implement custom `LLMServiceInternal`;
+ *    - finally, declare custom `LLMService`.
  *
- * If proofs-generation is not supposed to be based on chats,
- * the methods of `LLMService` should be overriden directly too.
+ *    I.e. `LLMServiceInternal` is effectively the only class needed to be actually implemented.
+ *
+ *    If proofs-generation is not supposed to be based on chats,
+ *    the methods of `LLMService` should be overriden directly too.
  */
-export abstract class LLMService {
-    protected abstract readonly internal: LLMServiceInternal;
+export abstract class LLMService<
+    InputModelParams extends UserModelParams,
+    ResolvedModelParams extends ModelParams,
+> {
+    protected abstract readonly internal: LLMServiceInternal<ResolvedModelParams>;
+    protected abstract readonly modelParamsResolver: ParamsResolver<
+        InputModelParams,
+        ResolvedModelParams
+    >;
     protected readonly eventLoggerGetter: () => EventLogger | undefined;
     protected readonly generationsLoggerBuilder: () => GenerationsLogger;
 
@@ -123,7 +135,7 @@ export abstract class LLMService {
      */
     async generateFromChat(
         analyzedChat: AnalyzedChatHistory,
-        params: ModelParams,
+        params: ResolvedModelParams,
         choices: number,
         errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
     ): Promise<string[]> {
@@ -148,10 +160,10 @@ export abstract class LLMService {
      */
     async generateProof(
         proofGenerationContext: ProofGenerationContext,
-        params: ModelParams,
+        params: ResolvedModelParams,
         choices: number,
         errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
-    ): Promise<GeneratedProof[]> {
+    ): Promise<GeneratedProof<ResolvedModelParams>[]> {
         return this.internal.generateFromChatWrapped(
             params,
             choices,
@@ -191,22 +203,21 @@ export abstract class LLMService {
 
     /**
      * Resolves possibly-incomplete `UserModelParams` to complete `ModelParams`.
-     * If it is not possible, a `ParametersResolutionError` error will be thrown.
+     * Resolution process includes overrides of input parameters,
+     * their resolution with default values if needed, and validation of their result values.
+     * See the `ParamsResolver` class for more details.
      *
-     * First, parameters might be resolved by `LLMService` implementation,
-     * then everything unresolved is resolved with defaults (by `resolveParametersWithDefaults` method).
-     * Thus, any implementation of this method should call `resolveParametersWithDefaults` at the end.
+     * This method does not throw. Instead, it always returns resolution logs, which include
+     * all information about the actions taken on the input parameters and their validation status.
      *
      * @param params possibly-incomplete parameters configured by user.
-     * @returns complete parameters for the further generation pipeline.
+     * @returns complete and validated parameters for the further generation pipeline.
      */
-    resolveParameters(params: UserModelParams): ModelParams {
-        return this.resolveParametersWithDefaults(params);
+    resolveParameters(
+        params: InputModelParams
+    ): ParamsResolutionResult<ResolvedModelParams> {
+        return this.modelParamsResolver.resolve(params);
     }
-
-    protected readonly resolveParametersWithDefaults = (
-        params: UserModelParams
-    ): ModelParams => resolveParametersWithDefaultsImpl(params);
 }
 
 /**
@@ -223,7 +234,7 @@ export abstract class LLMService {
  *
  * Finally, `GeneratedProof` keeps the previous proof versions (but not the future ones).
  */
-export abstract class GeneratedProof {
+export abstract class GeneratedProof<ResolvedModelParams extends ModelParams> {
     /**
      * An accessor for `ModelParams.multiroundProfile.maxRoundsNumber`.
      */
@@ -247,8 +258,8 @@ export abstract class GeneratedProof {
     constructor(
         proof: string,
         readonly proofGenerationContext: ProofGenerationContext,
-        readonly modelParams: ModelParams,
-        protected readonly llmServiceInternal: LLMServiceInternal,
+        readonly modelParams: ResolvedModelParams,
+        protected readonly llmServiceInternal: LLMServiceInternal<ResolvedModelParams>,
         previousProofVersions: ProofVersion[] = []
     ) {
         // Makes a copy of the previous proof versions
@@ -323,7 +334,7 @@ export abstract class GeneratedProof {
         diagnostic: string,
         choices: number = this.modelParams.multiroundProfile.proofFixChoices,
         errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
-    ): Promise<GeneratedProof[]> {
+    ): Promise<GeneratedProof<ResolvedModelParams>[]> {
         return this.llmServiceInternal.generateFromChatWrapped(
             this.modelParams,
             choices,
@@ -368,18 +379,20 @@ export abstract class GeneratedProof {
  * Its main goals are to:
  * - separate an actual logic and implementation wrappers from the facade `LLMService` class;
  * - make `GeneratedProof` effectively an inner class of `LLMService`,
- * capable of reaching its internal resources.
+ *   capable of reaching its internal resources.
  *
  * Also, `LLMServiceInternal` is capable of
  * mantaining the `LLMService`-s resources and disposing them in the end.
  */
-export abstract class LLMServiceInternal {
+export abstract class LLMServiceInternal<
+    ResolvedModelParams extends ModelParams,
+> {
     readonly eventLogger: EventLogger | undefined;
     readonly generationsLogger: GenerationsLogger;
     readonly debug: DebugWrappers;
 
     constructor(
-        readonly llmService: LLMService,
+        readonly llmService: LLMService<any, ResolvedModelParams>,
         eventLoggerGetter: () => EventLogger | undefined,
         generationsLoggerBuilder: () => GenerationsLogger
     ) {
@@ -399,24 +412,28 @@ export abstract class LLMServiceInternal {
     abstract constructGeneratedProof(
         proof: string,
         proofGenerationContext: ProofGenerationContext,
-        modelParams: ModelParams,
+        modelParams: ResolvedModelParams,
         previousProofVersions?: ProofVersion[]
-    ): GeneratedProof;
+    ): GeneratedProof<ResolvedModelParams>;
 
     /**
      * This method should be mostly a pure implementation of
      * the generation from chat, namely, its happy path.
      * This function doesn't need to handle errors!
      *
-     * However, if the configuration of the request on the CoqPilot's side
-     * is invalid in any sense (for example: invalid token in `params`, bad `choices` number, etc),
+     * However, if the generation failed due to the invalid configuration of the request
+     * on the CoqPilot's side (for example: invalid token in `params`),
      * this implementation should through `ConfigurationError` whenever possible.
      * It is not mandatory, but that way the user will be notified in a clearer way.
+     *
+     * Important note: `ResolvedModelParams` are expected to be already validated by `LLMService.resolveParameters`,
+     * so there is no need to perform this checks again. Report `ConfigurationError` only if something goes wrong during generation runtime.
+     *
      * In case something goes wrong on the side of the external API, any error can be thrown.
      */
     abstract generateFromChatImpl(
         chat: ChatHistory,
-        params: ModelParams,
+        params: ResolvedModelParams,
         choices: number
     ): Promise<string[]>;
 
@@ -440,7 +457,7 @@ export abstract class LLMServiceInternal {
      * check `LLMServiceInternal.logGenerationAndHandleErrors` docs.
      */
     readonly generateFromChatWrapped = async <T>(
-        params: ModelParams,
+        params: ResolvedModelParams,
         choices: number,
         errorsHandlingMode: ErrorsHandlingMode,
         buildAndValidateChat: () => AnalyzedChatHistory,
@@ -502,7 +519,7 @@ export abstract class LLMServiceInternal {
      *     - the error will be rethrown.
      */
     readonly logGenerationAndHandleErrors = async <T>(
-        params: ModelParams,
+        params: ResolvedModelParams,
         choices: number,
         errorsHandlingMode: ErrorsHandlingMode,
         completeAndValidateRequest: (request: LLMServiceRequest) => void,
@@ -545,7 +562,7 @@ export abstract class LLMServiceInternal {
      */
     unsupportedMethod(
         message: string,
-        params: ModelParams,
+        params: ResolvedModelParams,
         choices: number,
         errorsHandlingMode: ErrorsHandlingMode
     ) {

@@ -199,7 +199,7 @@ function parseLLMServiceRequestEvent<T extends LLMServiceRequest>(
     return [request, uiState];
 }
 
-function toSettingName(llmService: LLMService): string {
+function toSettingName(llmService: LLMService<any, any>): string {
     const serviceNameInSettings = switchByLLMServiceType(
         llmService,
         () => "predefinedProofs",

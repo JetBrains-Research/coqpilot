@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import { EventLogger } from "../../../logging/eventLogger";
 import { ConfigurationError } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
+import { OpenAiUserModelParams } from "../../userModelParams";
 import { ChatHistory } from "../chat";
 import {
     GeneratedProof,
@@ -10,10 +11,15 @@ import {
     LLMServiceInternal,
     ProofVersion,
 } from "../llmService";
-import { ModelParams, OpenAiModelParams } from "../modelParams";
+import { OpenAiModelParams } from "../modelParams";
+import { OpenAiModelParamsResolver } from "../modelParamsResolvers";
 
-export class OpenAiService extends LLMService {
+export class OpenAiService extends LLMService<
+    OpenAiUserModelParams,
+    OpenAiModelParams
+> {
     protected readonly internal: OpenAiServiceInternal;
+    protected readonly modelParamsResolver = new OpenAiModelParamsResolver();
 
     constructor(
         eventLogger?: EventLogger,
@@ -29,7 +35,7 @@ export class OpenAiService extends LLMService {
     }
 }
 
-export class OpenAiGeneratedProof extends GeneratedProof {
+export class OpenAiGeneratedProof extends GeneratedProof<OpenAiModelParams> {
     constructor(
         proof: string,
         proofGenerationContext: ProofGenerationContext,
@@ -47,17 +53,17 @@ export class OpenAiGeneratedProof extends GeneratedProof {
     }
 }
 
-class OpenAiServiceInternal extends LLMServiceInternal {
+class OpenAiServiceInternal extends LLMServiceInternal<OpenAiModelParams> {
     constructGeneratedProof(
         proof: string,
         proofGenerationContext: ProofGenerationContext,
-        modelParams: ModelParams,
+        modelParams: OpenAiModelParams,
         previousProofVersions?: ProofVersion[] | undefined
-    ): GeneratedProof {
+    ): OpenAiGeneratedProof {
         return new OpenAiGeneratedProof(
             proof,
             proofGenerationContext,
-            modelParams as OpenAiModelParams,
+            modelParams,
             this,
             previousProofVersions
         );
@@ -65,45 +71,34 @@ class OpenAiServiceInternal extends LLMServiceInternal {
 
     async generateFromChatImpl(
         chat: ChatHistory,
-        params: ModelParams,
+        params: OpenAiModelParams,
         choices: number
     ): Promise<string[]> {
         this.validateChoices(choices);
-        const openAiParams = params as OpenAiModelParams;
-        this.validateTemperature(openAiParams);
 
-        const openai = new OpenAI({ apiKey: openAiParams.apiKey });
+        const openai = new OpenAI({ apiKey: params.apiKey });
         this.debug.logEvent("Completion requested", { history: chat });
 
         try {
             const completion = await openai.chat.completions.create({
                 messages: chat,
-                model: openAiParams.modelName,
+                model: params.modelName,
                 n: choices,
-                temperature: openAiParams.temperature,
+                temperature: params.temperature,
                 // eslint-disable-next-line @typescript-eslint/naming-convention
-                max_tokens: openAiParams.maxTokensToGenerate,
+                max_tokens: params.maxTokensToGenerate,
             });
             return completion.choices.map(
                 (choice: any) => choice.message.content
             );
         } catch (e) {
-            throw this.repackKnownError(e, openAiParams);
-        }
-    }
-
-    private validateTemperature(openAiParams: OpenAiModelParams) {
-        const temperature = openAiParams.temperature;
-        if (temperature < 0 || temperature > 2) {
-            throw new ConfigurationError(
-                `invalid temperature "${temperature}", it should be in range between 0 and 2`
-            );
+            throw this.repackKnownError(e, params);
         }
     }
 
     private repackKnownError(
         caughtObject: any,
-        openAiParams: OpenAiModelParams
+        params: OpenAiModelParams
     ): any {
         const error = caughtObject as Error;
         if (error === null) {
@@ -118,7 +113,7 @@ class OpenAiServiceInternal extends LLMServiceInternal {
             )
         ) {
             return new ConfigurationError(
-                `invalid model name "${openAiParams.modelName}", such model does not exist or you do not have access to it`
+                `invalid model name "${params.modelName}", such model does not exist or you do not have access to it`
             );
         }
         if (
@@ -128,7 +123,7 @@ class OpenAiServiceInternal extends LLMServiceInternal {
             )
         ) {
             return new ConfigurationError(
-                `incorrect api key "${openAiParams.apiKey}" (check your API key at https://platform.openai.com/account/api-keys)`
+                `incorrect api key "${params.apiKey}" (check your API key at https://platform.openai.com/account/api-keys)`
             );
         }
         return error;

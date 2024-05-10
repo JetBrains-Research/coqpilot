@@ -19,25 +19,25 @@ export class PredefinedProofsModelParamsResolver extends BasicModelParamsResolve
     PredefinedProofsUserModelParams,
     PredefinedProofsModelParams
 > {
-    tactics = this.resolveParam<string[]>("tactics")
+    readonly tactics = this.resolveParam<string[]>("tactics")
         .requiredToBeConfigured()
         .validate([(value) => value.length > 0, "be not empty"]);
 
-    systemPrompt = this.resolveParam<string>("systemPrompt").overrideWithMock(
-        (_) => ""
-    );
+    readonly systemPrompt = this.resolveParam<string>(
+        "systemPrompt"
+    ).overrideWithMock((_) => "");
 
-    maxTokensToGenerate = this.resolveParam<number>(
+    readonly maxTokensToGenerate = this.resolveParam<number>(
         "maxTokensToGenerate"
     ).overrideWithMock((userModelParams) =>
         Math.max(0, ...userModelParams.tactics.map((tactic) => tactic.length))
     );
 
-    tokensLimit = this.resolveParam<number>("tokensLimit").overrideWithMock(
-        (_) => Number.POSITIVE_INFINITY
-    );
+    readonly tokensLimit = this.resolveParam<number>(
+        "tokensLimit"
+    ).overrideWithMock((_) => Number.POSITIVE_INFINITY);
 
-    multiroundProfile = this.resolveParam<MultiroundProfile>(
+    readonly multiroundProfile = this.resolveParam<MultiroundProfile>(
         "multiroundProfile"
     ).overrideWithMock(() => {
         return {
@@ -52,26 +52,28 @@ export class OpenAiModelParamsResolver extends BasicModelParamsResolver<
     OpenAiUserModelParams,
     OpenAiModelParams
 > {
-    modelName = this.resolveParam<string>("modelName")
+    readonly modelName = this.resolveParam<string>("modelName")
         .requiredToBeConfigured()
         .validateAtRuntimeOnly();
 
-    temperature = this.resolveParam<number>("temperature")
+    readonly temperature = this.resolveParam<number>("temperature")
         .requiredToBeConfigured()
         .validate([
             (value) => value >= 0 && value <= 2,
             "be in range between 0 and 2",
         ]);
 
-    apiKey = this.resolveParam<string>("apiKey")
+    readonly apiKey = this.resolveParam<string>("apiKey")
         .requiredToBeConfigured()
         .validateAtRuntimeOnly();
 
-    maxTokensToGenerate = this.resolveParam<number>("maxTokensToGenerate")
+    readonly maxTokensToGenerate = this.resolveParam<number>(
+        "maxTokensToGenerate"
+    )
         .requiredToBeConfigured() // TODO
         .validate([(value) => value > 0, "be positive"]);
 
-    tokensLimit = this.resolveParam<number>("tokensLimit")
+    readonly tokensLimit = this.resolveParam<number>("tokensLimit")
         .requiredToBeConfigured() // TODO
         .validate([(value) => value >= 0, "be positive"]);
 }
@@ -80,15 +82,17 @@ export class GrazieModelParamsResolver extends BasicModelParamsResolver<
     GrazieUserModelParams,
     GrazieModelParams
 > {
-    modelName = this.resolveParam<string>("modelName")
+    readonly modelName = this.resolveParam<string>("modelName")
         .requiredToBeConfigured()
         .validateAtRuntimeOnly();
 
-    apiKey = this.resolveParam<string>("apiKey")
+    readonly apiKey = this.resolveParam<string>("apiKey")
         .requiredToBeConfigured()
         .validateAtRuntimeOnly();
 
-    maxTokensToGenerate = this.resolveParam<number>("maxTokensToGenerate")
+    readonly maxTokensToGenerate = this.resolveParam<number>(
+        "maxTokensToGenerate"
+    )
         .override(
             (_) => GrazieService.maxTokensToGeneratePredefined,
             `is always "${GrazieService.maxTokensToGeneratePredefined}" for \`GrazieService\``
@@ -96,7 +100,7 @@ export class GrazieModelParamsResolver extends BasicModelParamsResolver<
         .requiredToBeConfigured()
         .validate([(value) => value > 0, "be positive"]);
 
-    tokensLimit = this.resolveParam<number>("tokensLimit")
+    readonly tokensLimit = this.resolveParam<number>("tokensLimit")
         .requiredToBeConfigured()
         .validate([(value) => value >= 0, "be positive"]);
 }
@@ -105,26 +109,28 @@ export class LMStudioModelParamsResolver extends BasicModelParamsResolver<
     LMStudioUserModelParams,
     LMStudioModelParams
 > {
-    modelName = this.resolveParam<string>("modelName")
+    readonly modelName = this.resolveParam<string>("modelName")
         .requiredToBeConfigured()
         .validateAtRuntimeOnly();
 
-    temperature = this.resolveParam<number>("temperature")
+    readonly temperature = this.resolveParam<number>("temperature")
         .requiredToBeConfigured()
         .validateAtRuntimeOnly();
 
-    port = this.resolveParam<number>("port")
+    readonly port = this.resolveParam<number>("port")
         .requiredToBeConfigured()
         .validate([
             (value) => value >= 0 && value <= 65535,
             "be a valid port value, i.e. in range between 0 and 65535",
         ]);
 
-    maxTokensToGenerate = this.resolveParam<number>("maxTokensToGenerate")
+    readonly maxTokensToGenerate = this.resolveParam<number>(
+        "maxTokensToGenerate"
+    )
         .requiredToBeConfigured()
         .validate([(value) => value > 0, "be positive"]);
 
-    tokensLimit = this.resolveParam<number>("tokensLimit")
+    readonly tokensLimit = this.resolveParam<number>("tokensLimit")
         .requiredToBeConfigured()
         .validate([(value) => value >= 0, "be positive"]);
 }

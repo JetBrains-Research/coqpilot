@@ -15,7 +15,9 @@ export function disposeServices(llmServices: LLMServices) {
     asLLMServices(llmServices).forEach((service) => service.dispose());
 }
 
-export function asLLMServices(llmServices: LLMServices): LLMService[] {
+export function asLLMServices(
+    llmServices: LLMServices
+): LLMService<any, any>[] {
     return [
         llmServices.predefinedProofsService,
         llmServices.openAiService,
@@ -25,7 +27,7 @@ export function asLLMServices(llmServices: LLMServices): LLMService[] {
 }
 
 export function switchByLLMServiceType<T>(
-    llmService: LLMService,
+    llmService: LLMService<any, any>,
     onPredefinedProofsService: () => T,
     onOpenAiService: () => T,
     onGrazieService: () => T,

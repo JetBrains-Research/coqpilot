@@ -20,7 +20,7 @@ export interface ParamsResolutionResult<ResolveToType> {
 // - property's name should be equal to the one of ResolveToType properties
 // - parameter's name in the ParamResolver should be a path to one of the properties of InputType
 export class ParamsResolver<InputType, ResolveToType> {
-    resolveParam<T>(
+    protected resolveParam<T>(
         inputParamName: string
     ): SingleParamResolverBuilder<InputType, T> {
         return resolveParam<InputType, T>(inputParamName);
@@ -75,15 +75,15 @@ export class BasicModelParamsResolver<
     InputType extends UserModelParams,
     ResolveToType extends ModelParams,
 > extends ParamsResolver<InputType, ResolveToType> {
-    modelId = this.resolveParam<string>("modelId")
+    readonly modelId = this.resolveParam<string>("modelId")
         .requiredToBeConfigured()
         .noValidationNeeded();
 
-    systemPrompt = this.resolveParam<string>("systemPrompt")
+    readonly systemPrompt = this.resolveParam<string>("systemPrompt")
         .default((_) => defaultSystemMessageContent)
         .noValidationNeeded();
 
-    multiroundProfile = this.resolveParam<MultiroundProfile>(
+    readonly multiroundProfile = this.resolveParam<MultiroundProfile>(
         "multiroundProfile"
     )
         .default((userModelParams) => {

@@ -1,5 +1,3 @@
-import { UserModelParams } from "./userModelParams";
-
 /**
  * Base class for the errors thrown by `LLMService`.
  */
@@ -15,17 +13,6 @@ export abstract class LLMServiceError extends Error {
                 message === "" ? causeMessage : `${message}, ${causeMessage}`;
         }
         super(errorMessage);
-    }
-}
-
-/**
- * Should be thrown iff `UserModelParams` could not be resolved.
- */
-export class ParametersResolutionError extends LLMServiceError {
-    constructor(cause: string, params: UserModelParams) {
-        super(
-            `user model parameters cannot be resolved: ${cause}, \`${params}\``
-        );
     }
 }
 
