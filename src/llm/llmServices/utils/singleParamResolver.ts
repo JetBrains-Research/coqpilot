@@ -22,7 +22,8 @@ export interface SingleParamResolverBuilder<InputType, T> {
     ): SingleParamResolver<InputType, T>;
 
     default(
-        valueBuilder: ValueBuilder<InputType, T>
+        valueBuilder: ValueBuilder<InputType, T>,
+        helpMessageIfNotResolved?: string
     ): SingleParamWithValueResolverBuilder<InputType, T>;
 
     requiredToBeConfigured(): SingleParamWithValueResolverBuilder<InputType, T>;
@@ -61,31 +62,34 @@ export interface ResolutionActionDetailedResult<T>
     message?: string;
 }
 
-interface ValueBuilderWithMessage<InputType, T> {
+interface Overrider<InputType, T> {
     valueBuilder: ValueBuilder<InputType, T>;
-    paramMessage?: string;
+    explanationMessage?: string;
+}
+
+interface DefaultResolver<InputType, T> {
+    valueBuilder: ValueBuilder<InputType, T>;
+    noDefaultValueHelpMessage?: string;
 }
 
 class SingleParamResolverBuilderImpl<InputType, T>
     implements SingleParamResolverBuilder<InputType, T>
 {
-    private overridenValueBuilderWithMessage:
-        | ValueBuilderWithMessage<InputType, T>
-        | undefined = undefined;
+    private overrider: Overrider<InputType, T> | undefined = undefined;
     constructor(private readonly inputParamName: string) {}
 
     override(
         valueBuilder: ValueBuilder<InputType, T>,
         paramMessage: string
     ): SingleParamResolverBuilder<InputType, T> {
-        if (this.overridenValueBuilderWithMessage !== undefined) {
+        if (this.overrider !== undefined) {
             throw new Error(
                 `parameter \'${this.inputParamName}\'is overriden multiple times`
             );
         }
-        this.overridenValueBuilderWithMessage = {
+        this.overrider = {
             valueBuilder: valueBuilder,
-            paramMessage: paramMessage,
+            explanationMessage: paramMessage,
         };
         return this;
     }
@@ -105,12 +109,16 @@ class SingleParamResolverBuilderImpl<InputType, T>
     }
 
     default(
-        valueBuilder: ValueBuilder<InputType, T>
+        valueBuilder: ValueBuilder<InputType, T>,
+        noDefaultValueHelpMessage?: string
     ): SingleParamWithValueResolverBuilder<InputType, T> {
         return new SingleParamWithValueResolverBuilderImpl(
             this.inputParamName,
-            this.overridenValueBuilderWithMessage,
-            valueBuilder
+            this.overrider,
+            {
+                valueBuilder: valueBuilder,
+                noDefaultValueHelpMessage: noDefaultValueHelpMessage,
+            }
         );
     }
 
@@ -120,7 +128,7 @@ class SingleParamResolverBuilderImpl<InputType, T>
     > {
         return new SingleParamWithValueResolverBuilderImpl(
             this.inputParamName,
-            this.overridenValueBuilderWithMessage,
+            this.overrider,
             undefined
         );
     }
@@ -131,11 +139,8 @@ class SingleParamWithValueResolverBuilderImpl<InputType, T>
 {
     constructor(
         private readonly inputParamName: string,
-        private readonly overridenValueBuilderWithMessage?: ValueBuilderWithMessage<
-            InputType,
-            T
-        >,
-        private readonly defaultValueBuilder?: ValueBuilder<InputType, T>
+        private readonly overrider?: Overrider<InputType, T>,
+        private readonly defaultResolver?: DefaultResolver<InputType, T>
     ) {}
 
     validate(
@@ -143,8 +148,8 @@ class SingleParamWithValueResolverBuilderImpl<InputType, T>
     ): SingleParamResolver<InputType, T> {
         return new SingleParamResolverImpl(
             this.inputParamName,
-            this.overridenValueBuilderWithMessage,
-            this.defaultValueBuilder,
+            this.overrider,
+            this.defaultResolver,
             validationRules
         );
     }
@@ -152,8 +157,8 @@ class SingleParamWithValueResolverBuilderImpl<InputType, T>
     noValidationNeeded(): SingleParamResolver<InputType, T> {
         return new SingleParamResolverImpl(
             this.inputParamName,
-            this.overridenValueBuilderWithMessage,
-            this.defaultValueBuilder,
+            this.overrider,
+            this.defaultResolver,
             []
         );
     }
@@ -168,11 +173,8 @@ class SingleParamResolverImpl<InputType, T>
 {
     constructor(
         private readonly inputParamName: string,
-        private readonly overridenValueBuilderWithMessage?: ValueBuilderWithMessage<
-            InputType,
-            T
-        >,
-        private readonly defaultValueBuilder?: ValueBuilder<InputType, T>,
+        private readonly overrider?: Overrider<InputType, T>,
+        private readonly defaultResolver?: DefaultResolver<InputType, T>,
         private readonly validationRules: ValidationRule<T>[] = [],
         private readonly overridenWithMockValue: boolean = false
     ) {}
@@ -204,7 +206,7 @@ class SingleParamResolverImpl<InputType, T>
         if (userValue !== undefined) {
             const userValueAsT = userValue as T;
             if (userValueAsT === null) {
-                result.isInvalidCause = `"\`${this.inputParamName}\` is configured with the "${userValue}" value of the wrong type"`;
+                result.isInvalidCause = `"${this.quotedName()} is configured with the "${userValue}" value of the wrong type"`;
                 return result;
             } else {
                 value = userValue;
@@ -216,9 +218,8 @@ class SingleParamResolverImpl<InputType, T>
         }
 
         // override value (it could be overriden with undefined, so as to force resolution with default)
-        if (this.overridenValueBuilderWithMessage !== undefined) {
-            const { valueBuilder, paramMessage } =
-                this.overridenValueBuilderWithMessage;
+        if (this.overrider !== undefined) {
+            const { valueBuilder, explanationMessage } = this.overrider;
             value = valueBuilder(inputParams);
             if (this.overridenWithMockValue) {
                 // no checks and logs are needed, just return value
@@ -228,23 +229,30 @@ class SingleParamResolverImpl<InputType, T>
             result.overriden = {
                 wasPerformed: true,
                 withValue: value,
-                message: paramMessage,
+                message: explanationMessage,
             };
         }
 
         // if user value is still undefined after overriden resolution,
         // resolve with default
-        if (value === undefined && this.defaultValueBuilder !== undefined) {
-            value = this.defaultValueBuilder(inputParams);
+        if (value === undefined && this.defaultResolver !== undefined) {
+            const { valueBuilder, noDefaultValueHelpMessage } =
+                this.defaultResolver;
+            value = valueBuilder(inputParams);
             result.resolvedWithDefault = {
                 wasPerformed: true,
                 withValue: value,
             };
+            // failed to resolve value because default value was not found (but could potentially)
+            if (value === undefined) {
+                result.isInvalidCause = `"${this.noValueMessage}. ${noDefaultValueHelpMessage}."`;
+                return result;
+            }
         }
 
         // failed to resolve value
         if (value === undefined) {
-            result.isInvalidCause = `"\`${this.inputParamName}\` is required, but neither a user value nor a default one is specified"`;
+            result.isInvalidCause = this.noValueMessage();
             return result;
         }
 
@@ -253,12 +261,20 @@ class SingleParamResolverImpl<InputType, T>
             .validationRules) {
             const validationResult = validateValue(value);
             if (!validationResult) {
-                result.isInvalidCause = `\`${this.inputParamName}\` should ${paramShouldMessage}, but has value "${value}"`;
+                result.isInvalidCause = `${this.quotedName()} should ${paramShouldMessage}, but has value "${value}"`;
                 return result;
             }
         }
 
         result.resultValue = value;
         return result;
+    }
+
+    private quotedName(): string {
+        return `\`${this.inputParamName}\``;
+    }
+
+    private noValueMessage(): string {
+        return `"${this.quotedName} is required, but neither a user value nor a default one is specified"`;
     }
 }
