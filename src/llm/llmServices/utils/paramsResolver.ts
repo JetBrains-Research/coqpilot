@@ -1,7 +1,12 @@
+import { ConfigurationError } from "../../llmServiceErrors";
+
 import {
     SingleParamResolutionResult,
     SingleParamResolver,
     SingleParamResolverBuilder,
+    SingleParamWithValueResolverBuilder,
+    ValueBuilder,
+    insertParam,
     resolveParam,
 } from "./singleParamResolver";
 
@@ -20,6 +25,12 @@ export class ParamsResolver<InputType, ResolveToType> {
         inputParamName: string
     ): SingleParamResolverBuilder<InputType, T> {
         return resolveParam<InputType, T>(inputParamName);
+    }
+
+    protected insertParam<T>(
+        valueBuilder: ValueBuilder<InputType, T>
+    ): SingleParamWithValueResolverBuilder<InputType, T> {
+        return insertParam<InputType, T>(valueBuilder);
     }
 
     resolve(inputParams: InputType): ParamsResolutionResult<ResolveToType> {
@@ -64,5 +75,22 @@ export class ParamsResolver<InputType, ResolveToType> {
             resolvedParams: resolvedParams,
             resolutionLogs: resolutionLogs,
         };
+    }
+
+    resolveOrThrow(inputParams: InputType): ResolveToType {
+        const resolutionResult = this.resolve(inputParams);
+        if (resolutionResult.resolvedParams === undefined) {
+            const joinedErrorLogs = resolutionResult.resolutionLogs
+                .filter((paramLog) => paramLog.isInvalidCause !== undefined)
+                .map(
+                    (paramLog) =>
+                        `\`${paramLog.inputParamName}\`: ${paramLog.isInvalidCause}`
+                )
+                .join("; ");
+            throw new ConfigurationError(
+                `parameters "${JSON.stringify(inputParams)}" could not be resolved: ${joinedErrorLogs}`
+            );
+        }
+        return resolutionResult.resolvedParams;
     }
 }

@@ -4,6 +4,16 @@ export function resolveParam<InputType, T>(
     return new SingleParamResolverBuilderImpl(inputParamName);
 }
 
+export function insertParam<InputType, T>(
+    valueBuilder: ValueBuilder<InputType, T>
+): SingleParamWithValueResolverBuilder<InputType, T> {
+    return new SingleParamWithValueResolverBuilderImpl(
+        undefined,
+        { valueBuilder: valueBuilder },
+        undefined
+    );
+}
+
 // Note: undefined should be returned iff this step is skipped at resolution
 export type ValueBuilder<InputType, T> = (
     inputParams: InputType
@@ -18,7 +28,7 @@ export type Validator<InputType, T> = (
 export interface SingleParamResolverBuilder<InputType, T> {
     override(
         valueBuilder: ValueBuilder<InputType, T>,
-        paramMessage: string
+        paramMessage?: string
     ): SingleParamResolverBuilder<InputType, T>;
 
     overrideWithMock(
@@ -48,7 +58,7 @@ export interface SingleParamResolver<InputType, T> {
 }
 
 export interface SingleParamResolutionResult<T> {
-    inputParamName: string;
+    inputParamName?: string;
     resultValue?: T;
     isInvalidCause?: string;
     inputReadCorrectly: ResolutionActionResult<T>;
@@ -84,7 +94,7 @@ class SingleParamResolverBuilderImpl<InputType, T>
 
     override(
         valueBuilder: ValueBuilder<InputType, T>,
-        paramMessage: string
+        paramMessage?: string
     ): SingleParamResolverBuilder<InputType, T> {
         if (this.overrider !== undefined) {
             throw new Error(
@@ -142,7 +152,7 @@ class SingleParamWithValueResolverBuilderImpl<InputType, T>
     implements SingleParamWithValueResolverBuilder<InputType, T>
 {
     constructor(
-        private readonly inputParamName: string,
+        private readonly inputParamName?: string,
         private readonly overrider?: Overrider<InputType, T>,
         private readonly defaultResolver?: DefaultResolver<InputType, T>
     ) {}
@@ -176,7 +186,7 @@ class SingleParamResolverImpl<InputType, T>
     implements SingleParamResolver<InputType, T>
 {
     constructor(
-        private readonly inputParamName: string,
+        private readonly inputParamName?: string,
         private readonly overrider?: Overrider<InputType, T>,
         private readonly defaultResolver?: DefaultResolver<InputType, T>,
         private readonly validationRules: ValidationRule<InputType, T>[] = [],
@@ -198,26 +208,29 @@ class SingleParamResolverImpl<InputType, T>
             },
         };
 
-        // read user's value
-        const propertiesNames = this.inputParamName.split(".");
-        let userValue: any = undefined;
-        for (const propertyName of propertiesNames) {
-            userValue = inputParams[propertyName as keyof typeof inputParams];
-        }
-
-        // if user specified value, then take it
         let value: T | undefined = undefined;
-        if (userValue !== undefined) {
-            const userValueAsT = userValue as T;
-            if (userValueAsT === null) {
-                result.isInvalidCause = `"${this.quotedName()} is configured with the "${userValue}" value of the wrong type"`;
-                return result;
-            } else {
-                value = userValue;
-                result.inputReadCorrectly = {
-                    wasPerformed: true,
-                    withValue: value,
-                };
+
+        if (this.inputParamName !== undefined) {
+            // read user's value
+            const propertiesNames = this.inputParamName.split(".");
+            let userValue: any = undefined;
+            for (const propertyName of propertiesNames) {
+                userValue =
+                    inputParams[propertyName as keyof typeof inputParams];
+            }
+            // if user specified value, then take it
+            if (userValue !== undefined) {
+                const userValueAsT = userValue as T;
+                if (userValueAsT === null) {
+                    result.isInvalidCause = `"${this.quotedName()} is configured with the "${userValue}" value of the wrong type"`;
+                    return result;
+                } else {
+                    value = userValue;
+                    result.inputReadCorrectly = {
+                        wasPerformed: true,
+                        withValue: value,
+                    };
+                }
             }
         }
 

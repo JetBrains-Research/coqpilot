@@ -245,14 +245,16 @@ function buildResolutionHistory(
 ): string {
     const inputRead = paramLog.inputReadCorrectly.wasPerformed
         ? `read "${paramLog.inputReadCorrectly.withValue}"`
-        : "";
+        : "no input value read";
     const withOverride = paramLog.overriden.wasPerformed
         ? `, overriden with ${paramLog.overriden.withValue}`
         : "";
     const withDefault = paramLog.resolvedWithDefault.wasPerformed
         ? `, resolved with default "${paramLog.resolvedWithDefault.withValue}"`
         : "";
-    return paramLog.inputReadCorrectly.wasPerformed
+    return paramLog.inputReadCorrectly.wasPerformed ||
+        paramLog.overriden.wasPerformed ||
+        paramLog.resolvedWithDefault.wasPerformed
         ? `; value's resolution: ${inputRead}${withOverride}${withDefault}`
         : "";
 }

@@ -18,7 +18,7 @@ import {
 import { ParamsResolver } from "./utils/paramsResolver";
 import { SingleParamResolver } from "./utils/singleParamResolver";
 
-abstract class BasicModelParamsResolver<
+export abstract class BasicModelParamsResolver<
     InputType extends UserModelParams,
     ResolveToType extends ModelParams,
 > extends ParamsResolver<InputType, ResolveToType> {
@@ -152,7 +152,7 @@ export class OpenAiModelParamsResolver extends BasicModelParamsResolver<
 
     readonly tokensLimit = this.resolveParam<number>("tokensLimit")
         .requiredToBeConfigured() // TODO
-        .validate([(value) => value >= 0, "be positive"]);
+        .validate([(value) => value > 0, "be positive"]);
 }
 
 export class GrazieModelParamsResolver extends BasicModelParamsResolver<
@@ -179,7 +179,7 @@ export class GrazieModelParamsResolver extends BasicModelParamsResolver<
 
     readonly tokensLimit = this.resolveParam<number>("tokensLimit")
         .requiredToBeConfigured()
-        .validate([(value) => value >= 0, "be positive"]);
+        .validate([(value) => value > 0, "be positive"]);
 }
 
 export class LMStudioModelParamsResolver extends BasicModelParamsResolver<
@@ -209,5 +209,5 @@ export class LMStudioModelParamsResolver extends BasicModelParamsResolver<
 
     readonly tokensLimit = this.resolveParam<number>("tokensLimit")
         .requiredToBeConfigured()
-        .validate([(value) => value >= 0, "be positive"]);
+        .validate([(value) => value > 0, "be positive"]);
 }
