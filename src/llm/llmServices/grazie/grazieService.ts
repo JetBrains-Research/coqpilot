@@ -3,7 +3,7 @@ import { ProofGenerationContext } from "../../proofGenerationContext";
 import { GrazieUserModelParams } from "../../userModelParams";
 import { ChatHistory, ChatMessage } from "../chat";
 import {
-    GeneratedProof,
+    GeneratedProofImpl,
     LLMServiceInternal,
     ProofVersion,
 } from "../llmService";
@@ -39,7 +39,7 @@ export class GrazieService extends LLMService<
     static readonly maxTokensToGeneratePredefined = 1024;
 }
 
-export class GrazieGeneratedProof extends GeneratedProof<GrazieModelParams> {
+export class GrazieGeneratedProof extends GeneratedProofImpl<GrazieModelParams> {
     constructor(
         proof: string,
         proofGenerationContext: ProofGenerationContext,

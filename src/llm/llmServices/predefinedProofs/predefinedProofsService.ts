@@ -5,7 +5,7 @@ import { PredefinedProofsUserModelParams } from "../../userModelParams";
 import { ChatHistory } from "../chat";
 import {
     ErrorsHandlingMode,
-    GeneratedProof,
+    GeneratedProofImpl,
     LLMServiceInternal,
     ProofVersion,
 } from "../llmService";
@@ -88,7 +88,7 @@ export class PredefinedProofsService extends LLMService<
     }
 }
 
-export class PredefinedProof extends GeneratedProof<PredefinedProofsModelParams> {
+export class PredefinedProof extends GeneratedProofImpl<PredefinedProofsModelParams> {
     constructor(
         proof: string,
         proofGenerationContext: ProofGenerationContext,

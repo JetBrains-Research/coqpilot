@@ -3,7 +3,7 @@ import { ProofGenerationContext } from "../../proofGenerationContext";
 import { LMStudioUserModelParams } from "../../userModelParams";
 import { ChatHistory } from "../chat";
 import {
-    GeneratedProof,
+    GeneratedProofImpl,
     LLMService,
     LLMServiceInternal,
     ProofVersion,
@@ -37,7 +37,7 @@ export class LMStudioService extends LLMService<
     }
 }
 
-export class LMStudioGeneratedProof extends GeneratedProof<LMStudioModelParams> {
+export class LMStudioGeneratedProof extends GeneratedProofImpl<LMStudioModelParams> {
     constructor(
         proof: string,
         proofGenerationContext: ProofGenerationContext,

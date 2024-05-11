@@ -6,7 +6,7 @@ import { ProofGenerationContext } from "../../proofGenerationContext";
 import { OpenAiUserModelParams } from "../../userModelParams";
 import { ChatHistory } from "../chat";
 import {
-    GeneratedProof,
+    GeneratedProofImpl,
     LLMService,
     LLMServiceInternal,
     ProofVersion,
@@ -35,7 +35,7 @@ export class OpenAiService extends LLMService<
     }
 }
 
-export class OpenAiGeneratedProof extends GeneratedProof<OpenAiModelParams> {
+export class OpenAiGeneratedProof extends GeneratedProofImpl<OpenAiModelParams> {
     constructor(
         proof: string,
         proofGenerationContext: ProofGenerationContext,

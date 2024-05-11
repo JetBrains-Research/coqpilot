@@ -5,7 +5,7 @@ import { GeneratedProof, LLMService } from "./llmServices/llmService";
 import { ModelParams, ModelsParams } from "./llmServices/modelParams";
 import { ProofGenerationContext } from "./proofGenerationContext";
 
-type GeneratedProofsBatch = GeneratedProof<any>[];
+type GeneratedProofsBatch = GeneratedProof[];
 type ProofsGenerationHook = () => Promise<GeneratedProofsBatch>;
 
 export class LLMSequentialIterator
@@ -130,7 +130,7 @@ export class LLMSequentialIterator
         return { done: false, value: proofs };
     }
 
-    async nextProof(): Promise<IteratorResult<GeneratedProof<any>, any>> {
+    async nextProof(): Promise<IteratorResult<GeneratedProof, any>> {
         const finished = await this.prepareFetched();
         if (finished) {
             return { done: true, value: undefined };
