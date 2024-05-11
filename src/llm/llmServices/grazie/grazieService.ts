@@ -16,6 +16,8 @@ import { GrazieApi, GrazieChatRole, GrazieFormattedHistory } from "./grazieApi";
 export class GrazieService extends LLMServiceImpl<
     GrazieUserModelParams,
     GrazieModelParams,
+    GrazieService,
+    GrazieGeneratedProof,
     GrazieServiceInternal
 > {
     protected readonly internal: GrazieServiceInternal;
@@ -42,6 +44,8 @@ export class GrazieService extends LLMServiceImpl<
 
 export class GrazieGeneratedProof extends GeneratedProofImpl<
     GrazieModelParams,
+    GrazieService,
+    GrazieGeneratedProof,
     GrazieServiceInternal
 > {
     constructor(
@@ -61,7 +65,12 @@ export class GrazieGeneratedProof extends GeneratedProofImpl<
     }
 }
 
-class GrazieServiceInternal extends LLMServiceInternal<GrazieModelParams> {
+class GrazieServiceInternal extends LLMServiceInternal<
+    GrazieModelParams,
+    GrazieService,
+    GrazieGeneratedProof,
+    GrazieServiceInternal
+> {
     readonly api = new GrazieApi(this.debug);
 
     constructGeneratedProof(

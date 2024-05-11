@@ -14,6 +14,8 @@ import { LMStudioModelParamsResolver } from "../modelParamsResolvers";
 export class LMStudioService extends LLMServiceImpl<
     LMStudioUserModelParams,
     LMStudioModelParams,
+    LMStudioService,
+    LMStudioGeneratedProof,
     LMStudioServiceInternal
 > {
     protected readonly internal: LMStudioServiceInternal;
@@ -40,6 +42,8 @@ export class LMStudioService extends LLMServiceImpl<
 
 export class LMStudioGeneratedProof extends GeneratedProofImpl<
     LMStudioModelParams,
+    LMStudioService,
+    LMStudioGeneratedProof,
     LMStudioServiceInternal
 > {
     constructor(
@@ -59,7 +63,12 @@ export class LMStudioGeneratedProof extends GeneratedProofImpl<
     }
 }
 
-class LMStudioServiceInternal extends LLMServiceInternal<LMStudioModelParams> {
+class LMStudioServiceInternal extends LLMServiceInternal<
+    LMStudioModelParams,
+    LMStudioService,
+    LMStudioGeneratedProof,
+    LMStudioServiceInternal
+> {
     constructGeneratedProof(
         proof: string,
         proofGenerationContext: ProofGenerationContext,

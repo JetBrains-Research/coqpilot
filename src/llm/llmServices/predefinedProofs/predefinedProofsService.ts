@@ -17,6 +17,8 @@ import { Time, timeZero } from "../utils/time";
 export class PredefinedProofsService extends LLMServiceImpl<
     PredefinedProofsUserModelParams,
     PredefinedProofsModelParams,
+    PredefinedProofsService,
+    PredefinedProof,
     PredefinedProofsServiceInternal
 > {
     protected readonly internal: PredefinedProofsServiceInternal;
@@ -91,6 +93,8 @@ export class PredefinedProofsService extends LLMServiceImpl<
 
 export class PredefinedProof extends GeneratedProofImpl<
     PredefinedProofsModelParams,
+    PredefinedProofsService,
+    PredefinedProof,
     PredefinedProofsServiceInternal
 > {
     constructor(
@@ -122,7 +126,12 @@ export class PredefinedProof extends GeneratedProofImpl<
     }
 }
 
-class PredefinedProofsServiceInternal extends LLMServiceInternal<PredefinedProofsModelParams> {
+class PredefinedProofsServiceInternal extends LLMServiceInternal<
+    PredefinedProofsModelParams,
+    PredefinedProofsService,
+    PredefinedProof,
+    PredefinedProofsServiceInternal
+> {
     constructGeneratedProof(
         proof: string,
         proofGenerationContext: ProofGenerationContext,

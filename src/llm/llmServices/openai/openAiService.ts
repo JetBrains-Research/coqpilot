@@ -17,6 +17,8 @@ import { OpenAiModelParamsResolver } from "../modelParamsResolvers";
 export class OpenAiService extends LLMServiceImpl<
     OpenAiUserModelParams,
     OpenAiModelParams,
+    OpenAiService,
+    OpenAiGeneratedProof,
     OpenAiServiceInternal
 > {
     protected readonly internal: OpenAiServiceInternal;
@@ -38,6 +40,8 @@ export class OpenAiService extends LLMServiceImpl<
 
 export class OpenAiGeneratedProof extends GeneratedProofImpl<
     OpenAiModelParams,
+    OpenAiService,
+    OpenAiGeneratedProof,
     OpenAiServiceInternal
 > {
     constructor(
@@ -57,7 +61,12 @@ export class OpenAiGeneratedProof extends GeneratedProofImpl<
     }
 }
 
-class OpenAiServiceInternal extends LLMServiceInternal<OpenAiModelParams> {
+class OpenAiServiceInternal extends LLMServiceInternal<
+    OpenAiModelParams,
+    OpenAiService,
+    OpenAiGeneratedProof,
+    OpenAiServiceInternal
+> {
     constructGeneratedProof(
         proof: string,
         proofGenerationContext: ProofGenerationContext,
