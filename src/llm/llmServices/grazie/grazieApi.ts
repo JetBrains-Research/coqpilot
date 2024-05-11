@@ -50,7 +50,6 @@ export class GrazieApi {
         apiToken: string
     ): Promise<string> {
         const headers = this.createHeaders(apiToken);
-        headers["Content-Length"] = body.length;
         this.eventLogger?.log(
             "grazie-fetch-started",
             "Completion from Grazie requested",

@@ -84,6 +84,7 @@ export const userModelParamsSchema: JSONSchemaType<UserModelParams> = {
 
 export const openAiUserModelParamsSchema: JSONSchemaType<OpenAiUserModelParams> =
     {
+        title: "openAiModelsParameters",
         type: "object",
         properties: {
             temperature: { type: "number" },
@@ -95,6 +96,7 @@ export const openAiUserModelParamsSchema: JSONSchemaType<OpenAiUserModelParams> 
 
 export const grazieUserModelParamsSchema: JSONSchemaType<GrazieUserModelParams> =
     {
+        title: "grazieModelsParameters",
         type: "object",
         properties: {
             apiKey: { type: "string" },
@@ -105,6 +107,7 @@ export const grazieUserModelParamsSchema: JSONSchemaType<GrazieUserModelParams> 
 
 export const predefinedProofsUserModelParamsSchema: JSONSchemaType<PredefinedProofsUserModelParams> =
     {
+        title: "predefinedProofsModelsParameters",
         type: "object",
         properties: {
             tactics: {
@@ -118,6 +121,7 @@ export const predefinedProofsUserModelParamsSchema: JSONSchemaType<PredefinedPro
 
 export const lmStudioUserModelParamsSchema: JSONSchemaType<LMStudioUserModelParams> =
     {
+        title: "lmStudioModelsParameters",
         type: "object",
         properties: {
             temperature: { type: "number" },

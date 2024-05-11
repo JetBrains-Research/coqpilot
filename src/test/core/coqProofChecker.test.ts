@@ -86,7 +86,8 @@ suite("Coq Proof Checker tests", () => {
             {
                 proof: "reflexivity.",
                 isValid: false,
-                diagnostic: "In environment",
+                diagnostic:
+                    'In environment\nn : nat\nUnable to unify "n" with\n "0 + n + 0".',
             },
             {
                 proof: "auto.",
@@ -160,7 +161,7 @@ suite("Coq Proof Checker tests", () => {
                     proof: "kek.",
                     isValid: false,
                     diagnostic:
-                        "The reference kek was not found in the current",
+                        "The reference kek was not found in the current\nenvironment.",
                 },
                 {
                     proof: "right. auto.",
@@ -180,7 +181,7 @@ suite("Coq Proof Checker tests", () => {
                     proof: "lol.",
                     isValid: false,
                     diagnostic:
-                        "The reference lol was not found in the current",
+                        "The reference lol was not found in the current\nenvironment.",
                 },
             ],
         ];
