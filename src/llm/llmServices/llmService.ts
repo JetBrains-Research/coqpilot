@@ -181,9 +181,7 @@ export abstract class LLMServiceImpl<
         params: ResolvedModelParams,
         choices: number = params.defaultChoices,
         errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
-    ): Promise<
-        GeneratedProofImpl<ResolvedModelParams, LLMServiceInternalType>[]
-    > {
+    ): Promise<GeneratedProof[]> {
         return this.internal.generateFromChatWrapped(
             params,
             choices,
@@ -194,10 +192,7 @@ export abstract class LLMServiceImpl<
                     proof,
                     proofGenerationContext,
                     params
-                ) as GeneratedProofImpl<
-                    ResolvedModelParams,
-                    LLMServiceInternalType
-                >
+                )
         );
     }
 
@@ -369,9 +364,7 @@ export abstract class GeneratedProofImpl<
         choices: number = this.modelParams.multiroundProfile
             .defaultProofFixChoices,
         errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
-    ): Promise<
-        GeneratedProofImpl<ResolvedModelParams, LLMServiceInternalType>[]
-    > {
+    ): Promise<GeneratedProof[]> {
         return this.llmServiceInternal.generateFromChatWrapped(
             this.modelParams,
             choices,
@@ -395,10 +388,7 @@ export abstract class GeneratedProofImpl<
                     this.proofGenerationContext,
                     this.modelParams,
                     this.proofVersions
-                ) as GeneratedProofImpl<
-                    ResolvedModelParams,
-                    LLMServiceInternalType
-                >
+                )
         );
     }
 
