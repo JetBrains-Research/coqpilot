@@ -21,7 +21,8 @@ Now `coqpilot` is in early beta and seeks for feedbacks. Please feel free to ope
   - 🎛 [How VsCode settings work](#how-vscode-settings-work)
   - 🧰 [Model Configuration](#model-configuration)
 - 📌 [Contributed Commands](#contributed-commands)
-- 🚧 [Planned Features](#planned-features)
+- 📊 [Benchmark](#benchmark)
+- 🔜 [Future Plans](#future-plans)
 - 📜 [Release Notes](#release-notes)
 
 ## Requirements
@@ -193,11 +194,7 @@ Another thing to keep in mind: We are still in beta and changes in settings may 
 
 * `coqpilot.perform_completion_under_cursor`: Try to generate proof for the goal under the cursor.
 * `coqpilot.perform_completion_for_all_admits`: Try to prove all holes (admitted goals) in the current file.
-* `coqpilot.perform_completion_in_selection`: Try to prove holes (admitted goals) in selection.
-
-## Planned Features
-
-- Add benchmarking options for various models: soon. 
+* `coqpilot.perform_completion_in_selection`: Try to prove holes (admitted goals) in selection. 
 
 ## Benchmark
 
@@ -210,12 +207,12 @@ After that, you need to build the projects. And be careful, the actively maintai
 
 First things first, the process of running the benchmark is not perfectly automated yet. We are working on it. For now, one project (one unit containing nix environment) shall be ran at a time. Let's say you are going to run the benchmark on the `imm` project. You will have to do the following: 
 
-0. Go the the `imm` subdirectory and add a `_CoqProject` file in the root with the following: 
+<!-- 0. Go the the `imm` subdirectory and add a `_CoqProject` file in the root with the following: 
     ```
     -I result/lib/coq/8.19/user-contrib/imm
     -R result/lib/coq/8.19/user-contrib/imm imm
     ```
-    This is needed for the lsp-server to correctly resolve file dependencies.
+    This is needed for the lsp-server to correctly resolve file dependencies. -->
 
 1. Install nix, as specified in the [here](https://nixos.org/download.html). 
 
@@ -228,14 +225,20 @@ First things first, the process of running the benchmark is not perfectly automa
 3. Go to the `imm` subdirectory, apply the nix environment (without it the project will NOT build) and build the project: 
     ```bash
     cd dataset/imm 
-    nix-shell 
     nix-build
+    nix-shell 
     ```
-4. Return to the project root not exiting the nix-shell. Run the benchmark: 
+4. Make sure the `_CoqProject` was successfully generated in the root of your mroject. Return to the project root not exiting the nix-shell. Run the benchmark: 
     ```bash
     cd ../../
     npm run benchmark
     ```    
+
+## Future plans
+
+- Currently the user needs to manually enter the nix shell to get the correct environment for the benchmarks. We are working on automating this process.
+- Benchmarking system is evolving and will soon become more stable with smart scheduling (choice of models/services depending on availability and token limit counts) and automatically generated informative reports for the user.
+- Get rid of the overhead due to hacks with coq-lsp and the aux files.
 
 ## Release Notes
 
