@@ -1,13 +1,16 @@
 import Ajv, { JSONSchemaType } from "ajv";
 import { WorkspaceConfiguration, workspace } from "vscode";
 
+import { LLMServices } from "../llm/llmServices";
+import { LLMService } from "../llm/llmServices/llmService";
+import { ModelParams, ModelsParams } from "../llm/llmServices/modelParams";
+import { SingleParamResolutionResult } from "../llm/llmServices/utils/singleParamResolver";
 import {
     GrazieUserModelParams,
     LMStudioUserModelParams,
     OpenAiUserModelParams,
     PredefinedProofsUserModelParams,
     UserModelParams,
-    UserModelsParams,
     grazieUserModelParamsSchema,
     lmStudioUserModelParamsSchema,
     openAiUserModelParamsSchema,
@@ -19,7 +22,12 @@ import { DistanceContextTheoremsRanker } from "../core/contextTheoremRanker/dist
 import { RandomContextTheoremsRanker } from "../core/contextTheoremRanker/randomContextTheoremsRanker";
 
 import { pluginId } from "./coqPilot";
-import { SettingsValidationError } from "./settingsValidationError";
+import { EditorMessages } from "./editorMessages";
+import {
+    SettingsValidationError,
+    showMessageToUserWithSettingsHint,
+    toSettingName,
+} from "./settingsValidationError";
 
 export function buildTheoremsRankerFromConfig(): ContextTheoremsRanker {
     const workspaceConfig = workspace.getConfiguration(pluginId);
@@ -40,9 +48,10 @@ export function buildTheoremsRankerFromConfig(): ContextTheoremsRanker {
 
 export function parseAndValidateUserModelsParams(
     config: WorkspaceConfiguration,
-    jsonSchemaValidator: Ajv
-): UserModelsParams {
-    const predefinedProofsParams: PredefinedProofsUserModelParams[] =
+    jsonSchemaValidator: Ajv,
+    llmServices: LLMServices
+): ModelsParams {
+    const predefinedProofsUserParams: PredefinedProofsUserModelParams[] =
         config.predefinedProofsModelsParameters.map((params: any) =>
             validateAndParseJson(
                 params,
@@ -50,7 +59,7 @@ export function parseAndValidateUserModelsParams(
                 jsonSchemaValidator
             )
         );
-    const openAiParams: OpenAiUserModelParams[] =
+    const openAiUserParams: OpenAiUserModelParams[] =
         config.openAiModelsParameters.map((params: any) =>
             validateAndParseJson(
                 params,
@@ -58,7 +67,7 @@ export function parseAndValidateUserModelsParams(
                 jsonSchemaValidator
             )
         );
-    const grazieParams: GrazieUserModelParams[] =
+    const grazieUserParams: GrazieUserModelParams[] =
         config.grazieModelsParameters.map((params: any) =>
             validateAndParseJson(
                 params,
@@ -66,7 +75,7 @@ export function parseAndValidateUserModelsParams(
                 jsonSchemaValidator
             )
         );
-    const lmStudioParams: LMStudioUserModelParams[] =
+    const lmStudioUserParams: LMStudioUserModelParams[] =
         config.lmStudioModelsParameters.map((params: any) =>
             validateAndParseJson(
                 params,
@@ -74,23 +83,42 @@ export function parseAndValidateUserModelsParams(
                 jsonSchemaValidator
             )
         );
-    const allModels = [
-        ...predefinedProofsParams,
-        ...openAiParams,
-        ...grazieParams,
-        ...lmStudioParams,
-    ];
 
-    validateModelsArePresent(allModels);
-    validateIdsAreUnique(allModels);
-    validateApiKeysAreProvided(openAiParams, grazieParams);
+    validateIdsAreUnique([
+        ...predefinedProofsUserParams,
+        ...openAiUserParams,
+        ...grazieUserParams,
+        ...lmStudioUserParams,
+    ]);
+    validateApiKeysAreProvided(openAiUserParams, grazieUserParams);
 
-    return {
-        predefinedProofsModelParams: predefinedProofsParams,
-        openAiParams: openAiParams,
-        grazieParams: grazieParams,
-        lmStudioParams: lmStudioParams,
+    const modelsParams: ModelsParams = {
+        predefinedProofsModelParams: resolveParamsAndShowResolutionLogs(
+            llmServices.predefinedProofsService,
+            predefinedProofsUserParams
+        ),
+        openAiParams: resolveParamsAndShowResolutionLogs(
+            llmServices.openAiService,
+            openAiUserParams
+        ),
+        grazieParams: resolveParamsAndShowResolutionLogs(
+            llmServices.grazieService,
+            grazieUserParams
+        ),
+        lmStudioParams: resolveParamsAndShowResolutionLogs(
+            llmServices.lmStudioService,
+            lmStudioUserParams
+        ),
     };
+
+    validateModelsArePresent([
+        ...modelsParams.predefinedProofsModelParams,
+        ...modelsParams.openAiParams,
+        ...modelsParams.grazieParams,
+        ...modelsParams.lmStudioParams,
+    ]);
+
+    return modelsParams;
 }
 
 function validateAndParseJson<T>(
@@ -116,19 +144,8 @@ function validateAndParseJson<T>(
     return instance;
 }
 
-function validateModelsArePresent(modelsParams: UserModelParams[]) {
-    if (modelsParams.length === 0) {
-        throw new SettingsValidationError(
-            "no models specified for proof generation",
-            "No models are chosen. Please specify at least one in the settings.",
-            pluginId,
-            "warning"
-        );
-    }
-}
-
-function validateIdsAreUnique(modelsParams: UserModelParams[]) {
-    const modelIds = modelsParams.map((params) => params.modelId);
+function validateIdsAreUnique(allModels: UserModelParams[]) {
+    const modelIds = allModels.map((params) => params.modelId);
     const uniqueModelIds = new Set<string>();
     for (const modelId of modelIds) {
         if (uniqueModelIds.has(modelId)) {
@@ -143,8 +160,8 @@ function validateIdsAreUnique(modelsParams: UserModelParams[]) {
 }
 
 function validateApiKeysAreProvided(
-    openAiParams: OpenAiUserModelParams[],
-    grazieParams: GrazieUserModelParams[]
+    openAiUserParams: OpenAiUserModelParams[],
+    grazieUserParams: GrazieUserModelParams[]
 ) {
     const buildApiKeyError = (
         serviceName: string,
@@ -158,10 +175,97 @@ function validateApiKeysAreProvided(
         );
     };
 
-    if (openAiParams.some((params) => params.apiKey === "None")) {
+    if (openAiUserParams.some((params) => params.apiKey === "None")) {
         throw buildApiKeyError("Open Ai", "openAi");
     }
-    if (grazieParams.some((params) => params.apiKey === "None")) {
+    if (grazieUserParams.some((params) => params.apiKey === "None")) {
         throw buildApiKeyError("Grazie", "grazie");
     }
+}
+
+function validateModelsArePresent<T>(allModels: T[]) {
+    if (allModels.length === 0) {
+        throw new SettingsValidationError(
+            "no models specified for proof generation",
+            "No models are chosen. Please specify at least one in the settings.",
+            pluginId,
+            "warning"
+        );
+    }
+}
+
+function resolveParamsAndShowResolutionLogs<
+    InputModelParams extends UserModelParams,
+    ResolvedModelParams extends ModelParams,
+>(
+    llmService: LLMService<InputModelParams, ResolvedModelParams>,
+    inputParamsList: InputModelParams[]
+): ResolvedModelParams[] {
+    const settingName = toSettingName(llmService);
+    const resolvedParamsList: ResolvedModelParams[] = [];
+
+    for (const inputParams of inputParamsList) {
+        const resolutionResult = llmService.resolveParameters(inputParams);
+
+        // notify user about errors (with full logs for failed parameters) and overrides
+        for (const paramLog of resolutionResult.resolutionLogs) {
+            if (paramLog.resultValue === undefined) {
+                // failed to resolve parameter
+                const resolutionHistory = buildResolutionHistory(paramLog);
+                showMessageToUserWithSettingsHint(
+                    EditorMessages.modelConfiguredIncorrectly(
+                        inputParams.modelId,
+                        `${paramLog.isInvalidCause}${resolutionHistory}`
+                    ),
+                    "error",
+                    settingName
+                );
+            } else if (paramLog.overriden.wasPerformed) {
+                // resolved parameter, but it was overriden
+                showMessageToUserWithSettingsHint(
+                    buildParameterOverridenMessage(
+                        inputParams.modelId,
+                        paramLog
+                    ),
+                    "info",
+                    settingName
+                );
+            }
+        }
+
+        if (resolutionResult.resolvedParams !== undefined) {
+            resolvedParamsList.push(resolutionResult.resolvedParams);
+        }
+    }
+    return resolvedParamsList;
+}
+
+function buildResolutionHistory(
+    paramLog: SingleParamResolutionResult<any>
+): string {
+    const inputRead = paramLog.inputReadCorrectly.wasPerformed
+        ? `read "${paramLog.inputReadCorrectly.withValue}"`
+        : "";
+    const withOverride = paramLog.overriden.wasPerformed
+        ? `, overriden with ${paramLog.overriden.withValue}`
+        : "";
+    const withDefault = paramLog.resolvedWithDefault.wasPerformed
+        ? `, resolved with default "${paramLog.resolvedWithDefault.withValue}"`
+        : "";
+    return paramLog.inputReadCorrectly.wasPerformed
+        ? `; value's resolution: ${inputRead}${withOverride}${withDefault}`
+        : "";
+}
+
+function buildParameterOverridenMessage(
+    modelId: string,
+    paramLog: SingleParamResolutionResult<any>
+): string {
+    const paramName = `\`${paramLog.inputParamName}\``;
+    const withValue = `"${paramLog.overriden.withValue}"`;
+    const explanation =
+        paramLog.overriden.message === undefined
+            ? ""
+            : `: ${paramLog.overriden.message}`;
+    return `The ${paramName} parameter of the "${modelId}" model was overriden with the value ${withValue}${explanation}. Please configure it the same way in the settings.`;
 }

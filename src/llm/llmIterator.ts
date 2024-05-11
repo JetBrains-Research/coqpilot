@@ -2,8 +2,8 @@ import { EventLogger } from "../logging/eventLogger";
 
 import { LLMServices } from "./llmServices";
 import { GeneratedProof, LLMService } from "./llmServices/llmService";
+import { ModelParams, ModelsParams } from "./llmServices/modelParams";
 import { ProofGenerationContext } from "./proofGenerationContext";
-import { UserModelParams, UserModelsParams } from "./userModelParams";
 
 type GeneratedProofsBatch = GeneratedProof<any>[];
 type ProofsGenerationHook = () => Promise<GeneratedProofsBatch>;
@@ -19,7 +19,7 @@ export class LLMSequentialIterator
 
     constructor(
         proofGenerationContext: ProofGenerationContext,
-        modelsParams: UserModelsParams,
+        modelsParams: ModelsParams,
         services: LLMServices,
         private eventLogger?: EventLogger
     ) {
@@ -37,7 +37,7 @@ export class LLMSequentialIterator
 
     private createHooks(
         proofGenerationContext: ProofGenerationContext,
-        modelsParams: UserModelsParams,
+        modelsParams: ModelsParams,
         services: LLMServices
     ): ProofsGenerationHook[] {
         return [
@@ -68,26 +68,23 @@ export class LLMSequentialIterator
         ];
     }
 
-    private createLLMServiceHooks(
+    private createLLMServiceHooks<ResolvedModelParams extends ModelParams>(
         proofGenerationContext: ProofGenerationContext,
-        allModelParamsForService: UserModelParams[],
-        llmService: LLMService<any, any>,
+        allModelParamsForService: ResolvedModelParams[],
+        llmService: LLMService<any, ResolvedModelParams>,
         serviceLoggingName: string
     ): ProofsGenerationHook[] {
         const hooks = [];
-        for (const userModelParams of allModelParamsForService) {
+        for (const modelParams of allModelParamsForService) {
             hooks.push(() => {
-                // TODO: move params resolution to UI
-                const resolvedParams =
-                    llmService.resolveParameters(userModelParams);
                 this.eventLogger?.log(
                     `${serviceLoggingName}-fetch-started`,
                     `Completion from ${serviceLoggingName}`,
-                    resolvedParams
+                    modelParams
                 );
                 return llmService.generateProof(
                     proofGenerationContext,
-                    resolvedParams.resolvedParams!
+                    modelParams
                 );
             });
         }

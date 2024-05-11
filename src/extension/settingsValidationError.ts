@@ -1,5 +1,8 @@
 import { commands } from "vscode";
 
+import { switchByLLMServiceType } from "../llm/llmServices";
+import { LLMService } from "../llm/llmServices/llmService";
+
 import { pluginId } from "./coqPilot";
 import { UIMessageSeverity, showMessageToUser } from "./editorMessages";
 
@@ -37,4 +40,15 @@ export function showMessageToUserWithSettingsHint(
             );
         }
     });
+}
+
+export function toSettingName(llmService: LLMService<any, any>): string {
+    const serviceNameInSettings = switchByLLMServiceType(
+        llmService,
+        () => "predefinedProofs",
+        () => "openAi",
+        () => "grazie",
+        () => "lmStudio"
+    );
+    return `${pluginId}.${serviceNameInSettings}ModelsParameters`;
 }

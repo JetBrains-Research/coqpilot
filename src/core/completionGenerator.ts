@@ -3,8 +3,8 @@ import { Position } from "vscode-languageclient";
 import { LLMSequentialIterator } from "../llm/llmIterator";
 import { LLMServices } from "../llm/llmServices";
 import { GeneratedProof } from "../llm/llmServices/llmService";
+import { ModelsParams } from "../llm/llmServices/modelParams";
 import { ProofGenerationContext } from "../llm/proofGenerationContext";
-import { UserModelsParams } from "../llm/userModelParams";
 
 import { Goal, Hyp, PpString } from "../coqLsp/coqLspTypes";
 
@@ -34,7 +34,7 @@ export interface SourceFileEnvironment {
 
 export interface ProcessEnvironment {
     coqProofChecker: CoqProofChecker;
-    modelsParams: UserModelsParams;
+    modelsParams: ModelsParams;
     services: LLMServices;
     /**
      * If `theoremRanker` is not provided, the default one will be used:

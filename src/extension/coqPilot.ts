@@ -259,7 +259,8 @@ export class CoqPilot {
             coqProofChecker: coqProofChecker,
             modelsParams: parseAndValidateUserModelsParams(
                 workspace.getConfiguration(pluginId),
-                this.jsonSchemaValidator
+                this.jsonSchemaValidator,
+                this.globalExtensionState.llmServices
             ),
             services: this.globalExtensionState.llmServices,
             theoremRanker: contextTheoremsRanker,

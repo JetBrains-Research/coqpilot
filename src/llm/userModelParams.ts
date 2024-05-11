@@ -66,13 +66,6 @@ export interface LMStudioUserModelParams extends UserModelParams {
     port: number;
 }
 
-export interface UserModelsParams {
-    predefinedProofsModelParams: PredefinedProofsUserModelParams[];
-    openAiParams: OpenAiUserModelParams[];
-    grazieParams: GrazieUserModelParams[];
-    lmStudioParams: LMStudioUserModelParams[];
-}
-
 export const userMultiroundProfileSchema: JSONSchemaType<UserMultiroundProfile> =
     {
         type: "object",

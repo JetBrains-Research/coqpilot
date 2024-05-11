@@ -2,11 +2,7 @@ import {
     ConfigurationError,
     GenerationFailedError,
 } from "../llm/llmServiceErrors";
-import {
-    LLMServices,
-    asLLMServices,
-    switchByLLMServiceType,
-} from "../llm/llmServices";
+import { LLMServices, asLLMServices } from "../llm/llmServices";
 import {
     LLMService,
     LLMServiceRequest,
@@ -19,9 +15,11 @@ import { Time } from "../llm/llmServices/utils/time";
 import { EventLogger } from "../logging/eventLogger";
 import { SimpleSet } from "../utils/simpleSet";
 
-import { pluginId } from "./coqPilot";
-import { showMessageToUser } from "./editorMessages";
-import { showMessageToUserWithSettingsHint } from "./settingsValidationError";
+import { EditorMessages, showMessageToUser } from "./editorMessages";
+import {
+    showMessageToUserWithSettingsHint,
+    toSettingName,
+} from "./settingsValidationError";
 
 /* eslint-disable @typescript-eslint/naming-convention */
 enum LLMServiceAvailablityState {
@@ -145,7 +143,10 @@ function reactToRequestFailedEvent(
             }
             seenIncorrectlyConfiguredModels.add(model);
             showMessageToUserWithSettingsHint(
-                `Model "${model.modelId}" is configured incorrectly: ${llmServiceError.message}. Thus, "${model.modelId}" was skipped for this run. Please fix the model's configuration in the settings.`,
+                EditorMessages.modelConfiguredIncorrectly(
+                    model.modelId,
+                    llmServiceError.message
+                ),
                 "error",
                 toSettingName(requestFailed.llmService)
             );
@@ -197,17 +198,6 @@ function parseLLMServiceRequestEvent<T extends LLMServiceRequest>(
         throw Error(`no UI state for \`${serviceName}\``);
     }
     return [request, uiState];
-}
-
-function toSettingName(llmService: LLMService<any, any>): string {
-    const serviceNameInSettings = switchByLLMServiceType(
-        llmService,
-        () => "predefinedProofs",
-        () => "openAi",
-        () => "grazie",
-        () => "lmStudio"
-    );
-    return `${pluginId}.${serviceNameInSettings}ModelsParameters`;
 }
 
 function formatTimeToUIString(time: Time): string {

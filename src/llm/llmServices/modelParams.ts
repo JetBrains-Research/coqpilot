@@ -45,3 +45,10 @@ export interface LMStudioModelParams extends ModelParams {
     temperature: number;
     port: number;
 }
+
+export interface ModelsParams {
+    predefinedProofsModelParams: PredefinedProofsModelParams[];
+    openAiParams: OpenAiModelParams[];
+    grazieParams: GrazieModelParams[];
+    lmStudioParams: LMStudioModelParams[];
+}
