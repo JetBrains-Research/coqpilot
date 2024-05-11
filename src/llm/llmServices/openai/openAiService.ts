@@ -32,7 +32,6 @@ export class OpenAiService extends LLMService {
         params: ModelParams,
         choices: number
     ): Promise<string[]> {
-        // TODO: support retries
         if (choices <= 0) {
             return [];
         }

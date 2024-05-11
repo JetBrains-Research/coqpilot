@@ -40,6 +40,7 @@ import {
     ProcessEnvironment,
     SourceFileEnvironment,
 } from "../core/completionGenerator";
+import { JaccardIndexContextTheoremsRanker } from "../core/contextTheoremRanker/JaccardIndexContextTheoremsRanker";
 import { ContextTheoremsRanker } from "../core/contextTheoremRanker/contextTheoremsRanker";
 import { DistanceContextTheoremsRanker } from "../core/contextTheoremRanker/distanceContextTheoremsRanker";
 import { RandomContextTheoremsRanker } from "../core/contextTheoremRanker/randomContextTheoremsRanker";
@@ -343,6 +344,8 @@ export class CoqPilot {
                 return new DistanceContextTheoremsRanker();
             case "random":
                 return new RandomContextTheoremsRanker();
+            case "jaccardIndex":
+                return new JaccardIndexContextTheoremsRanker();
             default:
                 throw new Error(
                     `Unknown context theorems ranker type: ${rankerType}`

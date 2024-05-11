@@ -190,7 +190,7 @@ export class CoqLspClient implements CoqLspClientInterface {
         params: any,
         uri: Uri,
         lastDocumentEndPosition?: Position,
-        timeout: number = 50000
+        timeout: number = 300000
     ): Promise<DiagnosticMessage> {
         await this.client.sendNotification(requestType, params);
 

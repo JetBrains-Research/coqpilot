@@ -118,7 +118,7 @@ Comment: Such files are not visible in the vscode explorer, because plugin adds 
 
 This extension contributes the following settings:
 
-* `coqpilot.contextTheoremsRankerType` : The type of theorems ranker that will be used to select theorems for proof generation (when context is smaller than taking all of them). Either randomly or by distance from the theorem, with the currently generated admit. 
+* `coqpilot.contextTheoremsRankerType` : The type of theorems ranker that will be used to select theorems for proof generation (when context is smaller than taking all of them). Either randomly, by Jacard index (similarity metric) or by distance from the theorem, with the currently observed admit. 
 * `coqpilot.loggingVerbosity` : Verbosity of the logs. Could be `info`, `debug`.
 
 * `coqpilot.openAiModelsParameters`, `coqpilot.predefinedProofsModelsParameters`, `coqpilot.grazieModelsParameters` and `coqpilot.lmStudioModelsParameters`:
@@ -198,6 +198,44 @@ Another thing to keep in mind: We are still in beta and changes in settings may 
 ## Planned Features
 
 - Add benchmarking options for various models: soon. 
+
+## Benchmark
+
+To run benchmarks on some project, apart from installing and building CoqPilot manually as described above, you will need to download the necessary projects that are used as datasets for the benchmarks. These projects are added as submodules to the repository. To download them, run the following commands:
+```bash
+git submodule init
+git submodule update
+```
+After that, you need to build the projects. And be careful, the actively maintained way to build this projects is `nix`. Moreover, when adding your own projects, make sure that they are built using `coq-8.19.0`. 
+
+First things first, the process of running the benchmark is not perfectly automated yet. We are working on it. For now, one project (one unit containing nix environment) shall be ran at a time. Let's say you are going to run the benchmark on the `imm` project. You will have to do the following: 
+
+0. Go the the `imm` subdirectory and add a `_CoqProject` file in the root with the following: 
+    ```
+    -I result/lib/coq/8.19/user-contrib/imm
+    -R result/lib/coq/8.19/user-contrib/imm imm
+    ```
+    This is needed for the lsp-server to correctly resolve file dependencies.
+
+1. Install nix, as specified in the [here](https://nixos.org/download.html). 
+
+2. Install needed caches: 
+    ```bash
+    nix-env -iA nixpkgs.cachix && cachix use coq && cachix use coq-community && cachix use math-comp
+    cachix use weakmemory
+    ```
+
+3. Go to the `imm` subdirectory, apply the nix environment (without it the project will NOT build) and build the project: 
+    ```bash
+    cd dataset/imm 
+    nix-shell 
+    nix-build
+    ```
+4. Return to the project root not exiting the nix-shell. Run the benchmark: 
+    ```bash
+    cd ../../
+    npm run benchmark
+    ```    
 
 ## Release Notes
 

@@ -132,6 +132,12 @@ export abstract class GeneratedProof {
         llmService: LLMService,
         previousProofVersions?: ProofVersion[]
     ) {
+        // Sometimes, expecially when 0-shot prompting,
+        // Gpt wraps the proof in a tone of comments and other text.
+        // The code block is somewhere in the middle.
+        // This method extracts the code block from the message.
+        proof = this.parseProofFromMessage(proof);
+
         this.llmService = llmService;
         this.modelParams = modelParams;
 
@@ -167,8 +173,7 @@ export abstract class GeneratedProof {
 
     protected async generateNextVersion(
         chat: ChatHistory,
-        choices: number,
-        postprocessProof: (proof: string) => string = (proof) => proof
+        choices: number
     ): Promise<GeneratedProof[]> {
         if (!this.nextVersionCanBeGenerated() || choices <= 0) {
             return [];
@@ -180,7 +185,7 @@ export abstract class GeneratedProof {
         );
         return newProofs.map((proof: string) =>
             this.llmService.constructGeneratedProof(
-                postprocessProof(proof),
+                proof,
                 this.proofGenerationContext,
                 this.modelParams,
                 this.proofVersions
@@ -210,15 +215,11 @@ export abstract class GeneratedProof {
             this.modelParams
         );
 
-        return this.generateNextVersion(
-            chat,
-            choices,
-            this.parseFixedProofFromMessage.bind(this)
-        );
+        return this.generateNextVersion(chat, choices);
     }
 
-    parseFixedProofFromMessage(message: string): string {
-        const regex = /Proof\.(.*?)Qed\./s;
+    parseProofFromMessage(message: string): string {
+        const regex = /Proof(.*?)Qed\./s;
         const match = regex.exec(message);
         if (match) {
             return match[0];
