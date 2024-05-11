@@ -16,9 +16,8 @@ import {
     PredefinedProofsModelParams,
 } from "./modelParams";
 import { ParamsResolver } from "./utils/paramsResolver";
-import { SingleParamResolver } from "./utils/singleParamResolver";
 
-export abstract class BasicModelParamsResolver<
+export class BasicModelParamsResolver<
     InputType extends UserModelParams,
     ResolveToType extends ModelParams,
 > extends ParamsResolver<InputType, ResolveToType> {
@@ -30,9 +29,15 @@ export abstract class BasicModelParamsResolver<
         .default(() => defaultSystemMessageContent)
         .noValidationNeeded();
 
-    abstract maxTokensToGenerate: SingleParamResolver<InputType, number>;
+    readonly maxTokensToGenerate = this.resolveParam<number>(
+        "maxTokensToGenerate"
+    )
+        .requiredToBeConfigured()
+        .validate([(value) => value > 0, "be positive"]);
 
-    abstract tokensLimit: SingleParamResolver<InputType, number>;
+    readonly tokensLimit = this.resolveParam<number>("tokensLimit")
+        .requiredToBeConfigured()
+        .validate([(value) => value >= 0, "be positive"]);
 
     readonly multiroundProfile = this.resolveParam<MultiroundProfile>(
         "multiroundProfile"
@@ -176,10 +181,6 @@ export class GrazieModelParamsResolver extends BasicModelParamsResolver<
         )
         .requiredToBeConfigured()
         .validate([(value) => value > 0, "be positive"]);
-
-    readonly tokensLimit = this.resolveParam<number>("tokensLimit")
-        .requiredToBeConfigured()
-        .validate([(value) => value > 0, "be positive"]);
 }
 
 export class LMStudioModelParamsResolver extends BasicModelParamsResolver<
@@ -200,14 +201,4 @@ export class LMStudioModelParamsResolver extends BasicModelParamsResolver<
             (value) => value >= 0 && value <= 65535,
             "be a valid port value, i.e. in range between 0 and 65535",
         ]);
-
-    readonly maxTokensToGenerate = this.resolveParam<number>(
-        "maxTokensToGenerate"
-    )
-        .requiredToBeConfigured()
-        .validate([(value) => value > 0, "be positive"]);
-
-    readonly tokensLimit = this.resolveParam<number>("tokensLimit")
-        .requiredToBeConfigured()
-        .validate([(value) => value > 0, "be positive"]);
 }
