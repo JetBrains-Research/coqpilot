@@ -4,7 +4,7 @@ import {
 } from "../llm/llmServiceErrors";
 import { LLMServices, asLLMServices } from "../llm/llmServices";
 import {
-    LLMService,
+    LLMServiceImpl,
     LLMServiceRequest,
     LLMServiceRequestFailed,
     LLMServiceRequestSucceeded,
@@ -54,11 +54,11 @@ export function subscribeToHandleLLMServicesEvents(
     );
 
     const succeededSubscriptionId = eventLogger.subscribeToLogicEvent(
-        LLMService.requestSucceededEvent,
+        LLMServiceImpl.requestSucceededEvent,
         reactToRequestSucceededEvent(llmServiceToUIState)
     );
     const failedSubscriptionId = eventLogger.subscribeToLogicEvent(
-        LLMService.requestFailedEvent,
+        LLMServiceImpl.requestFailedEvent,
         reactToRequestFailedEvent(
             llmServiceToUIState,
             seenIncorrectlyConfiguredModels
@@ -67,11 +67,11 @@ export function subscribeToHandleLLMServicesEvents(
 
     return () => {
         eventLogger.unsubscribe(
-            LLMService.requestSucceededEvent,
+            LLMServiceImpl.requestSucceededEvent,
             succeededSubscriptionId
         );
         eventLogger.unsubscribe(
-            LLMService.requestFailedEvent,
+            LLMServiceImpl.requestFailedEvent,
             failedSubscriptionId
         );
     };
@@ -102,7 +102,7 @@ function reactToRequestSucceededEvent(
             parseLLMServiceRequestEvent<LLMServiceRequestSucceeded>(
                 data,
                 llmServiceToUIState,
-                `data of the ${LLMService.requestSucceededEvent} event should be a \`LLMServiceRequestSucceeded\` object`
+                `data of the ${LLMServiceImpl.requestSucceededEvent} event should be a \`LLMServiceRequestSucceeded\` object`
             );
         if (
             uiState.availabilityState === LLMServiceAvailablityState.UNAVAILABLE
@@ -132,7 +132,7 @@ function reactToRequestFailedEvent(
             parseLLMServiceRequestEvent<LLMServiceRequestFailed>(
                 data,
                 llmServiceToUIState,
-                `data of the ${LLMService.requestFailedEvent} event should be a \`LLMServiceRequestFailed\` object`
+                `data of the ${LLMServiceImpl.requestFailedEvent} event should be a \`LLMServiceRequestFailed\` object`
             );
 
         const llmServiceError = requestFailed.llmServiceError;
@@ -154,7 +154,7 @@ function reactToRequestFailedEvent(
         }
         if (!(llmServiceError instanceof GenerationFailedError)) {
             throw Error(
-                `\`llmServiceError\` of the received ${LLMService.requestFailedEvent} event data is expected to be either a \` ConfigurationError\` or \`GenerationFailedError\`, but got: "${llmServiceError}"`
+                `\`llmServiceError\` of the received ${LLMServiceImpl.requestFailedEvent} event data is expected to be either a \` ConfigurationError\` or \`GenerationFailedError\`, but got: "${llmServiceError}"`
             );
         }
 

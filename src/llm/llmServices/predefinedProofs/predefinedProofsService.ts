@@ -9,14 +9,15 @@ import {
     LLMServiceInternal,
     ProofVersion,
 } from "../llmService";
-import { LLMService } from "../llmService";
+import { LLMServiceImpl } from "../llmService";
 import { PredefinedProofsModelParams } from "../modelParams";
 import { PredefinedProofsModelParamsResolver } from "../modelParamsResolvers";
 import { Time, timeZero } from "../utils/time";
 
-export class PredefinedProofsService extends LLMService<
+export class PredefinedProofsService extends LLMServiceImpl<
     PredefinedProofsUserModelParams,
-    PredefinedProofsModelParams
+    PredefinedProofsModelParams,
+    PredefinedProofsServiceInternal
 > {
     protected readonly internal: PredefinedProofsServiceInternal;
     protected readonly modelParamsResolver =
@@ -88,7 +89,10 @@ export class PredefinedProofsService extends LLMService<
     }
 }
 
-export class PredefinedProof extends GeneratedProofImpl<PredefinedProofsModelParams> {
+export class PredefinedProof extends GeneratedProofImpl<
+    PredefinedProofsModelParams,
+    PredefinedProofsServiceInternal
+> {
     constructor(
         proof: string,
         proofGenerationContext: ProofGenerationContext,

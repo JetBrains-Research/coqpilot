@@ -33,7 +33,7 @@ export enum ErrorsHandlingMode {
 }
 
 /**
- * Interface for `LLMService` to package all generation request data.
+ * Interface for `LLMServiceImpl` to package all generation request data.
  * Then, this data is used for interaction between implementation components.
  * In addition, interfaces derived from it can be passed to loggers to record the requests' results.
  */
@@ -53,7 +53,18 @@ export interface LLMServiceRequestFailed extends LLMServiceRequest {
 }
 
 /**
- * `LLMService` represents a service for proofs generation.
+ * Facade type for the `LLMServiceImpl<InputModelParams, ResolvedModelParams, LLMServiceInternalType>` type.
+ *
+ * Proper typing of `LLMServiceImpl.internal` is required inside implementations only;
+ * thus, `LLMServiceImpl` should be resolved with `any` as `LLMServiceInternalType` when used outside.
+ */
+export type LLMService<
+    InputModelParams extends UserModelParams,
+    ResolvedModelParams extends ModelParams,
+> = LLMServiceImpl<InputModelParams, ResolvedModelParams, any>;
+
+/**
+ * `LLMServiceImpl` represents a service for proofs generation.
  * Proofs can be generated from both `ProofGenerationContext` and `AnalyzedChatHistory`.
  * Generated proofs are represented by `GeneratedProofImpl` class and
  * can be further regenerated (fixed / shortened / etc), also keeping their previous versions.
@@ -77,31 +88,28 @@ export interface LLMServiceRequestFailed extends LLMServiceRequest {
  *     `GenerationsLogger` maintains the logs of both successful and failed generations
  *     used for the further estimation of the service availability. See the `estimateTimeToBecomeAvailable` method.
  *
- * 3. To implement a new `LLMService` based on generating proofs from chats, one should:
+ * 3. To implement a new `LLMServiceImpl` based on generating proofs from chats, one should:
  *    - declare the specification of models parameters via custom `UserModelParams` and `ModelParams` interfaces;
  *    - implement custom `ParamsResolver` class, declaring the algorithm to resolve parameters with;
  *    - declare custom `GeneratedProofImpl`;
  *    - implement custom `LLMServiceInternal`;
- *    - finally, declare custom `LLMService`.
+ *    - finally, declare custom `LLMServiceImpl`.
  *
  *    I.e. `LLMServiceInternal` is effectively the only class needed to be actually implemented.
  *
  *    If proofs-generation is not supposed to be based on chats,
- *    the methods of `LLMService` should be overriden directly too.
+ *    the methods of `LLMServiceImpl` should be overriden directly too.
  *
- *    Implementation note. Since `LLMService` is not parameterized by the generic type
- *    of a specific `LLMServiceInternal` implementation (to avoid type inference cycles),
- *    this may rarely cause the need to perform boilerplate type casts.
- *    Of course there is no need to tolerate them, just set the correct type for the `this.llmServiceInternal`
- *    as follows:
- *
- *    ```protected readonly internal = this.internal as MyLLMServiceInternal;```
+ *    Also, do not be afraid of the complicated generic types in the base classes below.
+ *    Although they look overly complex, they provide great typing support during implementation.
+ *    Just remember to replace all generic types with your specific custom classes whenever possible.
  */
-export abstract class LLMService<
+export abstract class LLMServiceImpl<
     InputModelParams extends UserModelParams,
     ResolvedModelParams extends ModelParams,
+    LLMServiceInternalType extends LLMServiceInternal<ResolvedModelParams>,
 > {
-    protected abstract readonly internal: LLMServiceInternal<ResolvedModelParams>;
+    protected abstract readonly internal: LLMServiceInternalType;
     protected abstract readonly modelParamsResolver: ParamsResolver<
         InputModelParams,
         ResolvedModelParams
@@ -110,7 +118,7 @@ export abstract class LLMService<
     protected readonly generationsLoggerBuilder: () => GenerationsLogger;
 
     /**
-     * Creates an instance of `LLMService`.
+     * Creates an instance of `LLMServiceImpl`.
      * @param eventLogger if it is not specified, events won't be logged and passing `LOG_EVENTS_AND_SWALLOW_ERRORS` will throw an error.
      * @param debugLogs enables debug logs for the internal `GenerationsLogger`.
      * @param generationLogsFilePath if it is not specified, a temporary file will be used.
@@ -134,7 +142,7 @@ export abstract class LLMService<
 
     /**
      * Generates proofs from chat.
-     * This method performs errors-handling and logging, check `LLMService` docs for more details.
+     * This method performs errors-handling and logging, check `LLMServiceImpl` docs for more details.
      *
      * The default implementation is based on the `LLMServiceInternal.generateFromChatImpl`.
      * If it is not the desired way, `generateFromChat` should be overriden.
@@ -159,7 +167,7 @@ export abstract class LLMService<
 
     /**
      * Generates proofs from `ProofGenerationContext`, i.e. from `completionTarget` and `contextTheorems`.
-     * This method performs errors-handling and logging, check `LLMService` docs for more details.
+     * This method performs errors-handling and logging, check `LLMServiceImpl` docs for more details.
      *
      * The default implementation is based on the generation from chat, namely,
      * it calls `LLMServiceInternal.generateFromChatImpl`.
@@ -173,7 +181,9 @@ export abstract class LLMService<
         params: ResolvedModelParams,
         choices: number = params.defaultChoices,
         errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
-    ): Promise<GeneratedProofImpl<ResolvedModelParams>[]> {
+    ): Promise<
+        GeneratedProofImpl<ResolvedModelParams, LLMServiceInternalType>[]
+    > {
         return this.internal.generateFromChatWrapped(
             params,
             choices,
@@ -184,7 +194,10 @@ export abstract class LLMService<
                     proof,
                     proofGenerationContext,
                     params
-                )
+                ) as GeneratedProofImpl<
+                    ResolvedModelParams,
+                    LLMServiceInternalType
+                >
         );
     }
 
@@ -236,10 +249,10 @@ export abstract class LLMService<
  * Most often, proper typing of `GeneratedProofImpl.modelParams` is not required;
  * thus, outside of the internal implementation, this class will most likely be parameterized with `any`.
  */
-export type GeneratedProof = GeneratedProofImpl<any>;
+export type GeneratedProof = GeneratedProofImpl<any, any>;
 
 /**
- * This class represents a proof generated by `LLMService`.
+ * This class represents a proof generated by `LLMServiceImpl`.
  * It stores all the meta information of its generation.
  *
  * Moreover, it might support multiround generation: fixing, shortening, etc.
@@ -247,21 +260,14 @@ export type GeneratedProof = GeneratedProofImpl<any>;
  *
  * Multiround-generation parameters are specified at `ModelParams.multiroundProfile`.
  *
- * Same to `LLMService`, multiround-generation methods perform errors handling and logging (in the same way).
- * Same to `LLMService`, these methods could be overriden to change the behaviour (of the multiround generation).
+ * Same to `LLMServiceImpl`, multiround-generation methods perform errors handling and logging (in the same way).
+ * Same to `LLMServiceImpl`, these methods could be overriden to change the behaviour (of the multiround generation).
  *
  * Finally, `GeneratedProofImpl` keeps the previous proof versions (but not the future ones).
- *
- * Implementation note. Since `GeneratedProofImpl` is not parameterized by the generic type
- * of a specific `LLMServiceInternal` implementation (for the sake of conciseness),
- * this may rarely cause the need to perform boilerplate type casts.
- * Of course there is no need to tolerate them, just set the correct type for the `this.llmServiceInternal`
- * as follows:
- *
- * ```protected readonly llmServiceInternal = this.llmServiceInternal as MyLLMServiceInternal;```
  */
 export abstract class GeneratedProofImpl<
     ResolvedModelParams extends ModelParams,
+    LLMServiceInternalType extends LLMServiceInternal<ResolvedModelParams>,
 > {
     /**
      * An accessor for `ModelParams.multiroundProfile.maxRoundsNumber`.
@@ -281,13 +287,13 @@ export abstract class GeneratedProofImpl<
 
     /**
      * Creates an instance of `GeneratedProofImpl`.
-     * Should be called only by `LLMService`, `LLMServiceInternal` or `GeneratedProofImpl` itself.
+     * Should be called only by `LLMServiceImpl`, `LLMServiceInternal` or `GeneratedProofImpl` itself.
      */
     constructor(
         proof: string,
         readonly proofGenerationContext: ProofGenerationContext,
         readonly modelParams: ResolvedModelParams,
-        protected readonly llmServiceInternal: LLMServiceInternal<ResolvedModelParams>,
+        protected readonly llmServiceInternal: LLMServiceInternalType,
         previousProofVersions: ProofVersion[] = []
     ) {
         // Makes a copy of the previous proof versions
@@ -346,7 +352,7 @@ export abstract class GeneratedProofImpl<
 
     /**
      * Generates new `GeneratedProofImpl`-s as fixes for the latest version of the current one.
-     * This method performs errors-handling and logging the same way as `LLMService`'s methods do.
+     * This method performs errors-handling and logging the same way as `LLMServiceImpl`'s methods do.
      *
      * When this method is called, the `diagnostic` of the latest proof version
      * is overwritten with the `diagnostic` parameter of the call.
@@ -363,7 +369,9 @@ export abstract class GeneratedProofImpl<
         choices: number = this.modelParams.multiroundProfile
             .defaultProofFixChoices,
         errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
-    ): Promise<GeneratedProofImpl<ResolvedModelParams>[]> {
+    ): Promise<
+        GeneratedProofImpl<ResolvedModelParams, LLMServiceInternalType>[]
+    > {
         return this.llmServiceInternal.generateFromChatWrapped(
             this.modelParams,
             choices,
@@ -387,7 +395,10 @@ export abstract class GeneratedProofImpl<
                     this.proofGenerationContext,
                     this.modelParams,
                     this.proofVersions
-                )
+                ) as GeneratedProofImpl<
+                    ResolvedModelParams,
+                    LLMServiceInternalType
+                >
         );
     }
 
@@ -403,15 +414,15 @@ export abstract class GeneratedProofImpl<
 }
 
 /**
- * This class represents the inner resources and implementations of `LLMService`.
+ * This class represents the inner resources and implementations of `LLMServiceImpl`.
  *
  * Its main goals are to:
- * - separate an actual logic and implementation wrappers from the facade `LLMService` class;
- * - make `GeneratedProofImpl` effectively an inner class of `LLMService`,
+ * - separate an actual logic and implementation wrappers from the facade `LLMServiceImpl` class;
+ * - make `GeneratedProofImpl` effectively an inner class of `LLMServiceImpl`,
  *   capable of reaching its internal resources.
  *
  * Also, `LLMServiceInternal` is capable of
- * mantaining the `LLMService`-s resources and disposing them in the end.
+ * mantaining the `LLMServiceImpl`-s resources and disposing them in the end.
  */
 export abstract class LLMServiceInternal<
     ResolvedModelParams extends ModelParams,
@@ -421,7 +432,11 @@ export abstract class LLMServiceInternal<
     readonly debug: DebugWrappers;
 
     constructor(
-        readonly llmService: LLMService<any, ResolvedModelParams>,
+        readonly llmService: LLMServiceImpl<
+            any,
+            ResolvedModelParams,
+            LLMServiceInternal<ResolvedModelParams>
+        >,
         eventLoggerGetter: () => EventLogger | undefined,
         generationsLoggerBuilder: () => GenerationsLogger
     ) {
@@ -443,7 +458,10 @@ export abstract class LLMServiceInternal<
         proofGenerationContext: ProofGenerationContext,
         modelParams: ResolvedModelParams,
         previousProofVersions?: ProofVersion[]
-    ): GeneratedProofImpl<ResolvedModelParams>;
+    ): GeneratedProofImpl<
+        ResolvedModelParams,
+        LLMServiceInternal<ResolvedModelParams>
+    >;
 
     /**
      * This method should be mostly a pure implementation of
@@ -457,7 +475,7 @@ export abstract class LLMServiceInternal<
      * this implementation should through `ConfigurationError` whenever possible.
      * It is not mandatory, but that way the user will be notified in a clearer way.
      *
-     * Important note: `ResolvedModelParams` are expected to be already validated by `LLMService.resolveParameters`,
+     * Important note: `ResolvedModelParams` are expected to be already validated by `LLMServiceImpl.resolveParameters`,
      * so there is no need to perform this checks again. Report `ConfigurationError` only if something goes wrong during generation runtime.
      *
      * Subnote: most likely you'd like to call `this.validateChoices` to validate `choices` parameter.
@@ -475,7 +493,7 @@ export abstract class LLMServiceInternal<
      * For example, `this.generationsLogger` is created and maintained by `LLMServiceInternal`,
      * so it should be disposed in this method.
      * On the contrary, `this.eventLogger` is maintained by the external classes,
-     * it is only passed to the `LLMService`; thus, it should not be disposed here.
+     * it is only passed to the `LLMServiceImpl`; thus, it should not be disposed here.
      */
     dispose(): void {
         this.generationsLogger.dispose();
@@ -516,9 +534,9 @@ export abstract class LLMServiceInternal<
     /**
      * This is a helper function that wraps the implementation calls,
      * providing generation logging and errors handling.
-     * Many `LLMService` invariants are provided by this function;
+     * Many `LLMServiceImpl` invariants are provided by this function;
      * thus, its implementation is final.
-     * It should be called only in `LLMService` or `GeneratedProofImpl`,
+     * It should be called only in `LLMServiceImpl` or `GeneratedProofImpl`,
      * to help with overriding the default public methods implementation.
      *
      * Invariants TL;DR:
@@ -633,7 +651,7 @@ export abstract class LLMServiceInternal<
         };
         this.generationsLogger.logGenerationSucceeded(requestSucceeded);
         this.eventLogger?.logLogicEvent(
-            LLMService.requestSucceededEvent,
+            LLMServiceImpl.requestSucceededEvent,
             requestSucceeded
         );
     }
@@ -674,7 +692,7 @@ export abstract class LLMServiceInternal<
                     throw Error("cannot log events: no `eventLogger` provided");
                 }
                 this.eventLogger.logLogicEvent(
-                    LLMService.requestFailedEvent,
+                    LLMServiceImpl.requestFailedEvent,
                     requestFailed
                 );
                 return;

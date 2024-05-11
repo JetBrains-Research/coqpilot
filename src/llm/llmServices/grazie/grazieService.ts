@@ -7,15 +7,16 @@ import {
     LLMServiceInternal,
     ProofVersion,
 } from "../llmService";
-import { LLMService } from "../llmService";
+import { LLMServiceImpl } from "../llmService";
 import { GrazieModelParams } from "../modelParams";
 import { GrazieModelParamsResolver } from "../modelParamsResolvers";
 
 import { GrazieApi, GrazieChatRole, GrazieFormattedHistory } from "./grazieApi";
 
-export class GrazieService extends LLMService<
+export class GrazieService extends LLMServiceImpl<
     GrazieUserModelParams,
-    GrazieModelParams
+    GrazieModelParams,
+    GrazieServiceInternal
 > {
     protected readonly internal: GrazieServiceInternal;
     protected readonly modelParamsResolver = new GrazieModelParamsResolver();
@@ -39,7 +40,10 @@ export class GrazieService extends LLMService<
     static readonly maxTokensToGeneratePredefined = 1024;
 }
 
-export class GrazieGeneratedProof extends GeneratedProofImpl<GrazieModelParams> {
+export class GrazieGeneratedProof extends GeneratedProofImpl<
+    GrazieModelParams,
+    GrazieServiceInternal
+> {
     constructor(
         proof: string,
         proofGenerationContext: ProofGenerationContext,

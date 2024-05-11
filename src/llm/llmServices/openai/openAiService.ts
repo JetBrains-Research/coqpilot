@@ -7,16 +7,17 @@ import { OpenAiUserModelParams } from "../../userModelParams";
 import { ChatHistory } from "../chat";
 import {
     GeneratedProofImpl,
-    LLMService,
+    LLMServiceImpl,
     LLMServiceInternal,
     ProofVersion,
 } from "../llmService";
 import { OpenAiModelParams } from "../modelParams";
 import { OpenAiModelParamsResolver } from "../modelParamsResolvers";
 
-export class OpenAiService extends LLMService<
+export class OpenAiService extends LLMServiceImpl<
     OpenAiUserModelParams,
-    OpenAiModelParams
+    OpenAiModelParams,
+    OpenAiServiceInternal
 > {
     protected readonly internal: OpenAiServiceInternal;
     protected readonly modelParamsResolver = new OpenAiModelParamsResolver();
@@ -35,7 +36,10 @@ export class OpenAiService extends LLMService<
     }
 }
 
-export class OpenAiGeneratedProof extends GeneratedProofImpl<OpenAiModelParams> {
+export class OpenAiGeneratedProof extends GeneratedProofImpl<
+    OpenAiModelParams,
+    OpenAiServiceInternal
+> {
     constructor(
         proof: string,
         proofGenerationContext: ProofGenerationContext,

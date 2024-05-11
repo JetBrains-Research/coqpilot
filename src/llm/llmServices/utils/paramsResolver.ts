@@ -79,18 +79,18 @@ export class ParamsResolver<InputType, ResolveToType> {
 
     resolveOrThrow(inputParams: InputType): ResolveToType {
         const resolutionResult = this.resolve(inputParams);
-        if (resolutionResult.resolvedParams === undefined) {
-            const joinedErrorLogs = resolutionResult.resolutionLogs
-                .filter((paramLog) => paramLog.isInvalidCause !== undefined)
-                .map(
-                    (paramLog) =>
-                        `\`${paramLog.inputParamName}\`: ${paramLog.isInvalidCause}`
-                )
-                .join("; ");
-            throw new ConfigurationError(
-                `parameters "${JSON.stringify(inputParams)}" could not be resolved: ${joinedErrorLogs}`
-            );
+        if (resolutionResult.resolvedParams !== undefined) {
+            return resolutionResult.resolvedParams;
         }
-        return resolutionResult.resolvedParams;
+        const joinedErrorLogs = resolutionResult.resolutionLogs
+            .filter((paramLog) => paramLog.isInvalidCause !== undefined)
+            .map(
+                (paramLog) =>
+                    `\`${paramLog.inputParamName}\`: ${paramLog.isInvalidCause}`
+            )
+            .join("; ");
+        throw new ConfigurationError(
+            `parameters "${JSON.stringify(inputParams)}" could not be resolved: ${joinedErrorLogs}`
+        );
     }
 }

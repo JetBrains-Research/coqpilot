@@ -4,16 +4,17 @@ import { LMStudioUserModelParams } from "../../userModelParams";
 import { ChatHistory } from "../chat";
 import {
     GeneratedProofImpl,
-    LLMService,
+    LLMServiceImpl,
     LLMServiceInternal,
     ProofVersion,
 } from "../llmService";
 import { LMStudioModelParams } from "../modelParams";
 import { LMStudioModelParamsResolver } from "../modelParamsResolvers";
 
-export class LMStudioService extends LLMService<
+export class LMStudioService extends LLMServiceImpl<
     LMStudioUserModelParams,
-    LMStudioModelParams
+    LMStudioModelParams,
+    LMStudioServiceInternal
 > {
     protected readonly internal: LMStudioServiceInternal;
     protected readonly modelParamsResolver = new LMStudioModelParamsResolver();
@@ -37,7 +38,10 @@ export class LMStudioService extends LLMService<
     }
 }
 
-export class LMStudioGeneratedProof extends GeneratedProofImpl<LMStudioModelParams> {
+export class LMStudioGeneratedProof extends GeneratedProofImpl<
+    LMStudioModelParams,
+    LMStudioServiceInternal
+> {
     constructor(
         proof: string,
         proofGenerationContext: ProofGenerationContext,
