@@ -37,7 +37,7 @@ export class BasicModelParamsResolver<
 
     readonly tokensLimit = this.resolveParam<number>("tokensLimit")
         .requiredToBeConfigured()
-        .validate([(value) => value >= 0, "be positive"]);
+        .validate([(value) => value > 0, "be positive"]);
 
     readonly multiroundProfile = this.resolveParam<MultiroundProfile>(
         "multiroundProfile"

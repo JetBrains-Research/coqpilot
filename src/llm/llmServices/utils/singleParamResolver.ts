@@ -5,7 +5,7 @@ export function resolveParam<InputType, T>(
 }
 
 export function insertParam<InputType, T>(
-    valueBuilder: ValueBuilder<InputType, T>
+    valueBuilder: StrictValueBuilder<InputType, T>
 ): SingleParamWithValueResolverBuilder<InputType, T> {
     return new SingleParamWithValueResolverBuilderImpl(
         undefined,
@@ -18,6 +18,7 @@ export function insertParam<InputType, T>(
 export type ValueBuilder<InputType, T> = (
     inputParams: InputType
 ) => T | undefined;
+export type StrictValueBuilder<InputType, T> = (inputParams: InputType) => T;
 
 export type ValidationRule<InputType, T> = [Validator<InputType, T>, string];
 export type Validator<InputType, T> = (
@@ -32,7 +33,7 @@ export interface SingleParamResolverBuilder<InputType, T> {
     ): SingleParamResolverBuilder<InputType, T>;
 
     overrideWithMock(
-        valueBuilder: ValueBuilder<InputType, T>
+        valueBuilder: StrictValueBuilder<InputType, T>
     ): SingleParamResolver<InputType, T>;
 
     default(
@@ -109,7 +110,7 @@ class SingleParamResolverBuilderImpl<InputType, T>
     }
 
     overrideWithMock(
-        valueBuilder: ValueBuilder<InputType, T>
+        valueBuilder: StrictValueBuilder<InputType, T>
     ): SingleParamResolver<InputType, T> {
         return new SingleParamResolverImpl(
             this.inputParamName,
@@ -193,6 +194,7 @@ class SingleParamResolverImpl<InputType, T>
         private readonly overridenWithMockValue: boolean = false
     ) {}
 
+    // Note: unfortunately, the language does not allow to validate the type of the parameter properly
     resolve(inputParams: InputType): SingleParamResolutionResult<T> {
         const result: SingleParamResolutionResult<T> = {
             inputParamName: this.inputParamName,
@@ -209,62 +211,32 @@ class SingleParamResolverImpl<InputType, T>
         };
 
         let value: T | undefined = undefined;
+        let resultIsComplete = false;
 
-        if (this.inputParamName !== undefined) {
-            // read user's value
-            const propertiesNames = this.inputParamName.split(".");
-            let userValue: any = undefined;
-            for (const propertyName of propertiesNames) {
-                userValue =
-                    inputParams[propertyName as keyof typeof inputParams];
-            }
-            // if user specified value, then take it
-            if (userValue !== undefined) {
-                const userValueAsT = userValue as T;
-                if (userValueAsT === null) {
-                    result.isInvalidCause = `"${this.quotedName()} is configured with the "${userValue}" value of the wrong type"`;
-                    return result;
-                } else {
-                    value = userValue;
-                    result.inputReadCorrectly = {
-                        wasPerformed: true,
-                        withValue: value,
-                    };
-                }
-            }
+        [value, resultIsComplete] = this.tryToReadInputValue(
+            inputParams,
+            result
+        );
+        if (resultIsComplete) {
+            return result;
         }
 
-        // override value (it could be overriden with undefined, so as to force resolution with default)
-        if (this.overrider !== undefined) {
-            const { valueBuilder, explanationMessage } = this.overrider;
-            value = valueBuilder(inputParams);
-            if (this.overridenWithMockValue) {
-                // no checks and logs are needed, just return value
-                result.resultValue = value;
-                return result;
-            }
-            result.overriden = {
-                wasPerformed: true,
-                withValue: value,
-                message: explanationMessage,
-            };
+        [value, resultIsComplete] = this.tryToResolveWithOverrider(
+            inputParams,
+            result,
+            value
+        );
+        if (resultIsComplete) {
+            return result;
         }
 
-        // if user value is still undefined after overriden resolution,
-        // resolve with default
-        if (value === undefined && this.defaultResolver !== undefined) {
-            const { valueBuilder, noDefaultValueHelpMessage } =
-                this.defaultResolver;
-            value = valueBuilder(inputParams);
-            result.resolvedWithDefault = {
-                wasPerformed: true,
-                withValue: value,
-            };
-            // failed to resolve value because default value was not found (but could potentially)
-            if (value === undefined) {
-                result.isInvalidCause = `"${this.noValueMessage}. ${noDefaultValueHelpMessage}."`;
-                return result;
-            }
+        [value, resultIsComplete] = this.tryToResolveWithDefault(
+            inputParams,
+            result,
+            value
+        );
+        if (resultIsComplete) {
+            return result;
         }
 
         // failed to resolve value
@@ -273,18 +245,143 @@ class SingleParamResolverImpl<InputType, T>
             return result;
         }
 
-        // validate result value
-        for (const [validateValue, paramShouldMessage] of this
-            .validationRules) {
-            const validationResult = validateValue(value, inputParams);
-            if (!validationResult) {
-                result.isInvalidCause = `${this.quotedName()} should ${paramShouldMessage}, but has value "${value}"`;
-                return result;
-            }
+        const valueIsValid = this.validateDefinedValue(
+            inputParams,
+            result,
+            value
+        );
+        if (!valueIsValid) {
+            return result;
         }
 
         result.resultValue = value;
         return result;
+    }
+
+    // returns true if `result` is already complete, false otherwise
+    private tryToReadInputValue(
+        inputParams: InputType,
+        result: SingleParamResolutionResult<T>
+    ): [T | undefined, boolean] {
+        if (this.inputParamName === undefined) {
+            return [undefined, false];
+        }
+        const userValue = this.accessParamByName(
+            inputParams,
+            this.inputParamName
+        );
+        if (userValue === undefined) {
+            return [undefined, false];
+        }
+        // if user specified value, then take it
+        const userValueAsT = userValue as T;
+        if (userValueAsT !== null) {
+            result.inputReadCorrectly = {
+                wasPerformed: true,
+                withValue: userValueAsT,
+            };
+            return [userValueAsT, false];
+        } else {
+            // unfortunately, this case is unreachable: TypeScript does not provide the way to check that `userValue` is of `T` type indeed
+            throw Error(
+                `cast of \`any\` to generic \`T\` type should always succeed, value = "${userValue}" for ${this.quotedName()} parameter`
+            );
+        }
+    }
+
+    private accessParamByName(
+        inputParams: InputType,
+        inputParamNameInDotNotation: string
+    ): any {
+        const propertiesNames = inputParamNameInDotNotation.split(".");
+        let accessedProperty: any = inputParams;
+        for (const propertyName of propertiesNames) {
+            const accessKey = propertyName as keyof typeof accessedProperty;
+            if (
+                accessedProperty === undefined ||
+                accessedProperty === null ||
+                accessKey === null
+            ) {
+                throw Error(
+                    `resolver of ${this.quotedName()} is configured incorrectly: failed to access this property in "${JSON.stringify(inputParams)}" input params`
+                );
+            }
+            accessedProperty = accessedProperty[accessKey];
+        }
+        return accessedProperty;
+    }
+
+    // override value (it could be overriden with undefined, so as to force resolution with default)
+    // returns true if `result` is already complete, false otherwise
+    private tryToResolveWithOverrider(
+        inputParams: InputType,
+        result: SingleParamResolutionResult<T>,
+        value: T | undefined
+    ): [T | undefined, boolean] {
+        if (this.overrider === undefined) {
+            return [value, false];
+        }
+        const { valueBuilder, explanationMessage } = this.overrider;
+        const valueToOverrideWith = valueBuilder(inputParams);
+        if (this.overridenWithMockValue) {
+            // no checks and logs are needed, just return value
+            result.resultValue = valueToOverrideWith;
+            if (valueToOverrideWith === undefined) {
+                throw Error(
+                    `${this.quotedName()} is expected to be a mock value, but its builder resolved with "undefined"`
+                );
+            }
+            return [valueToOverrideWith, true];
+        }
+        result.overriden = {
+            wasPerformed: true,
+            withValue: valueToOverrideWith,
+            message: explanationMessage,
+        };
+        return [valueToOverrideWith, false];
+    }
+
+    // returns true if `result` is already complete, false otherwise
+    private tryToResolveWithDefault(
+        inputParams: InputType,
+        result: SingleParamResolutionResult<T>,
+        value: T | undefined
+    ): [T | undefined, boolean] {
+        // if user value is still undefined after overriden resolution,
+        // resolve with default
+        if (value !== undefined || this.defaultResolver === undefined) {
+            return [value, false];
+        }
+        const { valueBuilder, noDefaultValueHelpMessage } =
+            this.defaultResolver;
+        value = valueBuilder(inputParams);
+        result.resolvedWithDefault = {
+            wasPerformed: true,
+            withValue: value,
+        };
+        // failed to resolve value because default value was not found (but could potentially)
+        if (value === undefined) {
+            result.isInvalidCause = `${this.noValueMessage()}. ${noDefaultValueHelpMessage}`;
+            return [value, true];
+        }
+        return [value, false];
+    }
+
+    // returns true if value is valid, false otherwise
+    private validateDefinedValue(
+        inputParams: InputType,
+        result: SingleParamResolutionResult<T>,
+        value: T
+    ): boolean {
+        for (const [validateValue, paramShouldMessage] of this
+            .validationRules) {
+            const validationResult = validateValue(value, inputParams);
+            if (!validationResult) {
+                result.isInvalidCause = `${this.quotedName()} should ${paramShouldMessage}, but has value "${JSON.stringify(value)}"`;
+                return false;
+            }
+        }
+        return true;
     }
 
     private quotedName(): string {
@@ -292,6 +389,6 @@ class SingleParamResolverImpl<InputType, T>
     }
 
     private noValueMessage(): string {
-        return `"${this.quotedName} is required, but neither a user value nor a default one is specified"`;
+        return `"${this.quotedName()} is required, but neither a user value nor a default one is specified"`;
     }
 }

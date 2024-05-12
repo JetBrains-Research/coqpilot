@@ -3,7 +3,7 @@ import {
     SingleParamResolver,
     SingleParamResolverBuilder,
     SingleParamWithValueResolverBuilder,
-    ValueBuilder,
+    StrictValueBuilder,
     insertParam,
     resolveParam,
 } from "./singleParamResolver";
@@ -26,7 +26,7 @@ export class ParamsResolver<InputType, ResolveToType> {
     }
 
     protected insertParam<T>(
-        valueBuilder: ValueBuilder<InputType, T>
+        valueBuilder: StrictValueBuilder<InputType, T>
     ): SingleParamWithValueResolverBuilder<InputType, T> {
         return insertParam<InputType, T>(valueBuilder);
     }
@@ -44,7 +44,7 @@ export class ParamsResolver<InputType, ResolveToType> {
                 >;
                 if (paramResolver === null) {
                     throw Error(
-                        `\`ModelParamsResolver\` is configured incorrectly because of "${prop}": all properties should be built up to \`ParamWithValidatedValueResolver\` type`
+                        `\`ParamsResolver\` is configured incorrectly because of "${prop}": all properties should be built up to \`SingleParamResolver\` type`
                     );
                 }
 
@@ -66,7 +66,7 @@ export class ParamsResolver<InputType, ResolveToType> {
         const resolvedParams = resolvedParamsObject as ResolveToType;
         if (resolvedParams === null) {
             throw new Error(
-                `\`ModelParamsResolver\` is configured incorrectly: resulting "${JSON.stringify(resolvedParamsObject)}" could not be interpreted as \`ModelParams\` object`
+                `\`ParamsResolver\` is configured incorrectly: resulting "${JSON.stringify(resolvedParamsObject)}" could not be interpreted as \`ResolveToType\` object`
             );
         }
         return {
