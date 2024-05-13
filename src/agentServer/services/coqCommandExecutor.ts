@@ -14,10 +14,10 @@ export type CoqCodeExecGoalResult = Result<Goal<PpString>, CoqCodeExecError>;
 export type CoqCommandExecResult = Result<string[], CoqCodeExecError>;
 
 /**
- * Logic is similar to CoqProofChecker, yet, I decided
- * not to add them up, as the server project is now
- * experimental and I want to keep the changes to the
- * initial codebase minimal.
+ * Logic is similar to CoqProofChecker, yet, they
+ * are not being mixed together yet,
+ * as the server project is experimental
+ * for now.
  */
 export interface CoqCodeExecutorInterface {
     /**
@@ -38,6 +38,14 @@ export interface CoqCodeExecutorInterface {
         coqCode: string
     ): Promise<CoqCodeExecGoalResult>;
 
+    /**
+     * Executes the given Coq command in the specified environment
+     * and returns the messages that were produced by the command.
+     * @param sourceDirPath Parent directory of the source file
+     * @param sourceFileContentPrefix Prefix with which to typecheck the code
+     * @param prefixEndPosition The position after the prefix end
+     * @param coqCommand Coq command to execute
+     */
     executeCoqCommand(
         sourceDirPath: string,
         sourceFileContentPrefix: string[],
@@ -163,7 +171,9 @@ export class CoqCodeExecutor implements CoqCodeExecutorInterface {
         }
     }
 
-    private formatLspMessages(messages: PpString[] | Message<PpString>[]): string[] {
+    private formatLspMessages(
+        messages: PpString[] | Message<PpString>[]
+    ): string[] {
         return messages.map((message) => {
             if (typeof message === "string") {
                 return message;
@@ -208,7 +218,7 @@ export class CoqCodeExecutor implements CoqCodeExecutorInterface {
         unlinkSync(auxFileUri.fsPath);
 
         if (!(message instanceof Error)) {
-            return Ok(this.formatLspMessages(message));   
+            return Ok(this.formatLspMessages(message));
         } else {
             return Err(message.message);
         }
