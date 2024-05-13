@@ -18,7 +18,10 @@ import {
 import { estimateTimeToBecomeAvailableDefault } from "./utils/defaultAvailabilityEstimator";
 import { GenerationsLogger } from "./utils/generationsLogger/generationsLogger";
 import { LoggerRecord } from "./utils/generationsLogger/loggerRecord";
-import { ParamsResolutionResult, ParamsResolver } from "./utils/paramsResolver";
+import {
+    ParamsResolutionResult,
+    ParamsResolver,
+} from "./utils/paramsResolvers/abstractResolvers";
 import { Time } from "./utils/time";
 
 export interface ProofVersion {

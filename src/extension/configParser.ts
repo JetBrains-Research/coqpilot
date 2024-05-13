@@ -4,7 +4,7 @@ import { WorkspaceConfiguration, workspace } from "vscode";
 import { LLMServices } from "../llm/llmServices";
 import { LLMService } from "../llm/llmServices/llmService";
 import { ModelParams, ModelsParams } from "../llm/llmServices/modelParams";
-import { SingleParamResolutionResult } from "../llm/llmServices/utils/singleParamResolver";
+import { SingleParamResolutionResult } from "../llm/llmServices/utils/paramsResolvers/abstractResolvers";
 import {
     GrazieUserModelParams,
     LMStudioUserModelParams,

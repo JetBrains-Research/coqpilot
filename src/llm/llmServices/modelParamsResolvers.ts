@@ -4,6 +4,7 @@ import {
     OpenAiUserModelParams,
     PredefinedProofsUserModelParams,
     UserModelParams,
+    UserMultiroundProfile,
 } from "../userModelParams";
 
 import { GrazieService } from "./grazie/grazieService";
@@ -15,59 +16,27 @@ import {
     OpenAiModelParams,
     PredefinedProofsModelParams,
 } from "./modelParams";
-import { ParamsResolver } from "./utils/paramsResolver";
+import { ValidationRules } from "./utils/paramsResolvers/builders";
+import { ParamsResolverImpl } from "./utils/paramsResolvers/paramsResolverImpl";
 
-export class BasicModelParamsResolver<
-    InputType extends UserModelParams,
-    ResolveToType extends ModelParams,
-> extends ParamsResolver<InputType, ResolveToType> {
-    readonly modelId = this.resolveParam<string>("modelId")
-        .requiredToBeConfigured()
-        .noValidationNeeded();
+export class BasicMultiroundProfileResolver extends ParamsResolverImpl<
+    UserMultiroundProfile,
+    MultiroundProfile
+> {
+    readonly maxRoundsNumber = this.resolveParam<number>("maxRoundsNumber")
+        .default(() => defaultMultiroundProfile.maxRoundsNumber)
+        .validate(ValidationRules.bePositiveNumber);
 
-    readonly systemPrompt = this.resolveParam<string>("systemPrompt")
-        .default(() => defaultSystemMessageContent)
-        .noValidationNeeded();
-
-    readonly maxTokensToGenerate = this.resolveParam<number>(
-        "maxTokensToGenerate"
+    readonly defaultProofFixChoices = this.resolveParam<number>(
+        "proofFixChoices"
     )
-        .requiredToBeConfigured()
-        .validate([(value) => value > 0, "be positive"]);
+        .default(() => defaultMultiroundProfile.defaultProofFixChoices)
+        .validate(ValidationRules.bePositiveNumber);
 
-    readonly tokensLimit = this.resolveParam<number>("tokensLimit")
-        .requiredToBeConfigured()
-        .validate([(value) => value > 0, "be positive"]);
-
-    readonly multiroundProfile = this.resolveParam<MultiroundProfile>(
-        "multiroundProfile"
-    )
-        .default((userModelParams) => {
-            const userMultiroundProfile = userModelParams.multiroundProfile;
-            return {
-                maxRoundsNumber:
-                    userMultiroundProfile?.maxRoundsNumber ??
-                    defaultMultiroundProfile.maxRoundsNumber,
-                defaultProofFixChoices:
-                    userMultiroundProfile?.proofFixChoices ??
-                    defaultMultiroundProfile.defaultProofFixChoices,
-                proofFixPrompt:
-                    userMultiroundProfile?.proofFixPrompt ??
-                    defaultMultiroundProfile.proofFixPrompt,
-            };
-        })
-        .validate(
-            [(profile) => profile.maxRoundsNumber > 0, "be positive"],
-            [(profile) => profile.defaultProofFixChoices > 0, "be positive"]
-        );
-
-    readonly defaultChoices = this.resolveParam<number>("choices")
-        .requiredToBeConfigured()
-        .validate([(value) => value > 0, "be positive"]);
+    readonly proofFixPrompt = this.resolveParam<string>("proofFixPrompt")
+        .default(() => defaultMultiroundProfile.proofFixPrompt)
+        .noValidationNeeded();
 }
-
-export const defaultSystemMessageContent: string =
-    "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'.";
 
 /**
  * Properties of `defaultMultiroundProfile` can be used separately.
@@ -81,6 +50,41 @@ export const defaultMultiroundProfile: MultiroundProfile = {
     proofFixPrompt:
         "Unfortunately, the last proof is not correct. Here is the compiler's feedback: `${diagnostic}`. Please, fix the proof.",
 };
+
+export class BasicModelParamsResolver<
+    InputType extends UserModelParams,
+    ResolveToType extends ModelParams,
+> extends ParamsResolverImpl<InputType, ResolveToType> {
+    readonly modelId = this.resolveParam<string>("modelId")
+        .requiredToBeConfigured()
+        .noValidationNeeded();
+
+    readonly systemPrompt = this.resolveParam<string>("systemPrompt")
+        .default(() => defaultSystemMessageContent)
+        .noValidationNeeded();
+
+    readonly maxTokensToGenerate = this.resolveParam<number>(
+        "maxTokensToGenerate"
+    )
+        .requiredToBeConfigured()
+        .validate(ValidationRules.bePositiveNumber);
+
+    readonly tokensLimit = this.resolveParam<number>("tokensLimit")
+        .requiredToBeConfigured()
+        .validate(ValidationRules.bePositiveNumber);
+
+    readonly multiroundProfile = this.resolveNestedParams(
+        "multiroundProfile",
+        new BasicMultiroundProfileResolver()
+    );
+
+    readonly defaultChoices = this.resolveParam<number>("choices")
+        .requiredToBeConfigured()
+        .validate(ValidationRules.bePositiveNumber);
+}
+
+export const defaultSystemMessageContent: string =
+    "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'.";
 
 export class PredefinedProofsModelParamsResolver extends BasicModelParamsResolver<
     PredefinedProofsUserModelParams,
@@ -120,14 +124,10 @@ export class PredefinedProofsModelParamsResolver extends BasicModelParamsResolve
             `always equals to the total number of \`tactics\``
         )
         .requiredToBeConfigured()
-        .validate(
-            [(value) => value > 0, "be positive"],
-            [
-                (value, userModelParams) =>
-                    value <= userModelParams.tactics.length,
-                "be less than or equal to the total number of `tactics`",
-            ]
-        );
+        .validate(ValidationRules.bePositiveNumber, [
+            (value, userModelParams) => value <= userModelParams.tactics.length,
+            "be less than or equal to the total number of `tactics`",
+        ]);
 }
 
 export class OpenAiModelParamsResolver extends BasicModelParamsResolver<
@@ -153,11 +153,11 @@ export class OpenAiModelParamsResolver extends BasicModelParamsResolver<
         "maxTokensToGenerate"
     )
         .requiredToBeConfigured() // TODO
-        .validate([(value) => value > 0, "be positive"]);
+        .validate(ValidationRules.bePositiveNumber);
 
     readonly tokensLimit = this.resolveParam<number>("tokensLimit")
         .requiredToBeConfigured() // TODO
-        .validate([(value) => value > 0, "be positive"]);
+        .validate(ValidationRules.bePositiveNumber);
 }
 
 export class GrazieModelParamsResolver extends BasicModelParamsResolver<
@@ -180,7 +180,7 @@ export class GrazieModelParamsResolver extends BasicModelParamsResolver<
             `is always "${GrazieService.maxTokensToGeneratePredefined}" for \`GrazieService\``
         )
         .requiredToBeConfigured()
-        .validate([(value) => value > 0, "be positive"]);
+        .validate(ValidationRules.bePositiveNumber);
 }
 
 export class LMStudioModelParamsResolver extends BasicModelParamsResolver<

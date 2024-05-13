@@ -1,3 +1,10 @@
+import {
+    AbstractSingleParamResolverImpl,
+    ParamsResolver,
+} from "./abstractResolvers";
+import { SingleParamResolutionResult } from "./abstractResolvers";
+import { accessParamByName } from "./paramAccessor";
+
 export function resolveParam<InputType, T>(
     inputParamName: string
 ): SingleParamResolverBuilder<InputType, T> {
@@ -14,18 +21,6 @@ export function insertParam<InputType, T>(
     );
 }
 
-// Note: undefined should be returned iff this step is skipped at resolution
-export type ValueBuilder<InputType, T> = (
-    inputParams: InputType
-) => T | undefined;
-export type StrictValueBuilder<InputType, T> = (inputParams: InputType) => T;
-
-export type ValidationRule<InputType, T> = [Validator<InputType, T>, string];
-export type Validator<InputType, T> = (
-    value: T,
-    inputParams: InputType
-) => boolean;
-
 export interface SingleParamResolverBuilder<InputType, T> {
     override(
         valueBuilder: ValueBuilder<InputType, T>,
@@ -34,7 +29,7 @@ export interface SingleParamResolverBuilder<InputType, T> {
 
     overrideWithMock(
         valueBuilder: StrictValueBuilder<InputType, T>
-    ): SingleParamResolver<InputType, T>;
+    ): ParamsResolver<InputType, T>;
 
     default(
         valueBuilder: ValueBuilder<InputType, T>,
@@ -47,35 +42,33 @@ export interface SingleParamResolverBuilder<InputType, T> {
 export interface SingleParamWithValueResolverBuilder<InputType, T> {
     validate(
         ...validationRules: ValidationRule<InputType, T>[]
-    ): SingleParamResolver<InputType, T>;
+    ): ParamsResolver<InputType, T>;
 
-    noValidationNeeded(): SingleParamResolver<InputType, T>;
+    noValidationNeeded(): ParamsResolver<InputType, T>;
 
-    validateAtRuntimeOnly(): SingleParamResolver<InputType, T>;
+    validateAtRuntimeOnly(): ParamsResolver<InputType, T>;
 }
 
-export interface SingleParamResolver<InputType, T> {
-    resolve(inputParams: InputType): SingleParamResolutionResult<T>;
+// Note: undefined should be returned iff this step is skipped at resolution
+export type ValueBuilder<InputType, T> = (
+    inputParams: InputType
+) => T | undefined;
+export type StrictValueBuilder<InputType, T> = (inputParams: InputType) => T;
+
+export type ValidationRule<InputType, T> = [Validator<InputType, T>, string];
+export type Validator<InputType, T> = (
+    value: T,
+    inputParams: InputType
+) => boolean;
+
+export namespace ValidationRules {
+    export const bePositiveNumber: ValidationRule<any, number> = [
+        (value: number) => value > 0,
+        "be positive",
+    ];
 }
 
-export interface SingleParamResolutionResult<T> {
-    inputParamName?: string;
-    resultValue?: T;
-    isInvalidCause?: string;
-    inputReadCorrectly: ResolutionActionResult<T>;
-    overriden: ResolutionActionDetailedResult<T>;
-    resolvedWithDefault: ResolutionActionResult<T>;
-}
-
-export interface ResolutionActionResult<T> {
-    wasPerformed: boolean;
-    withValue?: T;
-}
-
-export interface ResolutionActionDetailedResult<T>
-    extends ResolutionActionResult<T> {
-    message?: string;
-}
+// builder's implementation below >>>>>>>>>>>>>>>>>>>>>>
 
 interface Overrider<InputType, T> {
     valueBuilder: ValueBuilder<InputType, T>;
@@ -111,7 +104,7 @@ class SingleParamResolverBuilderImpl<InputType, T>
 
     overrideWithMock(
         valueBuilder: StrictValueBuilder<InputType, T>
-    ): SingleParamResolver<InputType, T> {
+    ): ParamsResolver<InputType, T> {
         return new SingleParamResolverImpl(
             this.inputParamName,
             {
@@ -160,7 +153,7 @@ class SingleParamWithValueResolverBuilderImpl<InputType, T>
 
     validate(
         ...validationRules: ValidationRule<InputType, T>[]
-    ): SingleParamResolver<InputType, T> {
+    ): ParamsResolver<InputType, T> {
         return new SingleParamResolverImpl(
             this.inputParamName,
             this.overrider,
@@ -169,7 +162,7 @@ class SingleParamWithValueResolverBuilderImpl<InputType, T>
         );
     }
 
-    noValidationNeeded(): SingleParamResolver<InputType, T> {
+    noValidationNeeded(): ParamsResolver<InputType, T> {
         return new SingleParamResolverImpl(
             this.inputParamName,
             this.overrider,
@@ -178,24 +171,27 @@ class SingleParamWithValueResolverBuilderImpl<InputType, T>
         );
     }
 
-    validateAtRuntimeOnly(): SingleParamResolver<InputType, T> {
+    validateAtRuntimeOnly(): ParamsResolver<InputType, T> {
         return this.noValidationNeeded();
     }
 }
 
-class SingleParamResolverImpl<InputType, T>
-    implements SingleParamResolver<InputType, T>
-{
+export class SingleParamResolverImpl<
+    InputType,
+    T,
+> extends AbstractSingleParamResolverImpl<InputType, T> {
     constructor(
         private readonly inputParamName?: string,
         private readonly overrider?: Overrider<InputType, T>,
         private readonly defaultResolver?: DefaultResolver<InputType, T>,
         private readonly validationRules: ValidationRule<InputType, T>[] = [],
         private readonly overridenWithMockValue: boolean = false
-    ) {}
+    ) {
+        super();
+    }
 
     // Note: unfortunately, the language does not allow to validate the type of the parameter properly
-    resolve(inputParams: InputType): SingleParamResolutionResult<T> {
+    resolveParam(inputParams: InputType): SingleParamResolutionResult<T> {
         const result: SingleParamResolutionResult<T> = {
             inputParamName: this.inputParamName,
             resultValue: undefined,
@@ -213,13 +209,7 @@ class SingleParamResolverImpl<InputType, T>
         let value: T | undefined = undefined;
         let resultIsComplete = false;
 
-        [value, resultIsComplete] = this.tryToReadInputValue(
-            inputParams,
-            result
-        );
-        if (resultIsComplete) {
-            return result;
-        }
+        value = this.tryToReadInputValue(inputParams, result);
 
         [value, resultIsComplete] = this.tryToResolveWithOverrider(
             inputParams,
@@ -258,20 +248,16 @@ class SingleParamResolverImpl<InputType, T>
         return result;
     }
 
-    // returns true if `result` is already complete, false otherwise
-    private tryToReadInputValue(
+    protected tryToReadInputValue(
         inputParams: InputType,
         result: SingleParamResolutionResult<T>
-    ): [T | undefined, boolean] {
+    ): T | undefined {
         if (this.inputParamName === undefined) {
-            return [undefined, false];
+            return undefined;
         }
-        const userValue = this.accessParamByName(
-            inputParams,
-            this.inputParamName
-        );
+        const userValue = accessParamByName(inputParams, this.inputParamName);
         if (userValue === undefined) {
-            return [undefined, false];
+            return undefined;
         }
         // if user specified value, then take it
         const userValueAsT = userValue as T;
@@ -280,35 +266,13 @@ class SingleParamResolverImpl<InputType, T>
                 wasPerformed: true,
                 withValue: userValueAsT,
             };
-            return [userValueAsT, false];
+            return userValueAsT;
         } else {
             // unfortunately, this case is unreachable: TypeScript does not provide the way to check that `userValue` is of `T` type indeed
             throw Error(
                 `cast of \`any\` to generic \`T\` type should always succeed, value = "${userValue}" for ${this.quotedName()} parameter`
             );
         }
-    }
-
-    private accessParamByName(
-        inputParams: InputType,
-        inputParamNameInDotNotation: string
-    ): any {
-        const propertiesNames = inputParamNameInDotNotation.split(".");
-        let accessedProperty: any = inputParams;
-        for (const propertyName of propertiesNames) {
-            const accessKey = propertyName as keyof typeof accessedProperty;
-            if (
-                accessedProperty === undefined ||
-                accessedProperty === null ||
-                accessKey === null
-            ) {
-                throw Error(
-                    `resolver of ${this.quotedName()} is configured incorrectly: failed to access this property in "${JSON.stringify(inputParams)}" input params`
-                );
-            }
-            accessedProperty = accessedProperty[accessKey];
-        }
-        return accessedProperty;
     }
 
     // override value (it could be overriden with undefined, so as to force resolution with default)
