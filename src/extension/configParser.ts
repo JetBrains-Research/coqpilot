@@ -233,8 +233,8 @@ function resolveParamsAndShowResolutionLogs<
             }
         }
 
-        if (resolutionResult.resolvedParams !== undefined) {
-            resolvedParamsList.push(resolutionResult.resolvedParams);
+        if (resolutionResult.resolved !== undefined) {
+            resolvedParamsList.push(resolutionResult.resolved);
         }
     }
     return resolvedParamsList;

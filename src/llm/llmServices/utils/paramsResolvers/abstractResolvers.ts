@@ -30,7 +30,7 @@ export interface ResolutionActionDetailedResult<T>
     message?: string;
 }
 
-export abstract class AbstractSingleParamResolverImpl<InputType, T>
+export abstract class AbstractSingleParamResolver<InputType, T>
     implements SingleParamResolver<InputType, T>, ParamsResolver<InputType, T>
 {
     abstract resolveParam(

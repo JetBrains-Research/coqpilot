@@ -1,7 +1,4 @@
-import {
-    AbstractSingleParamResolverImpl,
-    ParamsResolver,
-} from "./abstractResolvers";
+import { AbstractSingleParamResolver } from "./abstractResolvers";
 import { SingleParamResolutionResult } from "./abstractResolvers";
 import { accessParamByName } from "./paramAccessor";
 
@@ -11,7 +8,7 @@ export function resolveParam<InputType, T>(
     return new SingleParamResolverBuilderImpl(inputParamName);
 }
 
-export function insertParam<InputType, T>(
+export function newParam<InputType, T>(
     valueBuilder: StrictValueBuilder<InputType, T>
 ): SingleParamWithValueResolverBuilder<InputType, T> {
     return new SingleParamWithValueResolverBuilderImpl(
@@ -29,7 +26,7 @@ export interface SingleParamResolverBuilder<InputType, T> {
 
     overrideWithMock(
         valueBuilder: StrictValueBuilder<InputType, T>
-    ): ParamsResolver<InputType, T>;
+    ): AbstractSingleParamResolver<InputType, T>;
 
     default(
         valueBuilder: ValueBuilder<InputType, T>,
@@ -42,11 +39,11 @@ export interface SingleParamResolverBuilder<InputType, T> {
 export interface SingleParamWithValueResolverBuilder<InputType, T> {
     validate(
         ...validationRules: ValidationRule<InputType, T>[]
-    ): ParamsResolver<InputType, T>;
+    ): AbstractSingleParamResolver<InputType, T>;
 
-    noValidationNeeded(): ParamsResolver<InputType, T>;
+    noValidationNeeded(): AbstractSingleParamResolver<InputType, T>;
 
-    validateAtRuntimeOnly(): ParamsResolver<InputType, T>;
+    validateAtRuntimeOnly(): AbstractSingleParamResolver<InputType, T>;
 }
 
 // Note: undefined should be returned iff this step is skipped at resolution
@@ -104,7 +101,7 @@ class SingleParamResolverBuilderImpl<InputType, T>
 
     overrideWithMock(
         valueBuilder: StrictValueBuilder<InputType, T>
-    ): ParamsResolver<InputType, T> {
+    ): AbstractSingleParamResolver<InputType, T> {
         return new SingleParamResolverImpl(
             this.inputParamName,
             {
@@ -153,7 +150,7 @@ class SingleParamWithValueResolverBuilderImpl<InputType, T>
 
     validate(
         ...validationRules: ValidationRule<InputType, T>[]
-    ): ParamsResolver<InputType, T> {
+    ): AbstractSingleParamResolver<InputType, T> {
         return new SingleParamResolverImpl(
             this.inputParamName,
             this.overrider,
@@ -162,7 +159,7 @@ class SingleParamWithValueResolverBuilderImpl<InputType, T>
         );
     }
 
-    noValidationNeeded(): ParamsResolver<InputType, T> {
+    noValidationNeeded(): AbstractSingleParamResolver<InputType, T> {
         return new SingleParamResolverImpl(
             this.inputParamName,
             this.overrider,
@@ -171,7 +168,7 @@ class SingleParamWithValueResolverBuilderImpl<InputType, T>
         );
     }
 
-    validateAtRuntimeOnly(): ParamsResolver<InputType, T> {
+    validateAtRuntimeOnly(): AbstractSingleParamResolver<InputType, T> {
         return this.noValidationNeeded();
     }
 }
@@ -179,7 +176,7 @@ class SingleParamWithValueResolverBuilderImpl<InputType, T>
 export class SingleParamResolverImpl<
     InputType,
     T,
-> extends AbstractSingleParamResolverImpl<InputType, T> {
+> extends AbstractSingleParamResolver<InputType, T> {
     constructor(
         private readonly inputParamName?: string,
         private readonly overrider?: Overrider<InputType, T>,

@@ -4,7 +4,7 @@ import {
     SingleParamResolverBuilder,
     SingleParamWithValueResolverBuilder,
     StrictValueBuilder,
-    insertParam,
+    newParam,
     resolveParam,
 } from "./builders";
 import { accessParamByName } from "./paramAccessor";
@@ -26,9 +26,11 @@ export class ParamsResolverImpl<InputType, ResolveToType>
     protected insertParam<T>(
         valueBuilder: StrictValueBuilder<InputType, T>
     ): SingleParamWithValueResolverBuilder<InputType, T> {
-        return insertParam<InputType, T>(valueBuilder);
+        return newParam<InputType, T>(valueBuilder);
     }
 
+    // TODO: enhance this method and builders to make resolution-with-default possible for nested objects
+    // (for example: all props of nested object are required, but in top-level object this nested param is in general optional)
     protected resolveNestedParams<ParamInputType, T>(
         inputParamName: string,
         nestedParamsResolver: ParamsResolver<ParamInputType, T>
@@ -66,7 +68,12 @@ export class ParamsResolverImpl<InputType, ResolveToType>
                 continue;
             }
             const paramResolver = this[prop] as ParamsResolver<InputType, any>;
-            if (paramResolver === null) {
+            // Note: unfortunately, type-check always passes :(
+            // Thus, at least having a `resolve` function is checked.
+            if (
+                paramResolver === null ||
+                typeof paramResolver.resolve !== "function"
+            ) {
                 throw Error(
                     `\`ParamsResolver\` is configured incorrectly because of "${prop}": all properties should be built up to \`ParamsResolver<InputType, any>\` type`
                 );
@@ -86,6 +93,8 @@ export class ParamsResolverImpl<InputType, ResolveToType>
             };
         }
 
+        // Note: CRITICAL PROBLEM - this check does not work in runtime :(
+        // TODO: find a way to improve params resolver
         const resolvedParams = resolvedParamsObject as ResolveToType;
         if (resolvedParams === null) {
             throw new Error(
