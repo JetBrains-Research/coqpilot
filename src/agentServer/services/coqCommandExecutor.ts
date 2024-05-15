@@ -10,7 +10,10 @@ import { Goal, Message, PpString } from "../../coqLsp/coqLspTypes";
 import { Uri } from "../../utils/uri";
 
 export type CoqCodeExecError = string;
-export type CoqCodeExecGoalResult = Result<Goal<PpString>, CoqCodeExecError>;
+export type CoqCodeExecGoalResult = Result<
+    Goal<PpString> | undefined,
+    CoqCodeExecError
+>;
 export type CoqCommandExecResult = Result<string[], CoqCodeExecError>;
 
 /**
@@ -147,6 +150,7 @@ export class CoqCodeExecutor implements CoqCodeExecutorInterface {
         );
 
         if (diagnostic) {
+            unlinkSync(auxFileUri.fsPath);
             return Err(diagnostic);
         }
 
@@ -167,7 +171,7 @@ export class CoqCodeExecutor implements CoqCodeExecutorInterface {
         if (!(goal instanceof Error)) {
             return Ok(goal);
         } else {
-            return Err(goal.message);
+            return Ok(undefined);
         }
     }
 
@@ -201,6 +205,7 @@ export class CoqCodeExecutor implements CoqCodeExecutorInterface {
         );
 
         if (diagnostic) {
+            unlinkSync(auxFileUri.fsPath);
             return Err(diagnostic);
         }
 

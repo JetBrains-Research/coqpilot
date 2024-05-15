@@ -135,12 +135,20 @@ export class CoqProjectController {
             filePath,
             coqCommand
         );
-        return {
-            command: coqCommand,
-            result:
-                execResult === undefined
-                    ? "Proof is complete. No goals left."
-                    : execResult,
-        };
+        if (execResult.err) {
+            return {
+                command: coqCommand,
+                result: `Failed to type check the proof with error: ${execResult.val}`,
+            };
+        } else {
+            const goal = execResult.val;
+            return {
+                command: coqCommand,
+                result:
+                    goal === undefined
+                        ? "Proof is complete. No goals left."
+                        : goal,
+            };
+        }
     }
 }

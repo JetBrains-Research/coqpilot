@@ -2,7 +2,7 @@ import { Injectable } from "@tsed/di";
 import { BadRequest } from "@tsed/exceptions";
 import { lstatSync, readFileSync, readdirSync } from "fs";
 import * as path from "path";
-import { Result } from "ts-results";
+import { Err, Ok, Result } from "ts-results";
 import { Position } from "vscode-languageclient";
 
 import { CoqLspClient } from "../../coqLsp/coqLspClient";
@@ -11,7 +11,7 @@ import { CoqLspConfig } from "../../coqLsp/coqLspConfig";
 import { parseCoqFile } from "../../coqParser/parseCoqFile";
 import { Theorem } from "../../coqParser/parsedTypes";
 import { Uri } from "../../utils/uri";
-import { ApiGoal } from "../models/apiGoal";
+import { CheckProofResult } from "../models/apiGoal";
 import { CoqFile } from "../models/coqFile";
 
 import { CoqCodeExecError, CoqCodeExecutor } from "./coqCommandExecutor";
@@ -138,7 +138,7 @@ export class CoqProjectObserverService {
     async checkCoqProof(
         filePath: string,
         coqCode: string
-    ): Promise<ApiGoal | undefined> {
+    ): Promise<CheckProofResult> {
         const coqCodeExecutor = new CoqCodeExecutor(this.coqLspClient);
         const result = await this.executeCoqCode(
             filePath,
@@ -148,14 +148,18 @@ export class CoqProjectObserverService {
 
         if (result.ok) {
             const goal = result.val;
-            return {
-                hypothesis: goal.hyps.map(
-                    (hyp) => `${hyp.names.join(" ")} : ${hyp.ty}`
-                ),
-                conclusion: goal.ty as string,
-            };
+            if (!goal) {
+                return Ok(undefined);
+            } else {
+                return Ok({
+                    hypothesis: goal.hyps.map(
+                        (hyp) => `${hyp.names.join(" ")} : ${hyp.ty}`
+                    ),
+                    conclusion: goal.ty as string,
+                });
+            }
         } else {
-            return undefined;
+            return Err(result.val);
         }
     }
 
