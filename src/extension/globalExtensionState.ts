@@ -22,7 +22,7 @@ export class GlobalExtensionState {
     );
 
     public readonly llmServicesLogsDir = path.join(
-        tmp.dirSync.name,
+        tmp.dirSync().name,
         "llm-services-logs"
     );
 
