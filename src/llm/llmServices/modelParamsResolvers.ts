@@ -124,10 +124,14 @@ export class PredefinedProofsModelParamsResolver extends BasicModelParamsResolve
             `always equals to the total number of \`tactics\``
         )
         .requiredToBeConfigured()
-        .validate(ValidationRules.bePositiveNumber, [
-            (value, userModelParams) => value <= userModelParams.tactics.length,
-            "be less than or equal to the total number of `tactics`",
-        ]);
+        .validate(
+            [(value) => value >= 0, "be non-negative"],
+            [
+                (value, userModelParams) =>
+                    value <= userModelParams.tactics.length,
+                "be less than or equal to the total number of `tactics`",
+            ]
+        );
 }
 
 export class OpenAiModelParamsResolver extends BasicModelParamsResolver<
@@ -187,10 +191,6 @@ export class LMStudioModelParamsResolver extends BasicModelParamsResolver<
     LMStudioUserModelParams,
     LMStudioModelParams
 > {
-    readonly modelName = this.resolveParam<string>("modelName")
-        .requiredToBeConfigured()
-        .validateAtRuntimeOnly();
-
     readonly temperature = this.resolveParam<number>("temperature")
         .requiredToBeConfigured()
         .validateAtRuntimeOnly();
