@@ -92,7 +92,7 @@ export class PredefinedProofsModelParamsResolver extends BasicModelParamsResolve
 > {
     readonly tactics = this.resolveParam<string[]>("tactics")
         .requiredToBeConfigured()
-        .validate([(value) => value.length > 0, "be not empty"]);
+        .validate([(value) => value.length > 0, "be non-empty"]);
 
     readonly systemPrompt = this.resolveParam<string>(
         "systemPrompt"
@@ -118,7 +118,7 @@ export class PredefinedProofsModelParamsResolver extends BasicModelParamsResolve
         };
     });
 
-    readonly defaultChoices = this.resolveParam<number>("defaultChoices")
+    readonly defaultChoices = this.resolveParam<number>("choices")
         .override(
             (userModelParams) => userModelParams.tactics.length,
             `always equals to the total number of \`tactics\``

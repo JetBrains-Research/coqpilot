@@ -187,7 +187,7 @@ function validateModelsArePresent<T>(allModels: T[]) {
     if (allModels.length === 0) {
         throw new SettingsValidationError(
             "no models specified for proof generation",
-            "No models are chosen. Please specify at least one in the settings.",
+            "No valid models are chosen. Please specify at least one in the settings.",
             pluginId,
             "warning"
         );
@@ -243,18 +243,30 @@ function resolveParamsAndShowResolutionLogs<
 function buildResolutionHistory(
     paramLog: SingleParamResolutionResult<any>
 ): string {
+    const inputReadPerformed = paramLog.inputReadCorrectly.wasPerformed;
+    const overridePerformed = paramLog.overriden.wasPerformed;
+    const withDefaultPerformed = paramLog.resolvedWithDefault.wasPerformed;
+
+    const onlySuccessfulRead =
+        inputReadPerformed && !overridePerformed && !withDefaultPerformed;
+    if (onlySuccessfulRead) {
+        return "";
+    }
     const inputRead = paramLog.inputReadCorrectly.wasPerformed
-        ? `read "${paramLog.inputReadCorrectly.withValue}"`
+        ? `read "${JSON.stringify(paramLog.inputReadCorrectly.withValue)}"`
         : "no input value read";
     const withOverride = paramLog.overriden.wasPerformed
-        ? `, overriden with ${paramLog.overriden.withValue}`
+        ? `, overriden with ${JSON.stringify(paramLog.overriden.withValue)}`
         : "";
     const withDefault = paramLog.resolvedWithDefault.wasPerformed
-        ? `, resolved with default "${paramLog.resolvedWithDefault.withValue}"`
+        ? `, resolved with default "${JSON.stringify(paramLog.resolvedWithDefault.withValue)}"`
         : "";
-    return paramLog.inputReadCorrectly.wasPerformed ||
-        paramLog.overriden.wasPerformed ||
-        paramLog.resolvedWithDefault.wasPerformed
+
+    const onlyFailedRead =
+        !inputReadPerformed && !overridePerformed && !withDefaultPerformed;
+    const anyResolutionActionPerformed =
+        overridePerformed || withDefaultPerformed;
+    return onlyFailedRead || anyResolutionActionPerformed
         ? `; value's resolution: ${inputRead}${withOverride}${withDefault}`
         : "";
 }

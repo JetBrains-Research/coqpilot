@@ -43,7 +43,7 @@ export class MockLLMModelParamsResolver extends BasicModelParamsResolver<
 > {
     readonly proofsToGenerate = this.resolveParam<string[]>("proofsToGenerate")
         .requiredToBeConfigured()
-        .validate([(value) => value.length > 0, "be not empty"]);
+        .validate([(value) => value.length > 0, "be non-empty"]);
 
     readonly workerId = this.resolveParam<number>("workerId")
         .default(() => 0)
