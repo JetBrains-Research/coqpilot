@@ -1,10 +1,7 @@
 import { expect } from "earl";
 
 import { AnalyzedChatHistory } from "../../../../llm/llmServices/chat";
-import {
-    ErrorsHandlingMode,
-    GeneratedProof,
-} from "../../../../llm/llmServices/llmService";
+import { ErrorsHandlingMode } from "../../../../llm/llmServices/llmService";
 
 import {
     mockChat,
@@ -57,7 +54,7 @@ suite("[LLMService] Test `GeneratedProof`", () => {
                 maxRoundsNumber: 2,
 
                 // will be overriden at calls
-                proofFixChoices: 1,
+                defaultProofFixChoices: 1,
 
                 // makes MockLLMService generate `Fixed.` proofs if is found in sent chat
                 proofFixPrompt: MockLLMService.proofFixPrompt,
@@ -180,11 +177,14 @@ suite("[LLMService] Test `GeneratedProof`", () => {
         _mockService: MockLLMService,
         _mockParams: MockLLMModelParams,
         errorsHandlingMode: ErrorsHandlingMode,
-        preparedData?: any
+        preparedData?: MockLLMGeneratedProof
     ): Promise<string[]> {
-        const initialGeneratedProof = preparedData as GeneratedProof;
-        expect(initialGeneratedProof).toBeTruthy();
-
+        const initialGeneratedProof = preparedData;
+        if (initialGeneratedProof === undefined) {
+            throw Error(
+                `test is configured incorrectly: \`fixProof\` got "undefined" as \`preparedData\` instead of \`MockLLMGeneratedProof\``
+            );
+        }
         const fixedGeneratedProofs = await initialGeneratedProof.fixProof(
             "Proof was incorrect",
             1,
@@ -199,7 +199,7 @@ suite("[LLMService] Test `GeneratedProof`", () => {
     async function prepareData(
         mockService: MockLLMService,
         basicMockParams: MockLLMModelParams
-    ): Promise<GeneratedProof> {
+    ): Promise<MockLLMGeneratedProof> {
         const initialGeneratedProof = await constructInitialGeneratedProof(
             mockService,
             basicMockParams

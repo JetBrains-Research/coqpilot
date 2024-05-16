@@ -1,10 +1,7 @@
 import { expect } from "earl";
 
 import { ConfigurationError } from "../../../../llm/llmServiceErrors";
-import {
-    ErrorsHandlingMode,
-    GeneratedProof,
-} from "../../../../llm/llmServices/llmService";
+import { ErrorsHandlingMode } from "../../../../llm/llmServices/llmService";
 
 import { EventLogger } from "../../../../logging/eventLogger";
 import {
@@ -24,6 +21,7 @@ import {
     expectLogs,
 } from "../../llmSpecificTestUtils/expectLogs";
 import {
+    MockLLMGeneratedProof,
     MockLLMModelParams,
     MockLLMService,
 } from "../../llmSpecificTestUtils/mockLLMService";
@@ -109,7 +107,7 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
 
                 const withFixesMockParams = enhanceMockParams(basicMockParams, {
                     maxRoundsNumber: 2,
-                    proofFixChoices: 3,
+                    defaultProofFixChoices: 3,
 
                     // makes MockLLMService generate `Fixed.` proofs if is found in sent chat
                     proofFixPrompt: MockLLMService.proofFixPrompt,
@@ -128,7 +126,8 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
                     const fixedGeneratedProofs =
                         await generatedProof.fixProof(diagnostic);
                     expect(fixedGeneratedProofs).toHaveLength(
-                        withFixesMockParams.multiroundProfile.proofFixChoices
+                        withFixesMockParams.multiroundProfile
+                            .defaultProofFixChoices
                     );
 
                     fixedGeneratedProofs.forEach((fixedGeneratedProof) => {
@@ -180,7 +179,7 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
 
     function updateExpectations(
         errorWasThrown: Error | undefined,
-        generatedProofs: GeneratedProof[],
+        generatedProofs: MockLLMGeneratedProof[],
         expectedProofsLength: number,
         expectedEvents: MockEventsTracker,
         expectedLogs?: ExpectedRecord[]
@@ -244,7 +243,7 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
         expect(testParams.newProofsOnEachIteration).toBeLessThanOrEqual(
             basicMockParams.proofsToGenerate.length
         );
-        basicMockParams.multiroundProfile.proofFixChoices =
+        basicMockParams.multiroundProfile.defaultProofFixChoices =
             testParams.proofFixChoices;
 
         const connectionError = Error("failed to reach server");
@@ -258,7 +257,7 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
                     workerId: w,
                 };
 
-                let toFixCandidates: GeneratedProof[] = [];
+                let toFixCandidates: MockLLMGeneratedProof[] = [];
                 for (let i = 0; i < testParams.iterationsPerWorker; i++) {
                     const throwError = throwErrorOnNextGeneration(
                         testParams.failedGenerationProbability,
@@ -319,7 +318,7 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
                                 throwError,
                                 fixedGeneratedProofs,
                                 basicMockParams.multiroundProfile
-                                    .proofFixChoices,
+                                    .defaultProofFixChoices,
                                 expectedEvents,
                                 expectedLogs
                             );

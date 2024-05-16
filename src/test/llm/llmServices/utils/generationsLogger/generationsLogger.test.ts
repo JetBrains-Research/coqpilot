@@ -38,10 +38,12 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
         tokensLimit: 1000000,
         multiroundProfile: {
             maxRoundsNumber: 1,
-            proofFixChoices: 1,
+            defaultProofFixChoices: 1,
             proofFixPrompt: "fix it",
         },
+        defaultChoices: 1,
     };
+    // different from `defaultChoices`, it's a real-life case
     const mockChoices = 2;
     const mockEstimatedTokens = 100;
     const mockChat: ChatHistory = [
