@@ -1,9 +1,6 @@
 import { expect } from "earl";
 
-import {
-    GeneratedProof,
-    ProofVersion,
-} from "../../../llm/llmServices/llmService";
+import { ProofVersion } from "../../../llm/llmServices/llmService";
 
 import { MockLLMGeneratedProof } from "./mockLLMService";
 
@@ -16,20 +13,19 @@ export interface ExpectedGeneratedProof {
 }
 
 export function expectGeneratedProof(
-    actual: GeneratedProof,
+    actual: MockLLMGeneratedProof,
     expected: ExpectedGeneratedProof
 ) {
-    const mockGeneratedProof = actual as MockLLMGeneratedProof;
-    expect(mockGeneratedProof.proof()).toEqual(expected.proof);
-    expect(mockGeneratedProof.versionNumber()).toEqual(expected.versionNumber);
-    expect(mockGeneratedProof.proofVersions).toEqual(expected.proofVersions);
+    expect(actual.proof()).toEqual(expected.proof);
+    expect(actual.versionNumber()).toEqual(expected.versionNumber);
+    expect(actual.proofVersions).toEqual(expected.proofVersions);
     if (expected.nextVersionCanBeGenerated !== undefined) {
-        expect(mockGeneratedProof.nextVersionCanBeGenerated()).toEqual(
+        expect(actual.nextVersionCanBeGenerated()).toEqual(
             expected.nextVersionCanBeGenerated
         );
     }
     if (expected.canBeFixed !== undefined) {
-        expect(mockGeneratedProof.canBeFixed()).toEqual(expected.canBeFixed);
+        expect(actual.canBeFixed()).toEqual(expected.canBeFixed);
     }
 }
 

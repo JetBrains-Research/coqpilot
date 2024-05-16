@@ -10,7 +10,7 @@ export interface ExpectedRecord {
 
 export function expectLogs(
     expectedRecords: ExpectedRecord[],
-    service: LLMService
+    service: LLMService<any, any>
 ) {
     const actualRecordsUnwrapped = service
         .readGenerationsLogs()

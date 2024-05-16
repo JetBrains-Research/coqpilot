@@ -21,8 +21,9 @@ export interface PreparedEnvironment {
     completionContexts: CompletionContext[];
     sourceFileEnvironment: SourceFileEnvironment;
 }
-// Note: both paths should be relative to `src/test/resources/` folder.
-
+/**
+ * Note: both paths should be relative to `src/test/resources/` folder.
+ */
 export async function prepareEnvironment(
     resourcePath: string[],
     projectRootPath?: string[]

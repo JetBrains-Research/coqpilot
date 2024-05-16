@@ -4,14 +4,16 @@ import {
 } from "../../../llm/llmServices/chat";
 import {
     ErrorsHandlingMode,
-    GeneratedProof,
-    LLMService,
+    GeneratedProofImpl,
+    LLMServiceImpl,
     LLMServiceInternal,
     ProofVersion,
 } from "../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
+import { BasicModelParamsResolver } from "../../../llm/llmServices/modelParamsResolvers";
 import { GenerationsLogger } from "../../../llm/llmServices/utils/generationsLogger/generationsLogger";
 import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
+import { UserModelParams } from "../../../llm/userModelParams";
 
 /**
  * Mock implementation that always throws on any proof-generation call.
@@ -19,8 +21,15 @@ import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
  *
  * Additionally, it accepts `GenerationsLogger` from outside, so no resources are needed to be cleaned with `dispose`.
  */
-export class DummyLLMService extends LLMService {
-    protected readonly internal: LLMServiceInternal;
+export class DummyLLMService extends LLMServiceImpl<
+    UserModelParams,
+    ModelParams,
+    DummyLLMService,
+    DummyGeneratedProof,
+    DummyLLMServiceInternal
+> {
+    protected readonly internal: DummyLLMServiceInternal;
+    protected readonly modelParamsResolver = new BasicModelParamsResolver();
 
     constructor(generationsLogger: GenerationsLogger) {
         super("DummyLLMService", undefined, true, undefined);
@@ -47,12 +56,17 @@ export class DummyLLMService extends LLMService {
         _params: ModelParams,
         _choices: number,
         _errorsHandlingMode?: ErrorsHandlingMode
-    ): Promise<GeneratedProof[]> {
+    ): Promise<DummyGeneratedProof[]> {
         throw Error("I'm a teapot");
     }
 }
 
-export class DummyGeneratedProof extends GeneratedProof {
+export class DummyGeneratedProof extends GeneratedProofImpl<
+    ModelParams,
+    DummyLLMService,
+    DummyGeneratedProof,
+    DummyLLMServiceInternal
+> {
     constructor(
         proof: string,
         proofGenerationContext: ProofGenerationContext,
@@ -73,18 +87,23 @@ export class DummyGeneratedProof extends GeneratedProof {
         _diagnostic: string,
         _choices?: number,
         _errorsHandlingMode?: ErrorsHandlingMode
-    ): Promise<GeneratedProof[]> {
+    ): Promise<DummyGeneratedProof[]> {
         throw Error("I'm a teapot");
     }
 }
 
-class DummyLLMServiceInternal extends LLMServiceInternal {
+class DummyLLMServiceInternal extends LLMServiceInternal<
+    ModelParams,
+    DummyLLMService,
+    DummyGeneratedProof,
+    DummyLLMServiceInternal
+> {
     constructGeneratedProof(
         _proof: string,
         _proofGenerationContext: ProofGenerationContext,
         _modelParams: ModelParams,
         _previousProofVersions?: ProofVersion[] | undefined
-    ): GeneratedProof {
+    ): DummyGeneratedProof {
         throw Error("I'm a teapot");
     }
 

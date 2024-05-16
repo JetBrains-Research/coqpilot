@@ -13,6 +13,7 @@ import {
 } from "../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
 import { BasicModelParamsResolver } from "../../../llm/llmServices/modelParamsResolvers";
+import { ValidationRules } from "../../../llm/llmServices/utils/paramsResolvers/builders";
 import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { UserModelParams } from "../../../llm/userModelParams";
 
@@ -30,10 +31,11 @@ export interface MockLLMModelParams extends ModelParams {
 }
 
 /**
- * `MockLLMService` parameters resolution does 3 changes to `inputParams`:
+ * `MockLLMService` parameters resolution does 4 changes to `inputParams`:
  * - resolves undefined `workerId` to 0;
  * - adds extra `resolvedWithMockLLMService: true` property;
- * - overrides original `systemPrompt` to `this.systemPromptToOverrideWith`.
+ * - overrides original `systemPrompt` with `this.systemPromptToOverrideWith`;
+ * - overrides original `choices` to `defaultChoices` with `proofsToGenerate.length`.
  */
 export class MockLLMModelParamsResolver extends BasicModelParamsResolver<
     MockLLMUserModelParams,
@@ -45,7 +47,7 @@ export class MockLLMModelParamsResolver extends BasicModelParamsResolver<
 
     readonly workerId = this.resolveParam<number>("workerId")
         .default(() => 0)
-        .validate([(value) => value > 0, "be positive"]);
+        .validate([(value) => value >= 0, "be non-negative"]);
 
     readonly resolvedWithMockLLMService = this.insertParam<boolean>(
         () => true
@@ -55,6 +57,11 @@ export class MockLLMModelParamsResolver extends BasicModelParamsResolver<
         .override(() => MockLLMService.systemPromptToOverrideWith)
         .requiredToBeConfigured()
         .noValidationNeeded();
+
+    readonly defaultChoices = this.resolveParam<number>("choices")
+        .override((inputParams) => inputParams.proofsToGenerate.length)
+        .requiredToBeConfigured()
+        .validate(ValidationRules.bePositiveNumber);
 }
 
 /**
@@ -67,6 +74,8 @@ export class MockLLMModelParamsResolver extends BasicModelParamsResolver<
 export class MockLLMService extends LLMServiceImpl<
     MockLLMUserModelParams,
     MockLLMModelParams,
+    MockLLMService,
+    MockLLMGeneratedProof,
     MockLLMServiceInternal
 > {
     protected readonly internal: MockLLMServiceInternal;
@@ -128,6 +137,8 @@ export class MockLLMService extends LLMServiceImpl<
 
 export class MockLLMGeneratedProof extends GeneratedProofImpl<
     MockLLMModelParams,
+    MockLLMService,
+    MockLLMGeneratedProof,
     MockLLMServiceInternal
 > {
     constructor(
@@ -186,7 +197,12 @@ export class MockLLMGeneratedProof extends GeneratedProofImpl<
     }
 }
 
-class MockLLMServiceInternal extends LLMServiceInternal<MockLLMModelParams> {
+class MockLLMServiceInternal extends LLMServiceInternal<
+    MockLLMModelParams,
+    MockLLMService,
+    MockLLMGeneratedProof,
+    MockLLMServiceInternal
+> {
     throwErrorOnNextGenerationMap: Map<number, Error | undefined> = new Map();
 
     constructGeneratedProof(

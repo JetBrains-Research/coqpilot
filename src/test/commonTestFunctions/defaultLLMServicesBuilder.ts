@@ -1,12 +1,16 @@
 import { LLMServices } from "../../llm/llmServices";
 import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
 import { LMStudioService } from "../../llm/llmServices/lmStudio/lmStudioService";
+import {
+    ModelsParams,
+    PredefinedProofsModelParams,
+} from "../../llm/llmServices/modelParams";
+import { PredefinedProofsModelParamsResolver } from "../../llm/llmServices/modelParamsResolvers";
 import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
 import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
-import {
-    PredefinedProofsUserModelParams,
-    UserModelsParams,
-} from "../../llm/userModelParams";
+import { PredefinedProofsUserModelParams } from "../../llm/userModelParams";
+
+import { resolveOrThrow } from "./resolveOrThrow";
 
 export function createDefaultServices(): LLMServices {
     const predefinedProofsService = new PredefinedProofsService();
@@ -22,8 +26,8 @@ export function createDefaultServices(): LLMServices {
 }
 
 export function createTrivialModelsParams(
-    predefinedProofsModelParams: PredefinedProofsUserModelParams[] = []
-): UserModelsParams {
+    predefinedProofsModelParams: PredefinedProofsModelParams[] = []
+): ModelsParams {
     return {
         predefinedProofsModelParams: predefinedProofsModelParams,
         openAiParams: [],
@@ -41,11 +45,15 @@ export function createPredefinedProofsModel(
         "assumption. intros.",
         "left. reflexivity.",
     ]
-): PredefinedProofsUserModelParams {
-    return {
+): PredefinedProofsModelParams {
+    const inputModelParams: PredefinedProofsUserModelParams = {
         modelId: modelId,
         tactics: predefinedProofs,
     };
+    return resolveOrThrow(
+        new PredefinedProofsModelParamsResolver(),
+        inputModelParams
+    );
 }
 
 export function createPredefinedProofsModelsParams(
@@ -56,7 +64,7 @@ export function createPredefinedProofsModelsParams(
         "assumption. intros.",
         "left. reflexivity.",
     ]
-): UserModelsParams {
+): ModelsParams {
     return createTrivialModelsParams([
         createPredefinedProofsModel("predefined-proofs", predefinedProofs),
     ]);
