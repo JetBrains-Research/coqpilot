@@ -1,4 +1,10 @@
-import { ParamsResolutionResult, ParamsResolver } from "./abstractResolvers";
+import Ajv, { JSONSchemaType, ValidateFunction } from "ajv";
+
+import {
+    ParamsResolutionResult,
+    ParamsResolver,
+    isParamsResolver,
+} from "./abstractResolvers";
 import { SingleParamResolutionResult } from "./abstractResolvers";
 import {
     SingleParamResolverBuilder,
@@ -12,11 +18,22 @@ import { accessParamByName } from "./paramAccessor";
 // Notes:
 // * every property should be of ParamsResolver<InputType, any> type
 // * how to specify properties names:
-// - property's name should be equal to the one of ResolveToType properties
+// - property's name should be equal to the one of ResolveToType properties (and should not start with "_")
 // - `inputParamName` should be a path to one of the properties of InputType
-export class ParamsResolverImpl<InputType, ResolveToType>
+export abstract class ParamsResolverImpl<InputType, ResolveToType>
     implements ParamsResolver<InputType, ResolveToType>
 {
+    protected readonly _resolveToTypeValidator: ValidateFunction<ResolveToType>;
+    protected readonly _resolveToTypeName: string;
+
+    constructor(
+        resolvedParamsSchema: JSONSchemaType<ResolveToType>,
+        resolveToTypeName: string
+    ) {
+        this._resolveToTypeName = resolveToTypeName;
+        this._resolveToTypeValidator = new Ajv().compile(resolvedParamsSchema);
+    }
+
     protected resolveParam<T>(
         inputParamName: string
     ): SingleParamResolverBuilder<InputType, T> {
@@ -35,7 +52,7 @@ export class ParamsResolverImpl<InputType, ResolveToType>
         inputParamName: string,
         nestedParamsResolver: ParamsResolver<ParamInputType, T>
     ): ParamsResolver<InputType, T> {
-        return {
+        return new (class {
             resolve(inputParams: InputType): ParamsResolutionResult<T> {
                 const paramInputValue = (accessParamByName(
                     inputParams,
@@ -54,8 +71,9 @@ export class ParamsResolverImpl<InputType, ResolveToType>
                         }
                     ),
                 };
-            },
-        };
+            }
+            _resolverId: "ParamsResolver" = "ParamsResolver";
+        })();
     }
 
     resolve(inputParams: InputType): ParamsResolutionResult<ResolveToType> {
@@ -64,16 +82,15 @@ export class ParamsResolverImpl<InputType, ResolveToType>
         let resolutionFailed = false;
 
         for (const prop in this) {
-            if (!Object.prototype.hasOwnProperty.call(this, prop)) {
+            if (
+                !Object.prototype.hasOwnProperty.call(this, prop) ||
+                prop.startsWith("_")
+            ) {
                 continue;
             }
             const paramResolver = this[prop] as ParamsResolver<InputType, any>;
-            // Note: unfortunately, type-check always passes :(
-            // Thus, at least having a `resolve` function is checked.
-            if (
-                paramResolver === null ||
-                typeof paramResolver.resolve !== "function"
-            ) {
+            // no generic parametrization check is possible, unfortunately
+            if (!isParamsResolver(paramResolver)) {
                 throw Error(
                     `\`ParamsResolver\` is configured incorrectly because of "${prop}": all properties should be built up to \`ParamsResolver<InputType, any>\` type`
                 );
@@ -93,12 +110,11 @@ export class ParamsResolverImpl<InputType, ResolveToType>
             };
         }
 
-        // Note: CRITICAL PROBLEM - this check does not work in runtime :(
-        // TODO: find a way to improve params resolver
         const resolvedParams = resolvedParamsObject as ResolveToType;
-        if (resolvedParams === null) {
+        if (!this._resolveToTypeValidator(resolvedParams)) {
+            // TODO: show ajv errors
             throw new Error(
-                `\`ParamsResolver\` is configured incorrectly: resulting "${JSON.stringify(resolvedParamsObject)}" could not be interpreted as \`ResolveToType\` object`
+                `\`ParamsResolver\` is configured incorrectly: resulting "${JSON.stringify(resolvedParamsObject)}" could not be interpreted as \`${this._resolveToTypeName}\` object`
             );
         }
         return {
@@ -106,4 +122,6 @@ export class ParamsResolverImpl<InputType, ResolveToType>
             resolutionLogs: resolutionLogs,
         };
     }
+
+    _resolverId: "ParamsResolver" = "ParamsResolver";
 }

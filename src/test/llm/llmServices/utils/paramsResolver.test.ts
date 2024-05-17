@@ -1,3 +1,4 @@
+import { JSONSchemaType } from "ajv";
 import { expect } from "earl";
 
 import { ParamsResolver } from "../../../../llm/llmServices/utils/paramsResolvers/abstractResolvers";
@@ -68,10 +69,23 @@ suite("[LLMService-s utils] Test `ParamsResolver`", () => {
         output: number;
     }
 
+    const resolvedNumberParamSchema: JSONSchemaType<ResolvedNumberParam> = {
+        type: "object",
+        properties: {
+            output: { type: "number" },
+        },
+        required: ["output"],
+        additionalProperties: false,
+    };
+
     class NumberParamResolver extends ParamsResolverImpl<
         InputNumberParam,
         ResolvedNumberParam
     > {
+        constructor() {
+            super(resolvedNumberParamSchema, "ResolvedNumberParam");
+        }
+
         readonly output = this.resolveParam<number>("input")
             .default(() => positiveDefaultValue)
             .validate(ValidationRules.bePositiveNumber);
@@ -108,13 +122,13 @@ suite("[LLMService-s utils] Test `ParamsResolver`", () => {
 
     interface InputMixedParams {
         input?: number;
-        complex?: InputNumberParam;
+        complex?: ResolvedNumberParam;
         extra: string;
     }
 
     interface ResolvedMixedParams {
         output: number;
-        complex: InputNumberParam;
+        complex: ResolvedNumberParam;
         inserted: boolean;
     }
 
@@ -122,15 +136,33 @@ suite("[LLMService-s utils] Test `ParamsResolver`", () => {
         InputMixedParams,
         ResolvedMixedParams
     > {
+        constructor() {
+            super(
+                {
+                    type: "object",
+                    properties: {
+                        output: { type: "number" },
+                        complex: {
+                            type: "object",
+                            oneOf: [resolvedNumberParamSchema],
+                        },
+                        inserted: { type: "boolean" },
+                    },
+                    required: ["output", "complex", "inserted"],
+                },
+                "ResolvedMixedParams"
+            );
+        }
+
         readonly output = this.resolveParam<number>("input")
             .requiredToBeConfigured()
             .validate(ValidationRules.bePositiveNumber);
 
-        readonly complex = this.resolveParam<InputNumberParam>("complex")
+        readonly complex = this.resolveParam<ResolvedNumberParam>("complex")
             .default(() => {
-                return { input: positiveDefaultValue };
+                return { output: positiveDefaultValue };
             })
-            .validate([(value) => value.input! >= 0, "be non-negative"]);
+            .validate([(value) => value.output! >= 0, "be non-negative"]);
 
         readonly inserted = this.insertParam<boolean>(
             () => true
@@ -149,7 +181,7 @@ suite("[LLMService-s utils] Test `ParamsResolver`", () => {
         expect(resolutionResult.resolved).toEqual({
             output: positiveInputValue,
             complex: {
-                input: positiveDefaultValue,
+                output: positiveDefaultValue,
             },
             inserted: true,
         });
@@ -173,12 +205,12 @@ suite("[LLMService-s utils] Test `ParamsResolver`", () => {
             complexLog,
             {
                 resultValue: {
-                    input: positiveDefaultValue,
+                    output: positiveDefaultValue,
                 },
                 resolvedWithDefault: {
                     wasPerformed: true,
                     withValue: {
-                        input: positiveDefaultValue,
+                        output: positiveDefaultValue,
                     },
                 },
             },
@@ -202,7 +234,7 @@ suite("[LLMService-s utils] Test `ParamsResolver`", () => {
         const resolutionResult = paramsResolver.resolve({
             input: undefined,
             complex: {
-                input: negativeInputValue,
+                output: negativeInputValue,
             },
             extra: "will not be resolved",
         });
@@ -228,7 +260,7 @@ suite("[LLMService-s utils] Test `ParamsResolver`", () => {
                 inputReadCorrectly: {
                     wasPerformed: true,
                     withValue: {
-                        input: negativeInputValue,
+                        output: negativeInputValue,
                     },
                 },
             },
@@ -257,7 +289,12 @@ suite("[LLMService-s utils] Test `ParamsResolver`", () => {
         ).override(() => 6);
     }
 
-    // Note: unfortunately, only having a `resolve` method is checked in the implementation
+    class ParamsResolverWithNonCertifiedResolverProperty extends NumberParamResolver {
+        readonly nonCertifiedResolver = {
+            resolve() {},
+        };
+    }
+
     test("`ParamsResolver` configured incorrectly: property of non-`ParamsResolver` type", () => {
         expect(() =>
             new ParamsResolverWithNonResolverProperty().resolve({
@@ -269,41 +306,52 @@ suite("[LLMService-s utils] Test `ParamsResolver`", () => {
                 input: positiveInputValue,
             })
         ).toThrow(Error, "configured incorrectly");
+        expect(() =>
+            new ParamsResolverWithNonCertifiedResolverProperty().resolve({
+                input: positiveInputValue,
+            })
+        ).toThrow(Error, "configured incorrectly");
     });
 
-    // TODO: improve implementation, so this tests pass
+    class EmptyParamsResolver extends ParamsResolverImpl<
+        InputNumberParam,
+        ResolvedNumberParam
+    > {
+        constructor() {
+            super(resolvedNumberParamSchema, "ResolvedNumberParam");
+        }
+    }
 
-    // class EmptyParamsResolver extends ParamsResolverImpl<
-    //     InputNumberParam,
-    //     ResolvedNumberParam
-    // > {}
+    test("`ParamsResolver` configured incorrectly: not enough parameters", () => {
+        const paramsResolver = new EmptyParamsResolver();
+        expect(() =>
+            paramsResolver.resolve({
+                input: positiveInputValue,
+            })
+        ).toThrow(Error, "configured incorrectly");
+    });
 
-    // test("`ParamsResolver` configured incorrectly: not enough parameters", () => {
-    //     const paramsResolver = new EmptyParamsResolver();
-    //     expect(() =>
-    //         paramsResolver.resolve({
-    //             input: positiveInputValue,
-    //         })
-    //     ).toThrow(Error, "configured incorrectly");
-    // });
+    class WrongTypeParamsResolver extends ParamsResolverImpl<
+        InputNumberParam,
+        ResolvedNumberParam
+    > {
+        constructor() {
+            super(resolvedNumberParamSchema, "ResolvedNumberParam");
+        }
 
-    // class WrongTypeParamsResolver extends ParamsResolverImpl<
-    //     InputNumberParam,
-    //     ResolvedNumberParam
-    // > {
-    //     output = this.resolveParam<string>("input")
-    //         .default(() => "string type is the wrong one")
-    //         .noValidationNeeded();
-    // }
+        output = this.resolveParam<string>("input")
+            .default(() => "string type is the wrong one")
+            .noValidationNeeded();
+    }
 
-    // test("`ParamsResolver` configured incorrectly: parameter of wrong type", () => {
-    //     const paramsResolver = new WrongTypeParamsResolver();
-    //     expect(() =>
-    //         paramsResolver.resolve({
-    //             input: positiveInputValue,
-    //         })
-    //     ).toThrow(Error, "configured incorrectly");
-    // });
+    test("`ParamsResolver` configured incorrectly: parameter of wrong type", () => {
+        const paramsResolver = new WrongTypeParamsResolver();
+        expect(() =>
+            paramsResolver.resolve({
+                input: undefined,
+            })
+        ).toThrow(Error, "configured incorrectly");
+    });
 
     interface InputParamsWithNestedParam {
         nestedParam?: InputNumberParam;
@@ -313,10 +361,29 @@ suite("[LLMService-s utils] Test `ParamsResolver`", () => {
         resolvedNestedParam: ResolvedNumberParam;
     }
 
+    const resolvedParamsWithNestedParamSchema: JSONSchemaType<ResolvedParamsWithNestedParam> =
+        {
+            type: "object",
+            properties: {
+                resolvedNestedParam: {
+                    type: "object",
+                    oneOf: [resolvedNumberParamSchema],
+                },
+            },
+            required: ["resolvedNestedParam"],
+        };
+
     class ParamsResolverWithNestedResolver extends ParamsResolverImpl<
         InputParamsWithNestedParam,
         ResolvedParamsWithNestedParam
     > {
+        constructor() {
+            super(
+                resolvedParamsWithNestedParamSchema,
+                "ResolvedParamsWithNestedParam"
+            );
+        }
+
         readonly resolvedNestedParam = this.resolveNestedParams(
             "nestedParam",
             new NumberParamResolver()
@@ -362,6 +429,22 @@ suite("[LLMService-s utils] Test `ParamsResolver`", () => {
         InputParamsWithDeepNestedParam,
         ResolvedParamsWithDeepNestedParam
     > {
+        constructor() {
+            super(
+                {
+                    type: "object",
+                    properties: {
+                        resolvedDeepNestedParam: {
+                            type: "object",
+                            oneOf: [resolvedParamsWithNestedParamSchema],
+                        },
+                    },
+                    required: ["resolvedDeepNestedParam"],
+                },
+                "ResolvedParamsWithDeepNestedParam"
+            );
+        }
+
         readonly resolvedDeepNestedParam = this.resolveNestedParams(
             "deepNestedParam",
             new ParamsResolverWithNestedResolver()

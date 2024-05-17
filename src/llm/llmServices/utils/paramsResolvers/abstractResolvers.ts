@@ -1,5 +1,6 @@
 export interface ParamsResolver<InputType, ResolveToType> {
     resolve(inputParams: InputType): ParamsResolutionResult<ResolveToType>;
+    _resolverId: "ParamsResolver";
 }
 
 export interface ParamsResolutionResult<ResolveToType> {
@@ -30,6 +31,12 @@ export interface ResolutionActionDetailedResult<T>
     message?: string;
 }
 
+export function isParamsResolver(
+    object: any
+): object is ParamsResolver<any, any> {
+    return object._resolverId === "ParamsResolver";
+}
+
 export abstract class AbstractSingleParamResolver<InputType, T>
     implements SingleParamResolver<InputType, T>, ParamsResolver<InputType, T>
 {
@@ -44,4 +51,6 @@ export abstract class AbstractSingleParamResolver<InputType, T>
             resolutionLogs: [paramResolutionResult],
         };
     }
+
+    _resolverId: "ParamsResolver" = "ParamsResolver";
 }

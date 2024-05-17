@@ -1,3 +1,6 @@
+import { JSONSchemaType } from "ajv";
+import { PropertiesSchema } from "ajv/dist/types/json-schema";
+
 import { ConfigurationError } from "../../../llm/llmServiceErrors";
 import {
     AnalyzedChatHistory,
@@ -11,7 +14,10 @@ import {
     LLMServiceInternal,
     ProofVersion,
 } from "../../../llm/llmServices/llmService";
-import { ModelParams } from "../../../llm/llmServices/modelParams";
+import {
+    ModelParams,
+    modelParamsSchema,
+} from "../../../llm/llmServices/modelParams";
 import { BasicModelParamsResolver } from "../../../llm/llmServices/modelParamsResolvers";
 import { ValidationRules } from "../../../llm/llmServices/utils/paramsResolvers/builders";
 import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
@@ -30,6 +36,26 @@ export interface MockLLMModelParams extends ModelParams {
     resolvedWithMockLLMService: boolean;
 }
 
+export const mockLLMModelParamsSchema: JSONSchemaType<MockLLMModelParams> = {
+    title: "MockLLMModelsParameters",
+    type: "object",
+    properties: {
+        proofsToGenerate: {
+            type: "array",
+            items: { type: "string" },
+        },
+        workerId: { type: "number" },
+        resolvedWithMockLLMService: { type: "boolean" },
+        ...(modelParamsSchema.properties as PropertiesSchema<ModelParams>),
+    },
+    required: [
+        "proofsToGenerate",
+        "workerId",
+        "resolvedWithMockLLMService",
+        ...modelParamsSchema.required,
+    ],
+};
+
 /**
  * `MockLLMService` parameters resolution does 4 changes to `inputParams`:
  * - resolves undefined `workerId` to 0;
@@ -41,6 +67,10 @@ export class MockLLMModelParamsResolver extends BasicModelParamsResolver<
     MockLLMUserModelParams,
     MockLLMModelParams
 > {
+    constructor() {
+        super(mockLLMModelParamsSchema, "MockLLMModelParams");
+    }
+
     readonly proofsToGenerate = this.resolveParam<string[]>("proofsToGenerate")
         .requiredToBeConfigured()
         .validate([(value) => value.length > 0, "be non-empty"]);

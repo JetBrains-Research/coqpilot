@@ -1,3 +1,6 @@
+import { JSONSchemaType } from "ajv";
+import { PropertiesSchema } from "ajv/dist/types/json-schema";
+
 export interface MultiroundProfile {
     maxRoundsNumber: number;
     /**
@@ -52,3 +55,94 @@ export interface ModelsParams {
     grazieParams: GrazieModelParams[];
     lmStudioParams: LMStudioModelParams[];
 }
+
+export const multiroundProfileSchema: JSONSchemaType<MultiroundProfile> = {
+    type: "object",
+    properties: {
+        maxRoundsNumber: { type: "number" },
+        defaultProofFixChoices: { type: "number" },
+        proofFixPrompt: { type: "string" },
+    },
+    required: ["maxRoundsNumber", "defaultProofFixChoices", "proofFixPrompt"],
+    additionalProperties: false,
+};
+
+export const modelParamsSchema: JSONSchemaType<ModelParams> = {
+    type: "object",
+    properties: {
+        modelId: { type: "string" },
+
+        systemPrompt: { type: "string" },
+
+        maxTokensToGenerate: { type: "number" },
+        tokensLimit: { type: "number" },
+
+        multiroundProfile: {
+            type: "object",
+            oneOf: [multiroundProfileSchema],
+        },
+
+        defaultChoices: { type: "number" },
+    },
+    required: [
+        "modelId",
+        "systemPrompt",
+        "maxTokensToGenerate",
+        "tokensLimit",
+        "multiroundProfile",
+        "defaultChoices",
+    ],
+};
+
+export const predefinedProofsModelParamsSchema: JSONSchemaType<PredefinedProofsModelParams> =
+    {
+        title: "predefinedProofsModelsParameters",
+        type: "object",
+        properties: {
+            tactics: {
+                type: "array",
+                items: { type: "string" },
+            },
+            ...(modelParamsSchema.properties as PropertiesSchema<ModelParams>),
+        },
+        required: ["tactics", ...modelParamsSchema.required],
+    };
+
+export const openAiModelParamsSchema: JSONSchemaType<OpenAiModelParams> = {
+    title: "openAiModelsParameters",
+    type: "object",
+    properties: {
+        modelName: { type: "string" },
+        temperature: { type: "number" },
+        apiKey: { type: "string" },
+        ...(modelParamsSchema.properties as PropertiesSchema<ModelParams>),
+    },
+    required: [
+        "modelName",
+        "temperature",
+        "apiKey",
+        ...modelParamsSchema.required,
+    ],
+};
+
+export const grazieModelParamsSchema: JSONSchemaType<GrazieModelParams> = {
+    title: "grazieModelsParameters",
+    type: "object",
+    properties: {
+        modelName: { type: "string" },
+        apiKey: { type: "string" },
+        ...(modelParamsSchema.properties as PropertiesSchema<ModelParams>),
+    },
+    required: ["modelName", "apiKey", ...modelParamsSchema.required],
+};
+
+export const lmStudioModelParamsSchema: JSONSchemaType<LMStudioModelParams> = {
+    title: "lmStudioModelsParameters",
+    type: "object",
+    properties: {
+        temperature: { type: "number" },
+        port: { type: "number" },
+        ...(modelParamsSchema.properties as PropertiesSchema<ModelParams>),
+    },
+    required: ["temperature", "port", ...modelParamsSchema.required],
+};

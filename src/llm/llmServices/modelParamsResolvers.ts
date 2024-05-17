@@ -15,6 +15,11 @@ import {
     MultiroundProfile,
     OpenAiModelParams,
     PredefinedProofsModelParams,
+    grazieModelParamsSchema,
+    lmStudioModelParamsSchema,
+    multiroundProfileSchema,
+    openAiModelParamsSchema,
+    predefinedProofsModelParamsSchema,
 } from "./modelParams";
 import { ValidationRules } from "./utils/paramsResolvers/builders";
 import { ParamsResolverImpl } from "./utils/paramsResolvers/paramsResolverImpl";
@@ -23,6 +28,10 @@ export class BasicMultiroundProfileResolver extends ParamsResolverImpl<
     UserMultiroundProfile,
     MultiroundProfile
 > {
+    constructor() {
+        super(multiroundProfileSchema, "MultiroundProfile");
+    }
+
     readonly maxRoundsNumber = this.resolveParam<number>("maxRoundsNumber")
         .default(() => defaultMultiroundProfile.maxRoundsNumber)
         .validate(ValidationRules.bePositiveNumber);
@@ -90,6 +99,10 @@ export class PredefinedProofsModelParamsResolver extends BasicModelParamsResolve
     PredefinedProofsUserModelParams,
     PredefinedProofsModelParams
 > {
+    constructor() {
+        super(predefinedProofsModelParamsSchema, "PredefinedProofsModelParams");
+    }
+
     readonly tactics = this.resolveParam<string[]>("tactics")
         .requiredToBeConfigured()
         .validate([(value) => value.length > 0, "be non-empty"]);
@@ -106,7 +119,7 @@ export class PredefinedProofsModelParamsResolver extends BasicModelParamsResolve
 
     readonly tokensLimit = this.resolveParam<number>(
         "tokensLimit"
-    ).overrideWithMock(() => Number.POSITIVE_INFINITY);
+    ).overrideWithMock(() => Number.MAX_SAFE_INTEGER);
 
     readonly multiroundProfile = this.resolveParam<MultiroundProfile>(
         "multiroundProfile"
@@ -138,6 +151,10 @@ export class OpenAiModelParamsResolver extends BasicModelParamsResolver<
     OpenAiUserModelParams,
     OpenAiModelParams
 > {
+    constructor() {
+        super(openAiModelParamsSchema, "OpenAiModelParams");
+    }
+
     readonly modelName = this.resolveParam<string>("modelName")
         .requiredToBeConfigured()
         .validateAtRuntimeOnly();
@@ -168,6 +185,10 @@ export class GrazieModelParamsResolver extends BasicModelParamsResolver<
     GrazieUserModelParams,
     GrazieModelParams
 > {
+    constructor() {
+        super(grazieModelParamsSchema, "GrazieModelParams");
+    }
+
     readonly modelName = this.resolveParam<string>("modelName")
         .requiredToBeConfigured()
         .validateAtRuntimeOnly();
@@ -191,6 +212,10 @@ export class LMStudioModelParamsResolver extends BasicModelParamsResolver<
     LMStudioUserModelParams,
     LMStudioModelParams
 > {
+    constructor() {
+        super(lmStudioModelParamsSchema, "LMStudioModelParams");
+    }
+
     readonly temperature = this.resolveParam<number>("temperature")
         .requiredToBeConfigured()
         .validateAtRuntimeOnly();

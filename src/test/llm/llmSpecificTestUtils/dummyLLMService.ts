@@ -9,7 +9,10 @@ import {
     LLMServiceInternal,
     ProofVersion,
 } from "../../../llm/llmServices/llmService";
-import { ModelParams } from "../../../llm/llmServices/modelParams";
+import {
+    ModelParams,
+    modelParamsSchema,
+} from "../../../llm/llmServices/modelParams";
 import { BasicModelParamsResolver } from "../../../llm/llmServices/modelParamsResolvers";
 import { GenerationsLogger } from "../../../llm/llmServices/utils/generationsLogger/generationsLogger";
 import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
@@ -29,7 +32,10 @@ export class DummyLLMService extends LLMServiceImpl<
     DummyLLMServiceInternal
 > {
     protected readonly internal: DummyLLMServiceInternal;
-    protected readonly modelParamsResolver = new BasicModelParamsResolver();
+    protected readonly modelParamsResolver = new BasicModelParamsResolver(
+        modelParamsSchema,
+        "ModelParams"
+    );
 
     constructor(generationsLogger: GenerationsLogger) {
         super("DummyLLMService", undefined, true, undefined);

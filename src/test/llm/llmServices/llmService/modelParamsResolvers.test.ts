@@ -3,6 +3,7 @@ import { expect } from "earl";
 import {
     ModelParams,
     MultiroundProfile,
+    modelParamsSchema,
 } from "../../../../llm/llmServices/modelParams";
 import {
     BasicModelParamsResolver,
@@ -42,7 +43,10 @@ suite("[LLMService] Test model-params resolution", () => {
                 },
                 ...inputParamsAddOns,
             };
-            const modelParamsResolver = new BasicModelParamsResolver();
+            const modelParamsResolver = new BasicModelParamsResolver(
+                modelParamsSchema,
+                "ModelParams"
+            );
             const resolutionResult = modelParamsResolver.resolve(inputParams);
 
             const expectedResolvedParams: ModelParams = {
@@ -89,7 +93,10 @@ suite("[LLMService] Test model-params resolution", () => {
                 proofFixPrompt: "Fix proof!",
             },
         };
-        const modelParamsResolver = new BasicModelParamsResolver();
+        const modelParamsResolver = new BasicModelParamsResolver(
+            modelParamsSchema,
+            "ModelParams"
+        );
         const resolutionResult = modelParamsResolver.resolve(inputParams);
 
         expect(resolutionResult.resolved).toBeNullish();
