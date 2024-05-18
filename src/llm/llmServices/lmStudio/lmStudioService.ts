@@ -9,7 +9,8 @@ import {
     ProofVersion,
 } from "../llmService";
 import { LMStudioModelParams } from "../modelParams";
-import { LMStudioModelParamsResolver } from "../modelParamsResolvers";
+
+import { LMStudioModelParamsResolver } from "./lmStudioModelParamsResolver";
 
 export class LMStudioService extends LLMServiceImpl<
     LMStudioUserModelParams,

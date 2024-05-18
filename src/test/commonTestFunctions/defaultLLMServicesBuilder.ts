@@ -5,8 +5,8 @@ import {
     ModelsParams,
     PredefinedProofsModelParams,
 } from "../../llm/llmServices/modelParams";
-import { PredefinedProofsModelParamsResolver } from "../../llm/llmServices/modelParamsResolvers";
 import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
+import { PredefinedProofsModelParamsResolver } from "../../llm/llmServices/predefinedProofs/predefinedProofsModelParamsResolver";
 import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
 import { PredefinedProofsUserModelParams } from "../../llm/userModelParams";
 

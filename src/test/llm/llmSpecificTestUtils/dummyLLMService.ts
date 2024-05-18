@@ -13,8 +13,8 @@ import {
     ModelParams,
     modelParamsSchema,
 } from "../../../llm/llmServices/modelParams";
-import { BasicModelParamsResolver } from "../../../llm/llmServices/modelParamsResolvers";
 import { GenerationsLogger } from "../../../llm/llmServices/utils/generationsLogger/generationsLogger";
+import { BasicModelParamsResolver } from "../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";
 import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { UserModelParams } from "../../../llm/userModelParams";
 

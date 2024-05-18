@@ -11,8 +11,9 @@ import {
 } from "../llmService";
 import { LLMServiceImpl } from "../llmService";
 import { PredefinedProofsModelParams } from "../modelParams";
-import { PredefinedProofsModelParamsResolver } from "../modelParamsResolvers";
 import { Time, timeZero } from "../utils/time";
+
+import { PredefinedProofsModelParamsResolver } from "./predefinedProofsModelParamsResolver";
 
 export class PredefinedProofsService extends LLMServiceImpl<
     PredefinedProofsUserModelParams,

@@ -17,6 +17,7 @@ import {
     testModelId,
 } from "../llmSpecificTestUtils/constants";
 import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testAdmitCompletion";
+import { testResolveValidCompleteParameters } from "../llmSpecificTestUtils/testResolveParameters";
 
 suite("[LLMService] Test `GrazieService`", function () {
     const apiKey = process.env.GRAZIE_API_KEY;
@@ -26,9 +27,9 @@ suite("[LLMService] Test `GrazieService`", function () {
     const completeInputParamsTemplate = {
         modelId: testModelId,
         modelName: "openai-gpt-4",
+        choices: choices,
         maxTokensToGenerate: 2000,
         tokensLimit: 4000,
-        choices: choices,
     };
 
     testIf(
@@ -50,6 +51,16 @@ suite("[LLMService] Test `GrazieService`", function () {
             );
         }
     )?.timeout(6000);
+
+    test("Test `resolveParameters` accepts valid params", async () => {
+        const inputParams: GrazieUserModelParams = {
+            ...completeInputParamsTemplate,
+            apiKey: "undefined",
+        };
+        await withLLMService(new GrazieService(), async (grazieService) => {
+            testResolveValidCompleteParameters(grazieService, inputParams);
+        });
+    });
 
     test("Resolve parameters with predefined `maxTokensToGenerate`", async () => {
         const inputParams: GrazieUserModelParams = {

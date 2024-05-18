@@ -19,7 +19,10 @@ import {
 } from "../llmSpecificTestUtils/eventsTracker";
 import { expectLogs } from "../llmSpecificTestUtils/expectLogs";
 import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testAdmitCompletion";
-import { testResolveParametersFailsWithSingleCause } from "../llmSpecificTestUtils/testResolveParameters";
+import {
+    testResolveParametersFailsWithSingleCause,
+    testResolveValidCompleteParameters,
+} from "../llmSpecificTestUtils/testResolveParameters";
 
 suite("[LLMService] Test `PredefinedProofsService`", function () {
     const simpleTactics = ["auto.", "intros.", "reflexivity."];
@@ -124,6 +127,15 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                         predefinedProofsService
                     );
                 }
+            );
+        });
+    });
+
+    test("Test `resolveParameters` accepts valid params", async () => {
+        await withPredefinedProofsService(async (predefinedProofsService) => {
+            testResolveValidCompleteParameters(
+                predefinedProofsService,
+                inputParams
             );
         });
     });

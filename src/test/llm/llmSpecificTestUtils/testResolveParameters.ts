@@ -4,6 +4,27 @@ import { LLMService } from "../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
 import { UserModelParams } from "../../../llm/userModelParams";
 
+export function testResolveValidCompleteParameters<
+    InputModelParams extends UserModelParams,
+    ResolvedModelParams extends ModelParams,
+>(
+    llmService: LLMService<InputModelParams, ResolvedModelParams>,
+    validInputParams: InputModelParams,
+    expectNoDefaultResolutions: boolean = false
+) {
+    const resolutionResult = llmService.resolveParameters(validInputParams);
+    expect(resolutionResult.resolved).not.toBeNullish();
+    // verify logs
+    for (const paramLog of resolutionResult.resolutionLogs) {
+        expect(paramLog.resultValue).not.toBeNullish();
+        expect(paramLog.isInvalidCause).toBeNullish();
+        if (expectNoDefaultResolutions) {
+            expect(paramLog.inputReadCorrectly.wasPerformed).toBeTruthy();
+            expect(paramLog.resolvedWithDefault.wasPerformed).toBeFalsy();
+        }
+    }
+}
+
 export function testResolveParametersFailsWithSingleCause<
     InputModelParams extends UserModelParams,
     ResolvedModelParams extends ModelParams,

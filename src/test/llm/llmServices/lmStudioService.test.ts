@@ -16,7 +16,10 @@ import {
     testModelId,
 } from "../llmSpecificTestUtils/constants";
 import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testAdmitCompletion";
-import { testResolveParametersFailsWithSingleCause } from "../llmSpecificTestUtils/testResolveParameters";
+import {
+    testResolveParametersFailsWithSingleCause,
+    testResolveValidCompleteParameters,
+} from "../llmSpecificTestUtils/testResolveParameters";
 
 suite("[LLMService] Test `LMStudioService`", function () {
     const lmStudioPort = process.env.LMSTUDIO_PORT;
@@ -26,9 +29,9 @@ suite("[LLMService] Test `LMStudioService`", function () {
     const completeInputParamsTemplate = {
         modelId: testModelId,
         temperature: 1,
+        choices: choices,
         maxTokensToGenerate: 2000,
         tokensLimit: 4000,
-        choices: choices,
     };
 
     testIf(
@@ -50,6 +53,16 @@ suite("[LLMService] Test `LMStudioService`", function () {
             );
         }
     );
+
+    test("Test `resolveParameters` accepts valid params", async () => {
+        const inputParams: LMStudioUserModelParams = {
+            ...completeInputParamsTemplate,
+            port: 1234,
+        };
+        await withLLMService(new LMStudioService(), async (lmStudioService) => {
+            testResolveValidCompleteParameters(lmStudioService, inputParams);
+        });
+    });
 
     test("Test `resolveParameters` validates LMStudio-extended params (`port`)", async () => {
         const inputParams: LMStudioUserModelParams = {

@@ -16,7 +16,10 @@ import {
     testModelId,
 } from "../llmSpecificTestUtils/constants";
 import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testAdmitCompletion";
-import { testResolveParametersFailsWithSingleCause } from "../llmSpecificTestUtils/testResolveParameters";
+import {
+    testResolveParametersFailsWithSingleCause,
+    testResolveValidCompleteParameters,
+} from "../llmSpecificTestUtils/testResolveParameters";
 
 suite("[LLMService] Test `OpenAiService`", function () {
     const apiKey = process.env.OPENAI_API_KEY;
@@ -27,9 +30,9 @@ suite("[LLMService] Test `OpenAiService`", function () {
         modelId: testModelId,
         modelName: "gpt-3.5-turbo-0301",
         temperature: 1,
+        choices: choices,
         maxTokensToGenerate: 2000,
         tokensLimit: 4000,
-        choices: choices,
     };
 
     testIf(
@@ -51,6 +54,16 @@ suite("[LLMService] Test `OpenAiService`", function () {
             );
         }
     );
+
+    test("Test `resolveParameters` accepts valid params", async () => {
+        const inputParams: OpenAiUserModelParams = {
+            ...completeInputParamsTemplate,
+            apiKey: "undefined",
+        };
+        await withLLMService(new OpenAiService(), async (openAiService) => {
+            testResolveValidCompleteParameters(openAiService, inputParams);
+        });
+    });
 
     test("Test `resolveParameters` validates OpenAI-extended params (`temperature`)", async () => {
         const inputParams: OpenAiUserModelParams = {

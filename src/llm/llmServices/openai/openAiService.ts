@@ -12,7 +12,8 @@ import {
     ProofVersion,
 } from "../llmService";
 import { OpenAiModelParams } from "../modelParams";
-import { OpenAiModelParamsResolver } from "../modelParamsResolvers";
+
+import { OpenAiModelParamsResolver } from "./openAiModelParamsResolver";
 
 export class OpenAiService extends LLMServiceImpl<
     OpenAiUserModelParams,

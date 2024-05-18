@@ -18,7 +18,7 @@ import {
     ModelParams,
     modelParamsSchema,
 } from "../../../llm/llmServices/modelParams";
-import { BasicModelParamsResolver } from "../../../llm/llmServices/modelParamsResolvers";
+import { BasicModelParamsResolver } from "../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";
 import { ValidationRules } from "../../../llm/llmServices/utils/paramsResolvers/builders";
 import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { UserModelParams } from "../../../llm/userModelParams";

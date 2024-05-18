@@ -9,9 +9,9 @@ import {
 } from "../llmService";
 import { LLMServiceImpl } from "../llmService";
 import { GrazieModelParams } from "../modelParams";
-import { GrazieModelParamsResolver } from "../modelParamsResolvers";
 
 import { GrazieApi, GrazieChatRole, GrazieFormattedHistory } from "./grazieApi";
+import { GrazieModelParamsResolver } from "./grazieModelParamsResolver";
 
 export class GrazieService extends LLMServiceImpl<
     GrazieUserModelParams,

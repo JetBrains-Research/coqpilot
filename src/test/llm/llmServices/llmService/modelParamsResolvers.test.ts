@@ -9,7 +9,7 @@ import {
     BasicModelParamsResolver,
     defaultMultiroundProfile,
     defaultSystemMessageContent,
-} from "../../../../llm/llmServices/modelParamsResolvers";
+} from "../../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";
 import { UserModelParams } from "../../../../llm/userModelParams";
 
 import { withLLMService } from "../../../commonTestFunctions/withLLMService";
@@ -22,7 +22,7 @@ import {
 import {
     ModelParamsAddOns,
     UserModelParamsAddOns,
-} from "../../llmSpecificTestUtils/transformParams";
+} from "../../llmSpecificTestUtils/modelParamsAddOns";
 
 suite("[LLMService] Test model-params resolution", () => {
     function testBasicResolverSucceeded(
