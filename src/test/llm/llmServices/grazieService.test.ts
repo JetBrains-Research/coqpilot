@@ -4,6 +4,7 @@ import { ConfigurationError } from "../../../llm/llmServiceErrors";
 import { GrazieService } from "../../../llm/llmServices/grazie/grazieService";
 import { ErrorsHandlingMode } from "../../../llm/llmServices/llmService";
 import { GrazieModelParams } from "../../../llm/llmServices/modelParams";
+import { defaultSystemMessageContent } from "../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";
 import { GrazieUserModelParams } from "../../../llm/userModelParams";
 
 import { testIf } from "../../commonTestFunctions/conditionalTest";
@@ -17,14 +18,17 @@ import {
     testModelId,
 } from "../llmSpecificTestUtils/constants";
 import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testAdmitCompletion";
-import { testResolveValidCompleteParameters } from "../llmSpecificTestUtils/testResolveParameters";
+import {
+    defaultUserMultiroundProfile,
+    testResolveValidCompleteParameters,
+} from "../llmSpecificTestUtils/testResolveParameters";
 
 suite("[LLMService] Test `GrazieService`", function () {
     const apiKey = process.env.GRAZIE_API_KEY;
     const choices = 15;
     const inputFile = ["small_document.v"];
 
-    const completeInputParamsTemplate = {
+    const requiredInputParamsTemplate = {
         modelId: testModelId,
         modelName: "openai-gpt-4",
         choices: choices,
@@ -39,7 +43,7 @@ suite("[LLMService] Test `GrazieService`", function () {
         `Simple generation: 1 request, ${choices} choices`,
         async () => {
             const inputParams: GrazieUserModelParams = {
-                ...completeInputParamsTemplate,
+                ...requiredInputParamsTemplate,
                 apiKey: apiKey!,
             };
             const grazieService = new GrazieService();
@@ -52,19 +56,28 @@ suite("[LLMService] Test `GrazieService`", function () {
         }
     )?.timeout(6000);
 
-    test("Test `resolveParameters` accepts valid params", async () => {
+    test("Test `resolveParameters` reads & accepts valid params", async () => {
         const inputParams: GrazieUserModelParams = {
-            ...completeInputParamsTemplate,
+            ...requiredInputParamsTemplate,
             apiKey: "undefined",
         };
         await withLLMService(new GrazieService(), async (grazieService) => {
             testResolveValidCompleteParameters(grazieService, inputParams);
+            testResolveValidCompleteParameters(
+                grazieService,
+                {
+                    ...inputParams,
+                    systemPrompt: defaultSystemMessageContent,
+                    multiroundProfile: defaultUserMultiroundProfile,
+                },
+                true
+            );
         });
     });
 
     test("Resolve parameters with predefined `maxTokensToGenerate`", async () => {
         const inputParams: GrazieUserModelParams = {
-            ...completeInputParamsTemplate,
+            ...requiredInputParamsTemplate,
             apiKey: "undefined",
             maxTokensToGenerate: 6666, // should be overriden by GrazieService
         };
@@ -81,7 +94,7 @@ suite("[LLMService] Test `GrazieService`", function () {
 
     test("Test `generateProof` throws on invalid `choices`", async () => {
         const inputParams: GrazieUserModelParams = {
-            ...completeInputParamsTemplate,
+            ...requiredInputParamsTemplate,
             apiKey: "undefined",
         };
         await withLLMServiceAndParams(

@@ -2,7 +2,22 @@ import { expect } from "earl";
 
 import { LLMService } from "../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
-import { UserModelParams } from "../../../llm/userModelParams";
+import { defaultMultiroundProfile } from "../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";
+import {
+    UserModelParams,
+    UserMultiroundProfile,
+} from "../../../llm/userModelParams";
+
+/**
+ * "User" version of `defaultUserMultiroundProfile` having the same default values.
+ * This constant is needed because `proofFixChoices` and `defaultProofFixChoices`
+ * parameters have different names.
+ */
+export const defaultUserMultiroundProfile: UserMultiroundProfile = {
+    maxRoundsNumber: defaultMultiroundProfile.maxRoundsNumber,
+    proofFixChoices: defaultMultiroundProfile.defaultProofFixChoices,
+    proofFixPrompt: defaultMultiroundProfile.proofFixPrompt,
+};
 
 export function testResolveValidCompleteParameters<
     InputModelParams extends UserModelParams,

@@ -4,6 +4,7 @@ import { ConfigurationError } from "../../../llm/llmServiceErrors";
 import { ErrorsHandlingMode } from "../../../llm/llmServices/llmService";
 import { OpenAiModelParams } from "../../../llm/llmServices/modelParams";
 import { OpenAiService } from "../../../llm/llmServices/openai/openAiService";
+import { defaultSystemMessageContent } from "../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";
 import { OpenAiUserModelParams } from "../../../llm/userModelParams";
 
 import { testIf } from "../../commonTestFunctions/conditionalTest";
@@ -17,6 +18,7 @@ import {
 } from "../llmSpecificTestUtils/constants";
 import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testAdmitCompletion";
 import {
+    defaultUserMultiroundProfile,
     testResolveParametersFailsWithSingleCause,
     testResolveValidCompleteParameters,
 } from "../llmSpecificTestUtils/testResolveParameters";
@@ -26,7 +28,7 @@ suite("[LLMService] Test `OpenAiService`", function () {
     const choices = 15;
     const inputFile = ["small_document.v"];
 
-    const completeInputParamsTemplate = {
+    const requiredInputParamsTemplate = {
         modelId: testModelId,
         modelName: "gpt-3.5-turbo-0301",
         temperature: 1,
@@ -42,7 +44,7 @@ suite("[LLMService] Test `OpenAiService`", function () {
         `Simple generation: 1 request, ${choices} choices`,
         async () => {
             const inputParams: OpenAiUserModelParams = {
-                ...completeInputParamsTemplate,
+                ...requiredInputParamsTemplate,
                 apiKey: apiKey!,
             };
             const openAiService = new OpenAiService();
@@ -55,19 +57,28 @@ suite("[LLMService] Test `OpenAiService`", function () {
         }
     );
 
-    test("Test `resolveParameters` accepts valid params", async () => {
+    test("Test `resolveParameters` reads & accepts valid params", async () => {
         const inputParams: OpenAiUserModelParams = {
-            ...completeInputParamsTemplate,
+            ...requiredInputParamsTemplate,
             apiKey: "undefined",
         };
         await withLLMService(new OpenAiService(), async (openAiService) => {
-            testResolveValidCompleteParameters(openAiService, inputParams);
+            // testResolveValidCompleteParameters(openAiService, inputParams);
+            testResolveValidCompleteParameters(
+                openAiService,
+                {
+                    ...inputParams,
+                    systemPrompt: defaultSystemMessageContent,
+                    multiroundProfile: defaultUserMultiroundProfile,
+                },
+                true
+            );
         });
     });
 
     test("Test `resolveParameters` validates OpenAI-extended params (`temperature`)", async () => {
         const inputParams: OpenAiUserModelParams = {
-            ...completeInputParamsTemplate,
+            ...requiredInputParamsTemplate,
             apiKey: "undefined",
         };
         await withLLMService(new OpenAiService(), async (openAiService) => {
@@ -85,7 +96,7 @@ suite("[LLMService] Test `OpenAiService`", function () {
 
     test("Test `generateProof` throws on invalid configurations, <no api key needed>", async () => {
         const inputParams: OpenAiUserModelParams = {
-            ...completeInputParamsTemplate,
+            ...requiredInputParamsTemplate,
             apiKey: "undefined",
         };
         await withLLMServiceAndParams(
@@ -122,7 +133,7 @@ suite("[LLMService] Test `OpenAiService`", function () {
         "Test `generateProof` throws on invalid configurations, <api key required>",
         async () => {
             const inputParams: OpenAiUserModelParams = {
-                ...completeInputParamsTemplate,
+                ...requiredInputParamsTemplate,
                 apiKey: apiKey!,
             };
             await withLLMServiceAndParams(

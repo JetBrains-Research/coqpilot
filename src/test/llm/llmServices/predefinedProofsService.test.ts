@@ -131,7 +131,7 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
         });
     });
 
-    test("Test `resolveParameters` accepts valid params", async () => {
+    test("Test `resolveParameters` reads & accepts valid params", async () => {
         await withPredefinedProofsService(async (predefinedProofsService) => {
             testResolveValidCompleteParameters(
                 predefinedProofsService,
@@ -150,6 +150,48 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                 },
                 "tactics"
             );
+        });
+    });
+
+    test("Test `resolveParameters` overrides params correctly", async () => {
+        await withPredefinedProofsService(async (predefinedProofsService) => {
+            const resolutionResult = predefinedProofsService.resolveParameters({
+                ...inputParams,
+                choices: 1,
+                systemPrompt: "asking for something",
+                maxTokensToGenerate: 2000,
+                tokensLimit: 4000,
+                multiroundProfile: {
+                    maxRoundsNumber: 10,
+                    proofFixChoices: 5,
+                    proofFixPrompt: "asking for more of something",
+                },
+            });
+
+            // first, verify all params were read correctly
+            for (const paramLog of resolutionResult.resolutionLogs) {
+                expect(paramLog.isInvalidCause).toBeNullish();
+                expect(paramLog.inputReadCorrectly.wasPerformed).toBeTruthy();
+                // expect(paramLog.overriden).toBeTruthy(); // is not true for mock overrides
+                expect(paramLog.resolvedWithDefault.wasPerformed).toBeFalsy();
+            }
+
+            expect(resolutionResult.resolved).toEqual({
+                modelId: testModelId,
+                tactics: simpleTactics,
+                systemPrompt: "",
+                maxTokensToGenerate: Math.max(
+                    0,
+                    ...simpleTactics.map((tactic) => tactic.length)
+                ),
+                tokensLimit: Number.MAX_SAFE_INTEGER,
+                multiroundProfile: {
+                    maxRoundsNumber: 1,
+                    defaultProofFixChoices: 0,
+                    proofFixPrompt: "",
+                },
+                defaultChoices: simpleTactics.length,
+            });
         });
     });
 
