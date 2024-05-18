@@ -153,6 +153,23 @@ suite("[LLMService] Test `OpenAiService`", function () {
                             ErrorsHandlingMode.RETHROW_ERRORS
                         );
                     }).toBeRejectedWith(ConfigurationError, "model name");
+
+                    // context length exceeded (requested too many tokens for the completion)
+                    expect(async () => {
+                        await openAiService.generateProof(
+                            mockProofGenerationContext,
+                            {
+                                ...resolvedParams,
+                                maxTokensToGenerate: 500_000,
+                                tokensLimit: 1_000_000,
+                            } as OpenAiModelParams,
+                            1,
+                            ErrorsHandlingMode.RETHROW_ERRORS
+                        );
+                    }).toBeRejectedWith(
+                        ConfigurationError,
+                        "`tokensLimit` and `maxTokensToGenerate`"
+                    );
                 }
             );
         }

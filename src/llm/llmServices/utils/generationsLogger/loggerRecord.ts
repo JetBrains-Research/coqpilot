@@ -189,12 +189,12 @@ export class LoggerRecord {
         pattern: RegExp,
         text: string,
         valueName: string
-    ): RegExpMatchArray {
+    ): string[] {
         const match = text.match(pattern);
         if (!match) {
             throw new ParsingError(`invalid ${valueName}`, text);
         }
-        return match;
+        return match.slice(1);
     }
 
     protected static parseFirstLineByRegex(
@@ -204,7 +204,7 @@ export class LoggerRecord {
     ): string[] {
         const [firstLine, restText] = this.splitByFirstLine(text);
         const parsedLine = this.parseByRegex(pattern, firstLine, valueName);
-        return [...parsedLine.slice(1), restText];
+        return [...parsedLine, restText];
     }
 
     protected static unescapeNewlines(text: string): string {

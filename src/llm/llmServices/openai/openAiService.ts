@@ -106,11 +106,11 @@ class OpenAiServiceInternal extends LLMServiceInternal<
                 (choice: any) => choice.message.content
             );
         } catch (e) {
-            throw this.repackKnownError(e, params);
+            throw OpenAiServiceInternal.repackKnownError(e, params);
         }
     }
 
-    private repackKnownError(
+    private static repackKnownError(
         caughtObject: any,
         params: OpenAiModelParams
     ): any {
@@ -120,36 +120,56 @@ class OpenAiServiceInternal extends LLMServiceInternal<
         }
         const errorMessage = error.message;
 
-        if (
-            this.matchesPattern(
-                OpenAiServiceInternal.unknownModelNamePattern,
-                errorMessage
-            )
-        ) {
+        if (this.matchesPattern(this.unknownModelNamePattern, errorMessage)) {
             return new ConfigurationError(
                 `invalid model name "${params.modelName}", such model does not exist or you do not have access to it`
             );
         }
-        if (
-            this.matchesPattern(
-                OpenAiServiceInternal.incorrectApiKeyPattern,
-                errorMessage
-            )
-        ) {
+        if (this.matchesPattern(this.incorrectApiKeyPattern, errorMessage)) {
             return new ConfigurationError(
                 `incorrect api key "${params.apiKey}" (check your API key at https://platform.openai.com/account/api-keys)`
             );
         }
+        const contextExceeded = this.parsePattern(
+            this.maximumContextLengthExceededPattern,
+            errorMessage
+        );
+        if (contextExceeded !== undefined) {
+            const [
+                modelsMaxContextLength,
+                requestedTokens,
+                requestedMessagesTokens,
+                maxTokensToGenerate,
+            ] = contextExceeded;
+            const intro =
+                "`tokensLimit` and `maxTokensToGenerate` are too large together";
+            const explanation = `model's maximum context length is ${modelsMaxContextLength} tokens, but was requested ${requestedTokens} tokens = ${requestedMessagesTokens} in the messages + ${maxTokensToGenerate} in the completion`;
+            return new ConfigurationError(`${intro}; ${explanation}`);
+        }
         return error;
     }
 
-    private matchesPattern(pattern: RegExp, text: string): boolean {
+    private static matchesPattern(pattern: RegExp, text: string): boolean {
         return text.match(pattern) !== null;
     }
 
-    private static unknownModelNamePattern =
+    private static parsePattern(
+        pattern: RegExp,
+        text: string
+    ): string[] | undefined {
+        const match = text.match(pattern);
+        if (!match) {
+            return undefined;
+        }
+        return match.slice(1);
+    }
+
+    private static readonly unknownModelNamePattern =
         /^The model `(.*)` does not exist or you do not have access to it\.$/;
 
-    private static incorrectApiKeyPattern =
+    private static readonly incorrectApiKeyPattern =
         /^Incorrect API key provided: (.*)\.(.*)$/;
+
+    private static readonly maximumContextLengthExceededPattern =
+        /^This model's maximum context length is ([0-9]+) tokens\. However, you requested ([0-9]+) tokens \(([0-9]+) in the messages, ([0-9]+) in the completion\)\..*$/;
 }
