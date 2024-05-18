@@ -6,6 +6,7 @@ import {
     LLMServiceRequestFailed,
     LLMServiceRequestSucceeded,
 } from "../../llmService";
+import { ModelParams } from "../../modelParams";
 import { nowTimestampMillis } from "../time";
 
 import { DebugLoggerRecord, LoggedError, LoggerRecord } from "./loggerRecord";
@@ -23,7 +24,8 @@ import { SyncFile } from "./syncFile";
  */
 export class GenerationsLogger {
     private readonly logsFile: SyncFile;
-    private readonly recordsDelim = "@@@ ";
+    private static readonly recordsDelim = "@@@ ";
+    static readonly censorString = "***censored***";
 
     /**
      * - When `debug` is false, logs only the necessary info:
@@ -31,13 +33,19 @@ export class GenerationsLogger {
      * Logs are being cleaned every time the last request succeeds.
      * - When `debug` is true, logs chat history, received completions and params of the model additionally.
      *   Also, the logs are never cleaned automatically.
+     *
+     * @param paramsPropertiesToCensor specifies properties of `ModelParams` (or its extension)
+     * that will be replaced with the corresponding given values in logs. By default, it is `{apiKey: GenerationsLogger.censorString}`.
      */
     constructor(
-        filePath: string,
+        readonly filePath: string,
         private readonly debug: boolean = false,
+        private readonly paramsPropertiesToCensor: Object = {
+            apiKey: GenerationsLogger.censorString,
+        },
         cleanLogsOnStart: boolean = true
     ) {
-        this.logsFile = new SyncFile(filePath);
+        this.logsFile = new SyncFile(this.filePath);
         if (!this.logsFile.exists() || cleanLogsOnStart) {
             this.resetLogs();
         }
@@ -55,12 +63,12 @@ export class GenerationsLogger {
             record = new DebugLoggerRecord(
                 record,
                 request.analyzedChat?.chat,
-                request.params,
+                this.censorParamsProperties(request.params),
                 request.generatedRawProofs
             );
         }
 
-        const newLog = `${this.recordsDelim}${record.serializeToString()}\n`;
+        const newLog = `${GenerationsLogger.recordsDelim}${record.serializeToString()}\n`;
         if (this.debug) {
             this.logsFile.append(newLog);
         } else {
@@ -83,17 +91,19 @@ export class GenerationsLogger {
             record = new DebugLoggerRecord(
                 record,
                 request.analyzedChat?.chat,
-                request.params
+                this.censorParamsProperties(request.params)
             );
         }
 
-        const newLog = `${this.recordsDelim}${record.serializeToString()}\n`;
+        const newLog = `${GenerationsLogger.recordsDelim}${record.serializeToString()}\n`;
         this.logsFile.append(newLog);
     }
 
     readLogs(): LoggerRecord[] {
         const rawData = this.logsFile.read();
-        const rawRecords = rawData.split(this.recordsDelim).slice(1);
+        const rawRecords = rawData
+            .split(GenerationsLogger.recordsDelim)
+            .slice(1);
         return rawRecords.map((rawRecord) =>
             this.debug
                 ? DebugLoggerRecord.deserealizeFromString(rawRecord)[0]
@@ -141,6 +151,14 @@ export class GenerationsLogger {
             );
         }
         return cause;
+    }
+
+    private censorParamsProperties<T extends ModelParams>(params: T): T {
+        // no need in deep copies, but we shall not overwrite original params
+        return {
+            ...params,
+            ...this.paramsPropertiesToCensor,
+        };
     }
 
     private toLoggedError(error: Error): LoggedError {
