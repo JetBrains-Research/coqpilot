@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 
-/*
+/**
  * Since `SyncFile` methods are not `async`,
  * they are expected to be effectively "synchronized".
  * This means that despite the concurrent nature of some parts of the system

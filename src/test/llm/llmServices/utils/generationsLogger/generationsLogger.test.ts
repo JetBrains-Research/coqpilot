@@ -17,7 +17,10 @@ import {
     OpenAiModelParams,
     PredefinedProofsModelParams,
 } from "../../../../../llm/llmServices/modelParams";
-import { GenerationsLogger } from "../../../../../llm/llmServices/utils/generationsLogger/generationsLogger";
+import {
+    GenerationsLogger,
+    GenerationsLoggerSettings,
+} from "../../../../../llm/llmServices/utils/generationsLogger/generationsLogger";
 import {
     DebugLoggerRecord,
     LoggerRecord,
@@ -80,16 +83,12 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
     const mockProofs = ["auto.\nintro.", "auto."];
 
     async function withGenerationsLogger(
-        loggerDebugMode: boolean,
-        paramsPropertiesToCensor: Object,
-        cleanLogsOnStart: boolean,
+        settings: GenerationsLoggerSettings,
         block: (generationsLogger: GenerationsLogger) => Promise<void>
     ): Promise<void> {
         const generationsLogger = new GenerationsLogger(
             tmp.fileSync().name,
-            loggerDebugMode,
-            paramsPropertiesToCensor,
-            cleanLogsOnStart
+            settings
         );
         try {
             await block(generationsLogger);
@@ -102,7 +101,14 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
         loggerDebugMode: boolean,
         block: (generationsLogger: GenerationsLogger) => Promise<void>
     ): Promise<void> {
-        return withGenerationsLogger(loggerDebugMode, {}, true, block);
+        return withGenerationsLogger(
+            {
+                debug: loggerDebugMode,
+                paramsPropertiesToCensor: {},
+                cleanLogsOnStart: true,
+            },
+            block
+        );
     }
 
     function buildMockRequest(
@@ -279,9 +285,14 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
     test("Test censor params properties", async () => {
         const censorInt = -1;
         await withGenerationsLogger(
-            true,
-            { apiKey: GenerationsLogger.censorString, tokensLimit: censorInt },
-            true,
+            {
+                debug: true,
+                paramsPropertiesToCensor: {
+                    apiKey: GenerationsLogger.censorString,
+                    tokensLimit: censorInt,
+                },
+                cleanLogsOnStart: true,
+            },
             async (generationsLogger) => {
                 const mockRequest = buildMockRequest(
                     generationsLogger,

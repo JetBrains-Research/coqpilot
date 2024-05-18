@@ -167,7 +167,13 @@ export abstract class LLMServiceImpl<
         this.generationsLoggerBuilder = () =>
             new GenerationsLogger(
                 generationLogsFilePath ?? tmp.fileSync().name,
-                debugLogs
+                {
+                    debug: debugLogs,
+                    paramsPropertiesToCensor: {
+                        apiKey: GenerationsLogger.censorString,
+                    },
+                    cleanLogsOnStart: true,
+                }
             );
     }
 

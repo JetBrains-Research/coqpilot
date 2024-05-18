@@ -13,6 +13,7 @@ import {
     withLLMServiceAndParams,
 } from "../../commonTestFunctions/withLLMService";
 import {
+    gptTurboModelName,
     mockProofGenerationContext,
     testModelId,
 } from "../llmSpecificTestUtils/constants";
@@ -30,7 +31,7 @@ suite("[LLMService] Test `OpenAiService`", function () {
 
     const requiredInputParamsTemplate = {
         modelId: testModelId,
-        modelName: "gpt-3.5-turbo-0301",
+        modelName: gptTurboModelName,
         temperature: 1,
         choices: choices,
         maxTokensToGenerate: 2000,
