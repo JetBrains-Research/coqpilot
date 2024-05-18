@@ -146,6 +146,11 @@ class OpenAiServiceInternal extends LLMServiceInternal<
             const explanation = `model's maximum context length is ${modelsMaxContextLength} tokens, but was requested ${requestedTokens} tokens = ${requestedMessagesTokens} in the messages + ${maxTokensToGenerate} in the completion`;
             return new ConfigurationError(`${intro}; ${explanation}`);
         }
+        if (this.matchesPattern(this.connectionErrorPattern, errorMessage)) {
+            return Error(
+                "failed to reach OpenAI remote service, check your internet connection"
+            );
+        }
         return error;
     }
 
@@ -172,4 +177,6 @@ class OpenAiServiceInternal extends LLMServiceInternal<
 
     private static readonly maximumContextLengthExceededPattern =
         /^This model's maximum context length is ([0-9]+) tokens\. However, you requested ([0-9]+) tokens \(([0-9]+) in the messages, ([0-9]+) in the completion\)\..*$/;
+
+    private static readonly connectionErrorPattern = /^Connection error\.$/;
 }
