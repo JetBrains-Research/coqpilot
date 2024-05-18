@@ -173,6 +173,24 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
                     );
                 }
             );
+
+            test(`Test read no records ${testNamePostfix}`, async () => {
+                await withGenerationsLogger(
+                    loggerDebugMode,
+                    async (generationsLogger) => {
+                        expect(generationsLogger.readLogs()).toHaveLength(0);
+                        expect(
+                            generationsLogger.readLogsSinceLastSuccess()
+                        ).toHaveLength(0);
+                        generationsLogger.logGenerationSucceeded(
+                            succeeded(buildMockRequest(generationsLogger))
+                        );
+                        expect(
+                            generationsLogger.readLogsSinceLastSuccess()
+                        ).toHaveLength(0);
+                    }
+                );
+            });
         });
 
         test(`Pseudo-concurrent write-read ${testNamePostfix}`, async () => {
@@ -299,6 +317,27 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
             undefined,
             mockParams,
             undefined
+        );
+        expect(
+            DebugLoggerRecord.deserealizeFromString(
+                debugLoggerRecord.serializeToString()
+            )
+        ).toEqual([debugLoggerRecord, ""]);
+    });
+
+    test("Test record serialization-deserealization: empty lists", async () => {
+        const debugLoggerRecord = new DebugLoggerRecord(
+            new LoggerRecord(
+                nowTimestampMillis(),
+                mockParams.modelId,
+                "SUCCESS",
+                mockChoices,
+                undefined,
+                undefined
+            ),
+            [], // empty chat list
+            mockParams,
+            [] // empty generated proofs list
         );
         expect(
             DebugLoggerRecord.deserealizeFromString(
