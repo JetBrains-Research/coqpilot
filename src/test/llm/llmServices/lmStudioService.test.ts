@@ -54,7 +54,7 @@ suite("[LLMService] Test `LMStudioService`", function () {
                 choices
             );
         }
-    );
+    )?.timeout(30000);
 
     test("Test `resolveParameters` reads & accepts valid params", async () => {
         const inputParams: LMStudioUserModelParams = {

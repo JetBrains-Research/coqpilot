@@ -54,7 +54,7 @@ suite("[LLMService] Test `GrazieService`", function () {
                 choices
             );
         }
-    )?.timeout(6000);
+    )?.timeout(10000);
 
     test("Test `resolveParameters` reads & accepts valid params", async () => {
         const inputParams: GrazieUserModelParams = {

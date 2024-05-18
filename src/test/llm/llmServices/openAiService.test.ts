@@ -56,7 +56,7 @@ suite("[LLMService] Test `OpenAiService`", function () {
                 choices
             );
         }
-    );
+    )?.timeout(5000);
 
     test("Test `resolveParameters` reads & accepts valid params", async () => {
         const inputParams: OpenAiUserModelParams = {
