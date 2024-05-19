@@ -30,8 +30,8 @@ import { Uri } from "../utils/uri";
 
 import {
     buildTheoremsRankerFromConfig,
-    parseAndValidateUserModelsParams,
-} from "./configParser";
+    readAndValidateUserModelsParams,
+} from "./configReaders";
 import {
     deleteTextFromRange,
     highlightTextInEditor,
@@ -257,7 +257,7 @@ export class CoqPilot {
             );
         const processEnvironment: ProcessEnvironment = {
             coqProofChecker: coqProofChecker,
-            modelsParams: parseAndValidateUserModelsParams(
+            modelsParams: readAndValidateUserModelsParams(
                 workspace.getConfiguration(pluginId),
                 this.jsonSchemaValidator,
                 this.globalExtensionState.llmServices

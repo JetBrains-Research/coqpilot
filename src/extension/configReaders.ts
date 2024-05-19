@@ -46,7 +46,7 @@ export function buildTheoremsRankerFromConfig(): ContextTheoremsRanker {
     }
 }
 
-export function parseAndValidateUserModelsParams(
+export function readAndValidateUserModelsParams(
     config: WorkspaceConfiguration,
     jsonSchemaValidator: Ajv,
     llmServices: LLMServices
