@@ -86,11 +86,6 @@ To run all tests properly (i.e. with rebuilding the resources and the code first
 npm run clean-test
 ```
 
-If you do not want to build test resources (a small coq project), to execute all the tests that don't use them you can run: 
-```bash
-npm run test-ci
-```
-
 To run specific tests, you can use `npm run test -- -g="grep pattern"`.
 
 <!-- ## Architecture

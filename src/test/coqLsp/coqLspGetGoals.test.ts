@@ -114,7 +114,7 @@ suite("Retrieve goals from Coq file", () => {
         }
     });
 
-    test("Retreive goal in project with imports --non-ci", async () => {
+    test("Retreive goal in project with imports", async () => {
         const goals = await getGoalsAtPoints(
             [
                 { line: 4, character: 4 },

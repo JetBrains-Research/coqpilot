@@ -109,7 +109,7 @@ suite("Coq file parser tests", () => {
         expect(theoremsWithoutProof[0].name).toEqual("test_5");
     });
 
-    test("Test parse file which is part of project --non-ci", async () => {
+    test("Test parse file which is part of project", async () => {
         const doc = await parseTheoremsFromCoqFile(
             ["coqProj", "theories", "B.v"],
             ["coqProj"]
