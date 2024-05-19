@@ -222,8 +222,11 @@ function resolveParamsAndShowResolutionLogs<
                     "error",
                     settingName
                 );
-            } else if (paramLog.overriden.wasPerformed) {
-                // resolved parameter, but it was overriden
+            } else if (
+                paramLog.overriden.wasPerformed &&
+                paramLog.inputReadCorrectly.wasPerformed
+            ) {
+                // resolved parameter, but the user value was overriden
                 showMessageToUserWithSettingsHint(
                     buildParameterOverridenMessage(
                         inputParams.modelId,
