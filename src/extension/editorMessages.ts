@@ -8,7 +8,7 @@ export namespace EditorMessages {
     export const noProofsForAdmit = (admitIdentifier: any) =>
         `Coqpilot failed to find a proof for the admit at line ${admitIdentifier}.`;
     export const errorOccurred = (errorMessage: string) =>
-        `Coqpilot got an error: "${errorMessage}". Please make sure the environment is properly set and the plugin is configured correctly. For more information, see the README: https://github.com/JetBrains-Research/coqpilot/blob/main/README.md. If the error appears to be a bug, please report it by opening an issue on the Coqpilot GitHub repository.`;
+        `Coqpilot got an error: "${errorMessage}". Please make sure the environment is properly set and the plugin is configured correctly. For more information, see the README: https://github.com/JetBrains-Research/coqpilot/blob/main/README.md. If the error appears to be a bug, please report it by opening an issue in the Coqpilot GitHub repository.`;
     export const modelConfiguredIncorrectly = (
         modelId: string,
         errorMessage: string

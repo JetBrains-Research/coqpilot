@@ -133,7 +133,7 @@
                 "maxTokensToGenerate": {
                   "type": "number",
                   "description": "Number of tokens that the model is allowed to generate as a response message (i.e. message with proof).",
-                  "default": 2000
+                  "default": 2048
                 },
                 "tokensLimit": {
                   "type": "number",
@@ -175,7 +175,7 @@
                 "apiKey": "None",
                 "choices": 15,
                 "systemPrompt": "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'.",
-                "maxTokensToGenerate": 2000,
+                "maxTokensToGenerate": 2048,
                 "tokensLimit": 4096,
                 "multiroundProfile": {
                   "maxRoundsNumber": 1,
@@ -292,7 +292,7 @@
                 "maxTokensToGenerate": {
                   "type": "number",
                   "description": "Number of tokens that the model is allowed to generate as a response message (i.e. message with proof).",
-                  "default": 2000
+                  "default": 1024
                 },
                 "tokensLimit": {
                   "type": "number",

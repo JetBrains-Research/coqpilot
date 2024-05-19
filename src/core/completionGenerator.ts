@@ -145,6 +145,10 @@ export async function generateCompletion(
             console.error(
                 `Object was thrown during completion generation: ${e}`
             );
+            return new FailureGenerationResult(
+                FailureGenerationStatus.errorOccurred,
+                `please report this crash by opening an issue in the Coqpilot GitHub repository: object was thrown as error, "${JSON.stringify(e)}"`
+            );
         } else {
             console.error(
                 `Error occurred during completion generation: "${error}".\n${error.stack ?? "<no stack available>"}`
