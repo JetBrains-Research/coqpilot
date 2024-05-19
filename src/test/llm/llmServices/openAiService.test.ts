@@ -34,8 +34,6 @@ suite("[LLMService] Test `OpenAiService`", function () {
         modelName: gptTurboModelName,
         temperature: 1,
         choices: choices,
-        maxTokensToGenerate: 2000,
-        tokensLimit: 4000,
     };
 
     testIf(
@@ -64,12 +62,14 @@ suite("[LLMService] Test `OpenAiService`", function () {
             apiKey: "undefined",
         };
         await withLLMService(new OpenAiService(), async (openAiService) => {
-            // testResolveValidCompleteParameters(openAiService, inputParams);
+            testResolveValidCompleteParameters(openAiService, inputParams);
             testResolveValidCompleteParameters(
                 openAiService,
                 {
                     ...inputParams,
                     systemPrompt: defaultSystemMessageContent,
+                    maxTokensToGenerate: 2000,
+                    tokensLimit: 4000,
                     multiroundProfile: defaultUserMultiroundProfile,
                 },
                 true
@@ -77,13 +77,66 @@ suite("[LLMService] Test `OpenAiService`", function () {
         });
     });
 
-    test("Test `resolveParameters` validates OpenAI-extended params (`temperature`)", async () => {
+    function testResolvesTokensWithDefault(
+        modelName: string,
+        expectedTokensLimit: number,
+        expectedMaxTokensToGenerate: number
+    ) {
+        test(`Test \`resolveParameters\` resolves tokens with defaults: "${modelName}"`, async () => {
+            const inputParams: OpenAiUserModelParams = {
+                ...requiredInputParamsTemplate,
+                apiKey: "undefined",
+                modelName: modelName,
+            };
+            await withLLMService(new OpenAiService(), async (openAiService) => {
+                const resolutionResult =
+                    openAiService.resolveParameters(inputParams);
+                expect(resolutionResult.resolved).not.toBeNullish();
+                expect(resolutionResult.resolved!.tokensLimit).toEqual(
+                    expectedTokensLimit
+                );
+                expect(resolutionResult.resolved!.maxTokensToGenerate).toEqual(
+                    expectedMaxTokensToGenerate
+                );
+                // check it was resolution with default indeed
+                expect(
+                    resolutionResult.resolutionLogs.find(
+                        (paramLog) =>
+                            paramLog.inputParamName === "maxTokensToGenerate"
+                    )?.resolvedWithDefault.wasPerformed
+                ).toBeTruthy();
+                expect(
+                    resolutionResult.resolutionLogs.find(
+                        (paramLog) => paramLog.inputParamName === "tokensLimit"
+                    )?.resolvedWithDefault.wasPerformed
+                ).toBeTruthy();
+            });
+        });
+    }
+
+    (
+        [
+            ["gpt-3.5-turbo-0301", 4096, 2048],
+            ["gpt-3.5-turbo-0125", 16_385, 4096],
+            ["gpt-4-32k-0314", 32_768, 4096],
+        ] as [string, number, number][]
+    ).forEach(
+        ([modelName, expectedTokensLimit, expectedMaxTokensToGenerate]) => {
+            testResolvesTokensWithDefault(
+                modelName,
+                expectedTokensLimit,
+                expectedMaxTokensToGenerate
+            );
+        }
+    );
+
+    test("Test `resolveParameters` validates OpenAI-extended params (`temperature`) & tokens params", async () => {
         const inputParams: OpenAiUserModelParams = {
             ...requiredInputParamsTemplate,
             apiKey: "undefined",
         };
         await withLLMService(new OpenAiService(), async (openAiService) => {
-            // temperature !in [0, 2]
+            // `temperature` !in [0, 2]
             testResolveParametersFailsWithSingleCause(
                 openAiService,
                 {
@@ -91,6 +144,28 @@ suite("[LLMService] Test `OpenAiService`", function () {
                     temperature: 5,
                 },
                 "temperature"
+            );
+
+            // `maxTokensToGenerate` > known `maxTokensToGenerate` for the "gpt-3.5-turbo-0301" model
+            testResolveParametersFailsWithSingleCause(
+                openAiService,
+                {
+                    ...inputParams,
+                    modelName: "gpt-3.5-turbo-0301",
+                    maxTokensToGenerate: 5000,
+                },
+                "maxTokensToGenerate"
+            );
+
+            // `tokensLimit` > known `tokensLimit` for the "gpt-3.5-turbo-0301" model
+            testResolveParametersFailsWithSingleCause(
+                openAiService,
+                {
+                    ...inputParams,
+                    modelName: "gpt-3.5-turbo-0301",
+                    tokensLimit: 5000,
+                },
+                "tokensLimit"
             );
         });
     });
