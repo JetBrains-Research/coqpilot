@@ -2,6 +2,7 @@ import { expect } from "earl";
 
 import {
     ParamsResolver,
+    ResolutionActionDetailedResult,
     SingleParamResolver,
 } from "../../../../llm/llmServices/utils/paramsResolvers/abstractResolvers";
 import { ResolutionActionResult } from "../../../../llm/llmServices/utils/paramsResolvers/abstractResolvers";
@@ -135,12 +136,21 @@ suite("[LLMService-s utils] Test single parameter resolution", () => {
         [
             [false, "specified value"],
             [undefined, "no value specified"],
+            [true, 'already specified "true" value is not'],
         ] as [boolean | undefined, string][]
     ).forEach(([value, testCaseName]) => {
         const inputReadCorrectly: ResolutionActionResult<boolean> =
             value === undefined
                 ? { wasPerformed: false }
                 : { wasPerformed: true, withValue: value };
+        const overriden: ResolutionActionDetailedResult<boolean> =
+            value === true
+                ? { wasPerformed: false }
+                : {
+                      wasPerformed: true,
+                      withValue: true,
+                      message: "is always true",
+                  };
 
         testSingleParamResolution<boolean>(
             `Test override with "always true": ${testCaseName} overriden`,
@@ -153,11 +163,7 @@ suite("[LLMService-s utils] Test single parameter resolution", () => {
             {
                 resultValue: true,
                 inputReadCorrectly: inputReadCorrectly,
-                overriden: {
-                    wasPerformed: true,
-                    withValue: true,
-                    message: "is always true",
-                },
+                overriden: overriden,
             }
         );
 
@@ -172,20 +178,32 @@ suite("[LLMService-s utils] Test single parameter resolution", () => {
     (
         [
             [5, "specified value overriden", 6],
-            [undefined, "no value specified resolved with default", 1],
+            [
+                undefined,
+                "no value specified (is not overriden) resolved with default",
+                1,
+            ],
             [0, "specified value is forced to be resolved with default", 1],
         ] as [number | undefined, string, number][]
     ).forEach(([value, testCaseName, expectedResultValue]) => {
         const overriderMessage =
             "is 6 if value is defined and non-zero; otherwise should be resolved with default";
-        const shouldNotOverride = value === undefined || value === 0;
+        const forceDefaultResolution = value === undefined || value === 0;
+        const overriden: ResolutionActionDetailedResult<number> =
+            value === undefined
+                ? { wasPerformed: false }
+                : {
+                      wasPerformed: true,
+                      withValue: forceDefaultResolution ? undefined : 6,
+                      message: overriderMessage,
+                  };
         testSingleParamResolution<number>(
             `Test conditional override with default resolution: ${testCaseName}`,
             value,
             (builder) =>
                 builder
                     .override(() => {
-                        if (shouldNotOverride) {
+                        if (forceDefaultResolution) {
                             return undefined;
                         }
                         return 6;
@@ -198,14 +216,10 @@ suite("[LLMService-s utils] Test single parameter resolution", () => {
                     wasPerformed: value === undefined ? false : true,
                     withValue: value,
                 },
-                overriden: {
-                    wasPerformed: true,
-                    withValue: shouldNotOverride ? undefined : 6,
-                    message: overriderMessage,
-                },
+                overriden: overriden,
                 resolvedWithDefault: {
-                    wasPerformed: shouldNotOverride ? true : false,
-                    withValue: shouldNotOverride ? 1 : undefined,
+                    wasPerformed: forceDefaultResolution ? true : false,
+                    withValue: forceDefaultResolution ? 1 : undefined,
                 },
             }
         );

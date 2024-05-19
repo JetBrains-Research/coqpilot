@@ -17,6 +17,11 @@ export interface SingleParamResolutionResult<T> {
     resultValue?: T;
     isInvalidCause?: string;
     inputReadCorrectly: ResolutionActionResult<T>;
+    /**
+     * `overriden.wasPerformed` is true iff the parameter's input value is overriden with a new value.
+     * I.e. if an override attempt is made with the same value as the input,
+     * `overriden.wasPerformed` will be false.
+     */
     overriden: ResolutionActionDetailedResult<T>;
     resolvedWithDefault: ResolutionActionResult<T>;
 }

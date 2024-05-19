@@ -298,7 +298,7 @@ export class SingleParamResolverImpl<
         const { valueBuilder, explanationMessage } = this.overrider;
         const valueToOverrideWith = valueBuilder(inputParams);
         if (this.overridenWithMockValue) {
-            // no checks and logs are needed, just return value
+            // no checks and logs are needed, just return the mock value
             result.resultValue = valueToOverrideWith;
             if (valueToOverrideWith === undefined) {
                 throw Error(
@@ -306,6 +306,9 @@ export class SingleParamResolverImpl<
                 );
             }
             return [valueToOverrideWith, true];
+        }
+        if (value === valueToOverrideWith) {
+            return [value, false];
         }
         result.overriden = {
             wasPerformed: true,
