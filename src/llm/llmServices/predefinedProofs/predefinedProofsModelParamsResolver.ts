@@ -24,8 +24,8 @@ export class PredefinedProofsModelParamsResolver extends BasicModelParamsResolve
 
     readonly maxTokensToGenerate = this.resolveParam<number>(
         "maxTokensToGenerate"
-    ).overrideWithMock((userModelParams) =>
-        Math.max(0, ...userModelParams.tactics.map((tactic) => tactic.length))
+    ).overrideWithMock((inputParams) =>
+        Math.max(0, ...inputParams.tactics.map((tactic) => tactic.length))
     );
 
     readonly tokensLimit = this.resolveParam<number>(
@@ -44,16 +44,17 @@ export class PredefinedProofsModelParamsResolver extends BasicModelParamsResolve
 
     readonly defaultChoices = this.resolveParam<number>("choices")
         .override(
-            (userModelParams) => userModelParams.tactics.length,
-            `always equals to the total number of \`tactics\``
+            (inputParams) => inputParams.tactics.length,
+            (inputParams) =>
+                `always equals to the total number of \`tactics\` (${inputParams.tactics.length} for the specified \`tactics\`)`
         )
         .requiredToBeConfigured()
         .validate(
             [(value) => value >= 0, "be non-negative"],
             [
-                (value, userModelParams) =>
-                    value <= userModelParams.tactics.length,
-                "be less than or equal to the total number of `tactics`",
+                (value, inputParams) => value <= inputParams.tactics.length,
+                (inputParams) =>
+                    `be less than or equal to the total number of \`tactics\` (${inputParams.tactics.length} for the specified \`tactics\`)`,
             ]
         );
 }

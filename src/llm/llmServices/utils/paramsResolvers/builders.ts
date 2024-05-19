@@ -21,7 +21,7 @@ export function newParam<InputType, T>(
 export interface SingleParamResolverBuilder<InputType, T> {
     override(
         valueBuilder: ValueBuilder<InputType, T>,
-        paramMessage?: string
+        paramMessage?: Message<InputType>
     ): SingleParamResolverBuilder<InputType, T>;
 
     overrideWithMock(
@@ -30,7 +30,7 @@ export interface SingleParamResolverBuilder<InputType, T> {
 
     default(
         valueBuilder: ValueBuilder<InputType, T>,
-        helpMessageIfNotResolved?: string
+        helpMessageIfNotResolved?: Message<InputType>
     ): SingleParamWithValueResolverBuilder<InputType, T>;
 
     requiredToBeConfigured(): SingleParamWithValueResolverBuilder<InputType, T>;
@@ -52,7 +52,20 @@ export type ValueBuilder<InputType, T> = (
 ) => T | undefined;
 export type StrictValueBuilder<InputType, T> = (inputParams: InputType) => T;
 
-export type ValidationRule<InputType, T> = [Validator<InputType, T>, string];
+export type MessageBuilder<InputType> = (inputParams: InputType) => string;
+export type Message<InputType> = string | MessageBuilder<InputType>;
+
+function buildMessage<InputType>(
+    message: Message<InputType> | undefined,
+    inputParams: InputType
+): string | undefined {
+    return typeof message === "function" ? message(inputParams) : message;
+}
+
+export type ValidationRule<InputType, T> = [
+    Validator<InputType, T>,
+    Message<InputType>,
+];
 export type Validator<InputType, T> = (
     value: T,
     inputParams: InputType
@@ -69,12 +82,12 @@ export namespace ValidationRules {
 
 interface Overrider<InputType, T> {
     valueBuilder: ValueBuilder<InputType, T>;
-    explanationMessage?: string;
+    explanationMessage?: Message<InputType>;
 }
 
 interface DefaultResolver<InputType, T> {
     valueBuilder: ValueBuilder<InputType, T>;
-    noDefaultValueHelpMessage?: string;
+    noDefaultValueHelpMessage?: Message<InputType>;
 }
 
 class SingleParamResolverBuilderImpl<InputType, T>
@@ -85,7 +98,7 @@ class SingleParamResolverBuilderImpl<InputType, T>
 
     override(
         valueBuilder: ValueBuilder<InputType, T>,
-        paramMessage?: string
+        paramMessage?: Message<InputType>
     ): SingleParamResolverBuilder<InputType, T> {
         if (this.overrider !== undefined) {
             throw new Error(
@@ -115,7 +128,7 @@ class SingleParamResolverBuilderImpl<InputType, T>
 
     default(
         valueBuilder: ValueBuilder<InputType, T>,
-        noDefaultValueHelpMessage?: string
+        noDefaultValueHelpMessage?: Message<InputType>
     ): SingleParamWithValueResolverBuilder<InputType, T> {
         return new SingleParamWithValueResolverBuilderImpl(
             this.inputParamName,
@@ -297,7 +310,7 @@ export class SingleParamResolverImpl<
         result.overriden = {
             wasPerformed: true,
             withValue: valueToOverrideWith,
-            message: explanationMessage,
+            message: buildMessage(explanationMessage, inputParams),
         };
         return [valueToOverrideWith, false];
     }
@@ -322,7 +335,11 @@ export class SingleParamResolverImpl<
         };
         // failed to resolve value because default value was not found (but could potentially)
         if (value === undefined) {
-            result.isInvalidCause = `${this.noValueMessage()}. ${noDefaultValueHelpMessage}`;
+            const helpMessageSuffix =
+                noDefaultValueHelpMessage === undefined
+                    ? ""
+                    : `. ${buildMessage(noDefaultValueHelpMessage, inputParams)}`;
+            result.isInvalidCause = `${this.noValueMessage()}${helpMessageSuffix}`;
             return [value, true];
         }
         return [value, false];
@@ -338,7 +355,7 @@ export class SingleParamResolverImpl<
             .validationRules) {
             const validationResult = validateValue(value, inputParams);
             if (!validationResult) {
-                result.isInvalidCause = `${this.quotedName()} should ${paramShouldMessage}, but has value "${JSON.stringify(value)}"`;
+                result.isInvalidCause = `${this.quotedName()} should ${buildMessage(paramShouldMessage, inputParams)}, but has value "${JSON.stringify(value)}"`;
                 return false;
             }
         }

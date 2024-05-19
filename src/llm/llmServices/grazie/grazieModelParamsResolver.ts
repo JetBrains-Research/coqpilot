@@ -26,7 +26,7 @@ export class GrazieModelParamsResolver extends BasicModelParamsResolver<
     )
         .override(
             () => GrazieService.maxTokensToGeneratePredefined,
-            `is always "${GrazieService.maxTokensToGeneratePredefined}" for \`GrazieService\``
+            `is always ${GrazieService.maxTokensToGeneratePredefined} for \`GrazieService\``
         )
         .requiredToBeConfigured()
         .validate(ValidationRules.bePositiveNumber);
