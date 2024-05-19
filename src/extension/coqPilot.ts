@@ -205,16 +205,16 @@ export class CoqPilot {
             highlightTextInEditor(completionRange);
         } else if (result instanceof FailureGenerationResult) {
             switch (result.status) {
-                case FailureGenerationStatus.timeoutExceeded:
+                case FailureGenerationStatus.TIMEOUT_EXCEEDED:
                     showMessageToUser(EditorMessages.timeoutExceeded, "info");
                     break;
-                case FailureGenerationStatus.errorOccurred:
+                case FailureGenerationStatus.ERROR_OCCURRED:
                     showMessageToUser(
                         EditorMessages.errorOccurred(result.message),
                         "error"
                     );
                     break;
-                case FailureGenerationStatus.searchFailed:
+                case FailureGenerationStatus.SEARCH_FAILED:
                     const completionLine =
                         completionContext.prefixEndPosition.line + 1;
                     showMessageToUser(

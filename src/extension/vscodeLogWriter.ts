@@ -1,7 +1,7 @@
 import pino, { DestinationStream, LoggerOptions } from "pino";
 import { OutputChannel, window } from "vscode";
 
-import { ALL_EVENTS, EventLogger, Severity } from "../logging/eventLogger";
+import { EventLogger, Severity, anyEventKeyword } from "../logging/eventLogger";
 
 class VSCodeLogWriter {
     private readonly outputStream = new VSCodeOutputChannelDestinationStream(
@@ -25,15 +25,19 @@ class VSCodeLogWriter {
     );
 
     constructor(eventLogger: EventLogger, logLevel: Severity = Severity.INFO) {
-        eventLogger.subscribe(ALL_EVENTS, Severity.INFO, (message, data) => {
-            this.outputStreamWriter.info({
-                message,
-                data,
-            });
-        });
+        eventLogger.subscribe(
+            anyEventKeyword,
+            Severity.INFO,
+            (message, data) => {
+                this.outputStreamWriter.info({
+                    message,
+                    data,
+                });
+            }
+        );
         if (logLevel === Severity.DEBUG) {
             eventLogger.subscribe(
-                ALL_EVENTS,
+                anyEventKeyword,
                 Severity.DEBUG,
                 (message, data) => {
                     this.outputStreamWriter.info({

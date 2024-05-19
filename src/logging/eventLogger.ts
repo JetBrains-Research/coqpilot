@@ -1,12 +1,10 @@
-/* eslint-disable @typescript-eslint/naming-convention */
 export enum Severity {
-    LOGIC = "LOGIC",
-    INFO = "INFO",
-    DEBUG = "DEBUG",
+    LOGIC,
+    INFO,
+    DEBUG,
 }
 
-export const ALL_EVENTS = "all";
-/* eslint-enable @typescript-eslint/naming-convention */
+export const anyEventKeyword = "any";
 
 export type SubscriptionId = number;
 
@@ -61,7 +59,7 @@ export class EventLogger {
             }
         });
 
-        this.events[ALL_EVENTS]?.forEach((eventSubscription) => {
+        this.events[anyEventKeyword]?.forEach((eventSubscription) => {
             if (eventSubscription.severity === severity) {
                 eventSubscription.callback(message, data);
             }

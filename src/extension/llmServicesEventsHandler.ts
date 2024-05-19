@@ -21,17 +21,15 @@ import {
     toSettingName,
 } from "./settingsValidationError";
 
-/* eslint-disable @typescript-eslint/naming-convention */
 enum LLMServiceAvailablityState {
-    AVAILABLE = "AVAILABLE",
-    UNAVAILABLE = "UNAVAILABLE",
+    AVAILABLE,
+    UNAVAILABLE,
 }
 
-/* eslint-disable @typescript-eslint/naming-convention */
 enum LLMServiceMessagesShownState {
-    NO_MESSAGES_SHOWN = "NO_MESSAGES_SHOWN",
-    BECOME_UNAVAILABLE_MESSAGE_SHOWN = "BECOME_UNAVAILABLE_MESSAGE_SHOWN",
-    AGAIN_AVAILABLE_MESSAGE_SHOWN = "AGAIN_AVAILABLE_MESSAGE_SHOWN",
+    NO_MESSAGES_SHOWN,
+    BECOME_UNAVAILABLE_MESSAGE_SHOWN,
+    AGAIN_AVAILABLE_MESSAGE_SHOWN,
 }
 
 interface LLMServiceUIState {

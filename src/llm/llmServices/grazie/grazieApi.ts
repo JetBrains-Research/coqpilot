@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/naming-convention */
 import axios from "axios";
 import { ResponseType } from "axios";
 
@@ -65,12 +64,14 @@ export class GrazieApi {
     }
 
     private createHeaders(token: string): any {
+        /* eslint-disable @typescript-eslint/naming-convention */
         return {
             Accept: "*/*",
             "Content-Type": "application/json",
             "Grazie-Authenticate-Jwt": token,
             "Grazie-Original-Service-JWT": token,
         };
+        /* eslint-enable @typescript-eslint/naming-convention */
     }
 
     private chunkToTokens(chunk: any): string[] {

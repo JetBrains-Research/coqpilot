@@ -30,7 +30,7 @@ export async function parseCoqFile(
 export class CoqParsingError extends Error {
     constructor(
         public message: string,
-        public data?: any // eslint-disable-line @typescript-eslint/no-explicit-any
+        public data?: any
     ) {
         super(message);
     }

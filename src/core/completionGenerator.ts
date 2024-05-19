@@ -57,9 +57,9 @@ export class FailureGenerationResult implements GenerationResult {
 }
 
 export enum FailureGenerationStatus {
-    timeoutExceeded,
-    errorOccurred,
-    searchFailed,
+    TIMEOUT_EXCEEDED,
+    ERROR_OCCURRED,
+    SEARCH_FAILED,
 }
 
 export async function generateCompletion(
@@ -136,7 +136,7 @@ export async function generateCompletion(
         }
 
         return new FailureGenerationResult(
-            FailureGenerationStatus.searchFailed,
+            FailureGenerationStatus.SEARCH_FAILED,
             "No valid completions found"
         );
     } catch (e: any) {
@@ -146,7 +146,7 @@ export async function generateCompletion(
                 `Object was thrown during completion generation: ${e}`
             );
             return new FailureGenerationResult(
-                FailureGenerationStatus.errorOccurred,
+                FailureGenerationStatus.ERROR_OCCURRED,
                 `please report this crash by opening an issue in the Coqpilot GitHub repository: object was thrown as error, "${JSON.stringify(e)}"`
             );
         } else {
@@ -156,12 +156,12 @@ export async function generateCompletion(
         }
         if (e instanceof CoqLspTimeoutError) {
             return new FailureGenerationResult(
-                FailureGenerationStatus.timeoutExceeded,
+                FailureGenerationStatus.TIMEOUT_EXCEEDED,
                 e.message
             );
         } else {
             return new FailureGenerationResult(
-                FailureGenerationStatus.errorOccurred,
+                FailureGenerationStatus.ERROR_OCCURRED,
                 e.message
             );
         }

@@ -113,7 +113,7 @@ suite("Completion generation tests", () => {
         );
         expect(results[1]).toBeA(FailureGenerationResult);
         expect((results[1] as FailureGenerationResult).status).toEqual(
-            FailureGenerationStatus.searchFailed
+            FailureGenerationStatus.SEARCH_FAILED
         );
     }).timeout(2000);
 
