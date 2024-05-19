@@ -21,9 +21,11 @@ export interface EventsTracker {
     failedRequestEventsN: number;
 }
 
-export function subscribeToTrackEvents(
+export function subscribeToTrackEvents<
+    LLMServiceType extends LLMService<any, any>,
+>(
     testEventLogger: EventLogger,
-    expectedService: LLMService<any, any>,
+    expectedService: LLMServiceType,
     expectedModelId: string,
     expectedError?: LLMServiceError
 ): EventsTracker {

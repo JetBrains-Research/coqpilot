@@ -5,8 +5,8 @@ import { window, workspace } from "vscode";
 export namespace EditorMessages {
     export const timeoutExceeded =
         "The proof checking process timed out. Please try again.";
-    export const noProofsForAdmit = (admitIdentifier: any) =>
-        `Coqpilot failed to find a proof for the admit at line ${admitIdentifier}.`;
+    export const noProofsForAdmit = (lineWithAdmitNumber: number) =>
+        `Coqpilot failed to find a proof for the admit at line ${lineWithAdmitNumber}.`;
     export const errorOccurred = (errorMessage: string) =>
         `Coqpilot got an error: "${errorMessage}". Please make sure the environment is properly set and the plugin is configured correctly. For more information, see the README: https://github.com/JetBrains-Research/coqpilot/blob/main/README.md. If the error appears to be a bug, please report it by opening an issue in the Coqpilot GitHub repository.`;
     export const modelConfiguredIncorrectly = (

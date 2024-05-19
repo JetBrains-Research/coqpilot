@@ -1,8 +1,10 @@
 import { GrazieService } from "./llmServices/grazie/grazieService";
 import { LLMService } from "./llmServices/llmService";
 import { LMStudioService } from "./llmServices/lmStudio/lmStudioService";
+import { ModelParams } from "./llmServices/modelParams";
 import { OpenAiService } from "./llmServices/openai/openAiService";
 import { PredefinedProofsService } from "./llmServices/predefinedProofs/predefinedProofsService";
+import { UserModelParams } from "./userModelParams";
 
 export interface LLMServices {
     predefinedProofsService: PredefinedProofsService;
@@ -17,7 +19,7 @@ export function disposeServices(llmServices: LLMServices) {
 
 export function asLLMServices(
     llmServices: LLMServices
-): LLMService<any, any>[] {
+): LLMService<UserModelParams, ModelParams>[] {
     return [
         llmServices.predefinedProofsService,
         llmServices.openAiService,

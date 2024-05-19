@@ -132,7 +132,7 @@ function validateAndParseJson<T>(
         const settingsName = targetClassSchema.title;
         if (settingsName === undefined) {
             throw Error(
-                `unknown \`targetClassSchema\`: "${targetClassSchema}"; while resolving json: "${json}"`
+                `unknown \`targetClassSchema\`: "${targetClassSchema}"; while resolving json: "${JSON.stringify(json)}"`
             );
         }
         throw new SettingsValidationError(
@@ -276,7 +276,7 @@ function buildParameterOverridenMessage(
     paramLog: SingleParamResolutionResult<any>
 ): string {
     const paramName = `\`${paramLog.inputParamName}\``;
-    const withValue = `"${paramLog.overriden.withValue}"`;
+    const withValue = `"${JSON.stringify(paramLog.overriden.withValue)}"`;
     const explanation =
         paramLog.overriden.message === undefined
             ? ""

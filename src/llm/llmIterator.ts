@@ -116,7 +116,7 @@ export class LLMSequentialIterator
         return false;
     }
 
-    async next(): Promise<IteratorResult<GeneratedProofsBatch, any>> {
+    async next(): Promise<IteratorResult<GeneratedProofsBatch>> {
         const finished = await this.prepareFetched();
         if (finished) {
             return { done: true, value: undefined };
@@ -130,7 +130,7 @@ export class LLMSequentialIterator
         return { done: false, value: proofs };
     }
 
-    async nextProof(): Promise<IteratorResult<GeneratedProof, any>> {
+    async nextProof(): Promise<IteratorResult<GeneratedProof>> {
         const finished = await this.prepareFetched();
         if (finished) {
             return { done: true, value: undefined };

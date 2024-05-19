@@ -134,7 +134,7 @@ class LMStudioServiceInternal extends LLMServiceInternal<
         "Content-Type": "application/json",
     };
 
-    private body(messages: ChatHistory, params: LMStudioModelParams): any {
+    private body(messages: ChatHistory, params: LMStudioModelParams): string {
         return JSON.stringify({
             messages: messages,
             stream: false,

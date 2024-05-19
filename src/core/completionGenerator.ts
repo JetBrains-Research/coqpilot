@@ -46,7 +46,7 @@ export interface ProcessEnvironment {
 export interface GenerationResult {}
 
 export class SuccessGenerationResult implements GenerationResult {
-    constructor(public data: any) {}
+    constructor(public data: string) {}
 }
 
 export class FailureGenerationResult implements GenerationResult {

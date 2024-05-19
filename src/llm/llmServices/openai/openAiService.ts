@@ -102,9 +102,13 @@ class OpenAiServiceInternal extends LLMServiceInternal<
                 // eslint-disable-next-line @typescript-eslint/naming-convention
                 max_tokens: params.maxTokensToGenerate,
             });
-            return completion.choices.map(
-                (choice: any) => choice.message.content
-            );
+            return completion.choices.map((choice) => {
+                const content = choice.message.content;
+                if (content === null) {
+                    throw Error("response message content is null");
+                }
+                return content;
+            });
         } catch (e) {
             throw OpenAiServiceInternal.repackKnownError(e, params);
         }
