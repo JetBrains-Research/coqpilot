@@ -2,7 +2,7 @@ name: Build and Test
 
 on: 
   push:
-    branches: [ main ]
+    branches: [ main, llm-services-improvement ]
   pull_request:
     branches: [ main ]
 env: 
@@ -65,14 +65,18 @@ jobs:
     - name: Test on Linux
       env:
           COQ_LSP_PATH: ${{ env.coqlsppath }}
-      run: xvfb-run -a npm run test-ci
+      run: xvfb-run -a npm run clean-test
       if: runner.os == 'Linux'
 
     - name: Test not on Linux
       env:
           COQ_LSP_PATH: ${{ env.coqlsppath }}
-      run: npm run test-ci
+      run: npm run clean-test
       if: runner.os != 'Linux'
+    
+    - name: Setup tmate session
+      if: ${{ failure() }}
+      uses: mxschmitt/action-tmate@v3
 
     - name: Package Extension
       id: packageExtension
