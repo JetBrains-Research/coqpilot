@@ -1,6 +1,7 @@
 import {
     ConfigurationError,
     GenerationFailedError,
+    RemoteConnectionError,
 } from "../llm/llmServiceErrors";
 import { LLMServices, asLLMServices } from "../llm/llmServices";
 import {
@@ -150,9 +151,14 @@ function reactToRequestFailedEvent(
             );
             return;
         }
-        if (!(llmServiceError instanceof GenerationFailedError)) {
+        if (
+            !(
+                llmServiceError instanceof RemoteConnectionError ||
+                llmServiceError instanceof GenerationFailedError
+            )
+        ) {
             throw Error(
-                `\`llmServiceError\` of the received ${LLMServiceImpl.requestFailedEvent} event data is expected to be either a \` ConfigurationError\` or \`GenerationFailedError\`, but got: "${llmServiceError}"`
+                `\`llmServiceError\` of the received ${LLMServiceImpl.requestFailedEvent} event data is expected to be either a \` ConfigurationError\`, \`RemoteConnectionError\`, or \`GenerationFailedError\`, but got: "${llmServiceError}"`
             );
         }
 
@@ -164,16 +170,25 @@ function reactToRequestFailedEvent(
                 uiState.messagesShownState ===
                 LLMServiceMessagesShownState.NO_MESSAGES_SHOWN
             ) {
-                const formattedExpectedTime = formatTimeToUIString(
-                    requestFailed.llmService.estimateTimeToBecomeAvailable()
-                );
-                const becameUnavailableMessage = `\`${requestFailed.llmService.serviceName}\` became unavailable for this generation.`;
-                const errorMessage = llmServiceError.cause.message;
-                const tryAgainMessage = `If you want to use it, try again in ~ ${formattedExpectedTime}. Caused by error: "${errorMessage}".`;
-                showMessageToUser(
-                    `${becameUnavailableMessage} ${tryAgainMessage}`,
-                    "warning"
-                );
+                if (llmServiceError instanceof GenerationFailedError) {
+                    const formattedExpectedTime = formatTimeToUIString(
+                        requestFailed.llmService.estimateTimeToBecomeAvailable()
+                    );
+                    const becameUnavailableMessage = `\`${requestFailed.llmService.serviceName}\` became unavailable for this generation.`;
+                    const errorMessage = llmServiceError.cause.message;
+                    const tryAgainMessage = `If you want to use it, try again in ~ ${formattedExpectedTime}. Caused by error: "${errorMessage}".`;
+                    showMessageToUser(
+                        `${becameUnavailableMessage} ${tryAgainMessage}`,
+                        "warning"
+                    );
+                } else {
+                    const serviceFailureMessage = `\`${requestFailed.llmService.serviceName}\` became unavailable for this generation: ${llmServiceError.message}.`;
+                    const tryAgainMessage = `Check your internet connection and try again.`;
+                    showMessageToUser(
+                        `${serviceFailureMessage} ${tryAgainMessage}`,
+                        "warning"
+                    );
+                }
                 uiState.messagesShownState =
                     LLMServiceMessagesShownState.BECOME_UNAVAILABLE_MESSAGE_SHOWN;
             }

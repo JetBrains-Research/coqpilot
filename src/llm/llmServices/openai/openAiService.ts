@@ -1,7 +1,10 @@
 import OpenAI from "openai";
 
 import { EventLogger } from "../../../logging/eventLogger";
-import { ConfigurationError } from "../../llmServiceErrors";
+import {
+    ConfigurationError,
+    RemoteConnectionError,
+} from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { OpenAiUserModelParams } from "../../userModelParams";
 import { ChatHistory } from "../chat";
@@ -151,8 +154,8 @@ class OpenAiServiceInternal extends LLMServiceInternal<
             return new ConfigurationError(`${intro}; ${explanation}`);
         }
         if (this.matchesPattern(this.connectionErrorPattern, errorMessage)) {
-            return Error(
-                "failed to reach OpenAI remote service, check your internet connection"
+            return new RemoteConnectionError(
+                "failed to reach OpenAI remote service"
             );
         }
         return error;
