@@ -234,7 +234,11 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                 await predefinedProofsService.generateFromChat(
                     {
                         chat: [],
-                        estimatedTokens: 0,
+                        estimatedTokens: {
+                            messagesTokens: 0,
+                            maxTokensToGenerate: 0,
+                            maxTokensInTotal: 0,
+                        },
                     },
                     resolvedParams,
                     choices,

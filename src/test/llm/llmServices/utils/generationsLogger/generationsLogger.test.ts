@@ -6,7 +6,10 @@ import {
     GenerationFailedError,
     LLMServiceError,
 } from "../../../../../llm/llmServiceErrors";
-import { ChatHistory } from "../../../../../llm/llmServices/chat";
+import {
+    ChatHistory,
+    EstimatedTokens,
+} from "../../../../../llm/llmServices/chat";
 import {
     LLMServiceRequest,
     LLMServiceRequestFailed,
@@ -65,7 +68,11 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
     };
     // different from `defaultChoices`, it's a real-life case
     const mockChoices = 2;
-    const mockEstimatedTokens = 100;
+    const mockEstimatedTokens: EstimatedTokens = {
+        messagesTokens: 100,
+        maxTokensToGenerate: 80,
+        maxTokensInTotal: 180,
+    };
     const mockChat: ChatHistory = [
         {
             role: "system",
