@@ -2,7 +2,7 @@
 import axios from "axios";
 import { ResponseType } from "axios";
 
-import { DebugWrappers } from "../llmService";
+import { DebugWrappers } from "../llmServiceInternal";
 import { GrazieModelParams } from "../modelParams";
 
 export type GrazieChatRole = "User" | "System" | "Assistant";

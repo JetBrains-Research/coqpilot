@@ -2,12 +2,9 @@ import { EventLogger } from "../../../logging/eventLogger";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { GrazieUserModelParams } from "../../userModelParams";
 import { ChatHistory, ChatMessage } from "../chat";
-import {
-    GeneratedProofImpl,
-    LLMServiceInternal,
-    ProofVersion,
-} from "../llmService";
+import { GeneratedProofImpl, ProofVersion } from "../llmService";
 import { LLMServiceImpl } from "../llmService";
+import { LLMServiceInternal } from "../llmServiceInternal";
 import { GrazieModelParams } from "../modelParams";
 
 import { GrazieApi, GrazieChatRole, GrazieFormattedHistory } from "./grazieApi";

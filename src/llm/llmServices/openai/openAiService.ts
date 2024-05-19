@@ -8,9 +8,9 @@ import { ChatHistory } from "../chat";
 import {
     GeneratedProofImpl,
     LLMServiceImpl,
-    LLMServiceInternal,
     ProofVersion,
 } from "../llmService";
+import { LLMServiceInternal } from "../llmServiceInternal";
 import { OpenAiModelParams } from "../modelParams";
 
 import { OpenAiModelParamsResolver } from "./openAiModelParamsResolver";

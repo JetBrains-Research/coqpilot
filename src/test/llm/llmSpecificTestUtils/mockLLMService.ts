@@ -11,9 +11,9 @@ import {
     ErrorsHandlingMode,
     GeneratedProofImpl,
     LLMServiceImpl,
-    LLMServiceInternal,
     ProofVersion,
 } from "../../../llm/llmServices/llmService";
+import { LLMServiceInternal } from "../../../llm/llmServices/llmServiceInternal";
 import {
     ModelParams,
     modelParamsSchema,

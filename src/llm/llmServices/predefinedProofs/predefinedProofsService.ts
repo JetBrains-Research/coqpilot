@@ -6,10 +6,10 @@ import { ChatHistory } from "../chat";
 import {
     ErrorsHandlingMode,
     GeneratedProofImpl,
-    LLMServiceInternal,
     ProofVersion,
 } from "../llmService";
 import { LLMServiceImpl } from "../llmService";
+import { LLMServiceInternal } from "../llmServiceInternal";
 import { PredefinedProofsModelParams } from "../modelParams";
 import { Time, timeZero } from "../utils/time";
 
