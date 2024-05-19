@@ -5,6 +5,8 @@ import { ParamsResolutionResult } from "../../llm/llmServices/utils/paramsResolv
 import { ParamsResolverImpl } from "../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";
 import { UserModelParams } from "../../llm/userModelParams";
 
+import { stringifyAnyValue } from "../../utils/printers";
+
 export function resolveOrThrow<InputType, ResolveToType>(
     paramsResolver: ParamsResolverImpl<InputType, ResolveToType>,
     inputParams: InputType
@@ -36,6 +38,6 @@ function unpackResolvedParamsOrThrow<InputType, ResolveToType>(
         .map((paramLog) => paramLog.isInvalidCause)
         .join("; ");
     throw new ConfigurationError(
-        `parameters "${JSON.stringify(inputParams)}" could not be resolved: ${joinedErrorLogs}`
+        `parameters ${stringifyAnyValue(inputParams)} could not be resolved: ${joinedErrorLogs}`
     );
 }

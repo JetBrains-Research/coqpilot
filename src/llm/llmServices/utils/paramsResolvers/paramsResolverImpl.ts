@@ -1,5 +1,7 @@
 import Ajv, { JSONSchemaType, ValidateFunction } from "ajv";
 
+import { stringifyDefinedValue } from "../../../../utils/printers";
+
 import {
     ParamsResolutionResult,
     ParamsResolver,
@@ -114,7 +116,7 @@ export abstract class ParamsResolverImpl<InputType, ResolveToType>
         if (!this._resolveToTypeValidator(resolvedParams)) {
             // TODO: show ajv errors
             throw new Error(
-                `\`ParamsResolver\` is configured incorrectly: resulting "${JSON.stringify(resolvedParamsObject)}" could not be interpreted as \`${this._resolveToTypeName}\` object`
+                `\`ParamsResolver\` is configured incorrectly: resulting ${stringifyDefinedValue(resolvedParamsObject)} could not be interpreted as \`${this._resolveToTypeName}\` object`
             );
         }
         return {

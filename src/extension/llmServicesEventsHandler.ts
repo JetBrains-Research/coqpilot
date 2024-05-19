@@ -14,6 +14,7 @@ import { ModelParams } from "../llm/llmServices/modelParams";
 import { Time } from "../llm/llmServices/utils/time";
 
 import { EventLogger } from "../logging/eventLogger";
+import { stringifyAnyValue } from "../utils/printers";
 import { SimpleSet } from "../utils/simpleSet";
 
 import { EditorMessages, showMessageToUser } from "./editorMessages";
@@ -203,7 +204,7 @@ function parseLLMServiceRequestEvent<T extends LLMServiceRequest>(
 ): [T, LLMServiceUIState] {
     const request = data as T;
     if (request === null) {
-        throw Error(`${errorMessage}, but data = \`${data}\``);
+        throw Error(`${errorMessage}, but data = ${stringifyAnyValue(data)}`);
     }
     const serviceName = request.llmService.serviceName;
     const uiState = llmServiceToUIState.get(serviceName);

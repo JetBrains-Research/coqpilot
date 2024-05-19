@@ -1,3 +1,8 @@
+import {
+    stringifyAnyValue,
+    stringifyDefinedValue,
+} from "../../../../utils/printers";
+
 import { AbstractSingleParamResolver } from "./abstractResolvers";
 import { SingleParamResolutionResult } from "./abstractResolvers";
 import { accessParamByName } from "./paramAccessor";
@@ -280,7 +285,7 @@ export class SingleParamResolverImpl<
         } else {
             // unfortunately, this case is unreachable: TypeScript does not provide the way to check that `userValue` is of `T` type indeed
             throw Error(
-                `cast of \`any\` to generic \`T\` type should always succeed, value = "${userValue}" for ${this.quotedName()} parameter`
+                `cast of \`any\` to generic \`T\` type should always succeed, value = ${stringifyAnyValue(userValue)} for ${this.quotedName()} parameter`
             );
         }
     }
@@ -358,7 +363,7 @@ export class SingleParamResolverImpl<
             .validationRules) {
             const validationResult = validateValue(value, inputParams);
             if (!validationResult) {
-                result.isInvalidCause = `${this.quotedName()} should ${buildMessage(paramShouldMessage, inputParams)}, but has value "${JSON.stringify(value)}"`;
+                result.isInvalidCause = `${this.quotedName()} should ${buildMessage(paramShouldMessage, inputParams)}, but has value ${stringifyDefinedValue(value)}`;
                 return false;
             }
         }
@@ -370,6 +375,6 @@ export class SingleParamResolverImpl<
     }
 
     private noValueMessage(): string {
-        return `"${this.quotedName()} is required, but neither a user value nor a default one is specified"`;
+        return `${this.quotedName()} is required, but neither a user value nor a default one is specified`;
     }
 }

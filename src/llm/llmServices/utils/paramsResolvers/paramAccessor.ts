@@ -1,3 +1,5 @@
+import { stringifyAnyValue } from "../../../../utils/printers";
+
 export function accessParamByName<InputType>(
     inputParams: InputType,
     inputParamNameInDotNotation: string,
@@ -14,7 +16,7 @@ export function accessParamByName<InputType>(
         ) {
             if (throwOnUndefinedInterimProperty) {
                 throw Error(
-                    `failed to access \`${inputParams}\` property in "${JSON.stringify(inputParams)}" input params`
+                    `failed to access \`${inputParams}\` property in ${stringifyAnyValue(inputParams)} input params`
                 );
             } else {
                 return undefined;

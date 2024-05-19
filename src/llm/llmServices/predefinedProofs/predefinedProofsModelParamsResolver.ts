@@ -45,8 +45,7 @@ export class PredefinedProofsModelParamsResolver extends BasicModelParamsResolve
     readonly defaultChoices = this.resolveParam<number>("choices")
         .override(
             (inputParams) => inputParams.tactics.length,
-            (inputParams) =>
-                `always equals to the total number of \`tactics\` (${inputParams.tactics.length} for the specified \`tactics\`)`
+            `always equals to the total number of \`tactics\``
         )
         .requiredToBeConfigured()
         .validate(

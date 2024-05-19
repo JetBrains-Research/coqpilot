@@ -21,6 +21,8 @@ import { ContextTheoremsRanker } from "../core/contextTheoremRanker/contextTheor
 import { DistanceContextTheoremsRanker } from "../core/contextTheoremRanker/distanceContextTheoremsRanker";
 import { RandomContextTheoremsRanker } from "../core/contextTheoremRanker/randomContextTheoremsRanker";
 
+import { stringifyAnyValue } from "../utils/printers";
+
 import { pluginId } from "./coqPilot";
 import { EditorMessages } from "./editorMessages";
 import {
@@ -253,13 +255,13 @@ function buildResolutionHistory(
         return "";
     }
     const inputRead = paramLog.inputReadCorrectly.wasPerformed
-        ? `read "${JSON.stringify(paramLog.inputReadCorrectly.withValue)}"`
+        ? `read ${stringifyAnyValue(paramLog.inputReadCorrectly.withValue)}`
         : "no input value read";
     const withOverride = paramLog.overriden.wasPerformed
-        ? `, overriden with ${JSON.stringify(paramLog.overriden.withValue)}`
+        ? `, overriden with ${stringifyAnyValue(paramLog.overriden.withValue)}`
         : "";
     const withDefault = paramLog.resolvedWithDefault.wasPerformed
-        ? `, resolved with default "${JSON.stringify(paramLog.resolvedWithDefault.withValue)}"`
+        ? `, resolved with default ${stringifyAnyValue(paramLog.resolvedWithDefault.withValue)}`
         : "";
 
     const onlyFailedRead =
@@ -276,7 +278,7 @@ function buildParameterOverridenMessage(
     paramLog: SingleParamResolutionResult<any>
 ): string {
     const paramName = `\`${paramLog.inputParamName}\``;
-    const withValue = `"${JSON.stringify(paramLog.overriden.withValue)}"`;
+    const withValue = stringifyAnyValue(paramLog.overriden.withValue);
     const explanation =
         paramLog.overriden.message === undefined
             ? ""
