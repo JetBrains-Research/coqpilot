@@ -21,13 +21,25 @@ import {
 } from "./builders";
 import { accessParamByName } from "./paramAccessor";
 
+export type NoOptionalProperties<T> = [
+    {
+        [K in keyof T]-?: undefined extends T[K] ? any : never;
+    }[keyof T],
+] extends [never]
+    ? any
+    : never;
+
+export type PropertyName<T> = keyof T;
+
 // Notes:
 // * every property should be of ParamsResolver<InputType, any> type
 // * how to specify properties names:
 // - property's name should be equal to the one of ResolveToType properties (and should not start with "_")
 // - `inputParamName` should be a path to one of the properties of InputType
-export abstract class ParamsResolverImpl<InputType, ResolveToType>
-    implements ParamsResolver<InputType, ResolveToType>
+export abstract class ParamsResolverImpl<
+    InputType,
+    ResolveToType extends NoOptionalProperties<ResolveToType>,
+> implements ParamsResolver<InputType, ResolveToType>
 {
     protected readonly _resolveToTypeValidator: ValidateFunction<ResolveToType>;
     protected readonly _resolveToTypeName: string;
@@ -39,13 +51,13 @@ export abstract class ParamsResolverImpl<InputType, ResolveToType>
         this._resolveToTypeName = resolveToTypeName;
         this._resolveToTypeValidator = buildAjv(
             AjvMode.COLLECT_ALL_ERRORS
-        ).compile(resolvedParamsSchema);
+        ).compile(resolvedParamsSchema) as ValidateFunction<ResolveToType>;
     }
 
     protected resolveParam<T>(
-        inputParamName: string
+        inputParamName: PropertyName<InputType>
     ): SingleParamResolverBuilder<InputType, T> {
-        return resolveParam<InputType, T>(inputParamName);
+        return resolveParam<InputType, T>(inputParamName as string);
     }
 
     protected insertParam<T>(
@@ -57,14 +69,14 @@ export abstract class ParamsResolverImpl<InputType, ResolveToType>
     // TODO: enhance this method and builders to make resolution-with-default possible for nested objects
     // (for example: all props of nested object are required, but in top-level object this nested param is in general optional)
     protected resolveNestedParams<ParamInputType, T>(
-        inputParamName: string,
+        inputParamName: PropertyName<InputType>,
         nestedParamsResolver: ParamsResolver<ParamInputType, T>
     ): ParamsResolver<InputType, T> {
         return new (class {
             resolve(inputParams: InputType): ParamsResolutionResult<T> {
                 const paramInputValue = (accessParamByName(
                     inputParams,
-                    inputParamName
+                    inputParamName as string
                 ) ?? {}) as ParamInputType;
                 const paramResolutionResult =
                     nestedParamsResolver.resolve(paramInputValue);
@@ -74,7 +86,7 @@ export abstract class ParamsResolverImpl<InputType, ResolveToType>
                         (paramLog) => {
                             return {
                                 ...paramLog,
-                                inputParamName: `${inputParamName}.${paramLog.inputParamName}`,
+                                inputParamName: `${inputParamName as string}.${paramLog.inputParamName}`,
                             };
                         }
                     ),

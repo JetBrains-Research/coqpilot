@@ -1,10 +1,16 @@
 import { JSONSchemaType } from "ajv";
 import { expect } from "earl";
 
+import { ModelParams } from "../../../../llm/llmServices/modelParams";
 import { ParamsResolver } from "../../../../llm/llmServices/utils/paramsResolvers/abstractResolvers";
 import { ValidationRules } from "../../../../llm/llmServices/utils/paramsResolvers/builders";
-import { ParamsResolverImpl } from "../../../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";
+import {
+    NoOptionalProperties,
+    ParamsResolverImpl,
+} from "../../../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";
+import { UserModelParams } from "../../../../llm/userModelParams";
 
+// import { UserModelParams } from "../../../../llm/userModelParams";
 import { expectParamResolutionResult } from "../../llmSpecificTestUtils/expectResolutionResult";
 
 suite("[LLMService-s utils] Test `ParamsResolver`", () => {
@@ -511,4 +517,47 @@ suite("[LLMService-s utils] Test `ParamsResolver`", () => {
         },
         "deepNestedParam.nestedParam.input"
     );
+
+    type ModelParamsHasNoOptionalProperties = [
+        NoOptionalProperties<ModelParams>,
+    ] extends [never]
+        ? "false"
+        : "true";
+
+    type UserModelParamsHasNoOptionalProperties = [
+        NoOptionalProperties<UserModelParams>,
+    ] extends [never]
+        ? "false"
+        : "true";
+
+    test("Test `NoOptionalProperties` constraint", () => {
+        // @ts-ignore variable is needed only for a type check
+        const _shouldBeTrue: ModelParamsHasNoOptionalProperties = "true";
+        // @ts-ignore variable is needed only for a type check
+        const _shouldBeFalse: UserModelParamsHasNoOptionalProperties = "false";
+    });
+
+    // The following code snippets should not compile (after adding required imports). Uncomment them to test.
+
+    // class ResolveToTypeHasOptionalProperties extends ParamsResolverImpl<
+    //     UserModelParams,
+    //     UserModelParams
+    // > {
+    //     constructor() {
+    //         super(userModelParamsSchema, "UserModelParams");
+    //     }
+    // }
+
+    // class AttemptToSpecifyNonExistingPropertyOfInputType extends ParamsResolverImpl<
+    //     UserModelParams,
+    //     ModelParams
+    // > {
+    //     constructor() {
+    //         super(modelParamsSchema, "ModelParams");
+    //     }
+
+    //     readonly unicorn = this.resolveParam<string>("unicorn")
+    //         .requiredToBeConfigured()
+    //         .noValidationNeeded();
+    // }
 });
