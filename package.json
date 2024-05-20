@@ -254,8 +254,7 @@
                 }
               }
             },
-            "default": [
-            ],
+            "default": [],
             "markdownDescription": "Now available in beta for JetBrains employees only. List of configurations for Grazie models. Each configuration will be fetched for completions independently in the order they are listed.",
             "order": 2
           },
