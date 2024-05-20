@@ -1,6 +1,10 @@
-import Ajv, { JSONSchemaType, ValidateFunction } from "ajv";
+import { DefinedError, JSONSchemaType, ValidateFunction } from "ajv";
 
-import { stringifyDefinedValue } from "../../../../utils/printers";
+import {
+    AjvMode,
+    ajvErrorsAsString,
+    buildAjv,
+} from "../../../../utils/ajvErrorsHandling";
 
 import {
     ParamsResolutionResult,
@@ -33,7 +37,9 @@ export abstract class ParamsResolverImpl<InputType, ResolveToType>
         resolveToTypeName: string
     ) {
         this._resolveToTypeName = resolveToTypeName;
-        this._resolveToTypeValidator = new Ajv().compile(resolvedParamsSchema);
+        this._resolveToTypeValidator = buildAjv(
+            AjvMode.COLLECT_ALL_ERRORS
+        ).compile(resolvedParamsSchema);
     }
 
     protected resolveParam<T>(
@@ -94,7 +100,7 @@ export abstract class ParamsResolverImpl<InputType, ResolveToType>
             // no generic parametrization check is possible, unfortunately
             if (!isParamsResolver(paramResolver)) {
                 throw Error(
-                    `\`ParamsResolver\` is configured incorrectly because of "${prop}": all properties should be built up to \`ParamsResolver<InputType, any>\` type`
+                    `\`ParamsResolver\` is configured incorrectly because of \`${prop}\`: all properties should be built up to \`ParamsResolver<InputType, any>\` type`
                 );
             }
             const paramResolutionResult = paramResolver.resolve(inputParams);
@@ -114,9 +120,8 @@ export abstract class ParamsResolverImpl<InputType, ResolveToType>
 
         const resolvedParams = resolvedParamsObject as ResolveToType;
         if (!this._resolveToTypeValidator(resolvedParams)) {
-            // TODO: show ajv errors
-            throw new Error(
-                `\`ParamsResolver\` is configured incorrectly: resulting ${stringifyDefinedValue(resolvedParamsObject)} could not be interpreted as \`${this._resolveToTypeName}\` object`
+            throw Error(
+                `\`ParamsResolver\` is configured incorrectly. Resulting object could not be interpreted as \`${this._resolveToTypeName}\`: ${ajvErrorsAsString(this._resolveToTypeValidator.errors as DefinedError[])}.`
             );
         }
         return {

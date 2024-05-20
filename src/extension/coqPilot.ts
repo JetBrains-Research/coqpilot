@@ -1,4 +1,3 @@
-import Ajv from "ajv";
 import {
     ExtensionContext,
     ProgressLocation,
@@ -37,11 +36,8 @@ import {
     highlightTextInEditor,
     insertCompletion,
 } from "./documentEditor";
-import {
-    EditorMessages,
-    showMessageToUser,
-    suggestAddingAuxFilesToGitignore,
-} from "./editorMessages";
+import { suggestAddingAuxFilesToGitignore } from "./editGitignoreCommand";
+import { EditorMessages, showMessageToUser } from "./editorMessages";
 import { GlobalExtensionState } from "./globalExtensionState";
 import { subscribeToHandleLLMServicesEvents } from "./llmServicesEventsHandler";
 import {
@@ -57,8 +53,6 @@ export const pluginId = "coqpilot";
 export class CoqPilot {
     private readonly globalExtensionState: GlobalExtensionState;
     private readonly vscodeExtensionContext: ExtensionContext;
-
-    private readonly jsonSchemaValidator: Ajv;
 
     constructor(vscodeExtensionContext: ExtensionContext) {
         hideAuxFiles();
@@ -79,8 +73,6 @@ export class CoqPilot {
             "perform_completion_for_all_admits",
             this.performCompletionForAllAdmits.bind(this)
         );
-
-        this.jsonSchemaValidator = new Ajv();
 
         this.vscodeExtensionContext.subscriptions.push(this);
     }
@@ -262,7 +254,6 @@ export class CoqPilot {
             coqProofChecker: coqProofChecker,
             modelsParams: readAndValidateUserModelsParams(
                 workspace.getConfiguration(pluginId),
-                this.jsonSchemaValidator,
                 this.globalExtensionState.llmServices
             ),
             services: this.globalExtensionState.llmServices,

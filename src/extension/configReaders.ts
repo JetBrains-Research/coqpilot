@@ -1,4 +1,4 @@
-import Ajv, { JSONSchemaType } from "ajv";
+import Ajv, { DefinedError, JSONSchemaType } from "ajv";
 import { WorkspaceConfiguration, workspace } from "vscode";
 
 import { LLMServices } from "../llm/llmServices";
@@ -21,7 +21,8 @@ import { ContextTheoremsRanker } from "../core/contextTheoremRanker/contextTheor
 import { DistanceContextTheoremsRanker } from "../core/contextTheoremRanker/distanceContextTheoremsRanker";
 import { RandomContextTheoremsRanker } from "../core/contextTheoremRanker/randomContextTheoremsRanker";
 
-import { stringifyAnyValue } from "../utils/printers";
+import { AjvMode, buildAjv } from "../utils/ajvErrorsHandling";
+import { stringifyAnyValue, stringifyDefinedValue } from "../utils/printers";
 
 import { pluginId } from "./coqPilot";
 import { EditorMessages } from "./editorMessages";
@@ -50,9 +51,16 @@ export function buildTheoremsRankerFromConfig(): ContextTheoremsRanker {
 
 export function readAndValidateUserModelsParams(
     config: WorkspaceConfiguration,
-    jsonSchemaValidator: Ajv,
     llmServices: LLMServices
 ): ModelsParams {
+    /*
+     * Although the messages might become too verbose because of reporting all errors at once
+     * (unfortuantely, vscode notifications do not currently support formatting);
+     * we want the user to fix type-validation issues as soon as possible
+     * to move on to clearer messages and generating completions faster.
+     */
+    const jsonSchemaValidator = buildAjv(AjvMode.COLLECT_ALL_ERRORS);
+
     const predefinedProofsUserParams: PredefinedProofsUserModelParams[] =
         config.predefinedProofsModelsParameters.map((params: any) =>
             validateAndParseJson(
@@ -134,12 +142,22 @@ function validateAndParseJson<T>(
         const settingsName = targetClassSchema.title;
         if (settingsName === undefined) {
             throw Error(
-                `unknown \`targetClassSchema\`: "${targetClassSchema}"; while resolving json: "${JSON.stringify(json)}"`
+                `specified \`targetClassSchema\` does not have \`title\`; while resolving json: ${stringifyAnyValue(json)}`
+            );
+        }
+        const ajvErrors = validate.errors as DefinedError[];
+        if (ajvErrors === null || ajvErrors === undefined) {
+            throw Error(
+                `validation with Ajv failed, but \`validate.errors\` are not defined; while resolving json: ${stringifyAnyValue(json)}`
             );
         }
         throw new SettingsValidationError(
-            `unable to validate json against the class: ${JSON.stringify(validate.errors)}`,
-            `Unable to validate user settings for \`${settingsName}\`. Please refer to the README for the correct settings format: https://github.com/JetBrains-Research/coqpilot/blob/main/README.md#guide-to-model-configuration.`,
+            `unable to validate json ${stringifyAnyValue(json)}: ${stringifyDefinedValue(validate.errors)}`,
+            EditorMessages.unableToValidateUserSettings(
+                settingsName,
+                ajvErrors,
+                ["oneOf"] // ignore additional boilerplate "oneOf" error, which appears if something is wrong with nested `multiroundProfile`
+            ),
             settingsName
         );
     }
@@ -276,17 +294,4 @@ function buildResolutionHistory(
     return onlyFailedRead || anyResolutionActionPerformed
         ? `; value's resolution: ${inputRead}${withOverride}${withDefault}`
         : "";
-}
-
-function buildParameterOverridenMessage(
-    modelId: string,
-    paramLog: SingleParamResolutionResult<any>
-): string {
-    const paramName = `\`${paramLog.inputParamName}\``;
-    const withValue = stringifyAnyValue(paramLog.overriden.withValue);
-    const explanation =
-        paramLog.overriden.message === undefined
-            ? ""
-            : `: ${paramLog.overriden.message}`;
-    return `The ${paramName} parameter of the "${modelId}" model was overriden with the value ${withValue}${explanation}. Please configure it the same way in the settings.`;
 }
