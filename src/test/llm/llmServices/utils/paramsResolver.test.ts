@@ -346,13 +346,35 @@ suite("[LLMService-s utils] Test `ParamsResolver`", () => {
             super(resolvedNumberParamSchema, "ResolvedNumberParam");
         }
 
-        output = this.resolveParam<string>("input")
-            .default(() => "string type is the wrong one")
+        output = this.resolveParam<number>("input")
+            .default(() => "string type is the wrong one" as any)
             .noValidationNeeded();
     }
 
     test("`ParamsResolver` configured incorrectly: parameter of wrong type", () => {
         const paramsResolver = new WrongTypeParamsResolver();
+        expect(() =>
+            paramsResolver.resolve({
+                input: undefined,
+            })
+        ).toThrow(Error, "configured incorrectly");
+    });
+
+    class HiddenWrongTypeParamsResolver extends ParamsResolverImpl<
+        InputNumberParam,
+        ResolvedNumberParam
+    > {
+        constructor() {
+            super(resolvedNumberParamSchema, "ResolvedNumberParam");
+        }
+
+        output = this.resolveParam<number>("input")
+            .default(() => "string type is the wrong one" as any)
+            .noValidationNeeded();
+    }
+
+    test("`ParamsResolver` configured incorrectly: parameter of hidden wrong type", () => {
+        const paramsResolver = new HiddenWrongTypeParamsResolver();
         expect(() =>
             paramsResolver.resolve({
                 input: undefined,

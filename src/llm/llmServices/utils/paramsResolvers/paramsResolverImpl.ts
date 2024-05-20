@@ -139,7 +139,7 @@ export abstract class ParamsResolverImpl<
         const resolvedParams = resolvedParamsObject as ResolveToType;
         if (!this._resolveToTypeValidator(resolvedParams)) {
             throw Error(
-                `\`ParamsResolver\` is configured incorrectly. Resulting object could not be interpreted as \`${this._resolveToTypeName}\`: ${ajvErrorsAsString(this._resolveToTypeValidator.errors as DefinedError[])}.`
+                `\`ParamsResolver\` is most likely configured incorrectly. Resulting object could not be interpreted as \`${this._resolveToTypeName}\`: ${ajvErrorsAsString(this._resolveToTypeValidator.errors as DefinedError[])}.`
             );
         }
         return {
