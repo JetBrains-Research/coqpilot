@@ -92,6 +92,7 @@ export const modelParamsSchema: JSONSchemaType<ModelParams> = {
         "multiroundProfile",
         "defaultChoices",
     ],
+    additionalProperties: false,
 };
 
 export const predefinedProofsModelParamsSchema: JSONSchemaType<PredefinedProofsModelParams> =
@@ -106,6 +107,7 @@ export const predefinedProofsModelParamsSchema: JSONSchemaType<PredefinedProofsM
             ...(modelParamsSchema.properties as PropertiesSchema<ModelParams>),
         },
         required: ["tactics", ...modelParamsSchema.required],
+        additionalProperties: false,
     };
 
 export const openAiModelParamsSchema: JSONSchemaType<OpenAiModelParams> = {
@@ -123,6 +125,7 @@ export const openAiModelParamsSchema: JSONSchemaType<OpenAiModelParams> = {
         "apiKey",
         ...modelParamsSchema.required,
     ],
+    additionalProperties: false,
 };
 
 export const grazieModelParamsSchema: JSONSchemaType<GrazieModelParams> = {
@@ -134,6 +137,7 @@ export const grazieModelParamsSchema: JSONSchemaType<GrazieModelParams> = {
         ...(modelParamsSchema.properties as PropertiesSchema<ModelParams>),
     },
     required: ["modelName", "apiKey", ...modelParamsSchema.required],
+    additionalProperties: false,
 };
 
 export const lmStudioModelParamsSchema: JSONSchemaType<LMStudioModelParams> = {
@@ -145,4 +149,5 @@ export const lmStudioModelParamsSchema: JSONSchemaType<LMStudioModelParams> = {
         ...(modelParamsSchema.properties as PropertiesSchema<ModelParams>),
     },
     required: ["temperature", "port", ...modelParamsSchema.required],
+    additionalProperties: false,
 };

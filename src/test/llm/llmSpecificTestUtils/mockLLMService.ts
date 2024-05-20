@@ -54,6 +54,7 @@ export const mockLLMModelParamsSchema: JSONSchemaType<MockLLMModelParams> = {
         "resolvedWithMockLLMService",
         ...modelParamsSchema.required,
     ],
+    additionalProperties: false,
 };
 
 /**
