@@ -9,12 +9,16 @@ import {
 } from "../../modelParams";
 
 import { ValidationRules } from "./builders";
-import { ParamsResolverImpl } from "./paramsResolverImpl";
+import {
+    ParamsResolverImpl,
+    ValidParamsResolverImpl,
+} from "./paramsResolverImpl";
 
-export class BasicMultiroundProfileResolver extends ParamsResolverImpl<
-    UserMultiroundProfile,
-    MultiroundProfile
-> {
+export class BasicMultiroundProfileResolver
+    extends ParamsResolverImpl<UserMultiroundProfile, MultiroundProfile>
+    implements
+        ValidParamsResolverImpl<UserMultiroundProfile, MultiroundProfile>
+{
     constructor() {
         super(multiroundProfileSchema, "MultiroundProfile");
     }
@@ -48,9 +52,12 @@ export const defaultMultiroundProfile: MultiroundProfile = {
 };
 
 export class BasicModelParamsResolver<
-    InputType extends UserModelParams,
-    ResolveToType extends ModelParams,
-> extends ParamsResolverImpl<InputType, ResolveToType> {
+        InputType extends UserModelParams,
+        ResolveToType extends ModelParams,
+    >
+    extends ParamsResolverImpl<InputType, ResolveToType>
+    implements ValidParamsResolverImpl<InputType, ModelParams>
+{
     readonly modelId = this.resolveParam<string>("modelId")
         .requiredToBeConfigured()
         .noValidationNeeded();

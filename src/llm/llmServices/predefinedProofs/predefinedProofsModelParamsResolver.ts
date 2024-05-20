@@ -5,11 +5,19 @@ import {
     predefinedProofsModelParamsSchema,
 } from "../modelParams";
 import { BasicModelParamsResolver } from "../utils/paramsResolvers/basicModelParamsResolvers";
+import { ValidParamsResolverImpl } from "../utils/paramsResolvers/paramsResolverImpl";
 
-export class PredefinedProofsModelParamsResolver extends BasicModelParamsResolver<
-    PredefinedProofsUserModelParams,
-    PredefinedProofsModelParams
-> {
+export class PredefinedProofsModelParamsResolver
+    extends BasicModelParamsResolver<
+        PredefinedProofsUserModelParams,
+        PredefinedProofsModelParams
+    >
+    implements
+        ValidParamsResolverImpl<
+            PredefinedProofsUserModelParams,
+            PredefinedProofsModelParams
+        >
+{
     constructor() {
         super(predefinedProofsModelParamsSchema, "PredefinedProofsModelParams");
     }

@@ -2,11 +2,13 @@ import { OpenAiUserModelParams } from "../../userModelParams";
 import { OpenAiModelParams, openAiModelParamsSchema } from "../modelParams";
 import { BasicModelParamsResolver } from "../utils/paramsResolvers/basicModelParamsResolvers";
 import { ValidationRules } from "../utils/paramsResolvers/builders";
+import { ValidParamsResolverImpl } from "../utils/paramsResolvers/paramsResolverImpl";
 
-export class OpenAiModelParamsResolver extends BasicModelParamsResolver<
-    OpenAiUserModelParams,
-    OpenAiModelParams
-> {
+export class OpenAiModelParamsResolver
+    extends BasicModelParamsResolver<OpenAiUserModelParams, OpenAiModelParams>
+    implements
+        ValidParamsResolverImpl<OpenAiUserModelParams, OpenAiModelParams>
+{
     constructor() {
         super(openAiModelParamsSchema, "OpenAiModelParams");
     }

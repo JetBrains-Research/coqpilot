@@ -1,11 +1,16 @@
 import { LMStudioUserModelParams } from "../../userModelParams";
 import { LMStudioModelParams, lmStudioModelParamsSchema } from "../modelParams";
 import { BasicModelParamsResolver } from "../utils/paramsResolvers/basicModelParamsResolvers";
+import { ValidParamsResolverImpl } from "../utils/paramsResolvers/paramsResolverImpl";
 
-export class LMStudioModelParamsResolver extends BasicModelParamsResolver<
-    LMStudioUserModelParams,
-    LMStudioModelParams
-> {
+export class LMStudioModelParamsResolver
+    extends BasicModelParamsResolver<
+        LMStudioUserModelParams,
+        LMStudioModelParams
+    >
+    implements
+        ValidParamsResolverImpl<LMStudioUserModelParams, LMStudioModelParams>
+{
     constructor() {
         super(lmStudioModelParamsSchema, "LMStudioModelParams");
     }

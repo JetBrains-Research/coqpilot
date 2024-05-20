@@ -20,6 +20,7 @@ import {
 } from "../../../llm/llmServices/modelParams";
 import { BasicModelParamsResolver } from "../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";
 import { ValidationRules } from "../../../llm/llmServices/utils/paramsResolvers/builders";
+import { ValidParamsResolverImpl } from "../../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";
 import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { UserModelParams } from "../../../llm/userModelParams";
 
@@ -64,10 +65,11 @@ export const mockLLMModelParamsSchema: JSONSchemaType<MockLLMModelParams> = {
  * - overrides original `systemPrompt` with `this.systemPromptToOverrideWith`;
  * - overrides original `choices` to `defaultChoices` with `proofsToGenerate.length`.
  */
-export class MockLLMModelParamsResolver extends BasicModelParamsResolver<
-    MockLLMUserModelParams,
-    MockLLMModelParams
-> {
+export class MockLLMModelParamsResolver
+    extends BasicModelParamsResolver<MockLLMUserModelParams, MockLLMModelParams>
+    implements
+        ValidParamsResolverImpl<MockLLMUserModelParams, MockLLMModelParams>
+{
     constructor() {
         super(mockLLMModelParamsSchema, "MockLLMModelParams");
     }

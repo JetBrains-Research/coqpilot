@@ -7,6 +7,7 @@ import { ValidationRules } from "../../../../llm/llmServices/utils/paramsResolve
 import {
     NoOptionalProperties,
     ParamsResolverImpl,
+    ValidParamsResolverImpl,
 } from "../../../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";
 import { UserModelParams } from "../../../../llm/userModelParams";
 
@@ -357,6 +358,39 @@ suite("[LLMService-s utils] Test `ParamsResolver`", () => {
                 input: undefined,
             })
         ).toThrow(Error, "configured incorrectly");
+    });
+
+    type NumberParamResolverIsValid =
+        NumberParamResolver extends ValidParamsResolverImpl<
+            InputNumberParam,
+            ResolvedNumberParam
+        >
+            ? "true"
+            : "false";
+
+    type EmptyParamsResolverIsValid =
+        EmptyParamsResolver extends ValidParamsResolverImpl<
+            InputNumberParam,
+            ResolvedNumberParam
+        >
+            ? "true"
+            : "false";
+
+    type WrongTypeParamsResolverIsValid =
+        WrongTypeParamsResolver extends ValidParamsResolverImpl<
+            InputNumberParam,
+            ResolvedNumberParam
+        >
+            ? "true"
+            : "false";
+
+    test("Test `ValidParamsResolverImpl` constraint", () => {
+        // @ts-ignore variable is needed only for a type check
+        const _shouldBeTrue: NumberParamResolverIsValid = "true";
+        // @ts-ignore variable is needed only for a type check
+        const _shouldBeFalse1: EmptyParamsResolverIsValid = "false";
+        // @ts-ignore variable is needed only for a type check
+        const _shouldBeFalse2: WrongTypeParamsResolverIsValid = "false";
     });
 
     interface InputParamsWithNestedParam {

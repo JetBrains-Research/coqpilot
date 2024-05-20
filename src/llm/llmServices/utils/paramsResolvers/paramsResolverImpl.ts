@@ -31,6 +31,16 @@ export type NoOptionalProperties<T> = [
 
 export type PropertyName<T> = keyof T;
 
+/**
+ * Implement this type every time you develop a new `ParamsResolverImpl`.
+ * It checks that you have specified the correct resolvers for all `ResolveToType` properties.
+ *
+ * Unfortunately, it can only be used for statically known types, so the base `ParamsResolverImpl` cannot extend it.
+ */
+export type ValidParamsResolverImpl<InputType, ResolveToType> = {
+    [K in keyof ResolveToType]: ParamsResolver<InputType, ResolveToType[K]>;
+};
+
 // Notes:
 // * every property should be of ParamsResolver<InputType, any> type
 // * how to specify properties names:
