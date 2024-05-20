@@ -571,7 +571,10 @@ suite("[LLMService-s utils] Test `ParamsResolver`", () => {
         const _shouldBeFalse: UserModelParamsHasNoOptionalProperties = "false";
     });
 
-    // The following code snippets should not compile (after adding required imports). Uncomment them to test.
+    /*
+     * The following code snippets should not compile (after adding required imports).
+     * Uncomment them to test.
+     */
 
     // class ResolveToTypeHasOptionalProperties extends ParamsResolverImpl<
     //     UserModelParams,

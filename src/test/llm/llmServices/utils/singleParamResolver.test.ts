@@ -308,53 +308,24 @@ suite("[LLMService-s utils] Test single parameter resolution", () => {
         }
     );
 
-    test("Test dot notation: success", () => {
-        const inputParams = {
-            complexParam: {
-                inputParam: true,
-            },
-        };
-        const complexParamName = "complexParam.inputParam";
-        const paramResolver = resolveParam(complexParamName)
-            .requiredToBeConfigured()
-            .noValidationNeeded();
-        const resolutionResult = paramResolver.resolveParam(inputParams);
-        expectParamResolutionResult(
-            resolutionResult,
-            {
-                resultValue: true,
-                inputReadCorrectly: {
-                    wasPerformed: true,
-                    withValue: true,
-                },
-            },
-            complexParamName
-        );
-    });
-
-    test("Test no property with such name: always returns no value specified", () => {
-        const inputParams = {
-            complexParam: {
-                inputParam: true,
-            },
-        };
-        [
-            "unknownParam",
-            "complexParam.unknownParam",
-            "unknownParam.unknownParam",
-        ].forEach((unknownParamName) => {
-            expectParamResolutionResult(
-                resolveParam(unknownParamName)
-                    .requiredToBeConfigured()
-                    .noValidationNeeded()
-                    .resolveParam(inputParams),
-                {
-                    isInvalidCause:
-                        "neither a user value nor a default one is specified",
-                },
-                unknownParamName
-            );
-        });
+    test("Test no property with such name: does not compile", () => {
+        /*
+         * The following code snippet should not compile.
+         * Uncomment it to test.
+         */
+        // const inputParams = {
+        //     inputParam: true,
+        // };
+        // const unknownParamName = "unknownParam";
+        // resolveParam<
+        //     {
+        //         inputParam: boolean;
+        //     },
+        //     boolean
+        // >(unknownParamName)
+        //     .requiredToBeConfigured()
+        //     .noValidationNeeded()
+        //     .resolveParam(inputParams);
     });
 
     test("Test `newParam`: success", () => {

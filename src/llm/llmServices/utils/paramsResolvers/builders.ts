@@ -3,14 +3,13 @@ import {
     stringifyDefinedValue,
 } from "../../../../utils/printers";
 
-import { AbstractSingleParamResolver } from "./abstractResolvers";
+import { AbstractSingleParamResolver, PropertyKey } from "./abstractResolvers";
 import { SingleParamResolutionResult } from "./abstractResolvers";
-import { accessParamByName } from "./paramAccessor";
 
 export function resolveParam<InputType, T>(
-    inputParamName: string
+    inputParamKey: PropertyKey<InputType>
 ): SingleParamResolverBuilder<InputType, T> {
-    return new SingleParamResolverBuilderImpl(inputParamName);
+    return new SingleParamResolverBuilderImpl(inputParamKey);
 }
 
 export function newParam<InputType, T>(
@@ -99,7 +98,7 @@ class SingleParamResolverBuilderImpl<InputType, T>
     implements SingleParamResolverBuilder<InputType, T>
 {
     private overrider: Overrider<InputType, T> | undefined = undefined;
-    constructor(private readonly inputParamName: string) {}
+    constructor(private readonly inputParamKey: PropertyKey<InputType>) {}
 
     override(
         valueBuilder: ValueBuilder<InputType, T>,
@@ -107,7 +106,7 @@ class SingleParamResolverBuilderImpl<InputType, T>
     ): SingleParamResolverBuilder<InputType, T> {
         if (this.overrider !== undefined) {
             throw new Error(
-                `parameter \'${this.inputParamName}\'is overriden multiple times`
+                `parameter \'${String(this.inputParamKey)}\'is overriden multiple times`
             );
         }
         this.overrider = {
@@ -121,7 +120,7 @@ class SingleParamResolverBuilderImpl<InputType, T>
         valueBuilder: StrictValueBuilder<InputType, T>
     ): AbstractSingleParamResolver<InputType, T> {
         return new SingleParamResolverImpl(
-            this.inputParamName,
+            this.inputParamKey,
             {
                 valueBuilder: valueBuilder,
             },
@@ -136,7 +135,7 @@ class SingleParamResolverBuilderImpl<InputType, T>
         noDefaultValueHelpMessage?: Message<InputType>
     ): SingleParamWithValueResolverBuilder<InputType, T> {
         return new SingleParamWithValueResolverBuilderImpl(
-            this.inputParamName,
+            this.inputParamKey,
             this.overrider,
             {
                 valueBuilder: valueBuilder,
@@ -150,7 +149,7 @@ class SingleParamResolverBuilderImpl<InputType, T>
         T
     > {
         return new SingleParamWithValueResolverBuilderImpl(
-            this.inputParamName,
+            this.inputParamKey,
             this.overrider,
             undefined
         );
@@ -161,7 +160,7 @@ class SingleParamWithValueResolverBuilderImpl<InputType, T>
     implements SingleParamWithValueResolverBuilder<InputType, T>
 {
     constructor(
-        private readonly inputParamName?: string,
+        private readonly inputParamKey?: PropertyKey<InputType>,
         private readonly overrider?: Overrider<InputType, T>,
         private readonly defaultResolver?: DefaultResolver<InputType, T>
     ) {}
@@ -170,7 +169,7 @@ class SingleParamWithValueResolverBuilderImpl<InputType, T>
         ...validationRules: ValidationRule<InputType, T>[]
     ): AbstractSingleParamResolver<InputType, T> {
         return new SingleParamResolverImpl(
-            this.inputParamName,
+            this.inputParamKey,
             this.overrider,
             this.defaultResolver,
             validationRules
@@ -179,7 +178,7 @@ class SingleParamWithValueResolverBuilderImpl<InputType, T>
 
     noValidationNeeded(): AbstractSingleParamResolver<InputType, T> {
         return new SingleParamResolverImpl(
-            this.inputParamName,
+            this.inputParamKey,
             this.overrider,
             this.defaultResolver,
             []
@@ -196,7 +195,7 @@ export class SingleParamResolverImpl<
     T,
 > extends AbstractSingleParamResolver<InputType, T> {
     constructor(
-        private readonly inputParamName?: string,
+        private readonly inputParamKey?: PropertyKey<InputType>,
         private readonly overrider?: Overrider<InputType, T>,
         private readonly defaultResolver?: DefaultResolver<InputType, T>,
         private readonly validationRules: ValidationRule<InputType, T>[] = [],
@@ -208,7 +207,10 @@ export class SingleParamResolverImpl<
     // Note: unfortunately, the language does not allow to validate the type of the parameter properly
     resolveParam(inputParams: InputType): SingleParamResolutionResult<T> {
         const result: SingleParamResolutionResult<T> = {
-            inputParamName: this.inputParamName,
+            inputParamName:
+                this.inputParamKey === undefined
+                    ? undefined
+                    : String(this.inputParamKey),
             resultValue: undefined,
             inputReadCorrectly: {
                 wasPerformed: false,
@@ -267,10 +269,10 @@ export class SingleParamResolverImpl<
         inputParams: InputType,
         result: SingleParamResolutionResult<T>
     ): T | undefined {
-        if (this.inputParamName === undefined) {
+        if (this.inputParamKey === undefined) {
             return undefined;
         }
-        const userValue = accessParamByName(inputParams, this.inputParamName);
+        const userValue = inputParams[this.inputParamKey];
         if (userValue === undefined) {
             return undefined;
         }
@@ -371,7 +373,7 @@ export class SingleParamResolverImpl<
     }
 
     private quotedName(): string {
-        return `\`${this.inputParamName}\``;
+        return `\`${String(this.inputParamKey)}\``;
     }
 
     private noValueMessage(): string {

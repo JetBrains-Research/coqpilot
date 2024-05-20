@@ -12,6 +12,7 @@ import {
     isParamsResolver,
 } from "./abstractResolvers";
 import { SingleParamResolutionResult } from "./abstractResolvers";
+import { PropertyKey } from "./abstractResolvers";
 import {
     SingleParamResolverBuilder,
     SingleParamWithValueResolverBuilder,
@@ -19,7 +20,6 @@ import {
     newParam,
     resolveParam,
 } from "./builders";
-import { accessParamByName } from "./paramAccessor";
 
 export type NoOptionalProperties<T> = [
     {
@@ -28,8 +28,6 @@ export type NoOptionalProperties<T> = [
 ] extends [never]
     ? any
     : never;
-
-export type PropertyName<T> = keyof T;
 
 /**
  * Implement this type every time you develop a new `ParamsResolverImpl`.
@@ -65,9 +63,9 @@ export abstract class ParamsResolverImpl<
     }
 
     protected resolveParam<T>(
-        inputParamName: PropertyName<InputType>
+        inputParamKey: PropertyKey<InputType>
     ): SingleParamResolverBuilder<InputType, T> {
-        return resolveParam<InputType, T>(inputParamName as string);
+        return resolveParam<InputType, T>(inputParamKey);
     }
 
     protected insertParam<T>(
@@ -79,15 +77,13 @@ export abstract class ParamsResolverImpl<
     // TODO: enhance this method and builders to make resolution-with-default possible for nested objects
     // (for example: all props of nested object are required, but in top-level object this nested param is in general optional)
     protected resolveNestedParams<ParamInputType, T>(
-        inputParamName: PropertyName<InputType>,
+        inputParamKey: PropertyKey<InputType>,
         nestedParamsResolver: ParamsResolver<ParamInputType, T>
     ): ParamsResolver<InputType, T> {
         return new (class {
             resolve(inputParams: InputType): ParamsResolutionResult<T> {
-                const paramInputValue = (accessParamByName(
-                    inputParams,
-                    inputParamName as string
-                ) ?? {}) as ParamInputType;
+                const paramInputValue = (inputParams[inputParamKey] ??
+                    {}) as ParamInputType;
                 const paramResolutionResult =
                     nestedParamsResolver.resolve(paramInputValue);
                 return {
@@ -96,7 +92,7 @@ export abstract class ParamsResolverImpl<
                         (paramLog) => {
                             return {
                                 ...paramLog,
-                                inputParamName: `${inputParamName as string}.${paramLog.inputParamName}`,
+                                inputParamName: `${String(inputParamKey)}.${paramLog.inputParamName}`,
                             };
                         }
                     ),

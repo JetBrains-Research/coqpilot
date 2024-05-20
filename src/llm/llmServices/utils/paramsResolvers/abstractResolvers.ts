@@ -1,3 +1,5 @@
+export type PropertyKey<T> = keyof T;
+
 export interface ParamsResolver<InputType, ResolveToType> {
     resolve(inputParams: InputType): ParamsResolutionResult<ResolveToType>;
     _resolverId: "ParamsResolver";
