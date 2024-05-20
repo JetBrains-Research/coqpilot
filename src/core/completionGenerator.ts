@@ -148,11 +148,11 @@ export async function generateCompletion(
             );
             return new FailureGenerationResult(
                 FailureGenerationStatus.ERROR_OCCURRED,
-                `please report this crash by opening an issue in the Coqpilot GitHub repository: object was thrown as error, "${JSON.stringify(e)}"`
+                `please report this crash by opening an issue in the Coqpilot GitHub repository: object was thrown as error, ${stringifyAnyValue(e)}`
             );
         } else {
             console.error(
-                `Error occurred during completion generation: "${error}".\n${error.stack ?? "<no stack available>"}`
+                `Error occurred during completion generation:\n${error.stack ?? error}`
             );
         }
         if (e instanceof CoqLspTimeoutError) {

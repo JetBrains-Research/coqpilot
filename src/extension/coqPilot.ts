@@ -124,8 +124,11 @@ export class CoqPilot {
                     if (error instanceof SettingsValidationError) {
                         error.showAsMessageToUser();
                     } else if (error instanceof Error) {
-                        showMessageToUser(error.message, "error");
-                        console.error(error);
+                        showMessageToUser(
+                            EditorMessages.errorOccurred(error.message),
+                            "error"
+                        );
+                        console.error(`${error.stack ?? error}`);
                     }
                 }
             }
