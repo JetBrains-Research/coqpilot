@@ -11,7 +11,6 @@ import {
     LLMServiceRequestSucceeded,
 } from "../llm/llmServices/llmService";
 import { ModelParams } from "../llm/llmServices/modelParams";
-import { Time } from "../llm/llmServices/utils/time";
 
 import { EventLogger } from "../logging/eventLogger";
 import { stringifyAnyValue } from "../utils/printers";
@@ -113,7 +112,9 @@ function reactToRequestSucceededEvent(
                 LLMServiceMessagesShownState.BECOME_UNAVAILABLE_MESSAGE_SHOWN
             ) {
                 showMessageToUser(
-                    `\`${requestSucceeded.llmService.serviceName}\` is available again!`,
+                    EditorMessages.serviceIsAvailableAgain(
+                        requestSucceeded.llmService.serviceName
+                    ),
                     "info"
                 );
                 uiState.messagesShownState =
@@ -171,22 +172,22 @@ function reactToRequestFailedEvent(
                 uiState.messagesShownState ===
                 LLMServiceMessagesShownState.NO_MESSAGES_SHOWN
             ) {
+                const serviceName = requestFailed.llmService.serviceName;
                 if (llmServiceError instanceof GenerationFailedError) {
-                    const formattedExpectedTime = formatTimeToUIString(
-                        requestFailed.llmService.estimateTimeToBecomeAvailable()
-                    );
-                    const becameUnavailableMessage = `\`${requestFailed.llmService.serviceName}\` became unavailable for this generation.`;
-                    const errorMessage = llmServiceError.cause.message;
-                    const tryAgainMessage = `If you want to use it, try again in ~ ${formattedExpectedTime}. Caused by error: "${errorMessage}".`;
                     showMessageToUser(
-                        `${becameUnavailableMessage} ${tryAgainMessage}`,
+                        EditorMessages.serviceBecameUnavailable(
+                            serviceName,
+                            llmServiceError.cause.message,
+                            requestFailed.llmService.estimateTimeToBecomeAvailable()
+                        ),
                         "warning"
                     );
                 } else {
-                    const serviceFailureMessage = `\`${requestFailed.llmService.serviceName}\` became unavailable for this generation: ${llmServiceError.message}.`;
-                    const tryAgainMessage = `Check your internet connection and try again.`;
                     showMessageToUser(
-                        `${serviceFailureMessage} ${tryAgainMessage}`,
+                        EditorMessages.failedToReachRemoteService(
+                            serviceName,
+                            llmServiceError.message
+                        ),
                         "warning"
                     );
                 }
@@ -212,33 +213,4 @@ function parseLLMServiceRequestEvent<T extends LLMServiceRequest>(
         throw Error(`no UI state for \`${serviceName}\``);
     }
     return [request, uiState];
-}
-
-function formatTimeToUIString(time: Time): string {
-    const orderedTimeItems: [number, string][] = [
-        [time.days, "day"],
-        [time.hours, "hour"],
-        [time.minutes, "minute"],
-        [time.seconds, "second"],
-    ].map(([value, name]) => [
-        value as number,
-        formatTimeItem(value as number, name as string),
-    ]);
-    const itemsN = orderedTimeItems.length;
-
-    for (let i = 0; i < itemsN; i++) {
-        const [value, formattedItem] = orderedTimeItems[i];
-        if (value !== 0) {
-            const nextFormattedItem =
-                i === itemsN - 1 ? "" : `, ${orderedTimeItems[i + 1][1]}`;
-            return `${formattedItem}${nextFormattedItem}`;
-        }
-    }
-    const zeroSeconds = orderedTimeItems[3][1];
-    return `${zeroSeconds}`;
-}
-
-function formatTimeItem(value: number, name: string): string {
-    const suffix = value === 1 ? "" : "s";
-    return `${value} ${name}${suffix}`;
 }

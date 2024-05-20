@@ -42,7 +42,7 @@ export function buildTheoremsRankerFromConfig(): ContextTheoremsRanker {
         default:
             throw new SettingsValidationError(
                 `unknown context theorems ranker type: ${rankerType}`,
-                `Please select one of the existing theorems-ranker types: "distance" or "random".`,
+                EditorMessages.unknownContextTheoremsRanker,
                 "contextTheoremsRankerType"
             );
     }
@@ -153,7 +153,7 @@ function validateIdsAreUnique(allModels: UserModelParams[]) {
         if (uniqueModelIds.has(modelId)) {
             throw new SettingsValidationError(
                 `models' identifiers are not unique: several models have \`modelId: "${modelId}"\``,
-                `Please make identifiers of the models unique ("${modelId}" is not unique).`
+                EditorMessages.modelsIdsAreNotUnique(modelId)
             );
         } else {
             uniqueModelIds.add(modelId);
@@ -171,7 +171,7 @@ function validateApiKeysAreProvided(
     ) => {
         return new SettingsValidationError(
             `at least one of the ${serviceName} models has \`apiKey: "None"\``,
-            `Please set your ${serviceName} API key in the settings.`,
+            EditorMessages.apiKeyIsNotSet(serviceName),
             `${pluginId}.${serviceSettingsName}ModelsParameters`,
             "info"
         );
@@ -189,7 +189,7 @@ function validateModelsArePresent<T>(allModels: T[]) {
     if (allModels.length === 0) {
         throw new SettingsValidationError(
             "no models specified for proof generation",
-            "No valid models are chosen. Please specify at least one in the settings.",
+            EditorMessages.noValidModelsAreChosen,
             pluginId,
             "warning"
         );
@@ -228,9 +228,11 @@ function resolveParamsAndShowResolutionLogs<
             ) {
                 // resolved parameter, but the user value was overriden
                 showMessageToUserWithSettingsHint(
-                    buildParameterOverridenMessage(
+                    EditorMessages.userValueWasOverriden(
                         inputParams.modelId,
-                        paramLog
+                        paramLog.inputParamName ?? "<undefined parameter>",
+                        paramLog.overriden.withValue,
+                        paramLog.overriden.message
                     ),
                     "info",
                     settingName
