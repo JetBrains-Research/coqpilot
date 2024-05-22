@@ -5,7 +5,7 @@ import { CoqProjectObserverService } from "../../agentServer/services/coqProject
 
 import { serverRunRoot, serverRunRootProj } from "./commonServerTestFunctions";
 
-suite("AgentServer: CoqProjectObserverService common tests", () => {
+suite("[AgentServer] CoqProjectObserverService common tests", () => {
     test("Get project root", () => {
         process.env.SERVER_RUN_ROOT = serverRunRoot;
         const service = new CoqProjectObserverService();
@@ -44,7 +44,7 @@ suite("AgentServer: CoqProjectObserverService common tests", () => {
     });
 });
 
-suite("AgentServer: CoqProjectObserverService run Coq Command tests", () => {
+suite("[AgentServer] CoqProjectObserverService run Coq Command tests", () => {
     test("Run Check with valid arg", async () => {
         process.env.SERVER_RUN_ROOT = serverRunRoot;
         const service = new CoqProjectObserverService();
@@ -94,7 +94,7 @@ suite("AgentServer: CoqProjectObserverService run Coq Command tests", () => {
     });
 });
 
-suite("AgentServer: CoqProjectObserverService run check proof", () => {
+suite("[AgentServer] CoqProjectObserverService run check proof", () => {
     test("Check complete proof", async () => {
         process.env.SERVER_RUN_ROOT = serverRunRoot;
         const service = new CoqProjectObserverService();

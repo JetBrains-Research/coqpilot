@@ -13,7 +13,7 @@ process.env.SERVER_RUN_ROOT = serverRunRoot;
 // Once again, due to the vscode absurd dependency,
 // these tests are all in one, as mocha's
 // before/after hooks are not available.
-suite("AgentServer: RestAPI HTTP test", async () => {
+suite("[AgentServer] RestAPI HTTP test", async () => {
     async function getServer(): Promise<PlatformBuilder<Application>> {
         const platform = await PlatformExpress.bootstrap(Server, {
             logger: {

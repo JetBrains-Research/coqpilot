@@ -8,7 +8,7 @@ import { createCoqLspClient } from "../commonTestFunctions";
 
 import { serverRunRoot } from "./commonServerTestFunctions";
 
-suite("AgentServer: CoqCodeExecutor test that no aux files are left", () => {
+suite("[AgentServer] CoqCodeExecutor test that no aux files are left", () => {
     async function countFiles(rootDir: string): Promise<number> {
         let count = 0;
         const entries = await fs.promises.readdir(rootDir, {

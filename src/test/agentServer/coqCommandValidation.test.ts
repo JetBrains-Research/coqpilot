@@ -6,7 +6,7 @@ import {
     SearchCoqCommand,
 } from "../../agentServer/services/coqCommandType";
 
-suite("AgentServer: Check validation rules for Search Coq Command", () => {
+suite("[AgentServer] Check validation rules for Search Coq Command", () => {
     test("Valid pattern", () => {
         const command = new SearchCoqCommand("pattern");
         expect(command.get().ok).toEqual(true);
@@ -29,7 +29,7 @@ suite("AgentServer: Check validation rules for Search Coq Command", () => {
     });
 });
 
-suite("AgentServer: Check validation rules for Print Coq Command", () => {
+suite("[AgentServer] Check validation rules for Print Coq Command", () => {
     test("Valid term", () => {
         const command = new PrintCoqCommand("term");
         expect(command.get().ok).toEqual(true);
@@ -52,7 +52,7 @@ suite("AgentServer: Check validation rules for Print Coq Command", () => {
     });
 });
 
-suite("AgentServer: Check validation rules for Check Coq Command", () => {
+suite("[AgentServer] Check validation rules for Check Coq Command", () => {
     test("Valid term", () => {
         const command = new CheckCoqCommand("term");
         expect(command.get().ok).toEqual(true);

@@ -6,7 +6,7 @@ import { serverRunRoot } from "./commonServerTestFunctions";
 
 process.env.SERVER_RUN_ROOT = serverRunRoot;
 
-suite("AgentServer: FilePath Middleware tests", () => {
+suite("[AgentServer] FilePath Middleware tests", () => {
     test("Valid file path", async () => {
         const middleware = new FilePathMiddleware();
         expect(await middleware.use("small_document.v")).toBeNullish();

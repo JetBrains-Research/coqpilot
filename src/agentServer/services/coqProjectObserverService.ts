@@ -62,7 +62,7 @@ export class CoqProjectObserverService {
         filePath: string,
         theoremName: string
     ): Promise<Theorem> {
-        const absolutePath = `${this.projectRoot}/${filePath}`;
+        const absolutePath = path.join(this.projectRoot, filePath);
         const fileUri = Uri.fromPath(absolutePath);
         await this.coqLspClient.openTextDocument(fileUri);
         const document = await parseCoqFile(fileUri, this.coqLspClient);
@@ -173,7 +173,7 @@ export class CoqProjectObserverService {
             coqCode: string
         ) => Promise<Result<T, CoqCodeExecError>>
     ): Promise<Result<T, CoqCodeExecError>> {
-        const absolutePath = `${this.projectRoot}/${filePath}`;
+        const absolutePath = path.join(this.projectRoot, filePath);
         const fileParentDir = path.dirname(absolutePath);
 
         const fileText = readFileSync(absolutePath).toString();
