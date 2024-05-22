@@ -1,23 +1,30 @@
 import { EventLogger } from "../../../logging/eventLogger";
 import { ConfigurationError } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
-import {
-    PredefinedProofsUserModelParams,
-    UserModelParams,
-} from "../../userModelParams";
+import { PredefinedProofsUserModelParams } from "../../userModelParams";
 import { ChatHistory } from "../chat";
 import {
     ErrorsHandlingMode,
-    GeneratedProof,
-    LLMServiceInternal,
+    GeneratedProofImpl,
     ProofVersion,
 } from "../llmService";
-import { LLMService } from "../llmService";
-import { ModelParams, PredefinedProofsModelParams } from "../modelParams";
+import { LLMServiceImpl } from "../llmService";
+import { LLMServiceInternal } from "../llmServiceInternal";
+import { PredefinedProofsModelParams } from "../modelParams";
 import { Time, timeZero } from "../utils/time";
 
-export class PredefinedProofsService extends LLMService {
+import { PredefinedProofsModelParamsResolver } from "./predefinedProofsModelParamsResolver";
+
+export class PredefinedProofsService extends LLMServiceImpl<
+    PredefinedProofsUserModelParams,
+    PredefinedProofsModelParams,
+    PredefinedProofsService,
+    PredefinedProof,
+    PredefinedProofsServiceInternal
+> {
     protected readonly internal: PredefinedProofsServiceInternal;
+    protected readonly modelParamsResolver =
+        new PredefinedProofsModelParamsResolver();
 
     constructor(
         eventLogger?: EventLogger,
@@ -39,23 +46,17 @@ export class PredefinedProofsService extends LLMService {
 
     async generateProof(
         proofGenerationContext: ProofGenerationContext,
-        params: ModelParams,
-        choices: number,
+        params: PredefinedProofsModelParams,
+        choices: number = params.defaultChoices,
         errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
-    ): Promise<GeneratedProof[]> {
-        const predefinedProofsParams = params as PredefinedProofsModelParams;
+    ): Promise<PredefinedProof[]> {
         return this.internal.logGenerationAndHandleErrors(
-            predefinedProofsParams,
+            params,
             choices,
             errorsHandlingMode,
             (_request) => {
                 this.internal.validateChoices(choices);
-                const tactics = predefinedProofsParams.tactics;
-                if (tactics.length === 0) {
-                    throw new ConfigurationError(
-                        "zero predefined tactics specified"
-                    );
-                }
+                const tactics = params.tactics;
                 if (choices > tactics.length) {
                     throw new ConfigurationError(
                         `requested ${choices} choices, there are only ${tactics.length} predefined tactics available`
@@ -64,14 +65,14 @@ export class PredefinedProofsService extends LLMService {
             },
             async (_request) => {
                 return this.formatCoqSentences(
-                    predefinedProofsParams.tactics.slice(0, choices)
+                    params.tactics.slice(0, choices)
                 ).map((tactic) => `Proof. ${tactic} Qed.`);
             },
             (proof) =>
                 this.internal.constructGeneratedProof(
                     proof,
                     proofGenerationContext,
-                    predefinedProofsParams
+                    params
                 )
         );
     }
@@ -89,29 +90,14 @@ export class PredefinedProofsService extends LLMService {
     estimateTimeToBecomeAvailable(): Time {
         return timeZero; // predefined proofs are always available
     }
-
-    resolveParameters(params: UserModelParams): ModelParams {
-        const castedParams = params as PredefinedProofsUserModelParams;
-        const modelParams: PredefinedProofsModelParams = {
-            modelId: params.modelId,
-            maxTokensToGenerate: Math.max(
-                0,
-                ...castedParams.tactics.map((tactic) => tactic.length)
-            ),
-            tokensLimit: Number.POSITIVE_INFINITY,
-            systemPrompt: "",
-            multiroundProfile: {
-                maxRoundsNumber: 1,
-                proofFixChoices: 0,
-                proofFixPrompt: "",
-            },
-            tactics: castedParams.tactics,
-        };
-        return modelParams;
-    }
 }
 
-export class PredefinedProof extends GeneratedProof {
+export class PredefinedProof extends GeneratedProofImpl<
+    PredefinedProofsModelParams,
+    PredefinedProofsService,
+    PredefinedProof,
+    PredefinedProofsServiceInternal
+> {
     constructor(
         proof: string,
         proofGenerationContext: ProofGenerationContext,
@@ -123,9 +109,10 @@ export class PredefinedProof extends GeneratedProof {
 
     async fixProof(
         _diagnostic: string,
-        choices: number,
+        choices: number = this.modelParams.multiroundProfile
+            .defaultProofFixChoices,
         errorsHandlingMode: ErrorsHandlingMode
-    ): Promise<GeneratedProof[]> {
+    ): Promise<PredefinedProof[]> {
         this.llmServiceInternal.unsupportedMethod(
             "`PredefinedProof` cannot be fixed",
             this.modelParams,
@@ -140,13 +127,18 @@ export class PredefinedProof extends GeneratedProof {
     }
 }
 
-class PredefinedProofsServiceInternal extends LLMServiceInternal {
+class PredefinedProofsServiceInternal extends LLMServiceInternal<
+    PredefinedProofsModelParams,
+    PredefinedProofsService,
+    PredefinedProof,
+    PredefinedProofsServiceInternal
+> {
     constructGeneratedProof(
         proof: string,
         proofGenerationContext: ProofGenerationContext,
-        modelParams: ModelParams,
+        modelParams: PredefinedProofsModelParams,
         _previousProofVersions?: ProofVersion[]
-    ): GeneratedProof {
+    ): PredefinedProof {
         return new PredefinedProof(
             proof,
             proofGenerationContext,
@@ -157,7 +149,7 @@ class PredefinedProofsServiceInternal extends LLMServiceInternal {
 
     generateFromChatImpl(
         _chat: ChatHistory,
-        _params: ModelParams,
+        _params: PredefinedProofsModelParams,
         _choices: number
     ): Promise<string[]> {
         throw new ConfigurationError(

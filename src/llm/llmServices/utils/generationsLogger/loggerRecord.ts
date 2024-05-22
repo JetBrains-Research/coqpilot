@@ -1,4 +1,4 @@
-import { ChatHistory, ChatRole } from "../../chat";
+import { ChatHistory, ChatRole, EstimatedTokens } from "../../chat";
 import { ModelParams } from "../../modelParams";
 
 export type ResponseStatus = "SUCCESS" | "FAILURE";
@@ -34,12 +34,25 @@ export class LoggerRecord {
         readonly modelId: string,
         readonly responseStatus: ResponseStatus,
         readonly choices: number,
-        readonly estimatedTokens: number | undefined = undefined,
+        readonly estimatedTokens: EstimatedTokens | undefined = undefined,
         readonly error: LoggedError | undefined = undefined
     ) {
         this.timestampMillis =
             LoggerRecord.floorMillisToSeconds(timestampMillis);
     }
+
+    protected static readonly introLinePattern =
+        /^\[(.*)\] `(.*)` model: (.*)$/;
+
+    protected static readonly loggedErrorHeader = "! error occurred:";
+    protected static readonly loggedErrorPattern =
+        /^! error occurred: \[(.*)\] "(.*)"$/;
+
+    protected static readonly choicesPattern = /^- requested choices: (.*)$/;
+
+    protected static readonly requestTokensHeader = "- request's tokens:";
+    protected static readonly requestTokensPattern =
+        /^- request's tokens: ([0-9]+) = ([0-9]+) \(chat messages\) \+ ([0-9]+) \(max to generate\)$/;
 
     serializeToString(): string {
         const introInfo = this.buildStatusLine();
@@ -61,31 +74,31 @@ export class LoggerRecord {
         if (this.error === undefined) {
             return "";
         }
-        return `! error occurred: [${this.error.typeName}] "${LoggerRecord.escapeNewlines(this.error.message)}"\n`;
+        return `${LoggerRecord.loggedErrorHeader} [${this.error.typeName}] "${LoggerRecord.escapeNewlines(this.error.message)}"\n`;
     }
 
     protected buildRequestInfo(): string {
-        const choicesRequested = `- requested choices: ${this.choices}`;
-        const requestTokens = `- request's tokens: ${this.estimatedTokens}`;
-        return `${choicesRequested}\n${requestTokens}\n`;
+        const choicesRequested = `- requested choices: ${this.choices}\n`;
+        const requestTokens =
+            this.estimatedTokens !== undefined
+                ? `${LoggerRecord.requestTokensHeader} ${this.estimatedTokensToString()}\n`
+                : "";
+        return `${choicesRequested}${requestTokens}`;
+    }
+
+    private estimatedTokensToString(): string {
+        return `${this.estimatedTokens!.maxTokensInTotal} = ${this.estimatedTokens!.messagesTokens} (chat messages) + ${this.estimatedTokens!.maxTokensToGenerate} (max to generate)`;
     }
 
     protected static escapeNewlines(text: string): string {
         return text.replace("\n", "\\n");
     }
 
-    protected static readonly introLinePattern =
-        /^\[(.*)\] `(.*)` model: (.*)$/;
-    protected static loggedErrorPattern = /^! error occurred: \[(.*)\] "(.*)"$/;
-    protected static choicesPattern = /^- requested choices: (.*)$/;
-    protected static requestTokensPattern = /^- request's tokens: (.*)$/;
-
     static deserealizeFromString(rawRecord: string): [LoggerRecord, string] {
-        let restRawRecord: string = rawRecord;
         const [rawTimestamp, modelId, rawResponseStatus, afterIntroRawRecord] =
             this.parseFirstLineByRegex(
                 this.introLinePattern,
-                restRawRecord,
+                rawRecord,
                 "intro line"
             );
         const timestampMillis = this.parseTimestampMillis(rawTimestamp);
@@ -93,34 +106,23 @@ export class LoggerRecord {
             rawResponseStatus,
             "response status"
         );
-        restRawRecord = afterIntroRawRecord;
 
-        let error: LoggedError | undefined = undefined;
-        if (restRawRecord.startsWith("!")) {
-            const [errorTypeName, rawErrorMessage, afterLoggedErrorRawRecord] =
-                this.parseFirstLineByRegex(
-                    this.loggedErrorPattern,
-                    restRawRecord,
-                    "logged error"
-                );
-            error = {
-                typeName: errorTypeName,
-                message: LoggerRecord.unescapeNewlines(rawErrorMessage),
-            };
-            restRawRecord = afterLoggedErrorRawRecord;
-        }
+        const [error, afterLoggedErrorRawRecord] = this.parseOptional(
+            this.loggedErrorHeader,
+            (text) => this.parseLoggedError(text),
+            afterIntroRawRecord
+        );
 
         const [rawChoices, afterChoicesRawRecord] = this.parseFirstLineByRegex(
             this.choicesPattern,
-            restRawRecord,
+            afterLoggedErrorRawRecord,
             "requested choices"
         );
-        const [rawTokens, afterTokensRawRecord] = this.parseFirstLineByRegex(
-            this.requestTokensPattern,
-            afterChoicesRawRecord,
-            "request's tokens"
+        const [estimatedTokens, afterTokensRawRecord] = this.parseOptional(
+            this.requestTokensHeader,
+            (text) => this.parseRequestTokens(text),
+            afterChoicesRawRecord
         );
-        restRawRecord = afterTokensRawRecord;
 
         return [
             new LoggerRecord(
@@ -128,11 +130,68 @@ export class LoggerRecord {
                 modelId,
                 responseStatus,
                 this.parseIntValue(rawChoices, "requested choices"),
-                this.parseIntValueOrUndefined(rawTokens, "request's tokens"),
+                estimatedTokens,
                 error
             ),
+            afterTokensRawRecord,
+        ];
+    }
+
+    private static parseLoggedError(text: string): [LoggedError, string] {
+        const [errorTypeName, rawErrorMessage, restRawRecord] =
+            this.parseFirstLineByRegex(
+                this.loggedErrorPattern,
+                text,
+                "logged error"
+            );
+        return [
+            {
+                typeName: errorTypeName,
+                message: LoggerRecord.unescapeNewlines(rawErrorMessage),
+            },
             restRawRecord,
         ];
+    }
+
+    private static parseRequestTokens(text: string): [EstimatedTokens, string] {
+        let [
+            maxTokensInTotal,
+            messagesTokens,
+            maxTokensToGenerate,
+            restRawRecord,
+        ] = this.parseFirstLineByRegex(
+            this.requestTokensPattern,
+            text,
+            "request's tokens header"
+        );
+        return [
+            {
+                messagesTokens: this.parseIntValue(
+                    messagesTokens,
+                    "messages tokens"
+                ),
+                maxTokensToGenerate: this.parseIntValue(
+                    maxTokensToGenerate,
+                    "max tokens to generate"
+                ),
+                maxTokensInTotal: this.parseIntValue(
+                    maxTokensInTotal,
+                    "max tokens in total"
+                ),
+            },
+            restRawRecord,
+        ];
+    }
+
+    protected static parseOptional<T>(
+        header: string,
+        parse: (text: string) => [T, string],
+        text: string
+    ): [T | undefined, string] {
+        if (!text.startsWith(header)) {
+            return [undefined, text];
+        }
+        return parse(text);
     }
 
     protected static splitByFirstLine(text: string): [string, string] {
@@ -187,12 +246,12 @@ export class LoggerRecord {
         pattern: RegExp,
         text: string,
         valueName: string
-    ): RegExpMatchArray {
+    ): string[] {
         const match = text.match(pattern);
         if (!match) {
             throw new ParsingError(`invalid ${valueName}`, text);
         }
-        return match;
+        return match.slice(1);
     }
 
     protected static parseFirstLineByRegex(
@@ -202,7 +261,7 @@ export class LoggerRecord {
     ): string[] {
         const [firstLine, restText] = this.splitByFirstLine(text);
         const parsedLine = this.parseByRegex(pattern, firstLine, valueName);
-        return [...parsedLine.slice(1), restText];
+        return [...parsedLine, restText];
     }
 
     protected static unescapeNewlines(text: string): string {
@@ -227,8 +286,24 @@ export class DebugLoggerRecord extends LoggerRecord {
         );
     }
 
-    protected static subItemDelim = "\t> ";
-    protected static jsonStringifyIndent = 2;
+    protected static readonly subItemIndent = "\t";
+    protected static readonly subItemDelimIndented = `${this.subItemIndent}> `;
+    protected static readonly jsonStringifyIndent = 2;
+
+    protected static readonly emptyListLine = `${this.subItemIndent}~ empty`;
+    protected static readonly emptyListPattern = /^\t~ empty$/;
+
+    protected static readonly chatHeader = "- chat sent:";
+    protected static readonly chatHeaderPattern = /^- chat sent:$/;
+    protected static readonly chatMessagePattern = /^\t> \[(.*)\]: `(.*)`$/;
+
+    protected static readonly generatedProofsHeader = "- generated proofs:";
+    protected static readonly generatedProofsHeaderPattern =
+        /^- generated proofs:$/;
+    protected static readonly generatedProofPattern = /^\t> `(.*)`$/;
+
+    protected static readonly paramsHeader = "- model's params:";
+    protected static readonly paramsHeaderPattern = /^- model's params:$/;
 
     serializeToString(): string {
         const baseInfo = super.serializeToString();
@@ -239,28 +314,32 @@ export class DebugLoggerRecord extends LoggerRecord {
     private buildExtraInfo(): string {
         const chatInfo =
             this.chat !== undefined
-                ? `- chat sent:\n${this.chatToExtraLogs()}\n`
+                ? `${DebugLoggerRecord.chatHeader}\n${this.chatToExtraLogs()}\n`
                 : "";
         const generatedProofs =
             this.generatedProofs !== undefined
-                ? `- generated proofs:\n${this.proofsToExtraLogs()}\n`
+                ? `${DebugLoggerRecord.generatedProofsHeader}\n${this.proofsToExtraLogs()}\n`
                 : "";
-        const paramsInfo = `- model's params:\n${this.paramsToExtraLogs()}\n`;
+        const paramsInfo = `${DebugLoggerRecord.paramsHeader}\n${this.paramsToExtraLogs()}\n`;
         return `${chatInfo}${generatedProofs}${paramsInfo}`;
     }
 
     private chatToExtraLogs(): string {
-        return this.chat!.map(
-            (message) =>
-                `${DebugLoggerRecord.subItemDelim}[${message.role}]: \`${LoggerRecord.escapeNewlines(message.content)}\``
-        ).join("\n");
+        return this.chat!.length === 0
+            ? DebugLoggerRecord.emptyListLine
+            : this.chat!.map(
+                  (message) =>
+                      `${DebugLoggerRecord.subItemDelimIndented}[${message.role}]: \`${LoggerRecord.escapeNewlines(message.content)}\``
+              ).join("\n");
     }
 
     private proofsToExtraLogs(): string {
-        return this.generatedProofs!.map(
-            (proof) =>
-                `${DebugLoggerRecord.subItemDelim}\`${LoggerRecord.escapeNewlines(proof)}\``
-        ).join("\n");
+        return this.generatedProofs!.length === 0
+            ? DebugLoggerRecord.emptyListLine
+            : this.generatedProofs!.map(
+                  (proof) =>
+                      `${DebugLoggerRecord.subItemDelimIndented}\`${LoggerRecord.escapeNewlines(proof)}\``
+              ).join("\n");
     }
 
     private paramsToExtraLogs(): string {
@@ -270,16 +349,6 @@ export class DebugLoggerRecord extends LoggerRecord {
             DebugLoggerRecord.jsonStringifyIndent
         );
     }
-
-    protected static chatHeaderPattern = /^- chat sent:$/;
-    protected static chatHeader = "- chat sent:";
-    protected static chatMessagePattern = /^\t> \[(.*)\]: `(.*)`$/;
-
-    protected static generatedProofsHeaderPattern = /^- generated proofs:$/;
-    protected static generatedProofsHeader = "- generated proofs:";
-    protected static generatedProofPattern = /^\t> `(.*)`$/;
-
-    protected static paramsHeaderPattern = /^- model's params:$/;
 
     static deserealizeFromString(
         rawRecord: string
@@ -306,17 +375,6 @@ export class DebugLoggerRecord extends LoggerRecord {
         ];
     }
 
-    protected static parseOptional<T>(
-        header: string,
-        parse: (text: string) => [T, string],
-        text: string
-    ): [T | undefined, string] {
-        if (!text.startsWith(header)) {
-            return [undefined, text];
-        }
-        return parse(text);
-    }
-
     private static parseChatHistory(text: string): [ChatHistory, string] {
         let [restRawRecord] = this.parseFirstLineByRegex(
             this.chatHeaderPattern,
@@ -324,7 +382,17 @@ export class DebugLoggerRecord extends LoggerRecord {
             "chat history header"
         );
         const chat: ChatHistory = [];
-        while (restRawRecord.startsWith(this.subItemDelim)) {
+        if (restRawRecord.startsWith(this.emptyListLine)) {
+            return [
+                chat,
+                this.parseFirstLineByRegex(
+                    this.emptyListPattern,
+                    restRawRecord,
+                    "empty chat history keyword"
+                )[0],
+            ];
+        }
+        while (restRawRecord.startsWith(this.subItemDelimIndented)) {
             const [rawRole, rawContent, newRestRawRecord] =
                 this.parseFirstLineByRegex(
                     this.chatMessagePattern,
@@ -346,8 +414,18 @@ export class DebugLoggerRecord extends LoggerRecord {
             text,
             "generated proofs header"
         );
-        const generatedProofs = [];
-        while (restRawRecord.startsWith(this.subItemDelim)) {
+        const generatedProofs: string[] = [];
+        if (restRawRecord.startsWith(this.emptyListLine)) {
+            return [
+                generatedProofs,
+                this.parseFirstLineByRegex(
+                    this.emptyListPattern,
+                    restRawRecord,
+                    "empty generated proofs keyword"
+                )[0],
+            ];
+        }
+        while (restRawRecord.startsWith(this.subItemDelimIndented)) {
             const [rawGeneratedProof, newRestRawRecord] =
                 this.parseFirstLineByRegex(
                     this.generatedProofPattern,

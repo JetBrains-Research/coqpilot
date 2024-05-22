@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/naming-convention */
 import axios from "axios";
 import { ResponseType } from "axios";
 
-import { DebugWrappers } from "../llmService";
+import { DebugWrappers } from "../llmServiceInternal";
 import { GrazieModelParams } from "../modelParams";
 
 export type GrazieChatRole = "User" | "System" | "Assistant";
@@ -65,12 +64,14 @@ export class GrazieApi {
     }
 
     private createHeaders(token: string): any {
+        /* eslint-disable @typescript-eslint/naming-convention */
         return {
             Accept: "*/*",
             "Content-Type": "application/json",
             "Grazie-Authenticate-Jwt": token,
             "Grazie-Original-Service-JWT": token,
         };
+        /* eslint-enable @typescript-eslint/naming-convention */
     }
 
     private chunkToTokens(chunk: any): string[] {

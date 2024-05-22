@@ -7,6 +7,7 @@ import {
 } from "../../../llm/llmServices/chat";
 import {
     LLMService,
+    LLMServiceImpl,
     LLMServiceRequestFailed,
     LLMServiceRequestSucceeded,
 } from "../../../llm/llmServices/llmService";
@@ -20,9 +21,11 @@ export interface EventsTracker {
     failedRequestEventsN: number;
 }
 
-export function subscribeToTrackEvents(
+export function subscribeToTrackEvents<
+    LLMServiceType extends LLMService<any, any>,
+>(
     testEventLogger: EventLogger,
-    expectedService: LLMService,
+    expectedService: LLMServiceType,
     expectedModelId: string,
     expectedError?: LLMServiceError
 ): EventsTracker {
@@ -77,15 +80,15 @@ export function subscribeToTrackMockEvents(
     return eventsTracker;
 }
 
-function subscribeToLogicEvents<T extends LLMService>(
+function subscribeToLogicEvents<LLMServiceType extends LLMService<any, any>>(
     eventsTracker: EventsTracker,
     testEventLogger: EventLogger,
-    expectedService: T,
+    expectedService: LLMServiceType,
     expectedModelId: string,
     expectedError?: LLMServiceError
 ) {
     testEventLogger.subscribeToLogicEvent(
-        LLMService.requestSucceededEvent,
+        LLMServiceImpl.requestSucceededEvent,
         (data) => {
             const requestSucceeded = data as LLMServiceRequestSucceeded;
             expect(requestSucceeded).toBeTruthy();
@@ -95,7 +98,7 @@ function subscribeToLogicEvents<T extends LLMService>(
         }
     );
     testEventLogger.subscribeToLogicEvent(
-        LLMService.requestFailedEvent,
+        LLMServiceImpl.requestFailedEvent,
         (data) => {
             const requestFailed = data as LLMServiceRequestFailed;
             expect(requestFailed).toBeTruthy();

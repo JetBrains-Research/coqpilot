@@ -1,4 +1,4 @@
-import Ajv, { JSONSchemaType } from "ajv";
+import { JSONSchemaType } from "ajv";
 import { expect } from "earl";
 
 import {
@@ -10,24 +10,37 @@ import {
     userMultiroundProfileSchema,
 } from "../../llm/userModelParams";
 
-suite("Parse UserModelParams from JSON test", () => {
-    const jsonSchemaValidator = new Ajv();
+import { AjvMode, buildAjv } from "../../utils/ajvErrorsHandling";
+
+suite("Parse `UserModelParams` from JSON test", () => {
+    const jsonSchemaValidator = buildAjv(AjvMode.COLLECT_ALL_ERRORS);
 
     function validateJSON<T>(
         json: any,
         targetClassSchema: JSONSchemaType<T>,
-        expectedToBeValidJSON: boolean
+        expectedToBeValidJSON: boolean,
+        expectedErrorKeys?: string[]
     ) {
         const validate = jsonSchemaValidator.compile(targetClassSchema);
         expect(validate(json as T)).toEqual(expectedToBeValidJSON);
+        if (expectedErrorKeys !== undefined) {
+            expect(validate.errors).not.toBeNullish();
+            expect(
+                new Set(validate.errors!.map((error) => error.keyword))
+            ).toEqual(new Set(expectedErrorKeys));
+        }
     }
 
     function isValidJSON<T>(json: any, targetClassSchema: JSONSchemaType<T>) {
         return validateJSON(json, targetClassSchema, true);
     }
 
-    function isInvalidJSON<T>(json: any, targetClassSchema: JSONSchemaType<T>) {
-        return validateJSON(json, targetClassSchema, false);
+    function isInvalidJSON<T>(
+        json: any,
+        targetClassSchema: JSONSchemaType<T>,
+        ...expectedErrorKeys: string[]
+    ) {
+        return validateJSON(json, targetClassSchema, false, expectedErrorKeys);
     }
 
     const validMultiroundProfileComplete = {
@@ -84,12 +97,21 @@ suite("Parse UserModelParams from JSON test", () => {
             ...validMultiroundProfileComplete,
             proofFixPrompt: 0,
         };
-        isInvalidJSON(invalidWrongTypeProp, userMultiroundProfileSchema);
+        isInvalidJSON(
+            invalidWrongTypeProp,
+            userMultiroundProfileSchema,
+            "type"
+        );
+
         const invalidAdditionalProp = {
             ...validMultiroundProfileComplete,
             something: "something",
         };
-        isInvalidJSON(invalidAdditionalProp, userMultiroundProfileSchema);
+        isInvalidJSON(
+            invalidAdditionalProp,
+            userMultiroundProfileSchema,
+            "additionalProperties"
+        );
     });
 
     test("Validate `UserModelParams`", () => {
@@ -103,17 +125,23 @@ suite("Parse UserModelParams from JSON test", () => {
             choices: 30,
             systemPrompt: "let's generate",
         };
-        isInvalidJSON(invalidNoModelId, userModelParamsSchema);
+        isInvalidJSON(invalidNoModelId, userModelParamsSchema, "required");
+
         const invalidWrongTypeProp = {
-            ...validMultiroundProfileComplete,
+            ...validUserModelParamsCompelete,
             tokensLimit: "no limits",
         };
-        isInvalidJSON(invalidWrongTypeProp, userMultiroundProfileSchema);
+        isInvalidJSON(invalidWrongTypeProp, userModelParamsSchema, "type");
+
         const invalidAdditionalProp = {
             ...validUserModelParamsCompelete,
             something: "something",
         };
-        isInvalidJSON(invalidAdditionalProp, userMultiroundProfileSchema);
+        isInvalidJSON(
+            invalidAdditionalProp,
+            userModelParamsSchema,
+            "additionalProperties"
+        );
     });
 
     test("Validate `PredefinedProofsUserModelParams`", () => {

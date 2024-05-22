@@ -1,16 +1,40 @@
 import { expect } from "earl";
 
+import { ConfigurationError } from "../../../llm/llmServiceErrors";
 import { GrazieService } from "../../../llm/llmServices/grazie/grazieService";
+import { ErrorsHandlingMode } from "../../../llm/llmServices/llmService";
+import { GrazieModelParams } from "../../../llm/llmServices/modelParams";
+import { defaultSystemMessageContent } from "../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";
 import { GrazieUserModelParams } from "../../../llm/userModelParams";
 
 import { testIf } from "../../commonTestFunctions/conditionalTest";
-import { testModelId } from "../llmSpecificTestUtils/constants";
+import { resolveParametersOrThrow } from "../../commonTestFunctions/resolveOrThrow";
+import {
+    withLLMService,
+    withLLMServiceAndParams,
+} from "../../commonTestFunctions/withLLMService";
+import {
+    mockProofGenerationContext,
+    testModelId,
+} from "../llmSpecificTestUtils/constants";
 import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testAdmitCompletion";
+import {
+    defaultUserMultiroundProfile,
+    testResolveValidCompleteParameters,
+} from "../llmSpecificTestUtils/testResolveParameters";
 
 suite("[LLMService] Test `GrazieService`", function () {
     const apiKey = process.env.GRAZIE_API_KEY;
     const choices = 15;
     const inputFile = ["small_document.v"];
+
+    const requiredInputParamsTemplate = {
+        modelId: testModelId,
+        modelName: "openai-gpt-4",
+        choices: choices,
+        maxTokensToGenerate: 2000,
+        tokensLimit: 4000,
+    };
 
     testIf(
         apiKey !== undefined,
@@ -18,39 +42,75 @@ suite("[LLMService] Test `GrazieService`", function () {
         this.title,
         `Simple generation: 1 request, ${choices} choices`,
         async () => {
-            const userParams: GrazieUserModelParams = {
-                modelId: testModelId,
-                modelName: "openai-gpt-4",
+            const inputParams: GrazieUserModelParams = {
+                ...requiredInputParamsTemplate,
                 apiKey: apiKey!,
-                maxTokensToGenerate: 2000,
-                tokensLimit: 4000,
             };
             const grazieService = new GrazieService();
             await testLLMServiceCompletesAdmitFromFile(
                 grazieService,
-                userParams,
+                inputParams,
                 inputFile,
                 choices
             );
         }
-    )?.timeout(6000);
+    )?.timeout(10000);
 
-    test("Resolve parameters with predefined `maxTokensToGenerate`", () => {
-        const userParams: GrazieUserModelParams = {
-            modelId: testModelId,
-            modelName: "openai-gpt-4",
-            apiKey: "",
-            maxTokensToGenerate: 6666, // should be overriden by GrazieService
-            tokensLimit: 4000,
+    test("Test `resolveParameters` reads & accepts valid params", async () => {
+        const inputParams: GrazieUserModelParams = {
+            ...requiredInputParamsTemplate,
+            apiKey: "undefined",
         };
-        const grazieService = new GrazieService();
-        try {
-            const resolvedParams = grazieService.resolveParameters(userParams);
-            expect(resolvedParams.maxTokensToGenerate).toEqual(
-                grazieService.maxTokensToGeneratePredefined
+        await withLLMService(new GrazieService(), async (grazieService) => {
+            testResolveValidCompleteParameters(grazieService, inputParams);
+            testResolveValidCompleteParameters(
+                grazieService,
+                {
+                    ...inputParams,
+                    systemPrompt: defaultSystemMessageContent,
+                    multiroundProfile: defaultUserMultiroundProfile,
+                },
+                true
             );
-        } finally {
-            grazieService.dispose();
-        }
+        });
+    });
+
+    test("Resolve parameters with predefined `maxTokensToGenerate`", async () => {
+        const inputParams: GrazieUserModelParams = {
+            ...requiredInputParamsTemplate,
+            apiKey: "undefined",
+            maxTokensToGenerate: 6666, // should be overriden by GrazieService
+        };
+        withLLMService(new GrazieService(), async (grazieService) => {
+            const resolvedParams = resolveParametersOrThrow(
+                grazieService,
+                inputParams
+            );
+            expect(resolvedParams.maxTokensToGenerate).toEqual(
+                GrazieService.maxTokensToGeneratePredefined
+            );
+        });
+    });
+
+    test("Test `generateProof` throws on invalid `choices`", async () => {
+        const inputParams: GrazieUserModelParams = {
+            ...requiredInputParamsTemplate,
+            apiKey: "undefined",
+        };
+        await withLLMServiceAndParams(
+            new GrazieService(),
+            inputParams,
+            async (grazieService, resolvedParams: GrazieModelParams) => {
+                // non-positive choices
+                expect(async () => {
+                    await grazieService.generateProof(
+                        mockProofGenerationContext,
+                        resolvedParams,
+                        -1,
+                        ErrorsHandlingMode.RETHROW_ERRORS
+                    );
+                }).toBeRejectedWith(ConfigurationError, "choices");
+            }
+        );
     });
 });

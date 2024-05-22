@@ -113,11 +113,11 @@ suite("Completion generation tests", () => {
         );
         expect(results[1]).toBeA(FailureGenerationResult);
         expect((results[1] as FailureGenerationResult).status).toEqual(
-            FailureGenerationStatus.searchFailed
+            FailureGenerationStatus.SEARCH_FAILED
         );
     }).timeout(2000);
 
-    test("Check generation in project --non-ci", async () => {
+    test("Check generation in project", async () => {
         const resourcePath = ["coqProj", "theories", "C.v"];
         const predefinedProofs = ["intros.", "auto."];
         const projectRootPath = ["coqProj"];

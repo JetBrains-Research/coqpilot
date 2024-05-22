@@ -22,9 +22,10 @@ export async function withMockLLMService(
                 tokensLimit: 1000,
                 multiroundProfile: {
                     maxRoundsNumber: 1,
-                    proofFixChoices: 0,
+                    defaultProofFixChoices: 0,
                     proofFixPrompt: "Fix proof",
                 },
+                defaultChoices: proofsToGenerate.length,
                 proofsToGenerate: proofsToGenerate,
                 workerId: 0,
                 resolvedWithMockLLMService: true,

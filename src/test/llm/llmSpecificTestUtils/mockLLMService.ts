@@ -1,3 +1,6 @@
+import { JSONSchemaType } from "ajv";
+import { PropertiesSchema } from "ajv/dist/types/json-schema";
+
 import { ConfigurationError } from "../../../llm/llmServiceErrors";
 import {
     AnalyzedChatHistory,
@@ -6,12 +9,18 @@ import {
 } from "../../../llm/llmServices/chat";
 import {
     ErrorsHandlingMode,
-    GeneratedProof,
-    LLMService,
-    LLMServiceInternal,
+    GeneratedProofImpl,
+    LLMServiceImpl,
     ProofVersion,
 } from "../../../llm/llmServices/llmService";
-import { ModelParams } from "../../../llm/llmServices/modelParams";
+import { LLMServiceInternal } from "../../../llm/llmServices/llmServiceInternal";
+import {
+    ModelParams,
+    modelParamsSchema,
+} from "../../../llm/llmServices/modelParams";
+import { BasicModelParamsResolver } from "../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";
+import { ValidationRules } from "../../../llm/llmServices/utils/paramsResolvers/builders";
+import { ValidParamsResolverImpl } from "../../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";
 import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { UserModelParams } from "../../../llm/userModelParams";
 
@@ -28,6 +37,66 @@ export interface MockLLMModelParams extends ModelParams {
     resolvedWithMockLLMService: boolean;
 }
 
+export const mockLLMModelParamsSchema: JSONSchemaType<MockLLMModelParams> = {
+    title: "MockLLMModelsParameters",
+    type: "object",
+    properties: {
+        proofsToGenerate: {
+            type: "array",
+            items: { type: "string" },
+        },
+        workerId: { type: "number" },
+        resolvedWithMockLLMService: { type: "boolean" },
+        ...(modelParamsSchema.properties as PropertiesSchema<ModelParams>),
+    },
+    required: [
+        "proofsToGenerate",
+        "workerId",
+        "resolvedWithMockLLMService",
+        ...modelParamsSchema.required,
+    ],
+    additionalProperties: false,
+};
+
+/**
+ * `MockLLMService` parameters resolution does 4 changes to `inputParams`:
+ * - resolves undefined `workerId` to 0;
+ * - adds extra `resolvedWithMockLLMService: true` property;
+ * - overrides original `systemPrompt` with `this.systemPromptToOverrideWith`;
+ * - overrides original `choices` to `defaultChoices` with `proofsToGenerate.length`.
+ */
+export class MockLLMModelParamsResolver
+    extends BasicModelParamsResolver<MockLLMUserModelParams, MockLLMModelParams>
+    implements
+        ValidParamsResolverImpl<MockLLMUserModelParams, MockLLMModelParams>
+{
+    constructor() {
+        super(mockLLMModelParamsSchema, "MockLLMModelParams");
+    }
+
+    readonly proofsToGenerate = this.resolveParam<string[]>("proofsToGenerate")
+        .requiredToBeConfigured()
+        .validate([(value) => value.length > 0, "be non-empty"]);
+
+    readonly workerId = this.resolveParam<number>("workerId")
+        .default(() => 0)
+        .validate([(value) => value >= 0, "be non-negative"]);
+
+    readonly resolvedWithMockLLMService = this.insertParam<boolean>(
+        () => true
+    ).validate([(value) => value, "be true"]);
+
+    readonly systemPrompt = this.resolveParam<string>("systemPrompt")
+        .override(() => MockLLMService.systemPromptToOverrideWith)
+        .requiredToBeConfigured()
+        .noValidationNeeded();
+
+    readonly defaultChoices = this.resolveParam<number>("choices")
+        .override((inputParams) => inputParams.proofsToGenerate.length)
+        .requiredToBeConfigured()
+        .validate(ValidationRules.bePositiveNumber);
+}
+
 /**
  * This class implements `LLMService` the same way as most of the services do,
  * so as to reuse the default implementations as much as possible.
@@ -35,8 +104,15 @@ export interface MockLLMModelParams extends ModelParams {
  * However, to make tests cover more corner cases, `MockLLMService` provides additional features.
  * Check the documentation of its methods below.
  */
-export class MockLLMService extends LLMService {
+export class MockLLMService extends LLMServiceImpl<
+    MockLLMUserModelParams,
+    MockLLMModelParams,
+    MockLLMService,
+    MockLLMGeneratedProof,
+    MockLLMServiceInternal
+> {
     protected readonly internal: MockLLMServiceInternal;
+    protected readonly modelParamsResolver = new MockLLMModelParamsResolver();
 
     constructor(
         eventLogger?: EventLogger,
@@ -87,32 +163,17 @@ export class MockLLMService extends LLMService {
         return [...baseChat, controlMessage];
     }
 
-    /**
-     * `MockLLMService` parameters resolution does 2 changes to `params`:
-     * - overrides original `systemPrompt` to `this.systemPromptToOverrideWith`;
-     * - resolves undefined `workerId` to 0;
-     * - adds extra `resolvedWithMockLLMService: true` property.
-     * Then `resolveParametersWithDefaults` is called.
-     */
-    resolveParameters(params: UserModelParams): ModelParams {
-        const unresolvedParams = params as MockLLMUserModelParams;
-        return this.resolveParametersWithDefaults({
-            ...unresolvedParams,
-            systemPrompt: MockLLMService.systemPromptToOverrideWith,
-            workerId:
-                unresolvedParams.workerId === undefined
-                    ? 0
-                    : unresolvedParams.workerId,
-            resolvedWithMockLLMService: true,
-        } as MockLLMUserModelParams);
-    }
-
     clearGenerationLogs() {
         this.internal.generationsLogger.resetLogs();
     }
 }
 
-export class MockLLMGeneratedProof extends GeneratedProof {
+export class MockLLMGeneratedProof extends GeneratedProofImpl<
+    MockLLMModelParams,
+    MockLLMService,
+    MockLLMGeneratedProof,
+    MockLLMServiceInternal
+> {
     constructor(
         proof: string,
         proofGenerationContext: ProofGenerationContext,
@@ -145,7 +206,7 @@ export class MockLLMGeneratedProof extends GeneratedProof {
         analyzedChat: AnalyzedChatHistory,
         choices: number,
         errorsHandlingMode: ErrorsHandlingMode
-    ): Promise<GeneratedProof[]> {
+    ): Promise<MockLLMGeneratedProof[]> {
         return this.llmServiceInternal.generateFromChatWrapped(
             this.modelParams,
             choices,
@@ -169,15 +230,20 @@ export class MockLLMGeneratedProof extends GeneratedProof {
     }
 }
 
-class MockLLMServiceInternal extends LLMServiceInternal {
+class MockLLMServiceInternal extends LLMServiceInternal<
+    MockLLMModelParams,
+    MockLLMService,
+    MockLLMGeneratedProof,
+    MockLLMServiceInternal
+> {
     throwErrorOnNextGenerationMap: Map<number, Error | undefined> = new Map();
 
     constructGeneratedProof(
         proof: string,
         proofGenerationContext: ProofGenerationContext,
-        modelParams: ModelParams,
+        modelParams: MockLLMModelParams,
         previousProofVersions?: ProofVersion[] | undefined
-    ): GeneratedProof {
+    ): MockLLMGeneratedProof {
         return new MockLLMGeneratedProof(
             proof,
             proofGenerationContext,
@@ -201,24 +267,23 @@ class MockLLMServiceInternal extends LLMServiceInternal {
      */
     async generateFromChatImpl(
         chat: ChatHistory,
-        params: ModelParams,
+        params: MockLLMModelParams,
         choices: number
     ): Promise<string[]> {
         this.eventLogger?.logLogicEvent(
             MockLLMService.generationFromChatEvent,
             chat
         );
-        const mockLLMServiceParams = params as MockLLMModelParams;
 
         const throwError = this.throwErrorOnNextGenerationMap.get(
-            mockLLMServiceParams.workerId
+            params.workerId
         );
         if (throwError !== undefined) {
             try {
                 throw throwError;
             } finally {
                 this.throwErrorOnNextGenerationMap.set(
-                    mockLLMServiceParams.workerId,
+                    params.workerId,
                     undefined
                 );
             }
@@ -237,15 +302,14 @@ class MockLLMServiceInternal extends LLMServiceInternal {
         const skipFirstNProofs =
             skipFirstNProofsParsed !== undefined ? skipFirstNProofsParsed : 0;
 
-        const proofsLength =
-            mockLLMServiceParams.proofsToGenerate.length - skipFirstNProofs;
+        const proofsLength = params.proofsToGenerate.length - skipFirstNProofs;
         if (choices > proofsLength) {
             throw Error(
                 `\`choices = ${choices}\` > \`available proofs length = ${proofsLength}\``
             );
         }
 
-        return mockLLMServiceParams.proofsToGenerate.slice(
+        return params.proofsToGenerate.slice(
             skipFirstNProofs,
             skipFirstNProofs + choices
         );

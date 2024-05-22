@@ -1,6 +1,6 @@
 # coqpilot
 
-*Authors:* Andrei Kozyrev, Gleb Solovev and Anton Podkopaev, [Programming Languages and Tools Lab](https://lp.jetbrains.com/research/plt_lab/) at JetBrains Research.
+*Authors:* Andrei Kozyrev, Gleb Solovev, Nikita Khramov, and Anton Podkopaev, [Programming Languages and Tools Lab](https://lp.jetbrains.com/research/plt_lab/) at JetBrains Research.
 
 `Coqpilot` is a [Visual Studio Code](https://code.visualstudio.com/) extension that is designed to help automate writing of Coq proofs. It uses Large Language Models to generate multiple potential proofs and then uses [coq-lsp](https://github.com/ejgallego/coq-lsp) to typecheck them. It substitutes the proof in the editor only if a valid proof is found. 
 
@@ -21,7 +21,8 @@ Now `coqpilot` is in early beta and seeks for feedbacks. Please feel free to ope
   - 🎛 [How VsCode settings work](#how-vscode-settings-work)
   - 🧰 [Model Configuration](#model-configuration)
 - 📌 [Contributed Commands](#contributed-commands)
-- 🚧 [Planned Features](#planned-features)
+- 📊 [Benchmark](#benchmark)
+- 🔜 [Future Plans](#future-plans)
 - 📜 [Release Notes](#release-notes)
 
 ## Requirements
@@ -86,11 +87,6 @@ To run all tests properly (i.e. with rebuilding the resources and the code first
 npm run clean-test
 ```
 
-If you do not want to build test resources (a small coq project), to execute all the tests that don't use them you can run: 
-```bash
-npm run test-ci
-```
-
 To run specific tests, you can use `npm run test -- -g="grep pattern"`.
 
 <!-- ## Architecture
@@ -114,7 +110,7 @@ Comment: Such files are not visible in the vscode explorer, because plugin adds 
 
 This extension contributes the following settings:
 
-* `coqpilot.contextTheoremsRankerType` : The type of theorems ranker that will be used to select theorems for proof generation (when context is smaller than taking all of them). Either randomly or by distance from the theorem, with the currently generated admit. 
+* `coqpilot.contextTheoremsRankerType` : The type of theorems ranker that will be used to select theorems for proof generation (when context is smaller than taking all of them). Either randomly, by Jacard index (similarity metric) or by distance from the theorem, with the currently observed admit. 
 * `coqpilot.loggingVerbosity` : Verbosity of the logs. Could be `info`, `debug`.
 
 * `coqpilot.predefinedProofsModelsParameters`, `coqpilot.openAiModelsParameters`, `coqpilot.grazieModelsParameters` and `coqpilot.lmStudioModelsParameters`:
@@ -190,11 +186,51 @@ Another thing to keep in mind: We are still in beta and changes in settings may 
 
 * `coqpilot.perform_completion_under_cursor`: Try to generate proof for the goal under the cursor.
 * `coqpilot.perform_completion_for_all_admits`: Try to prove all holes (admitted goals) in the current file.
-* `coqpilot.perform_completion_in_selection`: Try to prove holes (admitted goals) in selection.
+* `coqpilot.perform_completion_in_selection`: Try to prove holes (admitted goals) in selection. 
 
-## Planned Features
+## Benchmark
 
-- Add benchmarking options for various models: soon. 
+To run benchmarks on some project, apart from installing and building CoqPilot manually as described above, you will need to download the necessary projects that are used as datasets for the benchmarks. These projects are added as submodules to the repository. To download them, run the following commands:
+```bash
+git submodule init
+git submodule update
+```
+After that, you need to build the projects. Be careful, the actively maintained way to build this projects is `nix`. Moreover, when adding your own projects, make sure that they are built using `coq-8.19.0`.
+
+First things first, the process of running the benchmark is not perfectly automated yet. We are working on it. For now, one project (one unit containing nix environment) shall be ran at a time. Let's say you are going to run the benchmark on the `imm` project. You will have to do the following: 
+
+<!-- 0. Go the the `imm` subdirectory and add a `_CoqProject` file in the root with the following: 
+    ```
+    -I result/lib/coq/8.19/user-contrib/imm
+    -R result/lib/coq/8.19/user-contrib/imm imm
+    ```
+    This is needed for the lsp-server to correctly resolve file dependencies. -->
+
+1. Install nix, as specified in the [here](https://nixos.org/download.html). 
+
+2. Install needed caches: 
+    ```bash
+    nix-env -iA nixpkgs.cachix && cachix use coq && cachix use coq-community && cachix use math-comp
+    cachix use weakmemory
+    ```
+
+3. Go to the `imm` subdirectory, apply the nix environment (without it the project will NOT build) and build the project: 
+    ```bash
+    cd dataset/imm 
+    nix-build
+    nix-shell 
+    ```
+4. Make sure the `_CoqProject` was successfully generated in the root of your project. Return to the project root not exiting the nix-shell. Run the benchmark: 
+    ```bash
+    cd ../../
+    npm run benchmark
+    ```    
+
+## Future plans
+
+- Currently the user needs to manually enter the nix shell to get the correct environment for the benchmarks. We are working on automating this process.
+- Benchmarking system is evolving and will soon become more stable with smart scheduling (choice of models/services depending on availability and token limit counts) and automatically generated informative reports for the user.
+- Get rid of the overhead due to hacks with coq-lsp and the aux files.
 
 ## Release Notes
 

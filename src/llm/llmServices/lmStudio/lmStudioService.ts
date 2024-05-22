@@ -1,16 +1,26 @@
 import { EventLogger } from "../../../logging/eventLogger";
 import { ProofGenerationContext } from "../../proofGenerationContext";
+import { LMStudioUserModelParams } from "../../userModelParams";
 import { ChatHistory } from "../chat";
 import {
-    GeneratedProof,
-    LLMService,
-    LLMServiceInternal,
+    GeneratedProofImpl,
+    LLMServiceImpl,
     ProofVersion,
 } from "../llmService";
-import { LMStudioModelParams, ModelParams } from "../modelParams";
+import { LLMServiceInternal } from "../llmServiceInternal";
+import { LMStudioModelParams } from "../modelParams";
 
-export class LMStudioService extends LLMService {
+import { LMStudioModelParamsResolver } from "./lmStudioModelParamsResolver";
+
+export class LMStudioService extends LLMServiceImpl<
+    LMStudioUserModelParams,
+    LMStudioModelParams,
+    LMStudioService,
+    LMStudioGeneratedProof,
+    LMStudioServiceInternal
+> {
     protected readonly internal: LMStudioServiceInternal;
+    protected readonly modelParamsResolver = new LMStudioModelParamsResolver();
 
     constructor(
         eventLogger?: EventLogger,
@@ -31,7 +41,12 @@ export class LMStudioService extends LLMService {
     }
 }
 
-export class LMStudioGeneratedProof extends GeneratedProof {
+export class LMStudioGeneratedProof extends GeneratedProofImpl<
+    LMStudioModelParams,
+    LMStudioService,
+    LMStudioGeneratedProof,
+    LMStudioServiceInternal
+> {
     constructor(
         proof: string,
         proofGenerationContext: ProofGenerationContext,
@@ -49,17 +64,22 @@ export class LMStudioGeneratedProof extends GeneratedProof {
     }
 }
 
-class LMStudioServiceInternal extends LLMServiceInternal {
+class LMStudioServiceInternal extends LLMServiceInternal<
+    LMStudioModelParams,
+    LMStudioService,
+    LMStudioGeneratedProof,
+    LMStudioServiceInternal
+> {
     constructGeneratedProof(
         proof: string,
         proofGenerationContext: ProofGenerationContext,
-        modelParams: ModelParams,
+        modelParams: LMStudioModelParams,
         previousProofVersions?: ProofVersion[] | undefined
-    ): GeneratedProof {
+    ): LMStudioGeneratedProof {
         return new LMStudioGeneratedProof(
             proof,
             proofGenerationContext,
-            modelParams as LMStudioModelParams,
+            modelParams,
             this,
             previousProofVersions
         );
@@ -114,7 +134,7 @@ class LMStudioServiceInternal extends LLMServiceInternal {
         "Content-Type": "application/json",
     };
 
-    private body(messages: ChatHistory, params: LMStudioModelParams): any {
+    private body(messages: ChatHistory, params: LMStudioModelParams): string {
         return JSON.stringify({
             messages: messages,
             stream: false,

@@ -1,7 +1,7 @@
 import { Tiktoken, TiktokenModel, encoding_for_model } from "tiktoken";
 
 import { ConfigurationError } from "../../llmServiceErrors";
-import { ChatMessage } from "../chat";
+import { ChatMessage, EstimatedTokens } from "../chat";
 
 export class ChatTokensFitter {
     readonly tokensLimit: number;
@@ -11,17 +11,17 @@ export class ChatTokensFitter {
     private readonly countTokens: (text: string) => number;
 
     constructor(
-        maxTokensToGenerate: number,
+        private readonly maxTokensToGenerate: number,
         tokensLimit: number,
         modelName?: string
     ) {
         this.tokensLimit = tokensLimit;
-        if (this.tokensLimit < maxTokensToGenerate) {
+        if (this.tokensLimit < this.maxTokensToGenerate) {
             throw new ConfigurationError(
                 `tokens limit ${this.tokensLimit} is not enough for the model to generate a new message that needs up to ${maxTokensToGenerate}`
             );
         }
-        this.tokens += maxTokensToGenerate;
+        this.tokens += this.maxTokensToGenerate;
 
         this.encoder = undefined;
         try {
@@ -31,7 +31,7 @@ export class ChatTokensFitter {
             if (this.encoder) {
                 return this.encoder.encode(text).length;
             } else {
-                return (text.length / 4) >> 0;
+                return Math.floor(text.length / 4);
             }
         };
     }
@@ -40,11 +40,12 @@ export class ChatTokensFitter {
         this.encoder?.free();
     }
 
-    /**
-     * Includes `maxTokensToGenerate`.
-     */
-    estimateTokens(): number {
-        return this.tokens;
+    estimateTokens(): EstimatedTokens {
+        return {
+            messagesTokens: this.tokens - this.maxTokensToGenerate,
+            maxTokensToGenerate: this.maxTokensToGenerate,
+            maxTokensInTotal: this.tokens,
+        };
     }
 
     fitRequiredMessage(message: ChatMessage) {

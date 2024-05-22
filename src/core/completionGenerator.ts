@@ -3,13 +3,14 @@ import { Position } from "vscode-languageclient";
 import { LLMSequentialIterator } from "../llm/llmIterator";
 import { LLMServices } from "../llm/llmServices";
 import { GeneratedProof } from "../llm/llmServices/llmService";
+import { ModelsParams } from "../llm/llmServices/modelParams";
 import { ProofGenerationContext } from "../llm/proofGenerationContext";
-import { UserModelsParams } from "../llm/userModelParams";
 
 import { Goal, Hyp, PpString } from "../coqLsp/coqLspTypes";
 
 import { Theorem } from "../coqParser/parsedTypes";
 import { EventLogger } from "../logging/eventLogger";
+import { stringifyAnyValue } from "../utils/printers";
 
 import { ContextTheoremsRanker } from "./contextTheoremRanker/contextTheoremsRanker";
 import {
@@ -34,7 +35,7 @@ export interface SourceFileEnvironment {
 
 export interface ProcessEnvironment {
     coqProofChecker: CoqProofChecker;
-    modelsParams: UserModelsParams;
+    modelsParams: ModelsParams;
     services: LLMServices;
     /**
      * If `theoremRanker` is not provided, the default one will be used:
@@ -46,7 +47,7 @@ export interface ProcessEnvironment {
 export interface GenerationResult {}
 
 export class SuccessGenerationResult implements GenerationResult {
-    constructor(public data: any) {}
+    constructor(public data: string) {}
 }
 
 export class FailureGenerationResult implements GenerationResult {
@@ -57,9 +58,9 @@ export class FailureGenerationResult implements GenerationResult {
 }
 
 export enum FailureGenerationStatus {
-    excededTimeout,
-    exception,
-    searchFailed,
+    TIMEOUT_EXCEEDED,
+    ERROR_OCCURRED,
+    SEARCH_FAILED,
 }
 
 export async function generateCompletion(
@@ -136,18 +137,32 @@ export async function generateCompletion(
         }
 
         return new FailureGenerationResult(
-            FailureGenerationStatus.searchFailed,
+            FailureGenerationStatus.SEARCH_FAILED,
             "No valid completions found"
         );
     } catch (e: any) {
+        const error = e as Error;
+        if (error === null) {
+            console.error(
+                `Object was thrown during completion generation: ${e}`
+            );
+            return new FailureGenerationResult(
+                FailureGenerationStatus.ERROR_OCCURRED,
+                `please report this crash by opening an issue in the Coqpilot GitHub repository: object was thrown as error, ${stringifyAnyValue(e)}`
+            );
+        } else {
+            console.error(
+                `Error occurred during completion generation:\n${error.stack ?? error}`
+            );
+        }
         if (e instanceof CoqLspTimeoutError) {
             return new FailureGenerationResult(
-                FailureGenerationStatus.excededTimeout,
+                FailureGenerationStatus.TIMEOUT_EXCEEDED,
                 e.message
             );
         } else {
             return new FailureGenerationResult(
-                FailureGenerationStatus.exception,
+                FailureGenerationStatus.ERROR_OCCURRED,
                 e.message
             );
         }
@@ -190,7 +205,7 @@ export async function checkAndFixProofs(
         "Proofs were fixed",
         fixedProofs.map(
             (proof) =>
-                `New proof: ${proof.proof()} with version ${proof.versionNumber()}\n Previous version: ${JSON.stringify(proof.proofVersions.slice(-2))}`
+                `New proof: "${proof.proof()}" with version ${proof.versionNumber()}\n Previous version: ${stringifyAnyValue(proof.proofVersions.slice(-2))}`
         )
     );
     return fixedProofs; // prepare to a new iteration
@@ -270,7 +285,7 @@ export function prepareProofToCheck(proof: string) {
 
     // 2. Remove Proof. and Qed.
     preparedProof = preparedProof
-        .replace(/Proof using\./g, "")
+        .replace(/Proof using.*?\./g, "")
         .replace(/Proof\./g, "")
         .replace(/Qed\./g, "");
 

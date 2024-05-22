@@ -1,19 +1,32 @@
 import OpenAI from "openai";
 
 import { EventLogger } from "../../../logging/eventLogger";
-import { ConfigurationError } from "../../llmServiceErrors";
+import {
+    ConfigurationError,
+    RemoteConnectionError,
+} from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
+import { OpenAiUserModelParams } from "../../userModelParams";
 import { ChatHistory } from "../chat";
 import {
-    GeneratedProof,
-    LLMService,
-    LLMServiceInternal,
+    GeneratedProofImpl,
+    LLMServiceImpl,
     ProofVersion,
 } from "../llmService";
-import { ModelParams, OpenAiModelParams } from "../modelParams";
+import { LLMServiceInternal } from "../llmServiceInternal";
+import { OpenAiModelParams } from "../modelParams";
 
-export class OpenAiService extends LLMService {
+import { OpenAiModelParamsResolver } from "./openAiModelParamsResolver";
+
+export class OpenAiService extends LLMServiceImpl<
+    OpenAiUserModelParams,
+    OpenAiModelParams,
+    OpenAiService,
+    OpenAiGeneratedProof,
+    OpenAiServiceInternal
+> {
     protected readonly internal: OpenAiServiceInternal;
+    protected readonly modelParamsResolver = new OpenAiModelParamsResolver();
 
     constructor(
         eventLogger?: EventLogger,
@@ -29,7 +42,12 @@ export class OpenAiService extends LLMService {
     }
 }
 
-export class OpenAiGeneratedProof extends GeneratedProof {
+export class OpenAiGeneratedProof extends GeneratedProofImpl<
+    OpenAiModelParams,
+    OpenAiService,
+    OpenAiGeneratedProof,
+    OpenAiServiceInternal
+> {
     constructor(
         proof: string,
         proofGenerationContext: ProofGenerationContext,
@@ -47,17 +65,22 @@ export class OpenAiGeneratedProof extends GeneratedProof {
     }
 }
 
-class OpenAiServiceInternal extends LLMServiceInternal {
+class OpenAiServiceInternal extends LLMServiceInternal<
+    OpenAiModelParams,
+    OpenAiService,
+    OpenAiGeneratedProof,
+    OpenAiServiceInternal
+> {
     constructGeneratedProof(
         proof: string,
         proofGenerationContext: ProofGenerationContext,
-        modelParams: ModelParams,
+        modelParams: OpenAiModelParams,
         previousProofVersions?: ProofVersion[] | undefined
-    ): GeneratedProof {
+    ): OpenAiGeneratedProof {
         return new OpenAiGeneratedProof(
             proof,
             proofGenerationContext,
-            modelParams as OpenAiModelParams,
+            modelParams,
             this,
             previousProofVersions
         );
@@ -65,45 +88,38 @@ class OpenAiServiceInternal extends LLMServiceInternal {
 
     async generateFromChatImpl(
         chat: ChatHistory,
-        params: ModelParams,
+        params: OpenAiModelParams,
         choices: number
     ): Promise<string[]> {
         this.validateChoices(choices);
-        const openAiParams = params as OpenAiModelParams;
-        this.validateTemperature(openAiParams);
 
-        const openai = new OpenAI({ apiKey: openAiParams.apiKey });
+        const openai = new OpenAI({ apiKey: params.apiKey });
         this.debug.logEvent("Completion requested", { history: chat });
 
         try {
             const completion = await openai.chat.completions.create({
                 messages: chat,
-                model: openAiParams.modelName,
+                model: params.modelName,
                 n: choices,
-                temperature: openAiParams.temperature,
+                temperature: params.temperature,
                 // eslint-disable-next-line @typescript-eslint/naming-convention
-                max_tokens: openAiParams.maxTokensToGenerate,
+                max_tokens: params.maxTokensToGenerate,
             });
-            return completion.choices.map(
-                (choice: any) => choice.message.content
-            );
+            return completion.choices.map((choice) => {
+                const content = choice.message.content;
+                if (content === null) {
+                    throw Error("response message content is null");
+                }
+                return content;
+            });
         } catch (e) {
-            throw this.repackKnownError(e, openAiParams);
+            throw OpenAiServiceInternal.repackKnownError(e, params);
         }
     }
 
-    private validateTemperature(openAiParams: OpenAiModelParams) {
-        const temperature = openAiParams.temperature;
-        if (temperature < 0 || temperature > 2) {
-            throw new ConfigurationError(
-                `invalid temperature "${temperature}", it should be in range between 0 and 2`
-            );
-        }
-    }
-
-    private repackKnownError(
+    private static repackKnownError(
         caughtObject: any,
-        openAiParams: OpenAiModelParams
+        params: OpenAiModelParams
     ): any {
         const error = caughtObject as Error;
         if (error === null) {
@@ -111,36 +127,63 @@ class OpenAiServiceInternal extends LLMServiceInternal {
         }
         const errorMessage = error.message;
 
-        if (
-            this.matchesPattern(
-                OpenAiServiceInternal.unknownModelNamePattern,
-                errorMessage
-            )
-        ) {
+        if (this.matchesPattern(this.unknownModelNamePattern, errorMessage)) {
             return new ConfigurationError(
-                `invalid model name "${openAiParams.modelName}", such model does not exist or you do not have access to it`
+                `invalid model name "${params.modelName}", such model does not exist or you do not have access to it`
             );
         }
-        if (
-            this.matchesPattern(
-                OpenAiServiceInternal.incorrectApiKeyPattern,
-                errorMessage
-            )
-        ) {
+        if (this.matchesPattern(this.incorrectApiKeyPattern, errorMessage)) {
             return new ConfigurationError(
-                `incorrect api key "${openAiParams.apiKey}" (check your API key at https://platform.openai.com/account/api-keys)`
+                `incorrect api key "${params.apiKey}" (check your API key at https://platform.openai.com/account/api-keys)`
+            );
+        }
+        const contextExceeded = this.parsePattern(
+            this.maximumContextLengthExceededPattern,
+            errorMessage
+        );
+        if (contextExceeded !== undefined) {
+            const [
+                modelsMaxContextLength,
+                requestedTokens,
+                requestedMessagesTokens,
+                maxTokensToGenerate,
+            ] = contextExceeded;
+            const intro =
+                "`tokensLimit` and `maxTokensToGenerate` are too large together";
+            const explanation = `model's maximum context length is ${modelsMaxContextLength} tokens, but was requested ${requestedTokens} tokens = ${requestedMessagesTokens} in the messages + ${maxTokensToGenerate} in the completion`;
+            return new ConfigurationError(`${intro}; ${explanation}`);
+        }
+        if (this.matchesPattern(this.connectionErrorPattern, errorMessage)) {
+            return new RemoteConnectionError(
+                "failed to reach OpenAI remote service"
             );
         }
         return error;
     }
 
-    private matchesPattern(pattern: RegExp, text: string): boolean {
+    private static matchesPattern(pattern: RegExp, text: string): boolean {
         return text.match(pattern) !== null;
     }
 
-    private static unknownModelNamePattern =
+    private static parsePattern(
+        pattern: RegExp,
+        text: string
+    ): string[] | undefined {
+        const match = text.match(pattern);
+        if (!match) {
+            return undefined;
+        }
+        return match.slice(1);
+    }
+
+    private static readonly unknownModelNamePattern =
         /^The model `(.*)` does not exist or you do not have access to it\.$/;
 
-    private static incorrectApiKeyPattern =
+    private static readonly incorrectApiKeyPattern =
         /^Incorrect API key provided: (.*)\.(.*)$/;
+
+    private static readonly maximumContextLengthExceededPattern =
+        /^This model's maximum context length is ([0-9]+) tokens\. However, you requested ([0-9]+) tokens \(([0-9]+) in the messages, ([0-9]+) in the completion\)\..*$/;
+
+    private static readonly connectionErrorPattern = /^Connection error\.$/;
 }

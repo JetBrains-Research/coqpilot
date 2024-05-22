@@ -10,6 +10,7 @@ import { PredefinedProofsUserModelParams } from "../../../llm/userModelParams";
 
 import { EventLogger } from "../../../logging/eventLogger";
 import { delay } from "../../commonTestFunctions/delay";
+import { resolveParametersOrThrow } from "../../commonTestFunctions/resolveOrThrow";
 import { withLLMService } from "../../commonTestFunctions/withLLMService";
 import { testModelId } from "../llmSpecificTestUtils/constants";
 import {
@@ -18,10 +19,14 @@ import {
 } from "../llmSpecificTestUtils/eventsTracker";
 import { expectLogs } from "../llmSpecificTestUtils/expectLogs";
 import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testAdmitCompletion";
+import {
+    testResolveParametersFailsWithSingleCause,
+    testResolveValidCompleteParameters,
+} from "../llmSpecificTestUtils/testResolveParameters";
 
 suite("[LLMService] Test `PredefinedProofsService`", function () {
     const simpleTactics = ["auto.", "intros.", "reflexivity."];
-    const userParams: PredefinedProofsUserModelParams = {
+    const inputParams: PredefinedProofsUserModelParams = {
         modelId: testModelId,
         tactics: simpleTactics,
     };
@@ -52,7 +57,7 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
         const predefinedProofsService = new PredefinedProofsService();
         await testLLMServiceCompletesAdmitFromFile(
             predefinedProofsService,
-            userParams,
+            inputParams,
             inputFile,
             choices
         );
@@ -68,12 +73,12 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                     const eventsTracker = subscribeToTrackEvents(
                         testEventLogger,
                         predefinedProofsService,
-                        userParams.modelId
+                        inputParams.modelId
                     );
-                    const resolvedParams =
-                        predefinedProofsService.resolveParameters(
-                            userParams
-                        ) as PredefinedProofsModelParams;
+                    const resolvedParams = resolveParametersOrThrow(
+                        predefinedProofsService,
+                        inputParams
+                    );
 
                     // failed generation
                     try {
@@ -126,117 +131,174 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
         });
     });
 
-    test("Test throws on invalid configurations", async () => {
-        await withPredefinedProofsService(
-            async (predefinedProofsService, _testEventLogger) => {
-                const resolvedParams =
-                    predefinedProofsService.resolveParameters(
-                        userParams
-                    ) as PredefinedProofsModelParams;
+    test("Test `resolveParameters` reads & accepts valid params", async () => {
+        await withPredefinedProofsService(async (predefinedProofsService) => {
+            testResolveValidCompleteParameters(
+                predefinedProofsService,
+                inputParams
+            );
+        });
+    });
 
-                // non-positive choices
-                expect(async () => {
-                    await predefinedProofsService.generateProof(
-                        proofGenerationContext,
-                        resolvedParams,
-                        -1,
-                        ErrorsHandlingMode.RETHROW_ERRORS
-                    );
-                }).toBeRejectedWith(ConfigurationError, "choices");
+    test("Test `resolveParameters` validates PredefinedProofs-extended params (`tactics`)", async () => {
+        await withPredefinedProofsService(async (predefinedProofsService) => {
+            testResolveParametersFailsWithSingleCause(
+                predefinedProofsService,
+                {
+                    ...inputParams,
+                    tactics: [],
+                },
+                "tactics"
+            );
+        });
+    });
 
-                // empty tactics
-                expect(async () => {
-                    await predefinedProofsService.generateProof(
-                        proofGenerationContext,
-                        {
-                            ...resolvedParams,
-                            tactics: [],
-                        } as PredefinedProofsModelParams,
-                        1,
-                        ErrorsHandlingMode.RETHROW_ERRORS
-                    );
-                }).toBeRejectedWith(
-                    ConfigurationError,
-                    "zero predefined tactics"
-                );
+    test("Test `resolveParameters` overrides params correctly", async () => {
+        await withPredefinedProofsService(async (predefinedProofsService) => {
+            const resolutionResult = predefinedProofsService.resolveParameters({
+                ...inputParams,
+                choices: 1,
+                systemPrompt: "asking for something",
+                maxTokensToGenerate: 2000,
+                tokensLimit: 4000,
+                multiroundProfile: {
+                    maxRoundsNumber: 10,
+                    proofFixChoices: 5,
+                    proofFixPrompt: "asking for more of something",
+                },
+            });
 
-                // choices > tactics.length
-                expect(async () => {
-                    await predefinedProofsService.generateProof(
-                        proofGenerationContext,
-                        resolvedParams,
-                        resolvedParams.tactics.length + 1,
-                        ErrorsHandlingMode.RETHROW_ERRORS
-                    );
-                }).toBeRejectedWith(ConfigurationError);
+            // first, verify all params were read correctly
+            for (const paramLog of resolutionResult.resolutionLogs) {
+                expect(paramLog.isInvalidCause).toBeNullish();
+                expect(paramLog.inputReadCorrectly.wasPerformed).toBeTruthy();
+                // expect(paramLog.overriden).toBeTruthy(); // is not true for mock overrides
+                expect(paramLog.resolvedWithDefault.wasPerformed).toBeFalsy();
             }
-        );
+
+            expect(resolutionResult.resolved).toEqual({
+                modelId: testModelId,
+                tactics: simpleTactics,
+                systemPrompt: "",
+                maxTokensToGenerate: Math.max(
+                    0,
+                    ...simpleTactics.map((tactic) => tactic.length)
+                ),
+                tokensLimit: Number.MAX_SAFE_INTEGER,
+                multiroundProfile: {
+                    maxRoundsNumber: 1,
+                    defaultProofFixChoices: 0,
+                    proofFixPrompt: "",
+                },
+                defaultChoices: simpleTactics.length,
+            });
+        });
+    });
+
+    test("Test `generateProof` throws on invalid `choices`", async () => {
+        await withPredefinedProofsService(async (predefinedProofsService) => {
+            const resolvedParams = resolveParametersOrThrow(
+                predefinedProofsService,
+                inputParams
+            );
+
+            // non-positive choices
+            expect(async () => {
+                await predefinedProofsService.generateProof(
+                    proofGenerationContext,
+                    resolvedParams,
+                    -1,
+                    ErrorsHandlingMode.RETHROW_ERRORS
+                );
+            }).toBeRejectedWith(ConfigurationError, "choices");
+
+            // choices > tactics.length
+            expect(async () => {
+                await predefinedProofsService.generateProof(
+                    proofGenerationContext,
+                    resolvedParams,
+                    resolvedParams.tactics.length + 1,
+                    ErrorsHandlingMode.RETHROW_ERRORS
+                );
+            }).toBeRejectedWith(ConfigurationError, "choices");
+        });
     });
 
     test("Test chat-related features throw", async () => {
-        await withPredefinedProofsService(
-            async (predefinedProofsService, _testEventLogger) => {
-                const resolvedParams =
-                    predefinedProofsService.resolveParameters(userParams);
-                expect(async () => {
-                    await predefinedProofsService.generateFromChat(
-                        {
-                            chat: [],
-                            estimatedTokens: 0,
+        await withPredefinedProofsService(async (predefinedProofsService) => {
+            const resolvedParams = resolveParametersOrThrow(
+                predefinedProofsService,
+                inputParams
+            );
+            expect(async () => {
+                await predefinedProofsService.generateFromChat(
+                    {
+                        chat: [],
+                        estimatedTokens: {
+                            messagesTokens: 0,
+                            maxTokensToGenerate: 0,
+                            maxTokensInTotal: 0,
                         },
-                        resolvedParams,
-                        choices,
-                        ErrorsHandlingMode.RETHROW_ERRORS
-                    );
-                }).toBeRejectedWith(
-                    ConfigurationError,
-                    "does not support generation from chat"
+                    },
+                    resolvedParams,
+                    choices,
+                    ErrorsHandlingMode.RETHROW_ERRORS
                 );
+            }).toBeRejectedWith(
+                ConfigurationError,
+                "does not support generation from chat"
+            );
 
-                const [generatedProof] =
-                    await predefinedProofsService.generateProof(
-                        proofGenerationContext,
-                        resolvedParams,
-                        1
-                    );
-                expect(generatedProof.canBeFixed()).toBeFalsy();
-                expect(
-                    async () =>
-                        await generatedProof.fixProof(
-                            "pretend to be diagnostic",
-                            3,
-                            ErrorsHandlingMode.RETHROW_ERRORS
-                        )
-                ).toBeRejectedWith(ConfigurationError, "cannot be fixed");
-            }
-        );
+            const [generatedProof] =
+                await predefinedProofsService.generateProof(
+                    proofGenerationContext,
+                    resolvedParams,
+                    1
+                );
+            expect(generatedProof.canBeFixed()).toBeFalsy();
+            expect(
+                async () =>
+                    await generatedProof.fixProof(
+                        "pretend to be diagnostic",
+                        3,
+                        ErrorsHandlingMode.RETHROW_ERRORS
+                    )
+            ).toBeRejectedWith(ConfigurationError, "cannot be fixed");
+        });
     });
 
     test("Test time to become available is zero", async () => {
-        await withPredefinedProofsService(
-            async (predefinedProofsService, _testEventLogger) => {
-                const resolvedParams =
-                    predefinedProofsService.resolveParameters(
-                        userParams
-                    ) as PredefinedProofsModelParams;
-                await predefinedProofsService.generateProof(
-                    proofGenerationContext,
-                    resolvedParams,
-                    resolvedParams.tactics.length + 1,
-                    ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
-                );
-                await delay(4000);
-                await predefinedProofsService.generateProof(
-                    proofGenerationContext,
-                    resolvedParams,
-                    resolvedParams.tactics.length + 1,
-                    ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
-                );
-                // despite 2 failures with >= 4 secs interval, should be available right now
-                expect(
-                    predefinedProofsService.estimateTimeToBecomeAvailable()
-                ).toEqual(timeZero);
-            }
-        );
+        await withPredefinedProofsService(async (predefinedProofsService) => {
+            const resolvedParams = resolveParametersOrThrow(
+                predefinedProofsService,
+                inputParams
+            );
+            const cursedParams: PredefinedProofsModelParams = {
+                ...resolvedParams,
+                tactics: [
+                    "auto.",
+                    () => {
+                        throw Error("a curse");
+                    },
+                ] as any[],
+            };
+            await predefinedProofsService.generateProof(
+                proofGenerationContext,
+                cursedParams,
+                cursedParams.tactics.length,
+                ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
+            );
+            await delay(4000);
+            await predefinedProofsService.generateProof(
+                proofGenerationContext,
+                cursedParams,
+                cursedParams.tactics.length,
+                ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
+            );
+            // despite 2 failures with >= 4 secs interval, should be available right now
+            expect(
+                predefinedProofsService.estimateTimeToBecomeAvailable()
+            ).toEqual(timeZero);
+        });
     }).timeout(6000);
 });

@@ -26,6 +26,9 @@ export interface UserModelParams {
      */
     modelId: string;
 
+    /**
+     * Can be overriden in the generation-method call with the `choices` parameter.
+     */
     choices?: number;
 
     systemPrompt?: string;
@@ -65,13 +68,6 @@ export interface LMStudioUserModelParams extends UserModelParams {
     port: number;
 }
 
-export interface UserModelsParams {
-    predefinedProofsModelParams: PredefinedProofsUserModelParams[];
-    openAiParams: OpenAiUserModelParams[];
-    grazieParams: GrazieUserModelParams[];
-    lmStudioParams: LMStudioUserModelParams[];
-}
-
 export const userMultiroundProfileSchema: JSONSchemaType<UserMultiroundProfile> =
     {
         type: "object",
@@ -103,6 +99,7 @@ export const userModelParamsSchema: JSONSchemaType<UserModelParams> = {
         },
     },
     required: ["modelId"],
+    additionalProperties: false,
 };
 
 export const predefinedProofsUserModelParamsSchema: JSONSchemaType<PredefinedProofsUserModelParams> =
@@ -117,6 +114,7 @@ export const predefinedProofsUserModelParamsSchema: JSONSchemaType<PredefinedPro
             ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
         },
         required: ["modelId", "tactics"],
+        additionalProperties: false,
     };
 
 export const openAiUserModelParamsSchema: JSONSchemaType<OpenAiUserModelParams> =
@@ -130,6 +128,7 @@ export const openAiUserModelParamsSchema: JSONSchemaType<OpenAiUserModelParams> 
             ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
         },
         required: ["modelId", "modelName", "temperature", "apiKey"],
+        additionalProperties: false,
     };
 
 export const grazieUserModelParamsSchema: JSONSchemaType<GrazieUserModelParams> =
@@ -142,6 +141,7 @@ export const grazieUserModelParamsSchema: JSONSchemaType<GrazieUserModelParams> 
             ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
         },
         required: ["modelId", "modelName", "apiKey"],
+        additionalProperties: false,
     };
 
 export const lmStudioUserModelParamsSchema: JSONSchemaType<LMStudioUserModelParams> =
@@ -154,4 +154,5 @@ export const lmStudioUserModelParamsSchema: JSONSchemaType<LMStudioUserModelPara
             ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
         },
         required: ["modelId", "temperature", "port"],
+        additionalProperties: false,
     };

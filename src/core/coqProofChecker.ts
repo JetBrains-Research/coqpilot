@@ -68,7 +68,7 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
         });
     }
 
-    private makeAuxFileName(
+    private buildAuxFileUri(
         sourceDirPath: string,
         holePosition: Position,
         unique: boolean = true
@@ -98,7 +98,7 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
         proofs: Proof[]
     ): Promise<ProofCheckResult[]> {
         // 1. Write the text to the aux file
-        const auxFileUri = this.makeAuxFileName(
+        const auxFileUri = this.buildAuxFileUri(
             sourceDirPath,
             prefixEndPosition
         );
@@ -111,8 +111,7 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
             await this.coqLspClient.openTextDocument(auxFileUri);
             let auxFileVersion = 1;
 
-            // 3. Iterate over the proofs and issue getFirstGoalAtPoint request with
-            // pretac = proof
+            // 3. Iterate over the proofs and сheck them
             for (const proof of proofs) {
                 // 3.1. Check if the proof contains admit
                 if (this.checkIfProofContainsAdmit(proof)) {
@@ -125,10 +124,10 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
                 }
 
                 auxFileVersion += 1;
-                // 4. Append the proof the end of the aux file
+                // 3.2. Append the proof the end of the aux file
                 appendFileSync(auxFileUri.fsPath, proof);
 
-                // 5. Issue update text request
+                // 3.3. Issue update text request
                 const diagnosticMessage =
                     await this.coqLspClient.updateTextDocument(
                         sourceFileContentPrefix,
@@ -137,14 +136,14 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
                         auxFileVersion
                     );
 
-                // 6. Check diagnostics
+                // 3.4. Check diagnostics
                 results.push({
                     proof: proof,
                     isValid: diagnosticMessage === undefined,
                     diagnostic: diagnosticMessage,
                 });
 
-                // 7. Bring file to the previous state
+                // 3.5. Bring file to the previous state
                 writeFileSync(auxFileUri.fsPath, sourceFileContent);
             }
         } finally {

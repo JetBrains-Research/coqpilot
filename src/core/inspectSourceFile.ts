@@ -138,7 +138,7 @@ async function createSohrteningContexts(
     return completionContexts;
 }
 
-async function createSourceFileEnvironment(
+export async function createSourceFileEnvironment(
     fileVersion: number,
     fileUri: Uri,
     client: CoqLspClient

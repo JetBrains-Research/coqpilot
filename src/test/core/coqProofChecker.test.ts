@@ -8,7 +8,7 @@ import { ProofCheckResult } from "../../core/coqProofChecker";
 import { createCoqLspClient } from "../commonTestFunctions/coqLspBuilder";
 import { resolveResourcesDir } from "../commonTestFunctions/pathsResolver";
 
-suite("Coq Proof Checker tests", () => {
+suite("`CoqProofChecker` tests", () => {
     async function checkProofsForAdmitsFromFile(
         resourcePath: string[],
         positions: { line: number; character: number }[],

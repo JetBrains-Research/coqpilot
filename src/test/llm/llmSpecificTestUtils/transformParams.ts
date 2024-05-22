@@ -1,10 +1,9 @@
-import { UserMultiroundProfile } from "../../../llm/userModelParams";
-
 import { MockLLMModelParams } from "./mockLLMService";
+import { MultiroundProfileAddOns } from "./modelParamsAddOns";
 
 export function enhanceMockParams(
     basicMockParams: MockLLMModelParams,
-    multiroundProfile: UserMultiroundProfile = {},
+    multiroundProfile: MultiroundProfileAddOns = {},
     unlimitedTokens: boolean = true
 ): MockLLMModelParams {
     return {

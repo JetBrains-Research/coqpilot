@@ -1,4 +1,3 @@
-import Ajv from "ajv";
 import {
     ExtensionContext,
     ProgressLocation,
@@ -30,18 +29,15 @@ import { Uri } from "../utils/uri";
 
 import {
     buildTheoremsRankerFromConfig,
-    parseAndValidateUserModelsParams,
-} from "./configParser";
+    readAndValidateUserModelsParams,
+} from "./configReaders";
 import {
     deleteTextFromRange,
     highlightTextInEditor,
     insertCompletion,
 } from "./documentEditor";
-import {
-    EditorMessages,
-    showMessageToUser,
-    suggestAddingAuxFilesToGitignore,
-} from "./editorMessages";
+import { suggestAddingAuxFilesToGitignore } from "./editGitignoreCommand";
+import { EditorMessages, showMessageToUser } from "./editorMessages";
 import { GlobalExtensionState } from "./globalExtensionState";
 import { subscribeToHandleLLMServicesEvents } from "./llmServicesEventsHandler";
 import {
@@ -57,8 +53,6 @@ export const pluginId = "coqpilot";
 export class CoqPilot {
     private readonly globalExtensionState: GlobalExtensionState;
     private readonly vscodeExtensionContext: ExtensionContext;
-
-    private readonly jsonSchemaValidator: Ajv;
 
     constructor(vscodeExtensionContext: ExtensionContext) {
         hideAuxFiles();
@@ -83,8 +77,6 @@ export class CoqPilot {
             "shorten_proof_in_selection",
             this.shortenProofUnderCursor.bind(this)
         )
-
-        this.jsonSchemaValidator = new Ajv();
 
         this.vscodeExtensionContext.subscriptions.push(this);
     }
@@ -158,8 +150,11 @@ export class CoqPilot {
                     if (error instanceof SettingsValidationError) {
                         error.showAsMessageToUser();
                     } else if (error instanceof Error) {
-                        showMessageToUser(error.message, "error");
-                        console.error(error);
+                        showMessageToUser(
+                            EditorMessages.errorOccurred(error.message),
+                            "error"
+                        );
+                        console.error(`${error.stack ?? error}`);
                     }
                 }
             }
@@ -275,16 +270,16 @@ export class CoqPilot {
             highlightTextInEditor(completionRange);
         } else if (result instanceof FailureGenerationResult) {
             switch (result.status) {
-                case FailureGenerationStatus.excededTimeout:
-                    showMessageToUser(EditorMessages.timeoutError, "info");
+                case FailureGenerationStatus.TIMEOUT_EXCEEDED:
+                    showMessageToUser(EditorMessages.timeoutExceeded, "info");
                     break;
-                case FailureGenerationStatus.exception:
+                case FailureGenerationStatus.ERROR_OCCURRED:
                     showMessageToUser(
-                        EditorMessages.exceptionError(result.message),
+                        EditorMessages.errorOccurred(result.message),
                         "error"
                     );
                     break;
-                case FailureGenerationStatus.searchFailed:
+                case FailureGenerationStatus.SEARCH_FAILED:
                     const completionLine =
                         completionContext.prefixEndPosition.line + 1;
                     showMessageToUser(
@@ -335,9 +330,9 @@ export class CoqPilot {
             );
         const processEnvironment: ProcessEnvironment = {
             coqProofChecker: coqProofChecker,
-            modelsParams: parseAndValidateUserModelsParams(
+            modelsParams: readAndValidateUserModelsParams(
                 workspace.getConfiguration(pluginId),
-                this.jsonSchemaValidator
+                this.globalExtensionState.llmServices
             ),
             services: this.globalExtensionState.llmServices,
             theoremRanker: contextTheoremsRanker,
@@ -367,9 +362,9 @@ export class CoqPilot {
 
         const processEnvironment: ProcessEnvironment = {
             coqProofChecker: coqProofChecker,
-            modelsParams: parseAndValidateUserModelsParams(
+            modelsParams: readAndValidateUserModelsParams(
                 workspace.getConfiguration(pluginId),
-                this.jsonSchemaValidator
+                this.globalExtensionState.llmServices
             ),
             services: this.globalExtensionState.llmServices,
             theoremRanker: contextTheoremsRanker,

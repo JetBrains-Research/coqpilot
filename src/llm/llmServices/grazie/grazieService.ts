@@ -1,19 +1,24 @@
 import { EventLogger } from "../../../logging/eventLogger";
 import { ProofGenerationContext } from "../../proofGenerationContext";
-import { UserModelParams } from "../../userModelParams";
+import { GrazieUserModelParams } from "../../userModelParams";
 import { ChatHistory, ChatMessage } from "../chat";
-import {
-    GeneratedProof,
-    LLMServiceInternal,
-    ProofVersion,
-} from "../llmService";
-import { LLMService } from "../llmService";
-import { GrazieModelParams, ModelParams } from "../modelParams";
+import { GeneratedProofImpl, ProofVersion } from "../llmService";
+import { LLMServiceImpl } from "../llmService";
+import { LLMServiceInternal } from "../llmServiceInternal";
+import { GrazieModelParams } from "../modelParams";
 
 import { GrazieApi, GrazieChatRole, GrazieFormattedHistory } from "./grazieApi";
+import { GrazieModelParamsResolver } from "./grazieModelParamsResolver";
 
-export class GrazieService extends LLMService {
+export class GrazieService extends LLMServiceImpl<
+    GrazieUserModelParams,
+    GrazieModelParams,
+    GrazieService,
+    GrazieGeneratedProof,
+    GrazieServiceInternal
+> {
     protected readonly internal: GrazieServiceInternal;
+    protected readonly modelParamsResolver = new GrazieModelParamsResolver();
 
     constructor(
         eventLogger?: EventLogger,
@@ -28,18 +33,18 @@ export class GrazieService extends LLMService {
         );
     }
 
-    // Is constant (for now) as specified in Grazie REST API
-    readonly maxTokensToGeneratePredefined = 1024;
-
-    resolveParameters(params: UserModelParams): ModelParams {
-        return this.resolveParametersWithDefaults({
-            ...params,
-            maxTokensToGenerate: this.maxTokensToGeneratePredefined,
-        });
-    }
+    /**
+     * As specified in Grazie REST API, `maxTokensToGenerate` is a constant currently.
+     */
+    static readonly maxTokensToGeneratePredefined = 1024;
 }
 
-export class GrazieGeneratedProof extends GeneratedProof {
+export class GrazieGeneratedProof extends GeneratedProofImpl<
+    GrazieModelParams,
+    GrazieService,
+    GrazieGeneratedProof,
+    GrazieServiceInternal
+> {
     constructor(
         proof: string,
         proofGenerationContext: ProofGenerationContext,
@@ -57,19 +62,24 @@ export class GrazieGeneratedProof extends GeneratedProof {
     }
 }
 
-class GrazieServiceInternal extends LLMServiceInternal {
+class GrazieServiceInternal extends LLMServiceInternal<
+    GrazieModelParams,
+    GrazieService,
+    GrazieGeneratedProof,
+    GrazieServiceInternal
+> {
     readonly api = new GrazieApi(this.debug);
 
     constructGeneratedProof(
         proof: string,
         proofGenerationContext: ProofGenerationContext,
-        modelParams: ModelParams,
+        modelParams: GrazieModelParams,
         previousProofVersions?: ProofVersion[] | undefined
-    ): GeneratedProof {
+    ): GrazieGeneratedProof {
         return new GrazieGeneratedProof(
             proof,
             proofGenerationContext,
-            modelParams as GrazieModelParams,
+            modelParams,
             this,
             previousProofVersions
         );
@@ -77,7 +87,7 @@ class GrazieServiceInternal extends LLMServiceInternal {
 
     async generateFromChatImpl(
         chat: ChatHistory,
-        params: ModelParams,
+        params: GrazieModelParams,
         choices: number
     ): Promise<string[]> {
         this.validateChoices(choices);
@@ -87,10 +97,7 @@ class GrazieServiceInternal extends LLMServiceInternal {
 
         while (completions.length < choices && attempts > 0) {
             completions.push(
-                this.api.requestChatCompletion(
-                    params as GrazieModelParams,
-                    formattedChat
-                )
+                this.api.requestChatCompletion(params, formattedChat)
             );
             attempts--;
         }

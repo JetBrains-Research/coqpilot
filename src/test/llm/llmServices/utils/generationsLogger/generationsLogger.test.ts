@@ -6,21 +6,35 @@ import {
     GenerationFailedError,
     LLMServiceError,
 } from "../../../../../llm/llmServiceErrors";
-import { ChatHistory } from "../../../../../llm/llmServices/chat";
+import {
+    ChatHistory,
+    EstimatedTokens,
+} from "../../../../../llm/llmServices/chat";
 import {
     LLMServiceRequest,
     LLMServiceRequestFailed,
     LLMServiceRequestSucceeded,
 } from "../../../../../llm/llmServices/llmService";
-import { PredefinedProofsModelParams } from "../../../../../llm/llmServices/modelParams";
-import { GenerationsLogger } from "../../../../../llm/llmServices/utils/generationsLogger/generationsLogger";
+import {
+    ModelParams,
+    OpenAiModelParams,
+    PredefinedProofsModelParams,
+} from "../../../../../llm/llmServices/modelParams";
+import {
+    GenerationsLogger,
+    GenerationsLoggerSettings,
+} from "../../../../../llm/llmServices/utils/generationsLogger/generationsLogger";
 import {
     DebugLoggerRecord,
     LoggerRecord,
 } from "../../../../../llm/llmServices/utils/generationsLogger/loggerRecord";
+import { SyncFile } from "../../../../../llm/llmServices/utils/generationsLogger/syncFile";
 import { nowTimestampMillis } from "../../../../../llm/llmServices/utils/time";
 
-import { testModelId } from "../../../llmSpecificTestUtils/constants";
+import {
+    gptTurboModelName,
+    testModelId,
+} from "../../../llmSpecificTestUtils/constants";
 import { DummyLLMService } from "../../../llmSpecificTestUtils/dummyLLMService";
 
 suite("[LLMService-s utils] GenerationsLogger test", () => {
@@ -30,20 +44,35 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
         "auto.",
         "auto.\nintro.",
     ];
-    const mockParams: PredefinedProofsModelParams = {
-        tactics: predefinedProofs,
+    const mockParamsBase: ModelParams = {
         modelId: testModelId,
         systemPrompt: "hi system",
         maxTokensToGenerate: 10000,
         tokensLimit: 1000000,
         multiroundProfile: {
             maxRoundsNumber: 1,
-            proofFixChoices: 1,
+            defaultProofFixChoices: 1,
             proofFixPrompt: "fix it",
         },
+        defaultChoices: 1,
     };
+    const mockParams: PredefinedProofsModelParams = {
+        ...mockParamsBase,
+        tactics: predefinedProofs,
+    };
+    const mockOpenAiParams: OpenAiModelParams = {
+        ...mockParamsBase,
+        modelName: gptTurboModelName,
+        apiKey: "very sensitive api key",
+        temperature: 1,
+    };
+    // different from `defaultChoices`, it's a real-life case
     const mockChoices = 2;
-    const mockEstimatedTokens = 100;
+    const mockEstimatedTokens: EstimatedTokens = {
+        messagesTokens: 100,
+        maxTokensToGenerate: 80,
+        maxTokensInTotal: 180,
+    };
     const mockChat: ChatHistory = [
         {
             role: "system",
@@ -61,12 +90,12 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
     const mockProofs = ["auto.\nintro.", "auto."];
 
     async function withGenerationsLogger(
-        loggerDebugMode: boolean,
+        settings: GenerationsLoggerSettings,
         block: (generationsLogger: GenerationsLogger) => Promise<void>
     ): Promise<void> {
         const generationsLogger = new GenerationsLogger(
             tmp.fileSync().name,
-            loggerDebugMode
+            settings
         );
         try {
             await block(generationsLogger);
@@ -75,11 +104,28 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
         }
     }
 
-    function buildMockRequest(generationsLogger: GenerationsLogger) {
+    async function withTestGenerationsLogger(
+        loggerDebugMode: boolean,
+        block: (generationsLogger: GenerationsLogger) => Promise<void>
+    ): Promise<void> {
+        return withGenerationsLogger(
+            {
+                debug: loggerDebugMode,
+                paramsPropertiesToCensor: {},
+                cleanLogsOnStart: true,
+            },
+            block
+        );
+    }
+
+    function buildMockRequest(
+        generationsLogger: GenerationsLogger,
+        params: ModelParams = mockParams
+    ) {
         const llmService = new DummyLLMService(generationsLogger);
         const mockRequest: LLMServiceRequest = {
             llmService: llmService,
-            params: mockParams,
+            params: params,
             choices: mockChoices,
             analyzedChat: {
                 chat: mockChat,
@@ -143,7 +189,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
             ? "[debug true]"
             : "[debug false]";
         test(`Simple write-read ${testNamePostfix}`, async () => {
-            await withGenerationsLogger(
+            await withTestGenerationsLogger(
                 loggerDebugMode,
                 async (generationsLogger) => {
                     await writeLogs(generationsLogger);
@@ -156,7 +202,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
         });
 
         test(`Test \`readLogsSinceLastSuccess\` ${testNamePostfix}`, async () => {
-            await withGenerationsLogger(
+            await withTestGenerationsLogger(
                 loggerDebugMode,
                 async (generationsLogger) => {
                     const noRecords =
@@ -171,10 +217,28 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
                     );
                 }
             );
+
+            test(`Test read no records ${testNamePostfix}`, async () => {
+                await withTestGenerationsLogger(
+                    loggerDebugMode,
+                    async (generationsLogger) => {
+                        expect(generationsLogger.readLogs()).toHaveLength(0);
+                        expect(
+                            generationsLogger.readLogsSinceLastSuccess()
+                        ).toHaveLength(0);
+                        generationsLogger.logGenerationSucceeded(
+                            succeeded(buildMockRequest(generationsLogger))
+                        );
+                        expect(
+                            generationsLogger.readLogsSinceLastSuccess()
+                        ).toHaveLength(0);
+                    }
+                );
+            });
         });
 
         test(`Pseudo-concurrent write-read ${testNamePostfix}`, async () => {
-            await withGenerationsLogger(
+            await withTestGenerationsLogger(
                 loggerDebugMode,
                 async (generationsLogger) => {
                     const logsWriters = [];
@@ -195,7 +259,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
     });
 
     test("Throws on wrong error types", async () => {
-        await withGenerationsLogger(true, async (generationsLogger) => {
+        await withTestGenerationsLogger(true, async (generationsLogger) => {
             const mockRequest = buildMockRequest(generationsLogger);
 
             expect(() =>
@@ -223,6 +287,51 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
                 )
             ).toThrow(Error);
         });
+    });
+
+    test("Test censor params properties", async () => {
+        const censorInt = -1;
+        await withGenerationsLogger(
+            {
+                debug: true,
+                paramsPropertiesToCensor: {
+                    apiKey: GenerationsLogger.censorString,
+                    tokensLimit: censorInt,
+                },
+                cleanLogsOnStart: true,
+            },
+            async (generationsLogger) => {
+                const mockRequest = buildMockRequest(
+                    generationsLogger,
+                    mockOpenAiParams
+                );
+                generationsLogger.logGenerationSucceeded(
+                    succeeded(mockRequest)
+                );
+
+                // test censorship via direct file read
+                const fileContent = new SyncFile(
+                    generationsLogger.filePath
+                ).read();
+                expect(
+                    fileContent.includes(mockOpenAiParams.apiKey)
+                ).toBeFalsy();
+                expect(
+                    fileContent.includes(`${mockOpenAiParams.tokensLimit}`)
+                ).toBeFalsy();
+
+                // test censorship via readLogs
+                const records = generationsLogger.readLogs();
+                expect(records).toHaveLength(1);
+                const record = records[0] as DebugLoggerRecord;
+                expect(record).not.toBeNullish();
+
+                expect(record.params.tokensLimit).toEqual(censorInt);
+                expect((record.params as OpenAiModelParams)?.apiKey).toEqual(
+                    GenerationsLogger.censorString
+                );
+            }
+        );
     });
 
     test("Test record serialization-deserealization: `SUCCESS`", async () => {
@@ -297,6 +406,27 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
             undefined,
             mockParams,
             undefined
+        );
+        expect(
+            DebugLoggerRecord.deserealizeFromString(
+                debugLoggerRecord.serializeToString()
+            )
+        ).toEqual([debugLoggerRecord, ""]);
+    });
+
+    test("Test record serialization-deserealization: empty lists", async () => {
+        const debugLoggerRecord = new DebugLoggerRecord(
+            new LoggerRecord(
+                nowTimestampMillis(),
+                mockParams.modelId,
+                "SUCCESS",
+                mockChoices,
+                undefined,
+                undefined
+            ),
+            [], // empty chat list
+            mockParams,
+            [] // empty generated proofs list
         );
         expect(
             DebugLoggerRecord.deserealizeFromString(

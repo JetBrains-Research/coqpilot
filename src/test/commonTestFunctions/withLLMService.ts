@@ -2,10 +2,17 @@ import { LLMService } from "../../llm/llmServices/llmService";
 import { ModelParams } from "../../llm/llmServices/modelParams";
 import { UserModelParams } from "../../llm/userModelParams";
 
-export async function withLLMService<S extends LLMService, R>(
-    llmService: S,
-    block: (llmService: S) => Promise<R>
-): Promise<R> {
+import { resolveParametersOrThrow } from "./resolveOrThrow";
+
+export async function withLLMService<
+    InputModelParams extends UserModelParams,
+    ResolvedModelParams extends ModelParams,
+    LLMServiceType extends LLMService<InputModelParams, ResolvedModelParams>,
+    T,
+>(
+    llmService: LLMServiceType,
+    block: (llmService: LLMServiceType) => Promise<T>
+): Promise<T> {
     try {
         return await block(llmService);
     } finally {
@@ -14,17 +21,24 @@ export async function withLLMService<S extends LLMService, R>(
 }
 
 export async function withLLMServiceAndParams<
-    S extends LLMService,
-    P extends ModelParams,
-    R,
+    InputModelParams extends UserModelParams,
+    ResolvedModelParams extends ModelParams,
+    LLMServiceType extends LLMService<InputModelParams, ResolvedModelParams>,
+    T,
 >(
-    llmService: S,
-    userParams: UserModelParams,
-    block: (llmService: S, params: P) => Promise<R>
-): Promise<R> {
+    llmService: LLMServiceType,
+    inputParams: InputModelParams,
+    block: (
+        llmService: LLMServiceType,
+        resolvedParams: ResolvedModelParams
+    ) => Promise<T>
+): Promise<T> {
     try {
-        const params = llmService.resolveParameters(userParams) as P;
-        return await block(llmService, params);
+        const resolvedParams = resolveParametersOrThrow(
+            llmService,
+            inputParams
+        );
+        return await block(llmService, resolvedParams);
     } finally {
         llmService.dispose();
     }

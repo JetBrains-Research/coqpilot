@@ -1,39 +1,36 @@
 import {
     ConfigurationError,
     GenerationFailedError,
+    RemoteConnectionError,
 } from "../llm/llmServiceErrors";
+import { LLMServices, asLLMServices } from "../llm/llmServices";
 import {
-    LLMServices,
-    asLLMServices,
-    switchByLLMServiceType,
-} from "../llm/llmServices";
-import {
-    LLMService,
+    LLMServiceImpl,
     LLMServiceRequest,
     LLMServiceRequestFailed,
     LLMServiceRequestSucceeded,
 } from "../llm/llmServices/llmService";
 import { ModelParams } from "../llm/llmServices/modelParams";
-import { Time } from "../llm/llmServices/utils/time";
 
 import { EventLogger } from "../logging/eventLogger";
+import { stringifyAnyValue } from "../utils/printers";
 import { SimpleSet } from "../utils/simpleSet";
 
-import { pluginId } from "./coqPilot";
-import { showMessageToUser } from "./editorMessages";
-import { showMessageToUserWithSettingsHint } from "./settingsValidationError";
+import { EditorMessages, showMessageToUser } from "./editorMessages";
+import {
+    showMessageToUserWithSettingsHint,
+    toSettingName,
+} from "./settingsValidationError";
 
-/* eslint-disable @typescript-eslint/naming-convention */
 enum LLMServiceAvailablityState {
-    AVAILABLE = "AVAILABLE",
-    UNAVAILABLE = "UNAVAILABLE",
+    AVAILABLE,
+    UNAVAILABLE,
 }
 
-/* eslint-disable @typescript-eslint/naming-convention */
 enum LLMServiceMessagesShownState {
-    NO_MESSAGES_SHOWN = "NO_MESSAGES_SHOWN",
-    BECOME_UNAVAILABLE_MESSAGE_SHOWN = "BECOME_UNAVAILABLE_MESSAGE_SHOWN",
-    AGAIN_AVAILABLE_MESSAGE_SHOWN = "AGAIN_AVAILABLE_MESSAGE_SHOWN",
+    NO_MESSAGES_SHOWN,
+    BECOME_UNAVAILABLE_MESSAGE_SHOWN,
+    AGAIN_AVAILABLE_MESSAGE_SHOWN,
 }
 
 interface LLMServiceUIState {
@@ -56,11 +53,11 @@ export function subscribeToHandleLLMServicesEvents(
     );
 
     const succeededSubscriptionId = eventLogger.subscribeToLogicEvent(
-        LLMService.requestSucceededEvent,
+        LLMServiceImpl.requestSucceededEvent,
         reactToRequestSucceededEvent(llmServiceToUIState)
     );
     const failedSubscriptionId = eventLogger.subscribeToLogicEvent(
-        LLMService.requestFailedEvent,
+        LLMServiceImpl.requestFailedEvent,
         reactToRequestFailedEvent(
             llmServiceToUIState,
             seenIncorrectlyConfiguredModels
@@ -69,11 +66,11 @@ export function subscribeToHandleLLMServicesEvents(
 
     return () => {
         eventLogger.unsubscribe(
-            LLMService.requestSucceededEvent,
+            LLMServiceImpl.requestSucceededEvent,
             succeededSubscriptionId
         );
         eventLogger.unsubscribe(
-            LLMService.requestFailedEvent,
+            LLMServiceImpl.requestFailedEvent,
             failedSubscriptionId
         );
     };
@@ -104,7 +101,7 @@ function reactToRequestSucceededEvent(
             parseLLMServiceRequestEvent<LLMServiceRequestSucceeded>(
                 data,
                 llmServiceToUIState,
-                `data of the ${LLMService.requestSucceededEvent} event should be a \`LLMServiceRequestSucceeded\` object`
+                `data of the ${LLMServiceImpl.requestSucceededEvent} event should be a \`LLMServiceRequestSucceeded\` object`
             );
         if (
             uiState.availabilityState === LLMServiceAvailablityState.UNAVAILABLE
@@ -115,7 +112,9 @@ function reactToRequestSucceededEvent(
                 LLMServiceMessagesShownState.BECOME_UNAVAILABLE_MESSAGE_SHOWN
             ) {
                 showMessageToUser(
-                    `\`${requestSucceeded.llmService.serviceName}\` is available again!`,
+                    EditorMessages.serviceIsAvailableAgain(
+                        requestSucceeded.llmService.serviceName
+                    ),
                     "info"
                 );
                 uiState.messagesShownState =
@@ -134,7 +133,7 @@ function reactToRequestFailedEvent(
             parseLLMServiceRequestEvent<LLMServiceRequestFailed>(
                 data,
                 llmServiceToUIState,
-                `data of the ${LLMService.requestFailedEvent} event should be a \`LLMServiceRequestFailed\` object`
+                `data of the ${LLMServiceImpl.requestFailedEvent} event should be a \`LLMServiceRequestFailed\` object`
             );
 
         const llmServiceError = requestFailed.llmServiceError;
@@ -145,15 +144,23 @@ function reactToRequestFailedEvent(
             }
             seenIncorrectlyConfiguredModels.add(model);
             showMessageToUserWithSettingsHint(
-                `Model "${model.modelId}" is configured incorrectly: ${llmServiceError.message}. Thus, "${model.modelId}" was skipped for this run. Please fix the model's configuration in the settings.`,
+                EditorMessages.modelConfiguredIncorrectly(
+                    model.modelId,
+                    llmServiceError.message
+                ),
                 "error",
                 toSettingName(requestFailed.llmService)
             );
             return;
         }
-        if (!(llmServiceError instanceof GenerationFailedError)) {
+        if (
+            !(
+                llmServiceError instanceof RemoteConnectionError ||
+                llmServiceError instanceof GenerationFailedError
+            )
+        ) {
             throw Error(
-                `\`llmServiceError\` of the received ${LLMService.requestFailedEvent} event data is expected to be either a \` ConfigurationError\` or \`GenerationFailedError\`, but got: "${llmServiceError}"`
+                `\`llmServiceError\` of the received ${LLMServiceImpl.requestFailedEvent} event data is expected to be either a \` ConfigurationError\`, \`RemoteConnectionError\`, or \`GenerationFailedError\`, but got: "${llmServiceError}"`
             );
         }
 
@@ -165,16 +172,25 @@ function reactToRequestFailedEvent(
                 uiState.messagesShownState ===
                 LLMServiceMessagesShownState.NO_MESSAGES_SHOWN
             ) {
-                const formattedExpectedTime = formatTimeToUIString(
-                    requestFailed.llmService.estimateTimeToBecomeAvailable()
-                );
-                const becameUnavailableMessage = `\`${requestFailed.llmService.serviceName}\` became unavailable for this generation.`;
-                const errorMessage = llmServiceError.cause.message;
-                const tryAgainMessage = `If you want to use it, try again in ~ ${formattedExpectedTime}. Caused by error: "${errorMessage}".`;
-                showMessageToUser(
-                    `${becameUnavailableMessage} ${tryAgainMessage}`,
-                    "warning"
-                );
+                const serviceName = requestFailed.llmService.serviceName;
+                if (llmServiceError instanceof GenerationFailedError) {
+                    showMessageToUser(
+                        EditorMessages.serviceBecameUnavailable(
+                            serviceName,
+                            llmServiceError.cause.message,
+                            requestFailed.llmService.estimateTimeToBecomeAvailable()
+                        ),
+                        "warning"
+                    );
+                } else {
+                    showMessageToUser(
+                        EditorMessages.failedToReachRemoteService(
+                            serviceName,
+                            llmServiceError.message
+                        ),
+                        "warning"
+                    );
+                }
                 uiState.messagesShownState =
                     LLMServiceMessagesShownState.BECOME_UNAVAILABLE_MESSAGE_SHOWN;
             }
@@ -189,7 +205,7 @@ function parseLLMServiceRequestEvent<T extends LLMServiceRequest>(
 ): [T, LLMServiceUIState] {
     const request = data as T;
     if (request === null) {
-        throw Error(`${errorMessage}, but data = \`${data}\``);
+        throw Error(`${errorMessage}, but data = ${stringifyAnyValue(data)}`);
     }
     const serviceName = request.llmService.serviceName;
     const uiState = llmServiceToUIState.get(serviceName);
@@ -197,44 +213,4 @@ function parseLLMServiceRequestEvent<T extends LLMServiceRequest>(
         throw Error(`no UI state for \`${serviceName}\``);
     }
     return [request, uiState];
-}
-
-function toSettingName(llmService: LLMService): string {
-    const serviceNameInSettings = switchByLLMServiceType(
-        llmService,
-        () => "predefinedProofs",
-        () => "openAi",
-        () => "grazie",
-        () => "lmStudio"
-    );
-    return `${pluginId}.${serviceNameInSettings}ModelsParameters`;
-}
-
-function formatTimeToUIString(time: Time): string {
-    const orderedTimeItems: [number, string][] = [
-        [time.days, "day"],
-        [time.hours, "hour"],
-        [time.minutes, "minute"],
-        [time.seconds, "second"],
-    ].map(([value, name]) => [
-        value as number,
-        formatTimeItem(value as number, name as string),
-    ]);
-    const itemsN = orderedTimeItems.length;
-
-    for (let i = 0; i < itemsN; i++) {
-        const [value, formattedItem] = orderedTimeItems[i];
-        if (value !== 0) {
-            const nextFormattedItem =
-                i === itemsN - 1 ? "" : `, ${orderedTimeItems[i + 1][1]}`;
-            return `${formattedItem}${nextFormattedItem}`;
-        }
-    }
-    const zeroSeconds = orderedTimeItems[3][1];
-    return `${zeroSeconds}`;
-}
-
-function formatTimeItem(value: number, name: string): string {
-    const suffix = value === 1 ? "" : "s";
-    return `${value} ${name}${suffix}`;
 }

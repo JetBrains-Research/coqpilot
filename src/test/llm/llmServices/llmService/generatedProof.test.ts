@@ -1,10 +1,7 @@
 import { expect } from "earl";
 
 import { AnalyzedChatHistory } from "../../../../llm/llmServices/chat";
-import {
-    ErrorsHandlingMode,
-    GeneratedProof,
-} from "../../../../llm/llmServices/llmService";
+import { ErrorsHandlingMode } from "../../../../llm/llmServices/llmService";
 
 import {
     mockChat,
@@ -57,7 +54,7 @@ suite("[LLMService] Test `GeneratedProof`", () => {
                 maxRoundsNumber: 2,
 
                 // will be overriden at calls
-                proofFixChoices: 1,
+                defaultProofFixChoices: 1,
 
                 // makes MockLLMService generate `Fixed.` proofs if is found in sent chat
                 proofFixPrompt: MockLLMService.proofFixPrompt,
@@ -90,6 +87,51 @@ suite("[LLMService] Test `GeneratedProof`", () => {
                 });
             }
         );
+    });
+
+    async function testExtractsProof(
+        dirtyProof: string,
+        expectedExtractedProof: string
+    ): Promise<void> {
+        return withMockLLMService(
+            async (mockService, basicMockParams, _testEventLogger) => {
+                const generatedProof = await constructInitialGeneratedProof(
+                    mockService,
+                    {
+                        ...basicMockParams,
+                        proofsToGenerate: [dirtyProof],
+                    }
+                );
+                expectGeneratedProof(generatedProof, {
+                    proof: expectedExtractedProof,
+                    versionNumber: 1,
+                    proofVersions: [toProofVersion(expectedExtractedProof)],
+                });
+            }
+        );
+    }
+
+    test("Correctly extracts proof from dirty input (when created)", async () => {
+        await testExtractsProof("auto.", "auto.");
+        await testExtractsProof("Proof. auto.", "Proof. auto.");
+        await testExtractsProof("auto. Qed.", "auto. Qed.");
+        await testExtractsProof("some text", "some text");
+
+        await testExtractsProof("Proof.auto.Qed.", "auto.");
+        await testExtractsProof("Proof.Qed.", "");
+
+        await testExtractsProof("Proof. auto. Qed.", "auto.");
+        await testExtractsProof("Proof.\nauto.\nQed.", "auto.");
+        await testExtractsProof("Proof.\n\tauto.\nQed.", "auto.");
+        await testExtractsProof("\tProof.\n\t\tauto.\n\tQed.", "auto.");
+
+        await testExtractsProof("PrefixProof.auto.Qed.Suffix", "auto.");
+        await testExtractsProof(
+            "The following proof should solve your theorem:\n```Proof.\n\tauto.\nQed.```\nAsk me more questions, if you want to!",
+            "auto."
+        );
+
+        await testExtractsProof("Proof.auto.Qed. Proof.intros.Qed.", "auto.");
     });
 
     test("Mock multiround: generate next version, happy path", async () => {
@@ -180,11 +222,14 @@ suite("[LLMService] Test `GeneratedProof`", () => {
         _mockService: MockLLMService,
         _mockParams: MockLLMModelParams,
         errorsHandlingMode: ErrorsHandlingMode,
-        preparedData?: any
+        preparedData?: MockLLMGeneratedProof
     ): Promise<string[]> {
-        const initialGeneratedProof = preparedData as GeneratedProof;
-        expect(initialGeneratedProof).toBeTruthy();
-
+        const initialGeneratedProof = preparedData;
+        if (initialGeneratedProof === undefined) {
+            throw Error(
+                `test is configured incorrectly: \`fixProof\` got "undefined" as \`preparedData\` instead of \`MockLLMGeneratedProof\``
+            );
+        }
         const fixedGeneratedProofs = await initialGeneratedProof.fixProof(
             "Proof was incorrect",
             1,
@@ -199,7 +244,7 @@ suite("[LLMService] Test `GeneratedProof`", () => {
     async function prepareData(
         mockService: MockLLMService,
         basicMockParams: MockLLMModelParams
-    ): Promise<GeneratedProof> {
+    ): Promise<MockLLMGeneratedProof> {
         const initialGeneratedProof = await constructInitialGeneratedProof(
             mockService,
             basicMockParams

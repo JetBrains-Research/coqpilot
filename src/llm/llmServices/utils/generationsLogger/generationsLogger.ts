@@ -6,10 +6,17 @@ import {
     LLMServiceRequestFailed,
     LLMServiceRequestSucceeded,
 } from "../../llmService";
+import { ModelParams } from "../../modelParams";
 import { nowTimestampMillis } from "../time";
 
 import { DebugLoggerRecord, LoggedError, LoggerRecord } from "./loggerRecord";
 import { SyncFile } from "./syncFile";
+
+export interface GenerationsLoggerSettings {
+    debug: boolean;
+    paramsPropertiesToCensor: Object;
+    cleanLogsOnStart: boolean;
+}
 
 /**
  * This class is responsible for logging the actual generations.
@@ -23,22 +30,30 @@ import { SyncFile } from "./syncFile";
  */
 export class GenerationsLogger {
     private readonly logsFile: SyncFile;
-    private readonly recordsDelim = "@@@ ";
+    private static readonly recordsDelim = "@@@ ";
+
+    static readonly censorString = "***censored***";
 
     /**
+     * About settings.
+     *
      * - When `debug` is false, logs only the necessary info:
      * timestamp, model name, response status and basic request info (choices and number of tokens sent).
      * Logs are being cleaned every time the last request succeeds.
      * - When `debug` is true, logs chat history, received completions and params of the model additionally.
      *   Also, the logs are never cleaned automatically.
+     *
+     * `paramsPropertiesToCensor` specifies properties of `ModelParams` (or its extension)
+     * that will be replaced with the corresponding given values in logs.
+     * An example `paramsPropertiesToCensor`: `{apiKey: GenerationsLogger.censorString}`.
+     * To disable censorship, pass an empty object: `{}`.
      */
     constructor(
-        filePath: string,
-        private readonly debug: boolean = false,
-        cleanLogsOnStart: boolean = true
+        readonly filePath: string,
+        private readonly settings: GenerationsLoggerSettings
     ) {
-        this.logsFile = new SyncFile(filePath);
-        if (!this.logsFile.exists() || cleanLogsOnStart) {
+        this.logsFile = new SyncFile(this.filePath);
+        if (!this.logsFile.exists() || this.settings.cleanLogsOnStart) {
             this.resetLogs();
         }
     }
@@ -51,17 +66,17 @@ export class GenerationsLogger {
             request.choices,
             request.analyzedChat?.estimatedTokens
         );
-        if (this.debug) {
+        if (this.settings.debug) {
             record = new DebugLoggerRecord(
                 record,
                 request.analyzedChat?.chat,
-                request.params,
+                this.censorParamsProperties(request.params),
                 request.generatedRawProofs
             );
         }
 
-        const newLog = `${this.recordsDelim}${record.serializeToString()}\n`;
-        if (this.debug) {
+        const newLog = `${GenerationsLogger.recordsDelim}${record.serializeToString()}\n`;
+        if (this.settings.debug) {
             this.logsFile.append(newLog);
         } else {
             this.logsFile.write(newLog);
@@ -79,23 +94,25 @@ export class GenerationsLogger {
                 this.extractAndValidateCause(request.llmServiceError)
             )
         );
-        if (this.debug) {
+        if (this.settings.debug) {
             record = new DebugLoggerRecord(
                 record,
                 request.analyzedChat?.chat,
-                request.params
+                this.censorParamsProperties(request.params)
             );
         }
 
-        const newLog = `${this.recordsDelim}${record.serializeToString()}\n`;
+        const newLog = `${GenerationsLogger.recordsDelim}${record.serializeToString()}\n`;
         this.logsFile.append(newLog);
     }
 
     readLogs(): LoggerRecord[] {
         const rawData = this.logsFile.read();
-        const rawRecords = rawData.split(this.recordsDelim).slice(1);
+        const rawRecords = rawData
+            .split(GenerationsLogger.recordsDelim)
+            .slice(1);
         return rawRecords.map((rawRecord) =>
-            this.debug
+            this.settings.debug
                 ? DebugLoggerRecord.deserealizeFromString(rawRecord)[0]
                 : LoggerRecord.deserealizeFromString(rawRecord)[0]
         );
@@ -141,6 +158,14 @@ export class GenerationsLogger {
             );
         }
         return cause;
+    }
+
+    private censorParamsProperties<T extends ModelParams>(params: T): T {
+        // no need in deep copies, but we shall not overwrite original params
+        return {
+            ...params,
+            ...this.settings.paramsPropertiesToCensor,
+        };
     }
 
     private toLoggedError(error: Error): LoggedError {

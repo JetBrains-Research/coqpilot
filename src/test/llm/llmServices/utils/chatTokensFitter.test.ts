@@ -181,7 +181,7 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
                 role: "user", // doesn't matter
                 content: text,
             });
-            return fitter.estimateTokens();
+            return fitter.estimateTokens().maxTokensInTotal;
         } finally {
             fitter.dispose();
         }

@@ -4,27 +4,31 @@ import {
     ErrorsHandlingMode,
     LLMService,
 } from "../../../llm/llmServices/llmService";
+import { ModelParams } from "../../../llm/llmServices/modelParams";
 import { UserModelParams } from "../../../llm/userModelParams";
 
 import { checkTheoremProven } from "../../commonTestFunctions/checkProofs";
 import { prepareEnvironmentWithContexts } from "../../commonTestFunctions/prepareEnvironment";
 import { withLLMServiceAndParams } from "../../commonTestFunctions/withLLMService";
 
-export async function testLLMServiceCompletesAdmitFromFile(
-    service: LLMService,
-    userParams: UserModelParams,
+export async function testLLMServiceCompletesAdmitFromFile<
+    InputModelParams extends UserModelParams,
+    ResolvedModelParams extends ModelParams,
+>(
+    service: LLMService<InputModelParams, ResolvedModelParams>,
+    inputParams: InputModelParams,
     resourcePath: string[],
     choices: number
 ) {
     return withLLMServiceAndParams(
         service,
-        userParams,
-        async (service, params) => {
+        inputParams,
+        async (service, resolvedParams: ResolvedModelParams) => {
             const [environment, [[completionContext, proofGenerationContext]]] =
                 await prepareEnvironmentWithContexts(resourcePath);
             const generatedProofs = await service.generateProof(
                 proofGenerationContext,
-                params,
+                resolvedParams,
                 choices,
                 ErrorsHandlingMode.RETHROW_ERRORS
             );
