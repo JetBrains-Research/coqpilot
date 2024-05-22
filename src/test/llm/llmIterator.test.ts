@@ -19,7 +19,7 @@ suite("LLM Iterator test", () => {
         predefinedModel2,
     ]);
     const tactics = predefinedModel1.tactics;
-    const tacticsAsProofs = tactics.map((tactic) => `Proof. ${tactic} Qed.`);
+    expect(predefinedModel2.tactics).toEqual(tactics);
 
     const proofGenerationContext: ProofGenerationContext = {
         contextTheorems: [],
@@ -39,7 +39,7 @@ suite("LLM Iterator test", () => {
                     const result = await iterator.nextProof();
                     expect(result.done).toBeFalsy();
                     const proof = result.value;
-                    expect(proof.proof()).toEqual(tacticsAsProofs[t]);
+                    expect(proof.proof()).toEqual(tactics[t]);
                 }
             }
             const result = await iterator.nextProof();
@@ -63,7 +63,7 @@ suite("LLM Iterator test", () => {
                 const proofsBatch = result.value.map(
                     (proofObject: GeneratedProof) => proofObject.proof()
                 );
-                expect(proofsBatch).toEqual(tacticsAsProofs);
+                expect(proofsBatch).toEqual(tactics);
             }
             const result = await iterator.next();
             expect(result.done);

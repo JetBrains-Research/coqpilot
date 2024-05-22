@@ -460,11 +460,12 @@ export abstract class GeneratedProofImpl<
         );
     }
 
+    private readonly coqProofBlockPattern = /Proof\.\s*(.*?)\s*Qed\./s;
+
     private removeProofQedIfNeeded(message: string): string {
-        const regex = /Proof\.(.*?)Qed\./s;
-        const match = regex.exec(message);
+        const match = this.coqProofBlockPattern.exec(message);
         if (match) {
-            return match[0];
+            return match[1];
         } else {
             return message;
         }
