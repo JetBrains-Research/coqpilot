@@ -1,5 +1,39 @@
 # Changelog
 
+## 2.2.0
+
+### Public changes
+
+- Support time estimation for LLM services to become available after failure via logging proof-generation requests. This information is shown to the user. 
+- Set up interaction between `LLMService`-s and UI to report errors that happened during proof-generation.
+- Improve LLM services' parameters: their naming, transparency, and description.
+    - Introduce `modelId` to distinguish a model identifier from the name of an OpenAI / Grazie model.
+    - Rename `newMessageMaxTokens` to `maxTokensToGenerate` for greater clarity.
+    - Update the settings description, and make it more user-friendly.
+- Significantly improve settings validation.
+    - Use parameters resolver framework to resolve parameters (with overrides and defaults) and validate them.
+    - Support messages about parameter resolution: both failures and unexpected overrides.
+    - Clarify existing error messages.
+    - Add some general checks: input models have unique `modelId`-s, there are models to generate proofs with.
+- Improve interaction with OpenAI.
+    - Notify the user of configuration errors (invalid model name, incorrect API key, maximum context length exceeded) and connection errors.
+    - Support resolution of `tokensLimit` and `maxTokensToGenerate` with recommended defaults for known models.
+- Fix minor bugs and make minor improvements detected by thorough testing.
+
+### Internal changes
+
+- Rework and document LLMService architecture: `LLMServiceInternal`, better facades, powerful typing.
+- Introduce hierarchy for LLMService errors. Support proper logging and error handling inside `LLMService`-s.
+- Rework settings validation.
+    - Refactor `SettingsValidationError`, move all input parameters validation to one place and make it coherent.
+    - Design and implement a powerful and well-documented parameters resolver framework.
+
+### Testing infrastructure changes
+
+- Test the LLM Services module thoroughly. 
+- Improve test infrastructure in general by introducing and structuring utils.
+- Fix the issue with building test resources on CI. Set up CI debugging, and enable launching CI manually.
+
 ## 2.1.0
 
 Major: 
