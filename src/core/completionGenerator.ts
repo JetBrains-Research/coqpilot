@@ -285,7 +285,7 @@ export function prepareProofToCheck(proof: string) {
 
     // 2. Remove Proof. and Qed.
     preparedProof = preparedProof
-        .replace(/Proof using\./g, "")
+        .replace(/Proof using.*?\./g, "")
         .replace(/Proof\./g, "")
         .replace(/Qed\./g, "");
 

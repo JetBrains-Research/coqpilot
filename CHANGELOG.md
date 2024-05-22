@@ -1,5 +1,17 @@
 # Change Log
 
+### 2.1.0
+Major: 
+- Create a (still in development and improvement) benchmarking system. A guide on how to use it is in the README.
+- Conduct an experiment on the performance of different LLMs, using the developed infrastructure. Benchmarking report is located in the [docs folder](etc/docs/benchmarking_report01.md).
+- Correctly handle and display settings which occur when the user settings are not correctly set.
+
+Minor: 
+- Set order of contributed settings.
+- Add a comprehensive user settings guide to the README. 
+- Fix issue with Grazie service not being able to correctly accept coq ligatures.
+- Fix issue that occured when generated proof contained `Proof using {...}.` construct. 
+
 ### 2.0.0
 - Added multiple strategies for ranking theorems from the working file. As LLM context window is limited, we sometimes should somehow choose a subset of theorems we want to provide as references to the LLM. Thus, we have made a few strategies for ranking theorems. Now there are only 2 of them, but there are more to come. Now we have a strategy that randomly picks theorems, and also the one that ranks them depending on the distance from the hole.
 - Now different holes are solved in parallel. This is a huge improvement in terms of performance.

@@ -17,6 +17,7 @@ import {
     predefinedProofsUserModelParamsSchema,
 } from "../llm/userModelParams";
 
+import { JaccardIndexContextTheoremsRanker } from "../core/contextTheoremRanker/JaccardIndexContextTheoremsRanker";
 import { ContextTheoremsRanker } from "../core/contextTheoremRanker/contextTheoremsRanker";
 import { DistanceContextTheoremsRanker } from "../core/contextTheoremRanker/distanceContextTheoremsRanker";
 import { RandomContextTheoremsRanker } from "../core/contextTheoremRanker/randomContextTheoremsRanker";
@@ -40,6 +41,8 @@ export function buildTheoremsRankerFromConfig(): ContextTheoremsRanker {
             return new DistanceContextTheoremsRanker();
         case "random":
             return new RandomContextTheoremsRanker();
+        case "jaccardIndex":
+            return new JaccardIndexContextTheoremsRanker();
         default:
             throw new SettingsValidationError(
                 `unknown context theorems ranker type: ${rankerType}`,

@@ -344,6 +344,11 @@ export abstract class GeneratedProofImpl<
     /**
      * Creates an instance of `GeneratedProofImpl`.
      * Should be called only by `LLMServiceImpl`, `LLMServiceInternal` or `GeneratedProofImpl` itself.
+     *
+     * This constructor is capable of extracting the actual proof (its block of code)
+     * from the input `proof` in case it is contaminated with plain text or any other surrounding symbols.
+     * Namely, it extracts the block between `Proof.` and `Qed.` if they are present;
+     * otherwise, takes the whole `proof`.
      */
     constructor(
         proof: string,
@@ -352,10 +357,12 @@ export abstract class GeneratedProofImpl<
         protected readonly llmServiceInternal: LLMServiceInternalType,
         previousProofVersions: ProofVersion[] = []
     ) {
-        // Makes a copy of the previous proof versions
+        // Make a copy of the previous proof versions
         this.proofVersions = [...previousProofVersions];
+
+        // Save newly generated `proof`
         this.proofVersions.push({
-            proof: proof,
+            proof: this.removeProofQedIfNeeded(proof),
             diagnostic: undefined,
         });
 
@@ -445,7 +452,7 @@ export abstract class GeneratedProofImpl<
             },
             (proof: string) =>
                 this.llmServiceInternal.constructGeneratedProof(
-                    this.removeProofQedIfNeeded(proof),
+                    proof,
                     this.proofGenerationContext,
                     this.modelParams,
                     this.proofVersions
@@ -453,7 +460,7 @@ export abstract class GeneratedProofImpl<
         );
     }
 
-    protected removeProofQedIfNeeded(message: string): string {
+    private removeProofQedIfNeeded(message: string): string {
         const regex = /Proof\.(.*?)Qed\./s;
         const match = regex.exec(message);
         if (match) {
