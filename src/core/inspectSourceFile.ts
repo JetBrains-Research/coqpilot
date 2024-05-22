@@ -4,7 +4,7 @@ import * as path from "path";
 import { CoqLspClient } from "../coqLsp/coqLspClient";
 
 import { parseCoqFile } from "../coqParser/parseCoqFile";
-import { ProofStep, Theorem } from "../coqParser/parsedTypes";
+import { ProofStep, Theorem, TheoremProof } from "../coqParser/parsedTypes";
 import { Uri } from "../utils/uri";
 
 import {
@@ -28,6 +28,34 @@ export async function inspectSourceFile(
     const completionContexts = await createCompletionContexts(
         fileVersion,
         shouldCompleteHole,
+        sourceFileEnvironment.fileTheorems,
+        fileUri,
+        client
+    );
+    const sourceFileEnvironmentWithCompleteProofs: SourceFileEnvironment = {
+        ...sourceFileEnvironment,
+        fileTheorems: sourceFileEnvironment.fileTheorems.filter(
+            (thr) => thr.proof && !thr.proof.is_incomplete
+        ),
+    };
+
+    return [completionContexts, sourceFileEnvironmentWithCompleteProofs];
+}
+
+export async function inspectSourceShortening(
+    fileVersion: number,
+    shouldShortenProof: (proof: TheoremProof) => boolean,
+    fileUri: Uri,
+    client: CoqLspClient
+): Promise<AnalyzedFile> {
+    const sourceFileEnvironment = await createSourceFileEnvironment(
+        fileVersion,
+        fileUri,
+        client
+    );
+    const completionContexts = await createSohrteningContexts(
+        fileVersion,
+        shouldShortenProof,
         sourceFileEnvironment.fileTheorems,
         fileUri,
         client
@@ -70,6 +98,42 @@ async function createCompletionContexts(
             });
         }
     }
+
+    return completionContexts;
+}
+
+async function createSohrteningContexts(
+    fileVersion: number,
+    shouldShortenProof: (proof: TheoremProof) => boolean,
+    fileTheorems: Theorem[],
+    fileUri: Uri,
+    client: CoqLspClient
+): Promise<CompletionContext[]> {
+    const proofsToShorten = fileTheorems
+        .filter((thr) => thr.proof)
+        .map((thr) => thr.proof!)
+        .filter(shouldShortenProof);
+
+    let completionContexts: CompletionContext[] = [];
+    if (proofsToShorten.length != 1) {
+        return completionContexts;
+    }
+
+    const proofToShorten = proofsToShorten[0];
+
+    const goal = await client.getFirstGoalAtPoint(
+        proofToShorten.proof_range.start,
+        fileUri,
+        fileVersion
+    );
+    if (!(goal instanceof Error)) {
+        completionContexts.push({
+            proofGoal: goal,
+            prefixEndPosition: proofToShorten.proof_range.start,
+            admitEndPosition: proofToShorten.proof_range.end,
+        });
+    }
+    
 
     return completionContexts;
 }

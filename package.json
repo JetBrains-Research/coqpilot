@@ -1,7 +1,7 @@
 {
   "name": "coqpilot",
-  "displayName": "Сoqpilot",
-  "description": "An ai based completion extension for Coq interactive prover.",
+  "displayName": "Coqpilot",
+  "description": "An AI based completion extension for Coq interactive prover.",
   "icon": "etc/img/logo.ico",
   "repository": {
     "type": "git",
@@ -46,12 +46,21 @@
       {
         "command": "coqpilot.perform_completion_in_selection",
         "title": "Coqpilot: Try to prove holes (admitted goals) in the selection"
+      },
+      {
+        "command": "coqpilot.shorten_proof_in_selection",
+        "title": "Coqpilot: Try to shorten the proof in the selection"
       }
     ],
     "menus": {
       "editor/context": [
         {
           "command": "coqpilot.perform_completion_in_selection",
+          "when": "editorTextFocus && editorHasSelection && resourceLangId == coq",
+          "group": "queries"
+        },
+        {
+          "command": "coqpilot.shorten_proof_in_selection",
           "when": "editorTextFocus && editorHasSelection && resourceLangId == coq",
           "group": "queries"
         }
@@ -216,6 +225,11 @@
                   "type": "string",
                   "description": "Prompt for the Grazie model to begin chat with. It is sent as a system message, which means it has more impact than other messages.",
                   "default": "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'."
+                },
+                "refactoringPrompt": {
+                  "type": "string",
+                  "description": "Prompt for the Grazie model to begin chat with.",
+                  "default": "You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'."
                 },
                 "maxTokensToGenerate": {
                   "type": "number",

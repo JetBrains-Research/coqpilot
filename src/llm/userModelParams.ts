@@ -30,6 +30,8 @@ export interface UserModelParams {
 
     systemPrompt?: string;
 
+    refactoringPrompt?: string;
+
     maxTokensToGenerate?: number;
     /**
      * Includes tokens that the model generates as an answer message,
@@ -87,8 +89,9 @@ export const userModelParamsSchema: JSONSchemaType<UserModelParams> = {
     properties: {
         modelId: { type: "string" },
         choices: { type: "number", nullable: true },
-
+        
         systemPrompt: { type: "string", nullable: true },
+        refactoringPrompt: { type: "string", nullable: true },
 
         maxTokensToGenerate: { type: "number", nullable: true },
         tokensLimit: { type: "number", nullable: true },

@@ -35,7 +35,7 @@ suite("Coq file parser tests", () => {
             expect(theorem.statement).toEqual(theoremData[i].statement);
             expect(theorem.statement_range.start).toEqual(theoremData[i].start);
             expect(theorem.proof).not.toBeNullish();
-            expect(theorem.proof?.end_pos.end).toEqual(theoremData[i].end);
+            expect(theorem.proof?.proof_range.end).toEqual(theoremData[i].end);
             expect(theorem.proof?.is_incomplete).toEqual(
                 theoremData[i].isIncomplete
             );

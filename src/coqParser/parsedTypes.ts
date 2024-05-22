@@ -110,7 +110,7 @@ export class ProofStep {
 export class TheoremProof {
     constructor(
         public proof_steps: ProofStep[],
-        public end_pos: Range,
+        public proof_range: Range,
         public is_incomplete: boolean,
         public holes: ProofStep[]
     ) {}

@@ -107,6 +107,7 @@ function validateAndParseJson<T>(
                 `unknown \`targetClassSchema\`: "${targetClassSchema}"; while resolving json: "${json}"`
             );
         }
+        console.log(`${JSON.stringify(json)} does not match the schema for \`${settingsName}\`.`);
         throw new SettingsValidationError(
             `unable to validate json against the class: ${JSON.stringify(validate.errors)}`,
             `Unable to validate user settings for \`${settingsName}\`. Please refer to the README for the correct settings format: https://github.com/JetBrains-Research/coqpilot/blob/main/README.md#guide-to-model-configuration.`,
