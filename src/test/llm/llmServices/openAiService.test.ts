@@ -79,14 +79,20 @@ suite("[LLMService] Test `OpenAiService`", function () {
 
     function testResolvesTokensWithDefault(
         modelName: string,
+        inputTokensLimit: number | undefined,
         expectedTokensLimit: number,
         expectedMaxTokensToGenerate: number
     ) {
-        test(`Test \`resolveParameters\` resolves tokens with defaults: "${modelName}"`, async () => {
+        const withDefinedTokensLimit =
+            inputTokensLimit === undefined
+                ? ""
+                : ", defined input `tokensLimit`";
+        test(`Test \`resolveParameters\` resolves tokens with defaults: "${modelName}${withDefinedTokensLimit}"`, async () => {
             const inputParams: OpenAiUserModelParams = {
                 ...requiredInputParamsTemplate,
                 apiKey: "undefined",
                 modelName: modelName,
+                tokensLimit: inputTokensLimit,
             };
             await withLLMService(new OpenAiService(), async (openAiService) => {
                 const resolutionResult =
@@ -105,25 +111,35 @@ suite("[LLMService] Test `OpenAiService`", function () {
                             paramLog.inputParamName === "maxTokensToGenerate"
                     )?.resolvedWithDefault.wasPerformed
                 ).toBeTruthy();
-                expect(
-                    resolutionResult.resolutionLogs.find(
-                        (paramLog) => paramLog.inputParamName === "tokensLimit"
-                    )?.resolvedWithDefault.wasPerformed
-                ).toBeTruthy();
+                if (inputTokensLimit === undefined) {
+                    expect(
+                        resolutionResult.resolutionLogs.find(
+                            (paramLog) =>
+                                paramLog.inputParamName === "tokensLimit"
+                        )?.resolvedWithDefault.wasPerformed
+                    ).toBeTruthy();
+                }
             });
         });
     }
 
     (
         [
-            ["gpt-3.5-turbo-0301", 4096, 2048],
-            ["gpt-3.5-turbo-0125", 16_385, 4096],
-            ["gpt-4-32k-0314", 32_768, 4096],
-        ] as [string, number, number][]
+            ["gpt-3.5-turbo-0301", undefined, 4096, 2048],
+            ["gpt-3.5-turbo-0125", undefined, 16_385, 4096],
+            ["gpt-4-32k-0314", undefined, 32_768, 4096],
+            ["gpt-3.5-turbo-0301", 3000, 3000, 1500],
+        ] as [string, number | undefined, number, number][]
     ).forEach(
-        ([modelName, expectedTokensLimit, expectedMaxTokensToGenerate]) => {
+        ([
+            modelName,
+            inputTokensLimit,
+            expectedTokensLimit,
+            expectedMaxTokensToGenerate,
+        ]) => {
             testResolvesTokensWithDefault(
                 modelName,
+                inputTokensLimit,
                 expectedTokensLimit,
                 expectedMaxTokensToGenerate
             );

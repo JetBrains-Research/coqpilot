@@ -31,7 +31,7 @@ export class ChatTokensFitter {
             if (this.encoder) {
                 return this.encoder.encode(text).length;
             } else {
-                return (text.length / 4) >> 0;
+                return Math.floor(text.length / 4);
             }
         };
     }

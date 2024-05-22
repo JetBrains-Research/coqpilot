@@ -28,6 +28,30 @@ export class OpenAiModelParamsResolver
         .requiredToBeConfigured()
         .validateAtRuntimeOnly();
 
+    readonly tokensLimit = this.resolveParam<number>("tokensLimit")
+        .default((inputParams) =>
+            OpenAiModelParamsResolver._modelToTokensLimit.get(
+                inputParams.modelName
+            )
+        )
+        .validate(ValidationRules.bePositiveNumber, [
+            (value, inputParams) => {
+                const actualTokensLimit =
+                    OpenAiModelParamsResolver._modelToTokensLimit.get(
+                        inputParams.modelName
+                    );
+                if (
+                    actualTokensLimit === undefined ||
+                    value <= actualTokensLimit
+                ) {
+                    return true;
+                }
+                return false;
+            },
+            (inputParams) =>
+                `be not greater than the known tokens limit (${OpenAiModelParamsResolver._modelToTokensLimit.get(inputParams.modelName)}) for the "${inputParams.modelName}" model`,
+        ]);
+
     /**
      * Since the actual maximum numbers of tokens that the models can generate are sometimes equal to their token limits,
      * a special algorithm to suggest a proper practical default value is used.
@@ -45,6 +69,7 @@ export class OpenAiModelParamsResolver
                     inputParams.modelName
                 );
             const actualTokensLimit =
+                inputParams.tokensLimit ??
                 OpenAiModelParamsResolver._modelToTokensLimit.get(
                     inputParams.modelName
                 );
@@ -76,30 +101,6 @@ export class OpenAiModelParamsResolver
             },
             (inputParams) =>
                 `be not greater than the known max tokens to generate limit (${OpenAiModelParamsResolver._modelToMaxTokensToGenerate.get(inputParams.modelName)}) for the "${inputParams.modelName}" model`,
-        ]);
-
-    readonly tokensLimit = this.resolveParam<number>("tokensLimit")
-        .default((inputParams) =>
-            OpenAiModelParamsResolver._modelToTokensLimit.get(
-                inputParams.modelName
-            )
-        )
-        .validate(ValidationRules.bePositiveNumber, [
-            (value, inputParams) => {
-                const actualTokensLimit =
-                    OpenAiModelParamsResolver._modelToTokensLimit.get(
-                        inputParams.modelName
-                    );
-                if (
-                    actualTokensLimit === undefined ||
-                    value <= actualTokensLimit
-                ) {
-                    return true;
-                }
-                return false;
-            },
-            (inputParams) =>
-                `be not greater than the known tokens limit (${OpenAiModelParamsResolver._modelToTokensLimit.get(inputParams.modelName)}) for the "${inputParams.modelName}" model`,
         ]);
 
     /*
