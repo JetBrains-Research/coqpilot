@@ -1,5 +1,5 @@
 import { readFileSync } from "fs";
-import { Position, Range } from "vscode-languageclient";
+import { Position } from "vscode-languageclient";
 
 import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { FlecheDocument, RangedSpan } from "../coqLsp/coqLspTypes";
@@ -203,7 +203,8 @@ function parseProof(
     let index = spanIndex;
     let proven = false;
     const proof: ProofStep[] = [];
-    let endPos: Range | null = null;
+    const startPos: Position = ast[index].range.start;
+    let endPos: Position = startPos;
     let proofContainsAdmit = false;
     let proofHoles: ProofStep[] = [];
 
@@ -228,7 +229,7 @@ function parseProof(
             );
             proof.push(proofStep);
             proven = true;
-            endPos = span.range;
+            endPos = span.range.end;
 
             if (
                 checkIfExprEAdmit(getExpr(span)) ||
@@ -257,9 +258,16 @@ function parseProof(
         throw new CoqParsingError("invalid or incomplete proof");
     }
 
+    const proofRange = {
+        start: startPos,
+        end: endPos,
+    };
+
+    console.log(proofRange);
+
     const proofObj = new TheoremProof(
         proof,
-        endPos,
+        proofRange,
         proofContainsAdmit,
         proofHoles
     );

@@ -22,9 +22,9 @@ import {
     SourceFileEnvironment,
 } from "../core/completionGenerator";
 import { CoqProofChecker } from "../core/coqProofChecker";
-import { inspectSourceFile } from "../core/inspectSourceFile";
+import { inspectSourceFile, inspectSourceShortening } from "../core/inspectSourceFile";
 
-import { ProofStep } from "../coqParser/parsedTypes";
+import { ProofStep, TheoremProof } from "../coqParser/parsedTypes";
 import { Uri } from "../utils/uri";
 
 import {
@@ -73,9 +73,43 @@ export class CoqPilot {
             "perform_completion_for_all_admits",
             this.performCompletionForAllAdmits.bind(this)
         );
+        this.registerEditorCommand(
+            "shorten_proof_in_selection",
+            this.shortenProofUnderCursor.bind(this)
+        )
 
         this.vscodeExtensionContext.subscriptions.push(this);
     }
+
+    async shortenProofUnderCursor(editor: TextEditor) {
+        const selection = editor.selection;
+        this.shortenProofWithProgress(
+            (proof) => (proof.proof_range.start.line <= selection.start.line) && (proof.proof_range.end.line >= selection.end.line),
+            editor
+        );
+    }
+
+    private async shortenProofWithProgress(shouldShorten: (proof: TheoremProof) => boolean, editor: TextEditor) {
+        await window.withProgress(
+            {
+                location: ProgressLocation.Window,
+                title: `${pluginId}: In progress`,
+            },
+            async () => {
+                try {
+                    await this.shortenProof(shouldShorten, editor);
+                } catch (error) {
+                    if (error instanceof SettingsValidationError) {
+                        error.showAsMessageToUser();
+                    } else if (error instanceof Error) {
+                        showMessageToUser(error.message, "error");
+                        console.error(error);
+                    }
+                }
+            }
+        );
+    }
+    
 
     async performCompletionUnderCursor(editor: TextEditor) {
         const cursorPosition = editor.selection.active;
@@ -127,6 +161,38 @@ export class CoqPilot {
         );
     }
 
+    private async shortenProof(shouldShorten: (proof: TheoremProof) => boolean, editor: TextEditor) {
+        const [shorteningContexts, sourceFileEnvironment, processEnvironment] =
+            await this.prepareForShortening(
+                shouldShorten,
+                editor.document.version,
+                editor.document.uri.fsPath
+            );
+
+        const unsubscribeFromLLMServicesEventsCallback =
+            subscribeToHandleLLMServicesEvents(
+                this.globalExtensionState.llmServices,
+                this.globalExtensionState.eventLogger
+            );
+
+        try {
+            const shorteningContext = shorteningContexts[0];
+            let shorterningPromise = this.performSingleCompletion(
+                shorteningContext,
+                sourceFileEnvironment,
+                processEnvironment,
+                editor,
+                true
+            );
+
+            await Promise.all([shorterningPromise]);
+        } finally {
+            unsubscribeFromLLMServicesEventsCallback();
+        }
+    }
+
+    
+
     private async performSpecificCompletions(
         shouldCompleteHole: (hole: ProofStep) => boolean,
         editor: TextEditor
@@ -166,7 +232,8 @@ export class CoqPilot {
         completionContext: CompletionContext,
         sourceFileEnvironment: SourceFileEnvironment,
         processEnvironment: ProcessEnvironment,
-        editor: TextEditor
+        editor: TextEditor,
+        refactorMode: boolean = false
     ) {
         const result = await generateCompletion(
             completionContext,
@@ -176,7 +243,10 @@ export class CoqPilot {
         );
 
         if (result instanceof SuccessGenerationResult) {
-            const flatProof = this.prepareCompletionForInsertion(result.data);
+            let flatProof = this.prepareCompletionForInsertion(result.data);
+            if (refactorMode) {
+                flatProof = this.prepareRefactoredCompletionForInsertion(result.data);
+            }
             const vscodeHoleRange = toVSCodeRange({
                 start: completionContext.prefixEndPosition,
                 end: completionContext.admitEndPosition,
@@ -229,6 +299,14 @@ export class CoqPilot {
             .trim();
     }
 
+    private prepareRefactoredCompletionForInsertion(text: string) {
+        const flatProof = text.replace(/\n/g, " ");
+        const formattedProof = flatProof.trim()
+            .slice(1, flatProof.length - 2)
+            .trim();
+        return `Proof.\n ${formattedProof}\n Qed.`;
+    }
+
     private async prepareForCompletions(
         shouldCompleteHole: (hole: ProofStep) => boolean,
         fileVersion: number,
@@ -262,6 +340,39 @@ export class CoqPilot {
 
         return [completionContexts, sourceFileEnvironment, processEnvironment];
     }
+
+    private async prepareForShortening(
+        shouldShorten: (proof: TheoremProof) => boolean,
+        fileVersion: number,
+        filePath: string
+    ): Promise<[CompletionContext[], SourceFileEnvironment, ProcessEnvironment]> {
+        const fileUri = Uri.fromPath(filePath);
+        const coqLspServerConfig = CoqLspConfig.createServerConfig();
+        const coqLspClientConfig = CoqLspConfig.createClientConfig();
+        const client = new CoqLspClient(coqLspServerConfig, coqLspClientConfig);
+        const contextTheoremsRanker = buildTheoremsRankerFromConfig();
+
+        const coqProofChecker = new CoqProofChecker(client);
+        const [completionContexts, sourceFileEnvironment] = await inspectSourceShortening(
+            fileVersion,
+            shouldShorten,
+            fileUri,
+            client
+        );
+
+        const processEnvironment: ProcessEnvironment = {
+            coqProofChecker: coqProofChecker,
+            modelsParams: readAndValidateUserModelsParams(
+                workspace.getConfiguration(pluginId),
+                this.globalExtensionState.llmServices
+            ),
+            services: this.globalExtensionState.llmServices,
+            theoremRanker: contextTheoremsRanker,
+        };
+
+        return [completionContexts, sourceFileEnvironment, processEnvironment];
+    }
+
 
     private registerEditorCommand(
         command: string,
