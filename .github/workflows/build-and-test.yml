@@ -11,6 +11,9 @@ on:
   workflow_dispatch:
   workflow_call:
     outputs:
+      artifactName:
+        description: "The name of the build artifact (packaged extension)."
+        value: ${{ jobs.build-and-test.outputs.artifactName }}
       vsixPath:
         description: "The path to the packaged and published VSIX file."
         value: ${{ jobs.build-and-test.outputs.vsixPath }}
@@ -18,6 +21,7 @@ on:
 env: 
   coqlsp-path: "coq-lsp"
   coqlsp-version: "0.1.8+8.19"
+  artifact-name: ubuntu-latest-build
 
 jobs:
   build-and-test:
@@ -29,6 +33,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     outputs:
+      artifactName: ${{ env.artifact-name }}
       vsixPath: ${{ steps.package-extension.outputs.vsixPath }}
 
     steps:
@@ -106,9 +111,10 @@ jobs:
         dryRun: true
 
     - name: Upload Extension Package as Artifact
-      uses: actions/upload-artifact@v2
+      id: upload-artifact
+      uses: actions/upload-artifact@v4
       with:
-        name: ubuntu-latest
+        name: ${{ env.artifact-name }}
         path: ${{ steps.package-extension.outputs.vsixPath }}
   
   setup-ci-debug-session:
