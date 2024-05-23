@@ -338,7 +338,7 @@
             ],
             "markdownEnumDescriptions": [
               "Theorems are selected based on the distance to the current cursor position.",
-              "Theorems are selected randomly.", 
+              "Theorems are selected randomly.",
               "Theorems are selected based on the Jaccard index. This metric aims to pick the most similar theorems to the goal currenly being proved."
             ],
             "description": "Context of the LLM is limited. Usually not all theorems from the file may be used in the completion request. This parameter defines the way theorems are selected for the completion.",
@@ -398,7 +398,6 @@
     "glob": "^8.1.0",
     "mocha": "^10.2.0",
     "prettier": "^3.2.5",
-    "tmp": "^0.2.3",
     "typescript": "^5.3.3"
   },
   "dependencies": {
@@ -417,6 +416,7 @@
     "pino": "^8.15.1",
     "pino-pretty": "^10.2.0",
     "tiktoken": "^1.0.13",
+    "tmp": "^0.2.3",
     "toml": "^3.0.0",
     "vscode-languageclient": "^9.0.1",
     "yargs": "^17.7.2"
