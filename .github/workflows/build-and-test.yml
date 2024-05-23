@@ -20,25 +20,11 @@ env:
   coqlsp-version: "0.1.8+8.19"
 
 jobs:
-  create-matrix:
-    name: Create a configuration matrix for the following jobs
+  build:   
     strategy:
-      matrix:
+      matrix: &matrixvalues
         os: [ubuntu-latest]
         ocaml-compiler: [4.14]
-
-    runs-on: ${{ matrix.os }}
-
-    outputs:
-      os: ${{ matrix.os }}
-      ocaml-compiler: ${{ matrix.ocaml-compiler }}
-
-  build: 
-    needs: create-matrix
-    strategy:
-      matrix:
-        os: [needs.create-matrix.outputs.os]
-        ocaml-compiler: [needs.create-matrix.outputs.ocaml-compiler]
 
     runs-on: ${{ matrix.os }}
 
@@ -94,11 +80,10 @@ jobs:
       shell: bash
 
   test:
-    needs: [create-matrix, build]
-    strategy:
-      matrix:
-        os: [needs.create-matrix.outputs.os]
-        ocaml-compiler: [needs.create-matrix.outputs.ocaml-compiler]
+    needs: [build]
+    
+    strategy: 
+      matrix: *matrixvalues
 
     runs-on: ${{ matrix.os }}
 
