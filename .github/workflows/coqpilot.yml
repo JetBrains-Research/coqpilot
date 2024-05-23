@@ -43,10 +43,9 @@ jobs:
       run: eval $(opam env)
 
     - name: Install Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4 
       with:
-        node-version: ">=20.5.0"
-
+        node-version-file: ".nvmrc"
     - run: npm ci
 
     - name: Check coq-lsp version
@@ -106,9 +105,9 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
-          node-version: ">=20.5.0"
+          node-version-file: ".nvmrc"
       - name: Install Dependencies
         run: npm ci
       - name: Download Build Artifact
