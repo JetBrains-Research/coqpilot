@@ -1,4 +1,4 @@
-name: Build and Test
+name: Build and test
 
 on:
   push:
@@ -13,20 +13,23 @@ on:
     outputs:
       vsixPath:
         description: "The path to the packaged and published VSIX file."
-        value: ${{ jobs.upload-artifacts.outputs.vsixPath }}
+        value: ${{ jobs.build-and-test.outputs.vsixPath }}
 
 env: 
   coqlsp-path: "coq-lsp"
   coqlsp-version: "0.1.8+8.19"
 
 jobs:
-  build:
+  build-and-test:
     strategy:
       matrix:
         os: [ubuntu-latest]
         ocaml-compiler: [4.14]
 
     runs-on: ${{ matrix.os }}
+
+    outputs:
+      vsixPath: ${{ steps.package-extension.outputs.vsixPath }}
 
     steps:
     - name: Checkout tree
@@ -79,37 +82,39 @@ jobs:
         echo "coqlsppath=`which coq-lsp`" >> $GITHUB_ENV
       shell: bash
 
-  test:
-    needs: [build]
+    - name: Test on Linux
+      if: runner.os == 'Linux'
+      env:
+          COQ_LSP_PATH: ${{ env.coqlsp-path }}
+      run: |
+        eval $(opam env)
+        xvfb-run -a npm run clean-test
 
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        ocaml-compiler: [4.14]
+    - name: Test not on Linux
+      if: runner.os != 'Linux'
+      env:
+          COQ_LSP_PATH: ${{ env.coqlsp-path }}
+      run: |
+        eval $(opam env)
+        npm run clean-test
+    
+    - name: Package Extension
+      id: package-extension
+      uses: HaaLeo/publish-vscode-extension@v1
+      with:
+        pat: stub
+        dryRun: true
 
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - name: Test on Linux
-        if: runner.os == 'Linux'
-        env:
-            COQ_LSP_PATH: ${{ env.coqlsp-path }}
-        run: |
-          eval $(opam env)
-          xvfb-run -a npm run clean-test
-
-      - name: Test not on Linux
-        if: runner.os != 'Linux'
-        env:
-            COQ_LSP_PATH: ${{ env.coqlsp-path }}
-        run: |
-          eval $(opam env)
-          npm run clean-test
+    - name: Upload Extension Package as Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: ubuntu-latest
+        path: ${{ steps.package-extension.outputs.vsixPath }}
   
   setup-ci-debug-session:
     name: Start a CI debug session if build or test fail
 
-    needs: [build, test]
+    needs: [build-and-test]
     if: always()
     
     strategy:
@@ -123,26 +128,3 @@ jobs:
       - name: Setup tmate session
         if: ${{ failure() }}
         uses: mxschmitt/action-tmate@v3
-    
-  upload-artifacts:
-    name: Build and upload extension package
-
-    needs: test
-    runs-on: ubuntu-latest
-
-    outputs:
-      vsixPath: ${{ steps.package-extension.outputs.vsixPath }}
-    
-    steps:
-      - name: Package Extension
-        id: package-extension
-        uses: HaaLeo/publish-vscode-extension@v1
-        with:
-          pat: stub
-          dryRun: true
-
-      - name: Upload Extension Package as Artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: ubuntu-latest
-          path: ${{ steps.package-extension.outputs.vsixPath }}
