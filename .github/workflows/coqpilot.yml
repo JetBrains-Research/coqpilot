@@ -32,6 +32,8 @@ jobs:
     - name: Checkout tree
       uses: actions/checkout@v4
     
+    # For some reason, the most significant thing for caching opam dependencies properly
+    # is `dune-cache: true` instead of this caching action.
     - name: Restore cached opam dependencies
       id: cache-opam
       uses: actions/cache@v3

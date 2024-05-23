@@ -32,7 +32,9 @@
 
 - Test the LLM Services module thoroughly. 
 - Improve test infrastructure in general by introducing and structuring utils.
-- Fix the issue with building test resources on CI. Set up CI debugging, and enable launching CI manually.
+- Fix the issue with building test resources on CI. 
+- Set up CI debugging, and enable launching CI manually. 
+  Double the speed of CI by setting caches.
 
 ## 2.1.0
 
