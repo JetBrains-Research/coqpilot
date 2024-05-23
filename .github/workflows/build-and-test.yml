@@ -44,7 +44,7 @@ jobs:
     # is `dune-cache: true` instead of this caching action.
     - name: Restore cached opam dependencies
       id: cache-opam
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.opam/
         key: opam-${{ matrix.os }}-${{ matrix.ocaml-compiler }}-${{ env.coqlsp-version }}
