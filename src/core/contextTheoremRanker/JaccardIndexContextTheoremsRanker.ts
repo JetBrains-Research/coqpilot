@@ -10,7 +10,7 @@ import { ContextTheoremsRanker } from "./contextTheoremsRanker";
  * the current goal context. Metric is calculated on the
  * concatenated hypothesis and conclusion.
  *
- * J(A, B) = |A ∩ B| / |A ∪ B|
+ * ```J(A, B) = |A ∩ B| / |A ∪ B|```
  */
 export class JaccardIndexContextTheoremsRanker
     implements ContextTheoremsRanker

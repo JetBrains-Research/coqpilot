@@ -74,26 +74,29 @@ With coq-lsp, extension should have everything it needs to run.
 
 ### Building locally
 
-To build the extension locally, you will need to have `npm` installed. Then you can clone the repository and run the following commands:
+First, clone the Coqpilot repository and navigate into its directory.
+```bash
+git clone https://github.com/JetBrains-Research/coqpilot.git
+cd coqpilot
+```
+
+To build the extension locally, you'll need Node.js installed. The recommended way to manage Node.js versions is by using `nvm`. From the Coqpilot root directory, execute:
+```bash
+nvm use
+```
+If you prefer not to use `nvm`, ensure you install the Node.js version specified in the [`.nvmrc`](.nvmrc) file by any other method you prefer.
+
+Once Node.js is installed, the remaining setup will be handled by the `npm` package manager. Run the following commands:
 ```bash
 npm install
 npm run compile
 ```
 
-To run the extension, you can press `F5` in the vscode. It will open a new window with the extension running.
+To run the extension from the vscode, you can press `F5` or click on `Run extension` in the `Run and Debug` section. It will open a new window with the extension running.
 
-To run tests you should go to the `src/test/resources/coqProj` directory and run make:
+To run all tests properly (i.e. with rebuilding the resources and the code first), execute the following task:
 ```bash
-make 
-```
-Some tests depend on the small coq project, that is expected to be built. After that run: 
-```bash
-npm run test
-```
-
-Otherwise, if you do not want to build that small project, you can run: 
-```bash
-npm run test-ci
+npm run clean-test
 ```
 
 To run specific tests, you can use `npm run test -- -g="grep pattern"`.
@@ -122,9 +125,9 @@ This extension contributes the following settings:
 * `coqpilot.contextTheoremsRankerType` : The type of theorems ranker that will be used to select theorems for proof generation (when context is smaller than taking all of them). Either randomly, by Jacard index (similarity metric) or by distance from the theorem, with the currently observed admit. 
 * `coqpilot.loggingVerbosity` : Verbosity of the logs. Could be `info`, `debug`.
 
-* `coqpilot.openAiModelsParameters`, `coqpilot.predefinedProofsModelsParameters`, `coqpilot.grazieModelsParameters` and `coqpilot.lmStudioModelsParameters`:
+* `coqpilot.predefinedProofsModelsParameters`, `coqpilot.openAiModelsParameters`, `coqpilot.grazieModelsParameters` and `coqpilot.lmStudioModelsParameters`:
 
-Each of these settings are modified in `settings.json` and contain an array of models from this service. Each model will be used for generation independantly. Multiple models for a single service could be defined. For example, you can define parameters for two open-ai gpt models. One would be using `gpt-3.5` and the other one `gpt-4`. CoqPilot will first try to generate proofs using the first model, and if it fails, it will try the second one. This way coqpilot iterates over all services (currently 4 of them) and for each service it iterates over all models. 
+Each of these settings are modified in `settings.json` and contain an array of models from this service. Each model will be used for generation independantly. Multiple models for a single service could be defined. For example, you can define parameters for two open-ai gpt models. One would be using `gpt-3.5` and the other one `gpt-4`. CoqPilot will first try to generate proofs using the first model, and if it doesn't succeed, it will try the second one. This way coqpilot iterates over all services (currently 4 of them) and for each service it iterates over all models. 
 
 ## Guide to Model Configuration
 
@@ -151,7 +154,7 @@ The simplest service to configure is `predefinedProofs`:
 {
     "coqpilot.predefinedProofsModelsParameters": [
         {
-            "modelName": "Any name",
+            "modelId": "predefined proofs",
             "tactics": [
                 "reflexivity.",
                 "simpl. reflexivity.",
@@ -161,19 +164,20 @@ The simplest service to configure is `predefinedProofs`:
     ]
 }
 ```
-Model name here is only used for convinience inside code, so may be any string. 
+The `modelId` property may be any string you like, but it should be unique for each model. This way, CoqPilot will be able to correctly tell you which model might have configuration issues.
 
 The most commonly used service is `open-ai` (`grazie` and `lmStudio` are configured very similarly). 
 ```json
 {
     "coqpilot.openAiModelsParameters": [
         {
+            "modelId": "openai-gpt-3.5",
+            "modelName": "gpt-3.5-turbo-0301",
             "temperature": 1,
             "apiKey": "***your-api-key***",
-            "modelName": "gpt-3.5-turbo-0301",
             "choices": 10,
             "systemPrompt": "Generate proof...",
-            "newMessageMaxTokens": 2000,
+            "maxTokensToGenerate": 2000,
             "tokensLimit": 4096,
             "multiroundProfile": {
                 "maxRoundsNumber": 1,
@@ -203,7 +207,7 @@ To run benchmarks on some project, apart from installing and building CoqPilot m
 git submodule init
 git submodule update
 ```
-After that, you need to build the projects. And be careful, the actively maintained way to build this projects is `nix`. Moreover, when adding your own projects, make sure that they are built using `coq-8.19.0`. 
+After that, you need to build the projects. Be careful, the actively maintained way to build this projects is `nix`. Moreover, when adding your own projects, make sure that they are built using `coq-8.19.0`.
 
 First things first, the process of running the benchmark is not perfectly automated yet. We are working on it. For now, one project (one unit containing nix environment) shall be ran at a time. Let's say you are going to run the benchmark on the `imm` project. You will have to do the following: 
 
@@ -228,7 +232,7 @@ First things first, the process of running the benchmark is not perfectly automa
     nix-build
     nix-shell 
     ```
-4. Make sure the `_CoqProject` was successfully generated in the root of your mroject. Return to the project root not exiting the nix-shell. Run the benchmark: 
+4. Make sure the `_CoqProject` was successfully generated in the root of your project. Return to the project root not exiting the nix-shell. Run the benchmark: 
     ```bash
     cd ../../
     npm run benchmark

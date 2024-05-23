@@ -1,65 +1,78 @@
 import { EventLogger } from "../../../logging/eventLogger";
+import { ConfigurationError } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
-import {
-    PredefinedProofsUserModelParams,
-    UserModelParams,
-} from "../../userModelParams";
+import { PredefinedProofsUserModelParams } from "../../userModelParams";
 import { ChatHistory } from "../chat";
-import { GeneratedProof, Proof, ProofVersion } from "../llmService";
-import { LLMService } from "../llmService";
-import { ModelParams, PredefinedProofsModelParams } from "../modelParams";
+import {
+    ErrorsHandlingMode,
+    GeneratedProofImpl,
+    ProofVersion,
+} from "../llmService";
+import { LLMServiceImpl } from "../llmService";
+import { LLMServiceInternal } from "../llmServiceInternal";
+import { PredefinedProofsModelParams } from "../modelParams";
+import { Time, timeZero } from "../utils/time";
 
-export class PredefinedProofsService extends LLMService {
-    constructor(eventLogger?: EventLogger) {
-        super(eventLogger);
-    }
+import { PredefinedProofsModelParamsResolver } from "./predefinedProofsModelParamsResolver";
 
-    constructGeneratedProof(
-        proof: string,
-        proofGenerationContext: ProofGenerationContext,
-        modelParams: ModelParams,
-        _previousProofVersions?: ProofVersion[]
-    ): GeneratedProof {
-        return new PredefinedProof(
-            proof,
-            proofGenerationContext,
-            modelParams as PredefinedProofsModelParams,
-            this
+export class PredefinedProofsService extends LLMServiceImpl<
+    PredefinedProofsUserModelParams,
+    PredefinedProofsModelParams,
+    PredefinedProofsService,
+    PredefinedProof,
+    PredefinedProofsServiceInternal
+> {
+    protected readonly internal: PredefinedProofsServiceInternal;
+    protected readonly modelParamsResolver =
+        new PredefinedProofsModelParamsResolver();
+
+    constructor(
+        eventLogger?: EventLogger,
+        debugLogs: boolean = false,
+        generationsLogsFilePath?: string
+    ) {
+        super(
+            "PredefinedProofsService",
+            eventLogger,
+            debugLogs,
+            generationsLogsFilePath
         );
-    }
-
-    generateFromChat(
-        _chat: ChatHistory,
-        _params: ModelParams,
-        _choices: number
-    ): Promise<string[]> {
-        throw new Error(
-            "PredefinedProofsService does not support generation from chat"
+        this.internal = new PredefinedProofsServiceInternal(
+            this,
+            this.eventLoggerGetter,
+            this.generationsLoggerBuilder
         );
     }
 
     async generateProof(
         proofGenerationContext: ProofGenerationContext,
-        params: ModelParams,
-        choices: number
-    ): Promise<GeneratedProof[]> {
-        if (choices <= 0) {
-            return [];
-        }
-        const predefinedProofsParams = params as PredefinedProofsModelParams;
-        const tactics = predefinedProofsParams.tactics;
-        if (choices > tactics.length) {
-            throw Error(
-                `invalid choices ${choices}: there are only ${tactics.length} predefined tactics available`
-            );
-        }
-        return this.formatCoqSentences(tactics.slice(0, choices)).map(
-            (tactic) =>
-                new PredefinedProof(
-                    `Proof. ${tactic} Qed.`,
+        params: PredefinedProofsModelParams,
+        choices: number = params.defaultChoices,
+        errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
+    ): Promise<PredefinedProof[]> {
+        return this.internal.logGenerationAndHandleErrors(
+            params,
+            choices,
+            errorsHandlingMode,
+            (_request) => {
+                this.internal.validateChoices(choices);
+                const tactics = params.tactics;
+                if (choices > tactics.length) {
+                    throw new ConfigurationError(
+                        `requested ${choices} choices, there are only ${tactics.length} predefined tactics available`
+                    );
+                }
+            },
+            async (_request) => {
+                return this.formatCoqSentences(
+                    params.tactics.slice(0, choices)
+                ).map((tactic) => `Proof. ${tactic} Qed.`);
+            },
+            (proof) =>
+                this.internal.constructGeneratedProof(
+                    proof,
                     proofGenerationContext,
-                    predefinedProofsParams,
-                    this
+                    params
                 )
         );
     }
@@ -74,51 +87,73 @@ export class PredefinedProofsService extends LLMService {
         });
     }
 
-    resolveParameters(params: UserModelParams): ModelParams {
-        const castedParams = params as PredefinedProofsUserModelParams;
-        if (castedParams.tactics.length === 0) {
-            throw Error(
-                "no tactics are selected in the PredefinedProofsModelParams"
-            );
-        }
-        const modelParams: PredefinedProofsModelParams = {
-            modelName: params.modelName,
-            newMessageMaxTokens: Math.max(
-                ...castedParams.tactics.map((tactic) => tactic.length)
-            ),
-            tokensLimit: Number.POSITIVE_INFINITY,
-            systemPrompt: "",
-            multiroundProfile: {
-                maxRoundsNumber: 1,
-                proofFixChoices: 0,
-                proofFixPrompt: "",
-            },
-            tactics: castedParams.tactics,
-        };
-        return modelParams;
+    estimateTimeToBecomeAvailable(): Time {
+        return timeZero; // predefined proofs are always available
     }
 }
 
-export class PredefinedProof extends GeneratedProof {
+export class PredefinedProof extends GeneratedProofImpl<
+    PredefinedProofsModelParams,
+    PredefinedProofsService,
+    PredefinedProof,
+    PredefinedProofsServiceInternal
+> {
     constructor(
-        proof: Proof,
+        proof: string,
         proofGenerationContext: ProofGenerationContext,
         modelParams: PredefinedProofsModelParams,
-        llmService: PredefinedProofsService
+        llmServiceInternal: PredefinedProofsServiceInternal
     ) {
-        super(proof, proofGenerationContext, modelParams, llmService);
+        super(proof, proofGenerationContext, modelParams, llmServiceInternal);
     }
 
-    protected generateNextVersion(
-        _chat: ChatHistory,
-        _choices: number
-    ): Promise<GeneratedProof[]> {
-        throw new Error(
-            "PredefinedProof does not support next version generation"
+    async fixProof(
+        _diagnostic: string,
+        choices: number = this.modelParams.multiroundProfile
+            .defaultProofFixChoices,
+        errorsHandlingMode: ErrorsHandlingMode
+    ): Promise<PredefinedProof[]> {
+        this.llmServiceInternal.unsupportedMethod(
+            "`PredefinedProof` cannot be fixed",
+            this.modelParams,
+            choices,
+            errorsHandlingMode
+        );
+        return [];
+    }
+
+    canBeFixed(): Boolean {
+        return false;
+    }
+}
+
+class PredefinedProofsServiceInternal extends LLMServiceInternal<
+    PredefinedProofsModelParams,
+    PredefinedProofsService,
+    PredefinedProof,
+    PredefinedProofsServiceInternal
+> {
+    constructGeneratedProof(
+        proof: string,
+        proofGenerationContext: ProofGenerationContext,
+        modelParams: PredefinedProofsModelParams,
+        _previousProofVersions?: ProofVersion[]
+    ): PredefinedProof {
+        return new PredefinedProof(
+            proof,
+            proofGenerationContext,
+            modelParams as PredefinedProofsModelParams,
+            this
         );
     }
 
-    fixProof(_diagnostic: string, _choices: number): Promise<GeneratedProof[]> {
-        throw new Error("PredefinedProof cannot be fixed");
+    generateFromChatImpl(
+        _chat: ChatHistory,
+        _params: PredefinedProofsModelParams,
+        _choices: number
+    ): Promise<string[]> {
+        throw new ConfigurationError(
+            "`PredefinedProofsService` does not support generation from chat"
+        );
     }
 }

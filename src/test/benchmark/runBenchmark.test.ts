@@ -1,16 +1,20 @@
+import { expect } from "earl";
 import * as fs from "fs";
 import * as path from "path";
 
-import { UserModelsParams } from "../../llm/userModelParams";
-
 import { BenchmarkResult, runTestBenchmark } from "./benchmarkingFramework";
-import { code, consoleLogLine } from "./loggingUtils";
-import { onlyAutoModelsParams } from "./presets";
+import { InputModelsParams, onlyAutoModelsParams } from "./inputModelsParams";
+import {
+    code,
+    consoleLog,
+    consoleLogSeparatorLine,
+    consoleLoggingIsMuted,
+} from "./loggingUtils";
 
 interface Benchmark {
     name: string;
     items: DatasetItem[];
-    modelsParams: UserModelsParams;
+    inputModelsParams: InputModelsParams;
     requireAllAdmitsCompleted: Boolean;
     benchmarkFullTheorems: Boolean;
     benchmarkAdmits: Boolean;
@@ -35,7 +39,7 @@ class DatasetItem {
 const simpleAutoBenchmark: Benchmark = {
     name: "Complete simple examples with `auto`",
     items: [new DatasetItem("auto_benchmark.v")],
-    modelsParams: onlyAutoModelsParams,
+    inputModelsParams: onlyAutoModelsParams,
     requireAllAdmitsCompleted: true,
     benchmarkFullTheorems: true,
     benchmarkAdmits: true,
@@ -45,7 +49,7 @@ const simpleAutoBenchmark: Benchmark = {
 const mixedAutoBenchmark: Benchmark = {
     name: "Complete mixed examples (both simple & hard) with `auto`",
     items: [new DatasetItem("mixed_benchmark.v")],
-    modelsParams: onlyAutoModelsParams,
+    inputModelsParams: onlyAutoModelsParams,
     requireAllAdmitsCompleted: false,
     benchmarkFullTheorems: true,
     benchmarkAdmits: true,
@@ -55,6 +59,7 @@ const mixedAutoBenchmark: Benchmark = {
 const benchmarks: Benchmark[] = [simpleAutoBenchmark, mixedAutoBenchmark];
 
 suite("Benchmark", () => {
+    expect(consoleLoggingIsMuted).toEqual(true);
     const datasetDir = getDatasetDir();
 
     for (const benchmark of benchmarks) {
@@ -80,7 +85,7 @@ suite("Benchmark", () => {
                     const { admitsCompleted, theoremsProved } =
                         await runTestBenchmark(
                             resolvedFilePath,
-                            benchmark.modelsParams,
+                            benchmark.inputModelsParams,
                             item.specificTheoremForBenchmark,
                             benchmark.benchmarkFullTheorems,
                             benchmark.benchmarkAdmits,
@@ -96,15 +101,15 @@ suite("Benchmark", () => {
                 }
             }
 
-            consoleLogLine();
-            consoleLogLine("\n");
-            console.log(
+            consoleLogSeparatorLine();
+            consoleLogSeparatorLine("\n");
+            consoleLog(
                 `${code("magenta")}BENCHMARK REPORT:${code("reset")} ${benchmark.name}`
             );
-            console.log(
+            consoleLog(
                 `- ADMITS COMPLETED IN TOTAL: ${admitsCompletedInTotal}`
             );
-            console.log(
+            consoleLog(
                 `- THEOREMS PROVED IN TOTAL: ${theoremsProvedInTotal}\n`
             );
         }).timeout(benchmark.timeoutMinutes * 60 * 1000);

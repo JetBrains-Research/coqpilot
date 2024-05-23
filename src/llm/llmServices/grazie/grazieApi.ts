@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/naming-convention */
 import axios from "axios";
 import { ResponseType } from "axios";
 
-import { EventLogger, Severity } from "../../../logging/eventLogger";
+import { DebugWrappers } from "../llmServiceInternal";
 import { GrazieModelParams } from "../modelParams";
 
 export type GrazieChatRole = "User" | "System" | "Assistant";
@@ -14,15 +13,12 @@ interface GrazieConfig {
 }
 
 export class GrazieApi {
-    private readonly config: GrazieConfig;
+    private readonly config: GrazieConfig = {
+        chatUrl: "v5/llm/chat/stream/v3",
+        gateawayUrl: "https://api.app.stgn.grazie.aws.intellij.net/service/",
+    };
 
-    constructor(private readonly eventLogger?: EventLogger) {
-        this.config = {
-            chatUrl: "v5/llm/chat/stream/v3",
-            gateawayUrl:
-                "https://api.app.stgn.grazie.aws.intellij.net/service/",
-        };
-    }
+    constructor(private readonly debug: DebugWrappers) {}
 
     async requestChatCompletion(
         params: GrazieModelParams,
@@ -50,16 +46,13 @@ export class GrazieApi {
         apiToken: string
     ): Promise<string> {
         const headers = this.createHeaders(apiToken);
-        this.eventLogger?.log(
-            "grazie-fetch-started",
-            "Completion from Grazie requested",
-            {
-                url: url,
-                body: body,
-                headers: headers,
-            },
-            Severity.DEBUG
-        );
+        headers["Content-Length"] = body.length;
+
+        this.debug.logEvent("Completion requested", {
+            url: url,
+            body: body,
+            headers: headers,
+        });
 
         const response = await this.fetchAndProcessEvents(
             this.config.gateawayUrl + url,
@@ -71,12 +64,14 @@ export class GrazieApi {
     }
 
     private createHeaders(token: string): any {
+        /* eslint-disable @typescript-eslint/naming-convention */
         return {
             Accept: "*/*",
             "Content-Type": "application/json",
             "Grazie-Authenticate-Jwt": token,
             "Grazie-Original-Service-JWT": token,
         };
+        /* eslint-enable @typescript-eslint/naming-convention */
     }
 
     private chunkToTokens(chunk: any): string[] {
@@ -99,7 +94,7 @@ export class GrazieApi {
                 const messageData = JSON.parse(validJSON);
                 messages.push(messageData.current);
             } else {
-                throw new Error(
+                throw Error(
                     "Unexpected chunk: " +
                         tokenWrapped +
                         ". Please report this error."

@@ -5,21 +5,21 @@ import * as path from "path";
 import { CoqProofChecker } from "../../core/coqProofChecker";
 import { ProofCheckResult } from "../../core/coqProofChecker";
 
-import { createCoqLspClient, getResourceFolder } from "../commonTestFunctions";
+import { createCoqLspClient } from "../commonTestFunctions/coqLspBuilder";
+import { resolveResourcesDir } from "../commonTestFunctions/pathsResolver";
 
-suite("Coq Proof Checker tests", () => {
+suite("`CoqProofChecker` tests", () => {
     async function checkProofsForAdmitsFromFile(
         resourcePath: string[],
         positions: { line: number; character: number }[],
         proofsToCheck: string[][],
         projectRootPath?: string[]
     ): Promise<ProofCheckResult[][]> {
-        const filePath = path.join(getResourceFolder(), ...resourcePath);
-        const fileDir = path.dirname(filePath);
-        const rootDir = path.join(
-            getResourceFolder(),
-            ...(projectRootPath ?? [])
+        const [filePath, rootDir] = resolveResourcesDir(
+            resourcePath,
+            projectRootPath
         );
+        const fileDir = path.dirname(filePath);
 
         const fileLines = readFileSync(filePath).toString().split("\n");
         const client = createCoqLspClient(rootDir);

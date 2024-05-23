@@ -3,9 +3,9 @@ import * as assert from "assert";
 import { LLMServices } from "../../llm/llmServices";
 import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
 import { LMStudioService } from "../../llm/llmServices/lmStudio/lmStudioService";
+import { ModelsParams } from "../../llm/llmServices/modelParams";
 import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
 import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
-import { UserModelsParams } from "../../llm/userModelParams";
 
 import { CoqLspClient } from "../../coqLsp/coqLspClient";
 import { CoqLspConfig } from "../../coqLsp/coqLspConfig";
@@ -25,12 +25,14 @@ import { createSourceFileEnvironment } from "../../core/inspectSourceFile";
 
 import { ProofStep, Theorem } from "../../coqParser/parsedTypes";
 import { Uri } from "../../utils/uri";
+import { resolveParametersOrThrow } from "../commonTestFunctions/resolveOrThrow";
 
-import { consoleLog, consoleLogLine } from "./loggingUtils";
+import { InputModelsParams } from "./inputModelsParams";
+import { consoleLog, consoleLogSeparatorLine } from "./loggingUtils";
 
 export async function runTestBenchmark(
     filePath: string,
-    modelsParams: UserModelsParams,
+    inputModelsParams: InputModelsParams,
     specificTheoremsForBenchmark: string[] | undefined,
     benchmarkFullTheorems: Boolean = true,
     benchmarkAdmits: Boolean = true,
@@ -42,7 +44,7 @@ export async function runTestBenchmark(
 
     const [completionTargets, sourceFileEnvironment, processEnvironment] =
         await prepareForBenchmarkCompletions(
-            modelsParams,
+            inputModelsParams,
             shouldCompleteHole,
             workspaceRootPath,
             filePath
@@ -62,22 +64,22 @@ export async function runTestBenchmark(
         ),
     };
 
-    consoleLogLine("\n");
+    consoleLogSeparatorLine("\n");
 
     let admitTargetsResults: BenchmarkResult | undefined = undefined;
     let theoremTargetsResults: BenchmarkResult | undefined = undefined;
 
     if (benchmarkAdmits) {
-        console.log("try to complete admits\n");
+        consoleLog("try to complete admits\n");
         admitTargetsResults = await benchmarkTargets(
             filteredCompletionTargets.admitTargets,
             sourceFileEnvironment,
             processEnvironment
         );
-        console.log(
+        consoleLog(
             `BENCHMARK RESULT, ADMITS COMPLETED: ${admitTargetsResults}\n`
         );
-        consoleLogLine("\n");
+        consoleLogSeparatorLine("\n");
 
         if (requireAllAdmitsCompleted) {
             assert.ok(admitTargetsResults.allCompleted());
@@ -85,16 +87,16 @@ export async function runTestBenchmark(
     }
 
     if (benchmarkFullTheorems) {
-        console.log("try to prove theorems\n");
+        consoleLog("try to prove theorems\n");
         theoremTargetsResults = await benchmarkTargets(
             filteredCompletionTargets.theoremTargets,
             sourceFileEnvironment,
             processEnvironment
         );
-        console.log(
+        consoleLog(
             `BENCHMARK RESULT, THEOREMS PROVED: ${theoremTargetsResults}\n`
         );
-        consoleLogLine();
+        consoleLogSeparatorLine();
     }
 
     return {
@@ -166,11 +168,11 @@ async function benchmarkCompletionGeneration(
     processEnvironment: ProcessEnvironment
 ): Promise<boolean> {
     const completionPosition = completionContext.admitEndPosition;
-    console.log(
+    consoleLog(
         `Completion position: ${completionPosition.line}:${completionPosition.character}`
     );
-    console.log(`Theorem name: \`${completionContext.parentTheorem.name}\``);
-    console.log(`Proof goal: \`${goalToString(completionContext.proofGoal)}\``);
+    consoleLog(`Theorem name: \`${completionContext.parentTheorem.name}\``);
+    consoleLog(`Proof goal: \`${goalToString(completionContext.proofGoal)}\``);
 
     const sourceFileEnvironmentWithFilteredContext: SourceFileEnvironment = {
         ...sourceFileEnvironment,
@@ -191,19 +193,19 @@ async function benchmarkCompletionGeneration(
         success = true;
     } else if (result instanceof FailureGenerationResult) {
         switch (result.status) {
-            case FailureGenerationStatus.excededTimeout:
+            case FailureGenerationStatus.TIMEOUT_EXCEEDED:
                 message = "Timeout";
                 break;
-            case FailureGenerationStatus.exception:
+            case FailureGenerationStatus.ERROR_OCCURRED:
                 message = `Exception: ${result.message}`;
                 break;
-            case FailureGenerationStatus.searchFailed:
+            case FailureGenerationStatus.SEARCH_FAILED:
                 message = "Proofs not found";
                 break;
         }
     }
     consoleLog(message, success ? "green" : "red");
-    console.log("");
+    consoleLog("");
     return success;
 }
 
@@ -212,7 +214,7 @@ function goalToString(proofGoal: Goal<PpString>): string {
 }
 
 async function prepareForBenchmarkCompletions(
-    modelsParams: UserModelsParams,
+    inputModelsParams: InputModelsParams,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     workspaceRootPath: string | undefined,
     filePath: string
@@ -241,7 +243,10 @@ async function prepareForBenchmarkCompletions(
     };
     const processEnvironment: ProcessEnvironment = {
         coqProofChecker: coqProofChecker,
-        modelsParams: modelsParams,
+        modelsParams: resolveInputModelsParametersOrThrow(
+            inputModelsParams,
+            llmServices
+        ),
         services: llmServices,
     };
 
@@ -357,4 +362,28 @@ async function resolveProofStepsToCompletionContexts(
         }
     }
     return completionContexts;
+}
+
+function resolveInputModelsParametersOrThrow(
+    inputModelsParams: InputModelsParams,
+    llmServices: LLMServices
+): ModelsParams {
+    return {
+        predefinedProofsModelParams:
+            inputModelsParams.predefinedProofsModelParams.map((inputParams) =>
+                resolveParametersOrThrow(
+                    llmServices.predefinedProofsService,
+                    inputParams
+                )
+            ),
+        openAiParams: inputModelsParams.openAiParams.map((inputParams) =>
+            resolveParametersOrThrow(llmServices.openAiService, inputParams)
+        ),
+        grazieParams: inputModelsParams.grazieParams.map((inputParams) =>
+            resolveParametersOrThrow(llmServices.grazieService, inputParams)
+        ),
+        lmStudioParams: inputModelsParams.lmStudioParams.map((inputParams) =>
+            resolveParametersOrThrow(llmServices.lmStudioService, inputParams)
+        ),
+    };
 }

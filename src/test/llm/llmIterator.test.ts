@@ -1,68 +1,74 @@
 import { expect } from "earl";
 
 import { LLMSequentialIterator } from "../../llm/llmIterator";
-import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
-import { LMStudioService } from "../../llm/llmServices/lmStudio/lmStudioService";
-import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
-import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
+import { disposeServices } from "../../llm/llmServices";
+import { GeneratedProof } from "../../llm/llmServices/llmService";
 import { ProofGenerationContext } from "../../llm/proofGenerationContext";
-import { UserModelsParams } from "../../llm/userModelParams";
+
+import {
+    createDefaultServices,
+    createPredefinedProofsModel,
+    createTrivialModelsParams,
+} from "../commonTestFunctions/defaultLLMServicesBuilder";
 
 suite("LLM Iterator test", () => {
-    function getProofFromPredefinedCoqSentance(proof: string): string {
-        return `Proof. ${proof} Qed.`;
-    }
+    const predefinedModel1 = createPredefinedProofsModel("first model");
+    const predefinedModel2 = createPredefinedProofsModel("second model");
+    const modelsParams = createTrivialModelsParams([
+        predefinedModel1,
+        predefinedModel2,
+    ]);
+    const tactics = predefinedModel1.tactics;
+    expect(predefinedModel2.tactics).toEqual(tactics);
 
-    test("Simple test of the iterator via predef proofs", async () => {
-        const openAiService = new OpenAiService();
-        const grazieService = new GrazieService();
-        const predefinedProofsService = new PredefinedProofsService();
-        const lmStudioService = new LMStudioService();
-        const predefinedProofs = [
-            "intros.",
-            "reflexivity.",
-            "auto.",
-            "assumption. intros.",
-            "left. reflexivity.",
-        ];
-        const modelsParams: UserModelsParams = {
-            openAiParams: [],
-            grazieParams: [],
-            predefinedProofsModelParams: [
-                {
-                    modelName: "Doesn't matter",
-                    tactics: predefinedProofs,
-                },
-            ],
-            lmStudioParams: [],
-        };
-        const services = {
-            openAiService,
-            grazieService,
-            predefinedProofsService,
-            lmStudioService,
-        };
-        const proofGenerationContext: ProofGenerationContext = {
-            contextTheorems: [],
-            completionTarget: "doesn't matter",
-        };
-        const iterator = new LLMSequentialIterator(
-            proofGenerationContext,
-            modelsParams,
-            services
-        );
+    const proofGenerationContext: ProofGenerationContext = {
+        contextTheorems: [],
+        completionTarget: "doesn't matter",
+    };
 
-        let i = 0;
-        while (true) {
-            const result = await iterator.nextProof();
-            if (result.done) {
-                break;
-            }
-            const proof = result.value;
-            expect(proof.proof()).toEqual(
-                getProofFromPredefinedCoqSentance(predefinedProofs[i])
+    test("Test `nextProof` via two predefined-proofs models", async () => {
+        const services = createDefaultServices();
+        try {
+            const iterator = new LLMSequentialIterator(
+                proofGenerationContext,
+                modelsParams,
+                services
             );
-            i++;
+            for (let i = 0; i < 2; i++) {
+                for (let t = 0; t < tactics.length; t++) {
+                    const result = await iterator.nextProof();
+                    expect(result.done).toBeFalsy();
+                    const proof = result.value;
+                    expect(proof.proof()).toEqual(tactics[t]);
+                }
+            }
+            const result = await iterator.nextProof();
+            expect(result.done);
+        } finally {
+            disposeServices(services);
+        }
+    });
+
+    test("Test `next` via two predefined-proofs models", async () => {
+        const services = createDefaultServices();
+        try {
+            const iterator = new LLMSequentialIterator(
+                proofGenerationContext,
+                modelsParams,
+                services
+            );
+            for (let i = 0; i < 2; i++) {
+                const result = await iterator.next();
+                expect(result.done).toBeFalsy();
+                const proofsBatch = result.value.map(
+                    (proofObject: GeneratedProof) => proofObject.proof()
+                );
+                expect(proofsBatch).toEqual(tactics);
+            }
+            const result = await iterator.next();
+            expect(result.done);
+        } finally {
+            disposeServices(services);
         }
     });
 });

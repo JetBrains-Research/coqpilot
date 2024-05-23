@@ -175,7 +175,7 @@ export class CoqLspClient implements CoqLspClientInterface {
         );
         const goal = goals?.goals?.goals?.shift() ?? undefined;
         if (!goal) {
-            return new CoqLspError("No goals at point.");
+            return new CoqLspError("no goals at point");
         }
 
         return goal;
@@ -239,7 +239,7 @@ export class CoqLspClient implements CoqLspClientInterface {
             pendingDiagnostic ||
             awaitedDiagnostics === undefined
         ) {
-            throw new Error("Coq-lsp did not respond in time");
+            throw new CoqLspError("coq-lsp did not respond in time");
         }
 
         return this.filterDiagnostics(

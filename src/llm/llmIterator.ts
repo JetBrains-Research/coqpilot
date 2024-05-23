@@ -2,12 +2,8 @@ import { EventLogger } from "../logging/eventLogger";
 
 import { LLMServices } from "./llmServices";
 import { GeneratedProof, LLMService } from "./llmServices/llmService";
+import { ModelParams, ModelsParams } from "./llmServices/modelParams";
 import { ProofGenerationContext } from "./proofGenerationContext";
-import {
-    PredefinedProofsUserModelParams,
-    UserModelParams,
-    UserModelsParams,
-} from "./userModelParams";
 
 type GeneratedProofsBatch = GeneratedProof[];
 type ProofsGenerationHook = () => Promise<GeneratedProofsBatch>;
@@ -21,11 +17,9 @@ export class LLMSequentialIterator
     private hooksIndex: number;
     private insideBatchIndex: number;
 
-    private readonly defaultGenerationChoices = 10;
-
     constructor(
         proofGenerationContext: ProofGenerationContext,
-        modelsParams: UserModelsParams,
+        modelsParams: ModelsParams,
         services: LLMServices,
         private eventLogger?: EventLogger
     ) {
@@ -43,7 +37,7 @@ export class LLMSequentialIterator
 
     private createHooks(
         proofGenerationContext: ProofGenerationContext,
-        modelsParams: UserModelsParams,
+        modelsParams: ModelsParams,
         services: LLMServices
     ): ProofsGenerationHook[] {
         return [
@@ -51,9 +45,7 @@ export class LLMSequentialIterator
                 proofGenerationContext,
                 modelsParams.predefinedProofsModelParams,
                 services.predefinedProofsService,
-                "predefined-proofs",
-                (params) =>
-                    (params as PredefinedProofsUserModelParams).tactics.length
+                "predefined-proofs"
             ),
             ...this.createLLMServiceHooks(
                 proofGenerationContext,
@@ -76,28 +68,23 @@ export class LLMSequentialIterator
         ];
     }
 
-    private createLLMServiceHooks(
+    private createLLMServiceHooks<ResolvedModelParams extends ModelParams>(
         proofGenerationContext: ProofGenerationContext,
-        allModelParamsForService: UserModelParams[],
-        llmService: LLMService,
-        serviceLoggingName: string,
-        resolveChoices: (userModelParams: UserModelParams) => number = (_) =>
-            this.defaultGenerationChoices
+        allModelParamsForService: ResolvedModelParams[],
+        llmService: LLMService<any, ResolvedModelParams>,
+        serviceLoggingName: string
     ): ProofsGenerationHook[] {
         const hooks = [];
-        for (const userModelParams of allModelParamsForService) {
+        for (const modelParams of allModelParamsForService) {
             hooks.push(() => {
-                const resolvedParams =
-                    llmService.resolveParameters(userModelParams);
                 this.eventLogger?.log(
                     `${serviceLoggingName}-fetch-started`,
                     `Completion from ${serviceLoggingName}`,
-                    resolvedParams
+                    modelParams
                 );
                 return llmService.generateProof(
                     proofGenerationContext,
-                    resolvedParams,
-                    userModelParams.choices ?? resolveChoices(userModelParams)
+                    modelParams
                 );
             });
         }
@@ -129,7 +116,7 @@ export class LLMSequentialIterator
         return false;
     }
 
-    async next(): Promise<IteratorResult<GeneratedProofsBatch, any>> {
+    async next(): Promise<IteratorResult<GeneratedProofsBatch>> {
         const finished = await this.prepareFetched();
         if (finished) {
             return { done: true, value: undefined };
@@ -143,7 +130,7 @@ export class LLMSequentialIterator
         return { done: false, value: proofs };
     }
 
-    async nextProof(): Promise<IteratorResult<GeneratedProof, any>> {
+    async nextProof(): Promise<IteratorResult<GeneratedProof>> {
         const finished = await this.prepareFetched();
         if (finished) {
             return { done: true, value: undefined };

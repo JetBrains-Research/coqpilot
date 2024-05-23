@@ -1,19 +1,80 @@
-import { EventLogger, Severity } from "../../../logging/eventLogger";
+import { EventLogger } from "../../../logging/eventLogger";
 import { ProofGenerationContext } from "../../proofGenerationContext";
+import { LMStudioUserModelParams } from "../../userModelParams";
 import { ChatHistory } from "../chat";
-import { GeneratedProof, LLMService, Proof, ProofVersion } from "../llmService";
+import {
+    GeneratedProofImpl,
+    LLMServiceImpl,
+    ProofVersion,
+} from "../llmService";
+import { LLMServiceInternal } from "../llmServiceInternal";
 import { LMStudioModelParams } from "../modelParams";
 
-export class LMStudioService extends LLMService {
-    constructor(readonly eventLogger?: EventLogger) {
-        super(eventLogger);
-    }
+import { LMStudioModelParamsResolver } from "./lmStudioModelParamsResolver";
 
+export class LMStudioService extends LLMServiceImpl<
+    LMStudioUserModelParams,
+    LMStudioModelParams,
+    LMStudioService,
+    LMStudioGeneratedProof,
+    LMStudioServiceInternal
+> {
+    protected readonly internal: LMStudioServiceInternal;
+    protected readonly modelParamsResolver = new LMStudioModelParamsResolver();
+
+    constructor(
+        eventLogger?: EventLogger,
+        debugLogs: boolean = false,
+        generationsLogsFilePath?: string
+    ) {
+        super(
+            "LMStudioService",
+            eventLogger,
+            debugLogs,
+            generationsLogsFilePath
+        );
+        this.internal = new LMStudioServiceInternal(
+            this,
+            this.eventLoggerGetter,
+            this.generationsLoggerBuilder
+        );
+    }
+}
+
+export class LMStudioGeneratedProof extends GeneratedProofImpl<
+    LMStudioModelParams,
+    LMStudioService,
+    LMStudioGeneratedProof,
+    LMStudioServiceInternal
+> {
+    constructor(
+        proof: string,
+        proofGenerationContext: ProofGenerationContext,
+        modelParams: LMStudioModelParams,
+        llmServiceInternal: LMStudioServiceInternal,
+        previousProofVersions?: ProofVersion[]
+    ) {
+        super(
+            proof,
+            proofGenerationContext,
+            modelParams,
+            llmServiceInternal,
+            previousProofVersions
+        );
+    }
+}
+
+class LMStudioServiceInternal extends LLMServiceInternal<
+    LMStudioModelParams,
+    LMStudioService,
+    LMStudioGeneratedProof,
+    LMStudioServiceInternal
+> {
     constructGeneratedProof(
         proof: string,
         proofGenerationContext: ProofGenerationContext,
         modelParams: LMStudioModelParams,
-        previousProofVersions?: ProofVersion[]
+        previousProofVersions?: ProofVersion[] | undefined
     ): LMStudioGeneratedProof {
         return new LMStudioGeneratedProof(
             proof,
@@ -24,20 +85,17 @@ export class LMStudioService extends LLMService {
         );
     }
 
-    async generateFromChat(
+    async generateFromChatImpl(
         chat: ChatHistory,
         params: LMStudioModelParams,
         choices: number
     ): Promise<string[]> {
-        this.eventLogger?.log(
-            "lm-studio-fetch-started",
-            "Completion from LmStudio requested",
-            { history: chat },
-            Severity.DEBUG
-        );
+        this.validateChoices(choices);
         let attempts = choices * 2;
         const completions: string[] = [];
+        this.debug.logEvent("Completion requested", { history: chat });
 
+        let lastErrorThrown: Error | undefined = undefined;
         while (completions.length < choices && attempts > 0) {
             try {
                 const responce = await fetch(this.endpoint(params), {
@@ -47,23 +105,27 @@ export class LMStudioService extends LLMService {
                 });
                 if (responce.ok) {
                     const res = await responce.json();
-                    completions.push(res.choices[0].message.content);
+                    const newCompletion = res.choices[0].message.content;
+                    completions.push(newCompletion);
+                    this.debug.logEvent("Completion succeeded", {
+                        newCompletion: newCompletion,
+                    });
                 }
-                this.eventLogger?.log(
-                    "lm-studio-fetch-success",
-                    "Completion from LmStudio succeeded",
-                    { completions: completions }
-                );
             } catch (err) {
-                this.eventLogger?.log(
-                    "lm-studio-fetch-failed",
-                    "Completion from LmStudio failed",
-                    { error: err }
-                );
+                this.debug.logEvent("Completion failed", {
+                    error: err,
+                });
+                if ((err as Error) === null) {
+                    throw err;
+                }
+                lastErrorThrown = err as Error;
             }
             attempts--;
         }
 
+        if (completions.length < choices) {
+            throw lastErrorThrown;
+        }
         return completions;
     }
 
@@ -72,35 +134,17 @@ export class LMStudioService extends LLMService {
         "Content-Type": "application/json",
     };
 
-    private body(messages: ChatHistory, params: LMStudioModelParams): any {
+    private body(messages: ChatHistory, params: LMStudioModelParams): string {
         return JSON.stringify({
             messages: messages,
             stream: false,
             temperature: params.temperature,
             // eslint-disable-next-line @typescript-eslint/naming-convention
-            max_tokens: params.newMessageMaxTokens,
+            max_tokens: params.maxTokensToGenerate,
         });
     }
 
     private endpoint(params: LMStudioModelParams): string {
         return `http://localhost:${params.port}/v1/chat/completions`;
-    }
-}
-
-export class LMStudioGeneratedProof extends GeneratedProof {
-    constructor(
-        proof: Proof,
-        proofGenerationContext: ProofGenerationContext,
-        modelParams: LMStudioModelParams,
-        llmService: LMStudioService,
-        previousProofVersions?: ProofVersion[]
-    ) {
-        super(
-            proof,
-            proofGenerationContext,
-            modelParams,
-            llmService,
-            previousProofVersions
-        );
     }
 }
