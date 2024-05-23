@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.2
+
+- Fix and refactor CI. Publishing a new release is now a manual process.
+
+## 2.2.1
+
+- Fix a bug where the `tmp` package was not being installed in the release version.
+
 ## 2.2.0
 
 ### Public changes

@@ -11,6 +11,7 @@ jobs:
     name: Download built extension and publish it to Visual Studio Marketplace
 
     needs: [build]
+    
     runs-on: ubuntu-latest
     
     if: github.ref == 'refs/heads/main'
