@@ -1,34 +1,10 @@
 import { expect } from "earl";
-import * as path from "path";
 
-import { parseCoqFile } from "../../coqParser/parseCoqFile";
-import { Theorem } from "../../coqParser/parsedTypes";
-import { Uri } from "../../utils/uri";
-import { createCoqLspClient, getResourceFolder } from "../commonTestFunctions";
+import { parseTheoremsFromCoqFile } from "../commonTestFunctions/coqFileParser";
 
 suite("Coq file parser tests", () => {
-    async function getCoqDocument(
-        resourcePath: string[],
-        projectRootPath?: string[]
-    ): Promise<Theorem[]> {
-        const filePath = path.join(getResourceFolder(), ...resourcePath);
-        const rootDir = path.join(
-            getResourceFolder(),
-            ...(projectRootPath ?? [])
-        );
-
-        const fileUri = Uri.fromPath(filePath);
-        const client = createCoqLspClient(rootDir);
-
-        await client.openTextDocument(fileUri);
-        const document = await parseCoqFile(fileUri, client);
-        await client.closeTextDocument(fileUri);
-
-        return document;
-    }
-
     test("Parse simple small document", async () => {
-        const doc = await getCoqDocument(["small_document.v"]);
+        const doc = await parseTheoremsFromCoqFile(["small_document.v"]);
 
         const theoremData = [
             {
@@ -75,7 +51,7 @@ suite("Coq file parser tests", () => {
     });
 
     test("Retreive Multiple nested holes", async () => {
-        const doc = await getCoqDocument(["test_many_admits.v"]);
+        const doc = await parseTheoremsFromCoqFile(["test_many_admits.v"]);
 
         const expectedHoleRanges = [
             {
@@ -113,7 +89,7 @@ suite("Coq file parser tests", () => {
     });
 
     test("Test different theorem declarations", async () => {
-        const doc = await getCoqDocument(["test_parse_proof.v"]);
+        const doc = await parseTheoremsFromCoqFile(["test_parse_proof.v"]);
 
         const theoremData = [
             "test_1",
@@ -133,8 +109,8 @@ suite("Coq file parser tests", () => {
         expect(theoremsWithoutProof[0].name).toEqual("test_5");
     });
 
-    test("Test parse file which is part of project --non-ci", async () => {
-        const doc = await getCoqDocument(
+    test("Test parse file which is part of project", async () => {
+        const doc = await parseTheoremsFromCoqFile(
             ["coqProj", "theories", "B.v"],
             ["coqProj"]
         );

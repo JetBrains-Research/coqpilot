@@ -5,13 +5,41 @@
         "ecmaVersion": 6,
         "sourceType": "module"
     },
-    "extends": [ "prettier" ],
-    "plugins": [
-        "@typescript-eslint",
-        "prettier"
-    ],
+    "extends": ["prettier"],
+    "plugins": ["@typescript-eslint", "prettier"],
     "rules": {
-        "@typescript-eslint/naming-convention": "warn",
+        /* Most of the rules here are just the default ones,
+         * the main changes are:
+         * - required UPPER_CASE for enum members;
+         * - allowed UPPER_CASE in general.
+         */
+        "@typescript-eslint/naming-convention": [
+            "warn",
+            { "selector": "default", "format": ["camelCase"] },
+            {
+                "selector": "variable",
+                "format": ["camelCase", "UPPER_CASE"],
+                "leadingUnderscore": "allow"
+            },
+            {
+                "selector": "property",
+                "format": ["camelCase", "UPPER_CASE"],
+                "leadingUnderscore": "allow"
+            },
+            {
+                "selector": "parameter",
+                "format": ["camelCase"],
+                "leadingUnderscore": "allow"
+            },
+            {
+                "selector": "typeLike",
+                "format": ["PascalCase"]
+            },
+            {
+                "selector": "enumMember",
+                "format": ["UPPER_CASE"]
+            }
+        ],
         "@typescript-eslint/semi": "warn",
         "curly": "warn",
         "eqeqeq": "warn",
@@ -19,9 +47,5 @@
         "semi": "off",
         "prettier/prettier": "warn"
     },
-    "ignorePatterns": [
-        "out",
-        "dist",
-        "**/*.d.ts"
-    ]
+    "ignorePatterns": ["out", "dist", "**/*.d.ts"]
 }

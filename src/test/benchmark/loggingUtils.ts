@@ -1,9 +1,14 @@
+export const consoleLoggingIsMuted = true;
+
 export type LogColor = "red" | "green" | "blue" | "magenta" | "reset";
 
 export function consoleLog(
     message: string,
     color: LogColor | undefined = undefined
 ) {
+    if (consoleLoggingIsMuted) {
+        return;
+    }
     if (!color) {
         console.log(message);
         return;
@@ -32,6 +37,6 @@ export function code(color: LogColor): string {
     throw Error(`unknown LogColor: ${color}`);
 }
 
-export function consoleLogLine(suffix: string = "") {
-    console.log(`----------------------------${suffix}`);
+export function consoleLogSeparatorLine(suffix: string = "") {
+    consoleLog(`----------------------------${suffix}`);
 }

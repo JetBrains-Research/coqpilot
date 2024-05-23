@@ -68,7 +68,7 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
         });
     }
 
-    private makeAuxFileName(
+    private buildAuxFileUri(
         sourceDirPath: string,
         holePosition: Position,
         unique: boolean = true
@@ -98,7 +98,7 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
         proofs: Proof[]
     ): Promise<ProofCheckResult[]> {
         // 1. Write the text to the aux file
-        const auxFileUri = this.makeAuxFileName(
+        const auxFileUri = this.buildAuxFileUri(
             sourceDirPath,
             prefixEndPosition
         );
