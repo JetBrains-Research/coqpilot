@@ -109,7 +109,8 @@ jobs:
   setup-ci-debug-session:
     name: Start a CI debug session if build or test fail
 
-    needs: [build]
+    needs: [build, test]
+    if: always()
     
     strategy:
       matrix:
@@ -118,7 +119,6 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
-    if: always()
     steps:
       - name: Setup tmate session
         if: ${{ failure() }}
