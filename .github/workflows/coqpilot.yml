@@ -36,25 +36,20 @@ jobs:
       uses: ocaml/setup-ocaml@v2
       with:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
-        
-    - name: Install opam dependencies
-      env:
-          OPAMYES: true
-      run: |
-        opam install coq-lsp.0.1.8+8.19
-        eval $(opam env)
-    
-    - name: Cache opam
+
+    - name: Cache opam dependencies
       id: cache-opam
       uses: actions/cache@v3
       with:
         path: ~/.opam
         key: opam-${{ matrix.os }}-${{ matrix.ocaml-compiler }}-${{ env.coqlsp-version }}
         restore-keys: opam-${{ matrix.os }}-${{ matrix.ocaml-compiler }}-
-
-    - name: Setup opam
+ 
+    - name: Install opam dependencies
+      env:
+          OPAMYES: true
       run: |
-        opam install coq-lsp.${{ env.coqlsp-version }}
+        opam install coq-lsp.0.1.8+8.19
         eval $(opam env)
 
     - name: Install Node.js
