@@ -31,6 +31,16 @@ jobs:
     steps:
     - name: Checkout tree
       uses: actions/checkout@v4
+    
+    - name: Restore cached opam dependencies
+      id: cache-opam
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.opam/
+          /root/.opam/
+        key: opam-${{ matrix.os }}-${{ matrix.ocaml-compiler }}-${{ env.coqlsp-version }}
+        restore-keys: opam-${{ matrix.os }}-${{ matrix.ocaml-compiler }}-
 
     - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
       uses: ocaml/setup-ocaml@v2
@@ -38,14 +48,6 @@ jobs:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
         dune-cache: true
 
-    - name: Cache opam dependencies
-      id: cache-opam
-      uses: actions/cache@v3
-      with:
-        path: ~/.opam
-        key: opam-${{ matrix.os }}-${{ matrix.ocaml-compiler }}-${{ env.coqlsp-version }}
-        restore-keys: opam-${{ matrix.os }}-${{ matrix.ocaml-compiler }}-
- 
     - name: Install opam dependencies
       env:
           OPAMYES: true
