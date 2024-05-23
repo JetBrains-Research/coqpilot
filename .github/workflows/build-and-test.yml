@@ -20,9 +20,9 @@ env:
   coqlsp-version: "0.1.8+8.19"
 
 jobs:
-  build:   
+  build:
     strategy:
-      matrix: &matrixvalues
+      matrix:
         os: [ubuntu-latest]
         ocaml-compiler: [4.14]
 
@@ -81,9 +81,11 @@ jobs:
 
   test:
     needs: [build]
-    
-    strategy: 
-      matrix: *matrixvalues
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        ocaml-compiler: [4.14]
 
     runs-on: ${{ matrix.os }}
 
@@ -107,11 +109,12 @@ jobs:
   setup-ci-debug-session:
     name: Start a CI debug session if build or test fail
 
-    needs: [create-matrix, build]
+    needs: [build]
+    
     strategy:
       matrix:
-        os: [needs.create-matrix.outputs.os]
-        ocaml-compiler: [needs.create-matrix.outputs.ocaml-compiler]
+        os: [ubuntu-latest]
+        ocaml-compiler: [4.14]
 
     runs-on: ${{ matrix.os }}
 
