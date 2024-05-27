@@ -1,0 +1,7 @@
+defaults:
+  - title: 
+      "CoqPilot"
+    scope:
+      path: "README.md"
+    values:
+      permalink: "/"
