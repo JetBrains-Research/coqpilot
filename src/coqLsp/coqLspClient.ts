@@ -25,7 +25,13 @@ import { Uri } from "../utils/uri";
 
 import { CoqLspClientConfig, CoqLspServerConfig } from "./coqLspConfig";
 import { CoqLspConnector } from "./coqLspConnector";
-import { Goal, GoalAnswer, GoalRequest, PpString } from "./coqLspTypes";
+import {
+    Goal,
+    GoalAnswer,
+    GoalRequest,
+    Message,
+    PpString,
+} from "./coqLspTypes";
 import { FlecheDocument, FlecheDocumentParams } from "./coqLspTypes";
 import { CoqLspError } from "./coqLspTypes";
 
@@ -36,6 +42,12 @@ export interface CoqLspClientInterface extends Disposable {
         version: number,
         pretac: string
     ): Promise<Goal<PpString> | Error>;
+
+    getMessageAtPoint(
+        position: Position,
+        documentUri: Uri,
+        version: number
+    ): Promise<PpString[] | Message<PpString>[] | CoqLspError>;
 
     openTextDocument(uri: Uri, version: number): Promise<DiagnosticMessage>;
 
@@ -79,16 +91,24 @@ export class CoqLspClient implements CoqLspClientInterface {
     async getFirstGoalAtPoint(
         position: Position,
         documentUri: Uri,
-        version: number,
-        pretac?: string
+        version: number
     ): Promise<Goal<PpString> | Error> {
         return await this.mutex.runExclusive(async () => {
             return this.getFirstGoalAtPointUnsafe(
                 position,
                 documentUri,
-                version,
-                pretac
+                version
             );
+        });
+    }
+
+    async getMessageAtPoint(
+        position: Position,
+        documentUri: Uri,
+        version: number
+    ): Promise<PpString[] | Message<PpString>[] | CoqLspError> {
+        return await this.mutex.runExclusive(async () => {
+            return this.getMessageAtPointUnsafe(position, documentUri, version);
         });
     }
 
@@ -152,8 +172,7 @@ export class CoqLspClient implements CoqLspClientInterface {
     private async getFirstGoalAtPointUnsafe(
         position: Position,
         documentUri: Uri,
-        version: number,
-        pretac?: string
+        version: number
     ): Promise<Goal<PpString> | Error> {
         let goalRequestParams: GoalRequest = {
             textDocument: VersionedTextDocumentIdentifier.create(
@@ -165,10 +184,6 @@ export class CoqLspClient implements CoqLspClientInterface {
             pp_format: "Str",
         };
 
-        if (pretac) {
-            goalRequestParams.pretac = pretac;
-        }
-
         const goals = await this.client.sendRequest(
             goalReqType,
             goalRequestParams
@@ -179,6 +194,33 @@ export class CoqLspClient implements CoqLspClientInterface {
         }
 
         return goal;
+    }
+
+    private async getMessageAtPointUnsafe(
+        position: Position,
+        documentUri: Uri,
+        version: number
+    ): Promise<PpString[] | Message<PpString>[] | CoqLspError> {
+        let goalRequestParams: GoalRequest = {
+            textDocument: VersionedTextDocumentIdentifier.create(
+                documentUri.uri,
+                version
+            ),
+            position,
+            // eslint-disable-next-line @typescript-eslint/naming-convention
+            pp_format: "Str",
+        };
+
+        const goals = await this.client.sendRequest(
+            goalReqType,
+            goalRequestParams
+        );
+        const messages = goals?.messages ?? undefined;
+        if (!messages) {
+            return new CoqLspError("No messages at point.");
+        }
+
+        return messages;
     }
 
     private sleep(ms: number): Promise<ReturnType<typeof setTimeout>> {
