@@ -74,7 +74,7 @@ async function createCompletionContexts(
     return completionContexts;
 }
 
-async function createSourceFileEnvironment(
+export async function createSourceFileEnvironment(
     fileVersion: number,
     fileUri: Uri,
     client: CoqLspClient
@@ -83,7 +83,9 @@ async function createSourceFileEnvironment(
     const fileText = readFileSync(fileUri.fsPath);
     const dirPath = getSourceFolderPath(fileUri);
     if (!dirPath) {
-        throw new Error("Unable to get source folder path");
+        throw Error(
+            `unable to get source folder path from \`fileUri\`: ${fileUri}`
+        );
     }
 
     return {

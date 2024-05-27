@@ -25,7 +25,7 @@ export function run(): Promise<void> {
             try {
                 mocha.run((failures) => {
                     if (failures > 0) {
-                        e(new Error(`${failures} tests failed.`));
+                        e(Error(`${failures} tests failed.`));
                     } else {
                         c();
                     }

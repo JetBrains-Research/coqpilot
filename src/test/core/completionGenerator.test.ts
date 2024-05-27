@@ -1,10 +1,6 @@
 import { expect } from "earl";
-import * as path from "path";
 
-import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
-import { LMStudioService } from "../../llm/llmServices/lmStudio/lmStudioService";
-import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
-import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
+import { disposeServices } from "../../llm/llmServices";
 
 import {
     FailureGenerationResult,
@@ -14,11 +10,12 @@ import {
 } from "../../core/completionGenerator";
 import { ProcessEnvironment } from "../../core/completionGenerator";
 import { SuccessGenerationResult } from "../../core/completionGenerator";
-import { CoqProofChecker } from "../../core/coqProofChecker";
-import { inspectSourceFile } from "../../core/inspectSourceFile";
 
-import { Uri } from "../../utils/uri";
-import { createCoqLspClient, getResourceFolder } from "../commonTestFunctions";
+import {
+    createDefaultServices,
+    createPredefinedProofsModelsParams,
+} from "../commonTestFunctions/defaultLLMServicesBuilder";
+import { prepareEnvironment } from "../commonTestFunctions/prepareEnvironment";
 
 suite("Completion generation tests", () => {
     async function generateCompletionForAdmitsFromFile(
@@ -26,57 +23,31 @@ suite("Completion generation tests", () => {
         predefinedProofs: string[],
         projectRootPath?: string[]
     ): Promise<GenerationResult[]> {
-        const filePath = path.join(getResourceFolder(), ...resourcePath);
-        const rootDir = path.join(
-            getResourceFolder(),
-            ...(projectRootPath ?? [])
+        const environment = await prepareEnvironment(
+            resourcePath,
+            projectRootPath
         );
-
-        const fileUri = Uri.fromPath(filePath);
-        const client = createCoqLspClient(rootDir);
-        const coqProofChecker = new CoqProofChecker(client);
-        await client.openTextDocument(fileUri);
-        const [completionContexts, sourceFileEnvironment] =
-            await inspectSourceFile(1, (_hole) => true, fileUri, client);
-        await client.closeTextDocument(fileUri);
-
-        const openAiService = new OpenAiService();
-        const grazieService = new GrazieService();
-        const predefinedProofsService = new PredefinedProofsService();
-        const lmStudioService = new LMStudioService();
-
         const processEnvironment: ProcessEnvironment = {
-            coqProofChecker: coqProofChecker,
-            modelsParams: {
-                openAiParams: [],
-                grazieParams: [],
-                predefinedProofsModelParams: [
-                    {
-                        modelName: "Doesn't matter",
-                        tactics: predefinedProofs,
-                    },
-                ],
-                lmStudioParams: [],
-            },
-            services: {
-                openAiService,
-                grazieService,
-                predefinedProofsService,
-                lmStudioService,
-            },
+            coqProofChecker: environment.coqProofChecker,
+            modelsParams: createPredefinedProofsModelsParams(predefinedProofs),
+            services: createDefaultServices(),
         };
-
-        return Promise.all(
-            completionContexts.map(async (completionContext) => {
-                const result = await generateCompletion(
-                    completionContext,
-                    sourceFileEnvironment,
-                    processEnvironment
-                );
-
-                return result;
-            })
-        );
+        try {
+            return await Promise.all(
+                environment.completionContexts.map(
+                    async (completionContext) => {
+                        const result = await generateCompletion(
+                            completionContext,
+                            environment.sourceFileEnvironment,
+                            processEnvironment
+                        );
+                        return result;
+                    }
+                )
+            );
+        } finally {
+            disposeServices(processEnvironment.services);
+        }
     }
 
     function unpackProof(text: string): string {
@@ -142,11 +113,11 @@ suite("Completion generation tests", () => {
         );
         expect(results[1]).toBeA(FailureGenerationResult);
         expect((results[1] as FailureGenerationResult).status).toEqual(
-            FailureGenerationStatus.searchFailed
+            FailureGenerationStatus.SEARCH_FAILED
         );
     }).timeout(2000);
 
-    test("Check generation in project --non-ci", async () => {
+    test("Check generation in project", async () => {
         const resourcePath = ["coqProj", "theories", "C.v"];
         const predefinedProofs = ["intros.", "auto."];
         const projectRootPath = ["coqProj"];

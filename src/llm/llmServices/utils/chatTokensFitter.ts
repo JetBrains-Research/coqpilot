@@ -1,36 +1,50 @@
 import { Tiktoken, TiktokenModel, encoding_for_model } from "tiktoken";
 
-import { ChatMessage } from "../chat";
+import { ConfigurationError } from "../../llmServiceErrors";
+import { ChatMessage, EstimatedTokens } from "../chat";
 
 export class ChatTokensFitter {
     readonly tokensLimit: number;
 
     private tokens: number = 0;
+    private encoder: Tiktoken | undefined;
     private readonly countTokens: (text: string) => number;
 
     constructor(
-        modelName: string,
-        newMessageMaxTokens: number,
-        tokensLimit: number
+        private readonly maxTokensToGenerate: number,
+        tokensLimit: number,
+        modelName?: string
     ) {
         this.tokensLimit = tokensLimit;
-        if (this.tokensLimit < newMessageMaxTokens) {
-            throw Error(
-                `tokens limit ${this.tokensLimit} is not enough to generate a new message that needs up to ${newMessageMaxTokens}`
+        if (this.tokensLimit < this.maxTokensToGenerate) {
+            throw new ConfigurationError(
+                `tokens limit ${this.tokensLimit} is not enough for the model to generate a new message that needs up to ${maxTokensToGenerate}`
             );
         }
-        this.tokens += newMessageMaxTokens;
+        this.tokens += this.maxTokensToGenerate;
 
-        let encoder: Tiktoken | undefined = undefined;
+        this.encoder = undefined;
         try {
-            encoder = encoding_for_model(modelName as TiktokenModel);
+            this.encoder = encoding_for_model(modelName as TiktokenModel);
         } catch (e) {}
         this.countTokens = (text: string) => {
-            if (encoder) {
-                return encoder.encode(text).length;
+            if (this.encoder) {
+                return this.encoder.encode(text).length;
             } else {
-                return (text.length / 4) >> 0;
+                return Math.floor(text.length / 4);
             }
+        };
+    }
+
+    dispose() {
+        this.encoder?.free();
+    }
+
+    estimateTokens(): EstimatedTokens {
+        return {
+            messagesTokens: this.tokens - this.maxTokensToGenerate,
+            maxTokensToGenerate: this.maxTokensToGenerate,
+            maxTokensInTotal: this.tokens,
         };
     }
 
@@ -59,7 +73,7 @@ export class ChatTokensFitter {
     private fitRequired(...contents: string[]) {
         const contentTokens = this.countContentTokens(...contents);
         if (this.tokens + contentTokens > this.tokensLimit) {
-            throw Error(
+            throw new ConfigurationError(
                 `required content cannot be fitted into tokens limit: '${contents}' require ${contentTokens} + previous ${this.tokens} tokens > max ${this.tokensLimit}`
             );
         }

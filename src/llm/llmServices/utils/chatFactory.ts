@@ -1,8 +1,7 @@
-import * as assert from "assert";
-
 import { Theorem } from "../../../coqParser/parsedTypes";
+import { ConfigurationError } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
-import { ChatHistory, ChatMessage } from "../chat";
+import { AnalyzedChatHistory, ChatHistory, ChatMessage } from "../chat";
 import { ProofVersion } from "../llmService";
 import { ModelParams } from "../modelParams";
 
@@ -12,6 +11,7 @@ import {
     chatItemToContent,
     itemizedChatToHistory,
 } from "./chatUtils";
+import { modelName } from "./modelParamsAccessors";
 
 export function validateChat(chat: ChatHistory): [boolean, string] {
     if (chat.length < 1) {
@@ -47,107 +47,131 @@ export function buildChat(
     let chat: ChatHistory = [];
     chat = chat.concat(...chats);
     const [isValid, errorMessage] = validateChat(chat);
-    assert.ok(isValid, errorMessage);
+    if (!isValid) {
+        throw new ConfigurationError(
+            `built chat is invalid: ${errorMessage};\n\`${chat}\``
+        );
+    }
     return chat;
+}
+
+export function buildAndAnalyzeChat(
+    fitter: ChatTokensFitter,
+    ...chats: (ChatHistory | ChatMessage)[]
+): AnalyzedChatHistory {
+    return {
+        chat: buildChat(...chats),
+        estimatedTokens: fitter.estimateTokens(),
+    };
+}
+
+function withFitter<T>(
+    modelParams: ModelParams,
+    block: (fitter: ChatTokensFitter) => T
+): T {
+    const fitter = new ChatTokensFitter(
+        modelParams.maxTokensToGenerate,
+        modelParams.tokensLimit,
+        modelName(modelParams)
+    );
+    try {
+        return block(fitter);
+    } finally {
+        fitter.dispose();
+    }
 }
 
 export function buildProofGenerationChat(
     proofGenerationContext: ProofGenerationContext,
     modelParams: ModelParams
-): ChatHistory {
-    const fitter = new ChatTokensFitter(
-        modelParams.modelName,
-        modelParams.newMessageMaxTokens,
-        modelParams.tokensLimit
-    );
+): AnalyzedChatHistory {
+    return withFitter(modelParams, (fitter) => {
+        const systemMessage: ChatMessage = {
+            role: "system",
+            content: modelParams.systemPrompt,
+        };
+        fitter.fitRequiredMessage(systemMessage);
 
-    const systemMessage: ChatMessage = {
-        role: "system",
-        content: modelParams.systemPrompt,
-    };
-    fitter.fitRequiredMessage(systemMessage);
+        const completionTargetMessage: ChatMessage = {
+            role: "user",
+            content: proofGenerationContext.completionTarget,
+        };
+        fitter.fitRequiredMessage(completionTargetMessage);
 
-    const completionTargetMessage: ChatMessage = {
-        role: "user",
-        content: proofGenerationContext.completionTarget,
-    };
-    fitter.fitRequiredMessage(completionTargetMessage);
+        const fittedContextTheorems = fitter.fitOptionalObjects(
+            proofGenerationContext.contextTheorems,
+            (theorem) => chatItemToContent(theoremToChatItem(theorem))
+        );
+        const contextTheoremsChat = buildTheoremsChat(fittedContextTheorems);
 
-    const fittedContextTheorems = fitter.fitOptionalObjects(
-        proofGenerationContext.contextTheorems,
-        (theorem) => chatItemToContent(theoremToChatItem(theorem))
-    );
-    const contextTheoremsChat = buildTheoremsChat(fittedContextTheorems);
-
-    return buildChat(
-        systemMessage,
-        contextTheoremsChat,
-        completionTargetMessage
-    );
+        return buildAndAnalyzeChat(
+            fitter,
+            systemMessage,
+            contextTheoremsChat,
+            completionTargetMessage
+        );
+    });
 }
 
 export function buildProofFixChat(
     proofGenerationContext: ProofGenerationContext,
     proofVersions: ProofVersion[],
     modelParams: ModelParams
-): ChatHistory {
-    const fitter = new ChatTokensFitter(
-        modelParams.modelName,
-        modelParams.newMessageMaxTokens,
-        modelParams.tokensLimit
-    );
+): AnalyzedChatHistory {
+    return withFitter(modelParams, (fitter) => {
+        const systemMessage: ChatMessage = {
+            role: "system",
+            content: modelParams.systemPrompt,
+        };
+        fitter.fitRequiredMessage(systemMessage);
 
-    const systemMessage: ChatMessage = {
-        role: "system",
-        content: modelParams.systemPrompt,
-    };
-    fitter.fitRequiredMessage(systemMessage);
+        const completionTargetMessage: ChatMessage = {
+            role: "user",
+            content: proofGenerationContext.completionTarget,
+        };
+        const lastProofVersion = proofVersions[proofVersions.length - 1];
+        const proofMessage: ChatMessage = {
+            role: "assistant",
+            content: lastProofVersion.proof,
+        };
+        const proofFixMessage: ChatMessage = {
+            role: "user",
+            content: createProofFixMessage(
+                lastProofVersion.diagnostic!,
+                modelParams.multiroundProfile.proofFixPrompt
+            ),
+        };
+        fitter.fitRequiredMessage(completionTargetMessage);
+        fitter.fitRequiredMessage(proofMessage);
+        fitter.fitRequiredMessage(proofFixMessage);
 
-    const completionTargetMessage: ChatMessage = {
-        role: "user",
-        content: proofGenerationContext.completionTarget,
-    };
-    const lastProofVersion = proofVersions[proofVersions.length - 1];
-    const proofMessage: ChatMessage = {
-        role: "assistant",
-        content: lastProofVersion.proof,
-    };
-    const proofFixMessage: ChatMessage = {
-        role: "user",
-        content: createProofFixMessage(
-            lastProofVersion.diagnostic!,
-            modelParams.multiroundProfile.proofFixPrompt
-        ),
-    };
-    fitter.fitRequiredMessage(completionTargetMessage);
-    fitter.fitRequiredMessage(proofMessage);
-    fitter.fitRequiredMessage(proofFixMessage);
+        const fittedProofVersions = fitter.fitOptionalObjects(
+            proofVersions.slice(0, proofVersions.length - 1),
+            (proofVersion) =>
+                chatItemToContent(proofVersionToChatItem(proofVersion))
+        );
+        const previousProofVersionsChat =
+            buildPreviousProofVersionsChat(fittedProofVersions);
 
-    const fittedProofVersions = fitter.fitOptionalObjects(
-        proofVersions.slice(0, proofVersions.length - 1),
-        (proofVersion) =>
-            chatItemToContent(proofVersionToChatItem(proofVersion))
-    );
-    const previousProofVersionsChat =
-        buildPreviousProofVersionsChat(fittedProofVersions);
+        const fittedContextTheorems = fitter.fitOptionalObjects(
+            proofGenerationContext.contextTheorems,
+            (theorem) => chatItemToContent(theoremToChatItem(theorem))
+        );
+        const contextTheoremsChat = buildTheoremsChat(fittedContextTheorems);
 
-    const fittedContextTheorems = fitter.fitOptionalObjects(
-        proofGenerationContext.contextTheorems,
-        (theorem) => chatItemToContent(theoremToChatItem(theorem))
-    );
-    const contextTheoremsChat = buildTheoremsChat(fittedContextTheorems);
-
-    return buildChat(
-        systemMessage,
-        contextTheoremsChat,
-        completionTargetMessage,
-        previousProofVersionsChat,
-        proofMessage,
-        proofFixMessage
-    );
+        return buildAndAnalyzeChat(
+            fitter,
+            systemMessage,
+            contextTheoremsChat,
+            completionTargetMessage,
+            previousProofVersionsChat,
+            proofMessage,
+            proofFixMessage
+        );
+    });
 }
 
-function createProofFixMessage(
+export function createProofFixMessage(
     diagnostic: string,
     proofFixPrompt: string
 ): string {
@@ -165,6 +189,10 @@ export function buildTheoremsChat(theorems: Theorem[]): ChatHistory {
     return itemizedChatToHistory(theorems.map(theoremToChatItem));
 }
 
+/**
+ * Note: be careful, the order of the roles should be the opposite (when built as a chat),
+ * i.e. first goes the proof as `assistant` message and then the diagnostic as a `user` one.
+ */
 export function proofVersionToChatItem(
     proofVersion: ProofVersion
 ): UserAssistantChatItem {
