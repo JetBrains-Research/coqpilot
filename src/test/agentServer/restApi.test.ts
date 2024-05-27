@@ -50,6 +50,10 @@ suite("[AgentServer] RestAPI HTTP test", async () => {
 
         expect(response.body.coqFiles).not.toBeNullish();
         expect(response.body.coqFiles).toEqual([
+            {
+                name: "build_chat_theorems.v",
+                pathFromRoot: "build_chat_theorems.v",
+            },
             { name: "A.v", pathFromRoot: "coqProj/theories/A.v" },
             { name: "B.v", pathFromRoot: "coqProj/theories/B.v" },
             { name: "C.v", pathFromRoot: "coqProj/theories/C.v" },

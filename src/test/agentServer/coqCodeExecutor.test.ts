@@ -4,7 +4,7 @@ import * as path from "path";
 import { Position } from "vscode-languageclient";
 
 import { CoqCodeExecutor } from "../../agentServer/services/coqCommandExecutor";
-import { createCoqLspClient } from "../commonTestFunctions";
+import { createCoqLspClient } from "../commonTestFunctions/coqLspBuilder";
 
 import { serverRunRoot } from "./commonServerTestFunctions";
 

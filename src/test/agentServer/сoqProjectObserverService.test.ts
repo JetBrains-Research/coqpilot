@@ -20,7 +20,7 @@ suite("[AgentServer] CoqProjectObserverService common tests", () => {
         expect(theoremNames).toEqual(["test_thr", "test_thr1"]);
     });
 
-    test("Get theorem names from file: coq project --non-ci", async () => {
+    test("Get theorem names from file: coq project", async () => {
         process.env.SERVER_RUN_ROOT = serverRunRootProj;
         const service = new CoqProjectObserverService();
         const theoremNames =
@@ -33,6 +33,10 @@ suite("[AgentServer] CoqProjectObserverService common tests", () => {
         const service = new CoqProjectObserverService();
         const coqFiles = service.getCoqFilesInProject();
         expect(coqFiles).toEqual([
+            {
+                name: "build_chat_theorems.v",
+                pathFromRoot: "build_chat_theorems.v",
+            },
             { name: "A.v", pathFromRoot: "coqProj/theories/A.v" },
             { name: "B.v", pathFromRoot: "coqProj/theories/B.v" },
             { name: "C.v", pathFromRoot: "coqProj/theories/C.v" },
