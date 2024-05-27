@@ -2,7 +2,7 @@ name: Deploy Jekyll with GitHub Pages dependencies preinstalled
 
 on:
   push:
-    branches: ["main", "gh-website"]
+    branches: ["main"]
 
   workflow_dispatch:
 
