@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.2
+
+- Fix and refactor CI. Publishing a new release is now a manual process.
+
+## 2.2.1
+
+- Fix a bug where the `tmp` package was not being installed in the release version.
+
 ## 2.2.0
 
 ### Public changes
@@ -32,7 +40,9 @@
 
 - Test the LLM Services module thoroughly. 
 - Improve test infrastructure in general by introducing and structuring utils.
-- Fix the issue with building test resources on CI. Set up CI debugging, and enable launching CI manually.
+- Fix the issue with building test resources on CI. 
+- Set up CI debugging, and enable launching CI manually. 
+  Double the speed of CI by setting caches.
 
 ## 2.1.0
 

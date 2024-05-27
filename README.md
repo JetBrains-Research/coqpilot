@@ -4,8 +4,6 @@
 
 `Coqpilot` is a [Visual Studio Code](https://code.visualstudio.com/) extension that is designed to help automate writing of Coq proofs. It uses Large Language Models to generate multiple potential proofs and then uses [coq-lsp](https://github.com/ejgallego/coq-lsp) to typecheck them. It substitutes the proof in the editor only if a valid proof is found. 
 
-Now `coqpilot` is in early beta and seeks for feedbacks. Please feel free to open an issue regarding any problem you encounter or any feature you want to see in the future. 
-
 # Table of Contents
 
 - 🚀 [Coqpilot Overview](#coqpilot)
@@ -74,7 +72,19 @@ With coq-lsp, extension should have everything it needs to run.
 
 ### Building locally
 
-To build the extension locally, you will need to have `npm` installed. Then you can clone the repository and run the following commands:
+First, clone the Coqpilot repository and navigate into its directory.
+```bash
+git clone https://github.com/JetBrains-Research/coqpilot.git
+cd coqpilot
+```
+
+To build the extension locally, you'll need Node.js installed. The recommended way to manage Node.js versions is by using `nvm`. From the Coqpilot root directory, execute:
+```bash
+nvm use
+```
+If you prefer not to use `nvm`, ensure you install the Node.js version specified in the [`.nvmrc`](.nvmrc) file by any other method you prefer.
+
+Once Node.js is installed, the remaining setup will be handled by the `npm` package manager. Run the following commands:
 ```bash
 npm install
 npm run compile

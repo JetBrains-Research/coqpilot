@@ -16,6 +16,7 @@ src/test/resources/coqProj/.vscode
 src/test/resources/coqProj/.Makefile.coq.d
 src/test/resources/coqProj/Makefile.coq
 src/test/resources/coqProj/Makefile.coq.conf
+src/test/resources/**/.vscode
 
 # Ignore the generated build files in datatests inside benchmarks
 dataset/**/result

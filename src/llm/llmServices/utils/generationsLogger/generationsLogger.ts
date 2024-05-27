@@ -22,11 +22,19 @@ export interface GenerationsLoggerSettings {
  * This class is responsible for logging the actual generations.
  * I.e. errors caused by the user or the extension are not the target ones.
  *
- * The main function of `GenerationLogger` is to keep the logs since the last success,
+ * The core functionality of `GenerationLogger` is to keep the logs since the last success,
  * in order to provide them for the analysis of the time
  * needed to `LLMService` to become available again.
  *
  * Also, due to the `debug` mode, `GenerationLogger` can be used for debug purposes.
+ *
+ * *Implementation note:* the `GenerationsLogger` currently writes logs to a file as plain text,
+ * which could theoretically result in performance overhead. However, in production mode,
+ * logs are cleaned after each successful generation, keeping the file size small most of the time.
+ * Thus, the overhead from handling larger files is negligible.
+ * Although some costs of working with plain text may remain, tests have not shown any performance
+ * degradation in practice. If performance issues arise in the future, consider modifying the
+ * string serialization/deserialization within `SyncFile`.
  */
 export class GenerationsLogger {
     private readonly logsFile: SyncFile;
