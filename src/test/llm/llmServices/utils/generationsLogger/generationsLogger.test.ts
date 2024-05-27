@@ -217,24 +217,24 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
                     );
                 }
             );
+        });
 
-            test(`Test read no records ${testNamePostfix}`, async () => {
-                await withTestGenerationsLogger(
-                    loggerDebugMode,
-                    async (generationsLogger) => {
-                        expect(generationsLogger.readLogs()).toHaveLength(0);
-                        expect(
-                            generationsLogger.readLogsSinceLastSuccess()
-                        ).toHaveLength(0);
-                        generationsLogger.logGenerationSucceeded(
-                            succeeded(buildMockRequest(generationsLogger))
-                        );
-                        expect(
-                            generationsLogger.readLogsSinceLastSuccess()
-                        ).toHaveLength(0);
-                    }
-                );
-            });
+        test(`Test read no records ${testNamePostfix}`, async () => {
+            await withTestGenerationsLogger(
+                loggerDebugMode,
+                async (generationsLogger) => {
+                    expect(generationsLogger.readLogs()).toHaveLength(0);
+                    expect(
+                        generationsLogger.readLogsSinceLastSuccess()
+                    ).toHaveLength(0);
+                    generationsLogger.logGenerationSucceeded(
+                        succeeded(buildMockRequest(generationsLogger))
+                    );
+                    expect(
+                        generationsLogger.readLogsSinceLastSuccess()
+                    ).toHaveLength(0);
+                }
+            );
         });
 
         test(`Pseudo-concurrent write-read ${testNamePostfix}`, async () => {
