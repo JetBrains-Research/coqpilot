@@ -1,0 +1,39 @@
+name: Publish new version
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-and-test.yml
+
+  publish:
+    name: Download built extension and publish it to Visual Studio Marketplace
+
+    needs: [build]
+
+    runs-on: ubuntu-latest
+    
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.artifactName }}
+
+      - name: Publish to Visual Studio Marketplace
+        uses: HaaLeo/publish-vscode-extension@v1
+        with:
+          pat: ${{ secrets.VSCE_ACCESS_TOKEN }}
+          extensionFile: ${{ needs.build.outputs.vsixPath }}
+          registryUrl: https://marketplace.visualstudio.com

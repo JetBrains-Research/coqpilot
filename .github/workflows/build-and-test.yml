@@ -1,6 +1,6 @@
-name: Build and Test
+name: Build and test
 
-on: 
+on:
   push:
     branches:
       - main
@@ -9,24 +9,32 @@ on:
       - main
       - 'v[0-9]+.[0-9]+.[0-9]+-dev'
   workflow_dispatch:
+  workflow_call:
+    outputs:
+      artifactName:
+        description: "The name of the build artifact (packaged extension)."
+        value: ${{ jobs.build-and-test.outputs.artifactName }}
+      vsixPath:
+        description: "The path to the packaged and published VSIX file."
+        value: ${{ jobs.build-and-test.outputs.vsixPath }}
 
 env: 
   coqlsp-path: "coq-lsp"
   coqlsp-version: "0.1.8+8.19"
+  artifact-name: ubuntu-latest-build
 
 jobs:
-  build: 
+  build-and-test:
     strategy:
       matrix:
-        os: 
-          - ubuntu-latest
-        ocaml-compiler:
-          - "4.14"
+        os: [ubuntu-latest]
+        ocaml-compiler: [4.14]
 
     runs-on: ${{ matrix.os }}
 
     outputs:
-      vsixPath: ${{ steps.packageExtension.outputs.vsixPath }}
+      artifactName: ${{ env.artifact-name }}
+      vsixPath: ${{ steps.package-extension.outputs.vsixPath }}
 
     steps:
     - name: Checkout tree
@@ -36,7 +44,7 @@ jobs:
     # is `dune-cache: true` instead of this caching action.
     - name: Restore cached opam dependencies
       id: cache-opam
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.opam/
         key: opam-${{ matrix.os }}-${{ matrix.ocaml-compiler }}-${{ env.coqlsp-version }}
@@ -80,56 +88,49 @@ jobs:
       shell: bash
 
     - name: Test on Linux
+      if: runner.os == 'Linux'
       env:
           COQ_LSP_PATH: ${{ env.coqlsp-path }}
       run: |
         eval $(opam env)
         xvfb-run -a npm run clean-test
-      if: runner.os == 'Linux'
 
     - name: Test not on Linux
+      if: runner.os != 'Linux'
       env:
           COQ_LSP_PATH: ${{ env.coqlsp-path }}
       run: |
         eval $(opam env)
         npm run clean-test
-      if: runner.os != 'Linux'
     
-    - name: Setup tmate session
-      if: ${{ failure() }}
-      uses: mxschmitt/action-tmate@v3
-
     - name: Package Extension
-      id: packageExtension
+      id: package-extension
       uses: HaaLeo/publish-vscode-extension@v1
       with:
         pat: stub
         dryRun: true
 
     - name: Upload Extension Package as Artifact
-      uses: actions/upload-artifact@v2
+      id: upload-artifact
+      uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.os }}
-        path: ${{ steps.packageExtension.outputs.vsixPath }}
+        name: ${{ env.artifact-name }}
+        path: ${{ steps.package-extension.outputs.vsixPath }}
+  
+  setup-ci-debug-session:
+    name: Start a CI debug session if build or test fail
 
-  create-release:
-    runs-on: ubuntu-latest
-    needs: [build]
-    if: github.ref == 'refs/heads/main'
+    needs: [build-and-test]
+    if: always()
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        ocaml-compiler: [4.14]
+
+    runs-on: ${{ matrix.os }}
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: ".nvmrc"
-      - name: Install Dependencies
-        run: npm ci
-      - name: Download Build Artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: ubuntu-latest
-      - name: Publish to Visual Studio Marketplace
-        uses: HaaLeo/publish-vscode-extension@v1
-        with:
-          pat: ${{ secrets.VSCE_ACCESS_TOKEN }}
-          extensionFile: ${{ needs.build.outputs.vsixPath }}
-          registryUrl: https://marketplace.visualstudio.com
+      - name: Setup tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
