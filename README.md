@@ -22,6 +22,7 @@
 - 📊 [Benchmark](#benchmark)
 - 🧩 [Integrating other solutions](#integrating-other-solutions)
   - 🧠 [Tactitian](#tactitian)
+  - 🔨 [CoqHammer](#coqhammer)
 - 🔜 [Future Plans](#future-plans)
 - 📜 [Release Notes](#release-notes)
 
@@ -238,7 +239,6 @@ First things first, the process of running the benchmark is not perfectly automa
     npm run benchmark
     ```    
 
-
 ## Integrating other solutions
 
 As CoqPilot supports adding predefined commands to try as completion both in the plugin and the benchmark, you can integrate `Coq` generation methods, that contribute a specific tactic and are triggered from OCaml. 
@@ -252,7 +252,28 @@ opam install coq-tactician
 tactician enable
 ```
 
+To use completion tactics from `Tactitian` you need to add an import: 
+```coq
+From Tactician Require Import Ltac1.
+```
+
+After that, add the `synth.` tactic to the predefined tactics in the settings. 
+
 Neural `Graph2Tac` completion unfortunately requires `coq < 8.12~`. 
+
+### CoqHammer
+
+[CoqHammer](https://coqhammer.github.io) is an automated reasoning tool for Coq. To install: 
+```bash
+opam install coq-hammer-tactics
+```
+
+Import the tactics: 
+```coq
+From Hammer Require Import Tactics.
+```
+
+Then add the `hammer.`, `sauto.` or any other tactic from `CoqHammer` to the predefined tactics in the settings.
 
 ## Future plans
 
