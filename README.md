@@ -265,12 +265,12 @@ Neural `Graph2Tac` completion unfortunately requires `coq < 8.12~`.
 
 [CoqHammer](https://coqhammer.github.io) is an automated reasoning tool for Coq. To install: 
 ```bash
-opam install coq-hammer-tactics
+opam install coq-hammer
 ```
 
 Import the tactics: 
 ```coq
-From Hammer Require Import Tactics.
+From Hammer Require Import Hammer.
 ```
 
 Then add the `hammer.`, `sauto.` or any other tactic from `CoqHammer` to the predefined tactics in the settings.
