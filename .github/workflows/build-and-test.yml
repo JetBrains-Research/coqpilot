@@ -27,7 +27,7 @@ jobs:
   build-and-test:
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, macos-latest]
         ocaml-compiler: [4.14]
 
     runs-on: ${{ matrix.os }}
@@ -111,6 +111,7 @@ jobs:
         dryRun: true
 
     - name: Upload Extension Package as Artifact
+      if: matrix.os == 'ubuntu-latest'
       id: upload-artifact
       uses: actions/upload-artifact@v4
       with:
