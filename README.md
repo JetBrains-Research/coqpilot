@@ -283,4 +283,4 @@ Then add the `hammer.`, `sauto.` or any other tactic from `CoqHammer` to the pre
 
 ## Release Notes
 
-Release notes could be found in the [CHANGELOG.md](https://github.com/JetBrains-Research/coqpilot/blob/refactor/CHANGELOG.md) file.
+Release notes could be found in the [CHANGELOG.md](https://github.com/JetBrains-Research/coqpilot/blob/main/CHANGELOG.md) file.
