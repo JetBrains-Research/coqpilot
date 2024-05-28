@@ -1,9 +1,9 @@
-import * as assert from "assert";
+import { expect } from "earl";
 
 import { LLMServices } from "../../llm/llmServices";
 import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
 import { LMStudioService } from "../../llm/llmServices/lmStudio/lmStudioService";
-import { ModelsParams } from "../../llm/llmServices/modelParams";
+import { ModelParams, ModelsParams } from "../../llm/llmServices/modelParams";
 import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
 import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
 
@@ -29,6 +29,7 @@ import { resolveParametersOrThrow } from "../commonTestFunctions/resolveOrThrow"
 
 import { InputModelsParams } from "./inputModelsParams";
 import { consoleLog, consoleLogSeparatorLine } from "./loggingUtils";
+import { Results } from "./results";
 
 export async function runTestBenchmark(
     filePath: string,
@@ -38,7 +39,7 @@ export async function runTestBenchmark(
     benchmarkAdmits: Boolean = true,
     workspaceRootPath?: string,
     requireAllAdmitsCompleted: Boolean = false
-): Promise<BenchmarkReport> {
+): Promise<Results.BenchmarkingSummary> {
     consoleLog(`run benchmarks for file: ${filePath}\n`, "blue");
     const shouldCompleteHole = (_hole: ProofStep) => true;
 
@@ -66,13 +67,16 @@ export async function runTestBenchmark(
 
     consoleLogSeparatorLine("\n");
 
-    let admitTargetsResults: BenchmarkResult | undefined = undefined;
-    let theoremTargetsResults: BenchmarkResult | undefined = undefined;
+    let admitTargetsResults: Results.ApproachBenchmarkingSummary | undefined =
+        undefined;
+    let theoremTargetsResults: Results.ApproachBenchmarkingSummary | undefined =
+        undefined;
 
     if (benchmarkAdmits) {
         consoleLog("try to complete admits\n");
         admitTargetsResults = await benchmarkTargets(
             filteredCompletionTargets.admitTargets,
+            filePath,
             sourceFileEnvironment,
             processEnvironment
         );
@@ -82,7 +86,7 @@ export async function runTestBenchmark(
         consoleLogSeparatorLine("\n");
 
         if (requireAllAdmitsCompleted) {
-            assert.ok(admitTargetsResults.allCompleted());
+            expect(admitTargetsResults.allSuccessful()).toBeTruthy();
         }
     }
 
@@ -90,6 +94,7 @@ export async function runTestBenchmark(
         consoleLog("try to prove theorems\n");
         theoremTargetsResults = await benchmarkTargets(
             filteredCompletionTargets.theoremTargets,
+            filePath,
             sourceFileEnvironment,
             processEnvironment
         );
@@ -100,8 +105,8 @@ export async function runTestBenchmark(
     }
 
     return {
-        admitsCompleted: admitTargetsResults,
-        theoremsProved: theoremTargetsResults,
+        admitsCompletions: admitTargetsResults,
+        theoremsCompletions: theoremTargetsResults,
     };
 }
 
@@ -141,32 +146,122 @@ export interface BenchmarkReport {
 
 export async function benchmarkTargets(
     targets: BenchmarkingCompletionContext[],
+    filePath: string,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment
-): Promise<BenchmarkResult> {
-    const totalCompletionsNumber = targets.length;
-    let successfulCompletionsNumber = 0;
+): Promise<Results.ApproachBenchmarkingSummary> {
+    const tasksMap: Map<
+        Results.CompletionGenerationTask,
+        Map<string, Results.LLMServiceBenchmarkingResult<ModelParams>>
+    > = new Map();
+
     for (const completionContext of targets) {
-        const success = await benchmarkCompletionGeneration(
-            completionContext,
-            sourceFileEnvironment,
-            processEnvironment
-        );
-        if (success) {
-            successfulCompletionsNumber += 1;
-        }
+        const task: Results.CompletionGenerationTask = {
+            sourceTheorem: new Results.RichTheorem(
+                completionContext.parentTheorem,
+                filePath
+            ),
+            targetGoal: goalToString(completionContext.proofGoal),
+            targetEndPosition: completionContext.admitEndPosition,
+        };
+        const llmServicesResultsMap =
+            await benchmarkCompletionGenerationWithEachLLMService(
+                task,
+                completionContext,
+                sourceFileEnvironment,
+                processEnvironment
+            );
+        tasksMap.set(task, llmServicesResultsMap);
     }
-    return new BenchmarkResult(
-        totalCompletionsNumber,
-        successfulCompletionsNumber
-    );
+    return new Results.ApproachBenchmarkingSummary(tasksMap);
+}
+
+async function benchmarkCompletionGenerationWithEachLLMService(
+    task: Results.CompletionGenerationTask,
+    completionContext: BenchmarkingCompletionContext,
+    sourceFileEnvironment: SourceFileEnvironment,
+    processEnvironment: ProcessEnvironment
+): Promise<Map<string, Results.LLMServiceBenchmarkingResult<ModelParams>>> {
+    return new Map([
+        [
+            processEnvironment.services.predefinedProofsService.serviceName,
+            await benchmarkCompletionGenerationWithEachModel(
+                processEnvironment.modelsParams.predefinedProofsModelParams,
+                task,
+                processEnvironment.services.predefinedProofsService.serviceName,
+                completionContext,
+                sourceFileEnvironment,
+                processEnvironment
+            ),
+        ],
+        [
+            processEnvironment.services.openAiService.serviceName,
+            await benchmarkCompletionGenerationWithEachModel(
+                processEnvironment.modelsParams.openAiParams,
+                task,
+                processEnvironment.services.openAiService.serviceName,
+                completionContext,
+                sourceFileEnvironment,
+                processEnvironment
+            ),
+        ],
+        [
+            processEnvironment.services.grazieService.serviceName,
+            await benchmarkCompletionGenerationWithEachModel(
+                processEnvironment.modelsParams.grazieParams,
+                task,
+                processEnvironment.services.grazieService.serviceName,
+                completionContext,
+                sourceFileEnvironment,
+                processEnvironment
+            ),
+        ],
+        [
+            processEnvironment.services.lmStudioService.serviceName,
+            await benchmarkCompletionGenerationWithEachModel(
+                processEnvironment.modelsParams.lmStudioParams,
+                task,
+                processEnvironment.services.lmStudioService.serviceName,
+                completionContext,
+                sourceFileEnvironment,
+                processEnvironment
+            ),
+        ],
+    ]);
+}
+
+async function benchmarkCompletionGenerationWithEachModel(
+    models: ModelParams[],
+    task: Results.CompletionGenerationTask,
+    llmServiceName: string,
+    completionContext: BenchmarkingCompletionContext,
+    sourceFileEnvironment: SourceFileEnvironment,
+    processEnvironment: ProcessEnvironment
+): Promise<Results.LLMServiceBenchmarkingResult<ModelParams>> {
+    const modelsResultsMap: Map<
+        ModelParams,
+        Results.BenchmarkingResult<ModelParams>
+    > = new Map();
+    for (const model of models) {
+        modelsResultsMap.set(model, {
+            task: task,
+            llmServiceName: llmServiceName,
+            modelParams: model,
+            result: await benchmarkCompletionGeneration(
+                completionContext,
+                sourceFileEnvironment,
+                processEnvironment // !!!! only one model should be passed here
+            ),
+        });
+    }
+    return modelsResultsMap;
 }
 
 async function benchmarkCompletionGeneration(
     completionContext: BenchmarkingCompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment
-): Promise<boolean> {
+): Promise<Results.CompletionGenerationResult> {
     const completionPosition = completionContext.admitEndPosition;
     consoleLog(
         `Completion position: ${completionPosition.line}:${completionPosition.character}`
@@ -181,32 +276,49 @@ async function benchmarkCompletionGeneration(
         ),
     };
 
-    const result = await generateCompletion(
+    const startTime = performance.now();
+    const completionResult = await generateCompletion(
         completionContext,
         sourceFileEnvironmentWithFilteredContext,
         processEnvironment
     );
+    const endTime = performance.now();
+
+    const benchmarkingResult: Results.CompletionGenerationResult = {
+        successfullyGeneratedCompletion: false,
+        elapsedTimeMillis: Math.round(endTime - startTime),
+        contextTheorems: [], // TODO: support
+        requestChatTokens: 0, // TODO: support
+    };
+
     let message = "unknown";
-    let success = false;
-    if (result instanceof SuccessGenerationResult) {
-        message = `Success: ${result.data}`;
-        success = true;
-    } else if (result instanceof FailureGenerationResult) {
-        switch (result.status) {
+    if (completionResult instanceof SuccessGenerationResult) {
+        message = `Success: ${completionResult.data}`;
+        benchmarkingResult.successfullyGeneratedCompletion = true;
+    } else if (completionResult instanceof FailureGenerationResult) {
+        switch (completionResult.status) {
             case FailureGenerationStatus.TIMEOUT_EXCEEDED:
                 message = "Timeout";
                 break;
             case FailureGenerationStatus.ERROR_OCCURRED:
-                message = `Exception: ${result.message}`;
+                message = `Exception: ${completionResult.message}`;
                 break;
             case FailureGenerationStatus.SEARCH_FAILED:
                 message = "Proofs not found";
                 break;
         }
     }
-    consoleLog(message, success ? "green" : "red");
+    consoleLog(
+        message,
+        benchmarkingResult.successfullyGeneratedCompletion ? "green" : "red"
+    );
+    consoleLog(
+        `elapsedTime: ${benchmarkingResult.elapsedTimeMillis} ms`,
+        "gray"
+    );
     consoleLog("");
-    return success;
+
+    return benchmarkingResult;
 }
 
 function goalToString(proofGoal: Goal<PpString>): string {

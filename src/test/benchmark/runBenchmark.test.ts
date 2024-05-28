@@ -10,6 +10,7 @@ import {
     consoleLogSeparatorLine,
     consoleLoggingIsMuted,
 } from "./loggingUtils";
+import { Results } from "./results";
 
 interface Benchmark {
     name: string;
@@ -59,7 +60,7 @@ const mixedAutoBenchmark: Benchmark = {
 const benchmarks: Benchmark[] = [simpleAutoBenchmark, mixedAutoBenchmark];
 
 suite("Benchmark", () => {
-    expect(consoleLoggingIsMuted).toEqual(true);
+    expect(consoleLoggingIsMuted).toEqual(false);
     const datasetDir = getDatasetDir();
 
     for (const benchmark of benchmarks) {
@@ -82,7 +83,7 @@ suite("Benchmark", () => {
                     : [resolvedItemPath];
 
                 for (const resolvedFilePath of resolvedFilePaths) {
-                    const { admitsCompleted, theoremsProved } =
+                    const { admitsCompletions, theoremsCompletions } =
                         await runTestBenchmark(
                             resolvedFilePath,
                             benchmark.inputModelsParams,
@@ -93,10 +94,10 @@ suite("Benchmark", () => {
                             benchmark.requireAllAdmitsCompleted
                         );
                     admitsCompletedInTotal.add(
-                        admitsCompleted ?? new BenchmarkResult(0, 0)
+                        approachSummaryToCounter(admitsCompletions)
                     );
                     theoremsProvedInTotal.add(
-                        theoremsProved ?? new BenchmarkResult(0, 0)
+                        approachSummaryToCounter(theoremsCompletions)
                     );
                 }
             }
@@ -115,6 +116,17 @@ suite("Benchmark", () => {
         }).timeout(benchmark.timeoutMinutes * 60 * 1000);
     }
 });
+
+function approachSummaryToCounter(
+    summary: Results.ApproachBenchmarkingSummary | undefined
+): BenchmarkResult {
+    return summary === undefined
+        ? new BenchmarkResult(0, 0)
+        : new BenchmarkResult(
+              summary.benchmarkingResults.length,
+              summary.successfulBenchmarkingResults.length
+          );
+}
 
 function getDatasetDir(): string {
     const dirname: string = path.join(__dirname, "../../../");

@@ -1,6 +1,6 @@
-export const consoleLoggingIsMuted = true;
+export const consoleLoggingIsMuted = false;
 
-export type LogColor = "red" | "green" | "blue" | "magenta" | "reset";
+export type LogColor = "red" | "green" | "blue" | "magenta" | "gray" | "reset";
 
 export function consoleLog(
     message: string,
@@ -33,6 +33,9 @@ export function code(color: LogColor): string {
     }
     if (color === "magenta") {
         return "\x1b[35m";
+    }
+    if (color === "gray") {
+        return "\x1b[90m";
     }
     throw Error(`unknown LogColor: ${color}`);
 }
