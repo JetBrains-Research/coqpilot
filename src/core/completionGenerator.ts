@@ -297,7 +297,7 @@ function hypToString(hyp: Hyp<PpString>): string {
     return `${hyp.names.join(" ")} : ${hyp.ty}`;
 }
 
-function goalToTargetLemma(proofGoal: Goal<PpString>): string {
+export function goalToTargetLemma(proofGoal: Goal<PpString>): string {
     const auxTheoremConcl = proofGoal?.ty;
     const theoremIndeces = proofGoal?.hyps
         .map((hyp) => `(${hypToString(hyp)})`)
