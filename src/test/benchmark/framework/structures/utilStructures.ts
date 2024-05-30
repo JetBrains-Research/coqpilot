@@ -12,6 +12,18 @@ export class TheoremData {
     // };
 }
 
+export interface LengthMetrics {
+    inSteps?: number;
+    inSymbols?: number;
+    inTokens?: number;
+}
+
+export interface EstimatedChatTokens {
+    requestChatTokens: number;
+    responseMessageTokens: number;
+    tokensInTotal: number;
+}
+
 export class CodeElementRange {
     constructor(
         readonly start: CodeElementPosition,
@@ -34,10 +46,4 @@ export class CodeElementPosition {
     }
 
     // TODO: build from vscode Position
-}
-
-export interface LengthMetrics {
-    inSteps?: number;
-    inSymbols?: number;
-    inTokens?: number;
 }
