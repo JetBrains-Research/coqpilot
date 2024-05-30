@@ -26,7 +26,7 @@ import {
 
 import { Theorem } from "../../../../coqParser/parsedTypes";
 import { stringifyAnyValue } from "../../../../utils/printers";
-import { BenchmarkingModelParams } from "../interfaces/benchmarkingModelParams";
+import { BenchmarkingModelParams } from "../structures/benchmarkingModelParams";
 
 /**
  * TODO: design return info

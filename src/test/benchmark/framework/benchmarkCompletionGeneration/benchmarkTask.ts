@@ -1,11 +1,9 @@
-import { LLMService } from "../../../llm/llmServices/llmService";
-import { ModelParams } from "../../../llm/llmServices/modelParams";
+import { CoqProofChecker } from "../../../../core/coqProofChecker";
 
-import { CoqProofChecker } from "../../../core/coqProofChecker";
+import { BenchmarkingItem } from "../structures/benchmarkingItem";
+import { selectLLMServiceBuilder } from "../structures/llmServiceIdentifier";
 
-import { generateSingleCompletion } from "./completionGenerator/generateSingleCompletion";
-import { BenchmarkingModelParams } from "./interfaces/benchmarkingModelParams";
-import { CompletionGenerationTask } from "./interfaces/compeltionGenerationTask";
+import { generateSingleCompletion } from "./generateSingleCompletion";
 
 /**
  * 1. build all projects with script
@@ -20,20 +18,18 @@ import { CompletionGenerationTask } from "./interfaces/compeltionGenerationTask"
  * 4. return result
  */
 
-export async function benchmarkCompletionGenerationTask<
-    ResolvedModelParams extends ModelParams,
-    LLMServiceType extends LLMService<any, ResolvedModelParams>,
->(
-    task: CompletionGenerationTask,
-    benchmarkingModelParams: BenchmarkingModelParams<ResolvedModelParams>,
-    llmServiceBuilder: () => LLMServiceType
+export async function benchmarkCompletionGenerationTask(
+    benchmarkingItem: BenchmarkingItem
 ): Promise<void> {
-    const llmService = llmServiceBuilder();
+    const llmService = selectLLMServiceBuilder(
+        benchmarkingItem.llmServiceIdentifier
+    )();
+    const task = benchmarkingItem.task;
     try {
         await generateSingleCompletion(
             task.getCompletionContext(),
             task.getSourceFileEnvironment(),
-            benchmarkingModelParams,
+            benchmarkingItem.params,
             llmService,
             new CoqProofChecker(task.preparedEnvironment.coqLspClient)
             // TODO: each coq proof checker should use its own prefix to work good in parallel (many checkers for the same theorem in the same file)
