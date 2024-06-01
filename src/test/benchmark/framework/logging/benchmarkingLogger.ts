@@ -76,10 +76,6 @@ export abstract class BenchmarkingLogger {
         this.log(severity, `----------------------------`, color, "", suffix);
     }
 
-    buildLogs(separator = "\n"): AppendLogsBuilder {
-        return new AppendLogsBuilder(this, separator);
-    }
-
     asOneRecord(): AsOneRecordLogsBuilder {
         return new AsOneRecordLogsBuilder(this, this.lineEnd);
     }
@@ -150,66 +146,6 @@ export class AsOneRecordLogsBuilder {
             color,
             lineEnd
         );
-    }
-}
-
-export class AppendLogsBuilder {
-    constructor(
-        private readonly logger: BenchmarkingLogger,
-        private readonly separator: string
-    ) {}
-
-    private buffer: [string, LogColor | undefined][] = [];
-
-    append(message: string, color?: LogColor): AppendLogsBuilder {
-        this.buffer.push([message, color]);
-        return this;
-    }
-
-    private joinLogs(commonColor: LogColor | undefined): string {
-        if (commonColor === undefined) {
-            return this.buffer
-                .map(([message, messageColor]) =>
-                    colorize(message, messageColor)
-                )
-                .join(this.separator);
-        } else {
-            return this.buffer
-                .map(([message, _]) => colorize(message, commonColor))
-                .join(this.separator);
-        }
-    }
-
-    private checkAtLeastOneColorIsOverriden(commonColor?: LogColor): boolean {
-        return (
-            commonColor !== undefined ||
-            this.buffer.filter(
-                ([_, messageColor]) => messageColor !== undefined
-            ).length > 0
-        );
-    }
-
-    private logImpl(
-        callLogger: (message: string, color?: LogColor | undefined) => void,
-        commonColor?: LogColor
-    ) {
-        if (this.checkAtLeastOneColorIsOverriden(commonColor)) {
-            callLogger(this.joinLogs(commonColor), undefined);
-        } else {
-            callLogger(this.joinLogs(commonColor));
-        }
-    }
-
-    error(color?: LogColor) {
-        this.logImpl(this.logger.error.bind(this.logger), color);
-    }
-
-    info(color?: LogColor) {
-        this.logImpl(this.logger.info.bind(this.logger), color);
-    }
-
-    debug(color?: LogColor) {
-        this.logImpl(this.logger.debug.bind(this.logger), color);
     }
 }
 
