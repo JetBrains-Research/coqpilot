@@ -11,15 +11,26 @@ export interface BenchmarkedItem {
 }
 
 export interface BenchmarkedCompletionGeneration {
-    allGeneratedCompletions: Completion[];
-    elapsedTimeMillis: number;
+    allGeneratedProofs: MeasuredProof[];
+    elapsedTime: CompletionGenerationTime;
     contextTheorems: TheoremData[] | undefined;
     chatTokens: EstimatedChatTokens | undefined;
 }
 
+export interface MeasuredProof {
+    asString: string;
+    length: LengthMetrics;
+}
+
+export interface CompletionGenerationTime {
+    proofsGenerationMillis: number;
+    proofsValidationMillis: number | undefined;
+    totalMillis: number;
+}
+
 export interface SuccessfulCompletionGeneration
     extends BenchmarkedCompletionGeneration {
-    validCompletions: Completion[];
+    validProofs: MeasuredProof[];
 }
 
 export interface FailedCompletionGeneration
@@ -27,11 +38,6 @@ export interface FailedCompletionGeneration
     failureType: CompletionGenerationFailureType;
     causeMessage: string;
     // configuration or unexpected => (not a result, report)
-}
-
-export interface Completion {
-    asString: string;
-    length: LengthMetrics;
 }
 
 export enum CompletionGenerationFailureType {
