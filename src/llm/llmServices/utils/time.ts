@@ -82,6 +82,10 @@ export function timeToString(time: Time): string {
         .join(", ");
 }
 
+export function millisToString(millis: number): string {
+    return timeToString(millisToTime(millis));
+}
+
 function timeInUnitsToMillis(value: number, unit: TimeUnit = "second"): number {
     switch (unit) {
         case "millisecond":

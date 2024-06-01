@@ -7,10 +7,9 @@ import { LengthMetrics } from "../structures/utilStructures";
 export async function measureElapsedMillis<T>(
     block: () => Promise<T>
 ): Promise<[T, number]> {
-    const startTime = performance.now();
+    const timeMark = new TimeMark();
     const result = await block();
-    const endTime = performance.now();
-    return [result, Math.round(endTime - startTime)];
+    return [result, timeMark.measureElapsedMillis()];
 }
 
 export function measureLength(proof: string): LengthMetrics {
@@ -40,4 +39,16 @@ export class MeasuredProofImpl implements MeasuredProof {
     constructor(readonly asString: string) {}
 
     readonly length = measureLength(this.asString);
+}
+
+export class TimeMark {
+    private startTime: number;
+
+    constructor() {
+        this.startTime = performance.now();
+    }
+
+    measureElapsedMillis(): number {
+        return Math.round(performance.now() - this.startTime);
+    }
 }

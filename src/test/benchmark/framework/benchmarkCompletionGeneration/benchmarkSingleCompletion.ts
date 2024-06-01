@@ -10,7 +10,11 @@ import {
     LLMService,
 } from "../../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
-import { timeToMillis } from "../../../../llm/llmServices/utils/time";
+import {
+    millisToString,
+    timeToMillis,
+    timeToString,
+} from "../../../../llm/llmServices/utils/time";
 import { ProofGenerationContext } from "../../../../llm/proofGenerationContext";
 
 import {
@@ -30,6 +34,7 @@ import {
 import { Theorem } from "../../../../coqParser/parsedTypes";
 import { stringifyAnyValue } from "../../../../utils/printers";
 import { delay } from "../../../commonTestFunctions/delay";
+import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
 import {
     BenchmarkedCompletionGeneration,
     CompletionGenerationFailureType,
@@ -41,6 +46,7 @@ import { BenchmarkingModelParams } from "../structures/benchmarkingModelParams";
 import {
     CompletionGenerationTimeImpl,
     MeasuredProofImpl,
+    TimeMark,
     measureElapsedMillis,
 } from "./measureUtils";
 
@@ -66,15 +72,22 @@ export async function benchmarkSingleCompletionGeneration<
     sourceFileEnvironment: SourceFileEnvironment,
     benchmarkingModelParams: BenchmarkingModelParams<ResolvedModelParams>,
     llmService: LLMServiceType,
-    coqProofChecker: CoqProofChecker
+    coqProofChecker: CoqProofChecker,
+    logger: BenchmarkingLogger
 ): Promise<BenchmarkedCompletionGeneration> {
     const [generatedProofs, proofsGenerationMillis] =
         await generateProofWithRetriesMeasured(
             completionContext,
             sourceFileEnvironment,
             benchmarkingModelParams,
-            llmService
+            llmService,
+            logger
         );
+    logger
+        .buildLogs()
+        .append(`successfully generated ${generatedProofs.length} proofs`)
+        .append(`elapsed time: ${proofsGenerationMillis} ms`, "gray")
+        .info();
     const preparedProofs = generatedProofs.map(
         (generatedProof: GeneratedProof) =>
             prepareProofToCheck(generatedProof.proof())
@@ -92,24 +105,37 @@ export async function benchmarkSingleCompletionGeneration<
         chatTokens: undefined, // TODO
     };
 
-    const [proofCheckResultsOrFailure, proofsValidationMillis] =
-        await measureElapsedMillis(async () => {
-            return await checkGeneratedProofs(
-                preparedProofs,
-                completionContext,
-                sourceFileEnvironment,
-                coqProofChecker,
-                resultMetrics
-            );
-        });
-    const proofCheckResults = proofCheckResultsOrFailure as ProofCheckResult[];
-    if (proofCheckResults === null) {
-        return proofCheckResultsOrFailure as FailedCompletionGeneration;
+    const measuredProofCheckResultsOrFailure =
+        await checkGeneratedProofsMeasured(
+            preparedProofs,
+            completionContext,
+            sourceFileEnvironment,
+            coqProofChecker,
+            resultMetrics,
+            logger
+        );
+    const proofsValidationFailure =
+        measuredProofCheckResultsOrFailure as FailedCompletionGeneration;
+    if (proofsValidationFailure !== null) {
+        logger.info(
+            `failed to validate proofs: ${proofsValidationFailure.causeMessage}`
+        );
+        return proofsValidationFailure;
     }
+
+    const [proofCheckResults, proofsValidationMillis] =
+        measuredProofCheckResultsOrFailure as [ProofCheckResult[], number];
     const validProofs = proofCheckResults
         .filter((checkResult) => checkResult.isValid)
         .map((checkResult) => new MeasuredProofImpl(checkResult.proof));
     measuredTime.addProofsValidationMillis(proofsValidationMillis);
+    logger
+        .buildLogs()
+        .append(
+            `successfully verified proofs: ${validProofs.length} / ${preparedProofs.length} are valid`
+        )
+        .append(`elapsed time: ${proofsValidationMillis} ms`, "gray")
+        .info();
 
     if (validProofs.length > 0) {
         const successfulGeneration: SuccessfulCompletionGeneration = {
@@ -137,24 +163,37 @@ async function generateProofWithRetriesMeasured<
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     benchmarkingModelParams: BenchmarkingModelParams<ResolvedModelParams>,
-    llmService: LLMService<any, any>
+    llmService: LLMService<any, any>,
+    logger: BenchmarkingLogger
 ): Promise<[GeneratedProof[], number]> {
+    let delayMillis = 0;
+    let prevFailureIsConnectionError = false;
+    let attemptIndex = 0;
+    let totalTime = new TimeMark();
     while (true) {
-        let delayMillis = 0;
-        let prevFailureIsConnectionError = false;
         try {
-            return await measureElapsedMillis(async () => {
-                return await llmService.generateProof(
-                    buildProofGenerationContext(
-                        completionContext,
-                        sourceFileEnvironment.fileTheorems,
-                        benchmarkingModelParams.theoremRanker
-                    ),
-                    benchmarkingModelParams.modelParams,
-                    benchmarkingModelParams.modelParams.defaultChoices,
-                    ErrorsHandlingMode.RETHROW_ERRORS
-                );
-            });
+            const attemptTime = new TimeMark();
+            const generatedProofs = await llmService.generateProof(
+                buildProofGenerationContext(
+                    completionContext,
+                    sourceFileEnvironment.fileTheorems,
+                    benchmarkingModelParams.theoremRanker
+                ),
+                benchmarkingModelParams.modelParams,
+                benchmarkingModelParams.modelParams.defaultChoices,
+                ErrorsHandlingMode.RETHROW_ERRORS
+            );
+            const measuredTime = attemptTime.measureElapsedMillis();
+            logger
+                .buildLogs()
+                .append(
+                    `attempt #${attemptIndex}, successfully generated proofs`
+                )
+                .append(
+                    `total elapsed time (all ${attemptIndex + 1} attempts): ${millisToString(totalTime.measureElapsedMillis())}`
+                )
+                .debug();
+            return [generatedProofs, measuredTime];
         } catch (e) {
             const llmServiceError = e as LLMServiceError;
             if (llmServiceError === null) {
@@ -163,12 +202,24 @@ async function generateProofWithRetriesMeasured<
                 );
             }
             if (llmServiceError instanceof ConfigurationError) {
+                logger.debug(
+                    `attempt #${attemptIndex}, configuration error: ${stringifyAnyValue(llmServiceError.message)}`
+                );
                 throw llmServiceError;
             }
             if (llmServiceError instanceof GenerationFailedError) {
-                delayMillis = timeToMillis(
-                    llmService.estimateTimeToBecomeAvailable()
-                );
+                const estimatedTime =
+                    llmService.estimateTimeToBecomeAvailable();
+                delayMillis = timeToMillis(estimatedTime);
+                logger
+                    .buildLogs()
+                    .append(
+                        `attempt #${attemptIndex}, generation failed error: ${stringifyAnyValue(llmServiceError.message)}`
+                    )
+                    .append(
+                        `estimated time to become available: ${timeToString(estimatedTime)}`
+                    )
+                    .debug();
             } else if (llmServiceError instanceof RemoteConnectionError) {
                 if (prevFailureIsConnectionError) {
                     delayMillis *=
@@ -178,6 +229,13 @@ async function generateProofWithRetriesMeasured<
                         RemoteConnectionErrorDelays.initialDelayMillis;
                     prevFailureIsConnectionError = true;
                 }
+                logger
+                    .buildLogs()
+                    .append(
+                        `attempt #${attemptIndex}, remote connection error: ${stringifyAnyValue(llmServiceError.message)}`
+                    )
+                    .append(`delay to wait for: ${millisToString(delayMillis)}`)
+                    .debug();
             } else {
                 throw Error(
                     `unknown \`LLMServiceError\` type: ${stringifyAnyValue(llmServiceError.name)}, ${stringifyAnyValue(llmServiceError)}`
@@ -185,28 +243,32 @@ async function generateProofWithRetriesMeasured<
             }
             // wait and try again
             await delay(delayMillis);
+            attemptIndex += 1;
         }
     }
 }
 
-async function checkGeneratedProofs(
+async function checkGeneratedProofsMeasured(
     preparedProofs: string[],
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     coqProofChecker: CoqProofChecker,
-    resultMetrics: BenchmarkedCompletionGeneration
-): Promise<ProofCheckResult[] | FailedCompletionGeneration> {
+    resultMetrics: BenchmarkedCompletionGeneration,
+    logger: BenchmarkingLogger
+): Promise<[ProofCheckResult[], number] | FailedCompletionGeneration> {
     const sourceFileContentPrefix = getTextBeforePosition(
         sourceFileEnvironment.fileLines,
         completionContext.prefixEndPosition
     );
     try {
-        return await coqProofChecker.checkProofs(
-            sourceFileEnvironment.dirPath,
-            sourceFileContentPrefix,
-            completionContext.prefixEndPosition,
-            preparedProofs
-        );
+        return await measureElapsedMillis(async () => {
+            return await coqProofChecker.checkProofs(
+                sourceFileEnvironment.dirPath,
+                sourceFileContentPrefix,
+                completionContext.prefixEndPosition,
+                preparedProofs
+            );
+        });
     } catch (e) {
         const error = e as Error;
         if (error === null) {
@@ -215,12 +277,18 @@ async function checkGeneratedProofs(
             );
         }
         if (error instanceof CoqLspTimeoutError) {
+            logger.debug(
+                `coq-lsp timeout error: ${stringifyAnyValue(error.message)}`
+            );
             return buildFailedCompletionGeneration(
                 resultMetrics,
                 CompletionGenerationFailureType.TIMEOUT,
                 error.message
             );
         } else {
+            logger.debug(
+                `\`CoqProofChecker\` error: ${stringifyAnyValue(error.message)}`
+            );
             return buildFailedCompletionGeneration(
                 resultMetrics,
                 CompletionGenerationFailureType.COQ_PROOF_CHECKER_ERROR,
