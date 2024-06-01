@@ -84,10 +84,9 @@ export async function benchmarkSingleCompletionGeneration<
             logger
         );
     logger
-        .buildLogs()
-        .append(`successfully generated ${generatedProofs.length} proofs`)
-        .append(`elapsed time: ${proofsGenerationMillis} ms`, "gray")
-        .info();
+        .asOneRecord()
+        .info(`successfully generated ${generatedProofs.length} proofs`)
+        .debug(`elapsed time: ${proofsGenerationMillis} ms`, "gray");
     const preparedProofs = generatedProofs.map(
         (generatedProof: GeneratedProof) =>
             prepareProofToCheck(generatedProof.proof())
@@ -130,12 +129,11 @@ export async function benchmarkSingleCompletionGeneration<
         .map((checkResult) => new MeasuredProofImpl(checkResult.proof));
     measuredTime.addProofsValidationMillis(proofsValidationMillis);
     logger
-        .buildLogs()
-        .append(
+        .asOneRecord()
+        .info(
             `successfully verified proofs: ${validProofs.length} / ${preparedProofs.length} are valid`
         )
-        .append(`elapsed time: ${proofsValidationMillis} ms`, "gray")
-        .info();
+        .debug(`elapsed time: ${proofsValidationMillis} ms`, "gray");
 
     if (validProofs.length > 0) {
         const successfulGeneration: SuccessfulCompletionGeneration = {
@@ -185,14 +183,13 @@ async function generateProofWithRetriesMeasured<
             );
             const measuredTime = attemptTime.measureElapsedMillis();
             logger
-                .buildLogs()
-                .append(
+                .asOneRecord()
+                .debug(
                     `attempt #${attemptIndex}, successfully generated proofs`
                 )
-                .append(
+                .debug(
                     `total elapsed time (all ${attemptIndex + 1} attempts): ${millisToString(totalTime.measureElapsedMillis())}`
-                )
-                .debug();
+                );
             return [generatedProofs, measuredTime];
         } catch (e) {
             const llmServiceError = e as LLMServiceError;
@@ -212,14 +209,13 @@ async function generateProofWithRetriesMeasured<
                     llmService.estimateTimeToBecomeAvailable();
                 delayMillis = timeToMillis(estimatedTime);
                 logger
-                    .buildLogs()
-                    .append(
+                    .asOneRecord()
+                    .debug(
                         `attempt #${attemptIndex}, generation failed error: ${stringifyAnyValue(llmServiceError.message)}`
                     )
-                    .append(
+                    .debug(
                         `estimated time to become available: ${timeToString(estimatedTime)}`
-                    )
-                    .debug();
+                    );
             } else if (llmServiceError instanceof RemoteConnectionError) {
                 if (prevFailureIsConnectionError) {
                     delayMillis *=
@@ -230,12 +226,11 @@ async function generateProofWithRetriesMeasured<
                     prevFailureIsConnectionError = true;
                 }
                 logger
-                    .buildLogs()
-                    .append(
+                    .asOneRecord()
+                    .debug(
                         `attempt #${attemptIndex}, remote connection error: ${stringifyAnyValue(llmServiceError.message)}`
                     )
-                    .append(`delay to wait for: ${millisToString(delayMillis)}`)
-                    .debug();
+                    .debug(`delay to wait for: ${millisToString(delayMillis)}`);
             } else {
                 throw Error(
                     `unknown \`LLMServiceError\` type: ${stringifyAnyValue(llmServiceError.name)}, ${stringifyAnyValue(llmServiceError)}`
