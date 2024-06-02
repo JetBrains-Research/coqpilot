@@ -1,57 +1,53 @@
-import { LLMServiceIdentifier } from "./framework/structures/llmServiceIdentifier";
+import { expect } from "earl";
+
+import { BenchmarkingBundle } from "./framework/experiment/benchmarkingBundle";
+import { Experiment } from "./framework/experiment/experiment";
+import { TargetsBuilder } from "./framework/experiment/targetsBuilder";
+import { SeverityLevel } from "./framework/logging/benchmarkingLogger";
 
 const experiment = new Experiment();
 
-ExclusionBundle
-    .withLLMServices(LLMServiceIdentifier.OPENAI)
-    .withMatchingModelParams(
-        (modelParams) => modelParams.multiroundProfile.maxRoundsNumber > 1
-    )
-    // .withTargetsFromFile("file.txt", "mixed_theorem")
-    // .withAllTargetsFromFile("file.txt")
-    .excludeFrom(experiment);
-
-
-BenchmarkingBundle.withLLMService(LLMServiceIdentifier.GRAZIE)
-    // .withModelsParamsCommons({ranker: ..., apiKey: ..., tokensLimit: ...})
-    .withModelsParams(
+new BenchmarkingBundle()
+    .withLLMService("grazie")
+    .withBenchmarkingModelsParamsCommons({
+        ranker: "random",
+        tokensLimit: 2000,
+        multiroundProfile: {
+            maxRoundsNumber: 1,
+        },
+    })
+    .withBenchmarkingModelsParams(
         {
-            modelId: "grazie",
+            modelId: "grazie 1",
             modelName: "openai-gpt-4",
-            apiKey: "hehe",
-            choices: 15,
-            newMessageMaxTokens: 1000,
-            tokensLimit: 2000,
-            multiroundProfile: {
-                maxRoundsNumber: 1,
-            },
+            apiKey: "apikey",
         },
         {
-            modelId: "grazie",
+            modelId: "grazie 2",
             modelName: "openai-gpt-4",
-            apiKey: "hehe",
+            apiKey: "apikey",
             choices: 15,
-            newMessageMaxTokens: 1000,
             tokensLimit: 2000,
-            multiroundProfile: {
-                maxRoundsNumber: 1,
-            },
+            ranker: "random",
         }
     )
-    // withTargetsFromFile("file.txt", "mixed_theorem")
-    // withTargetsFromFile("file.txt")
-    // withTargetsFromDirectory("data")
     .withTargets(
-        {
-            name: "Complete mixed examples (both simple & hard) with `auto`",
-            items: [new DatasetItem("mixed_benchmark.v")],
-        },
-        {
-            name: "Complete mixed examples (both simple & hard) with `auto`",
-            items: [new DatasetItem("mixed_benchmark.v")],
-        }
+        new TargetsBuilder()
+            .withoutWorkspaceRoot()
+            .withAdmitTargetsFromFile("file.v", "theorem1")
+            .withAdmitTargetsFromFile("file.v", "theorem2", "theorem3")
+            .buildInputTargets(),
+        new TargetsBuilder()
+            .withWorkspaceRoot("imm", "nix")
+            .withProveTheoremTargetsFromDirectory("imm")
+            .buildInputTargets()
     )
-    .appendTo(experiment);
+    .addTo(experiment);
 
-const result = experiment.run(); // + params in run
-console.log(result);
+test("Run benchmarking experiment", async () => {
+    const experimentResults = await experiment.run(
+        "benchmarksOutput",
+        SeverityLevel.DEBUG
+    );
+    expect(experimentResults.getBenchmarkedItems()).not.toBeEmpty();
+});

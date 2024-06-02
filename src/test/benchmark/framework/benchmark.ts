@@ -32,15 +32,17 @@ namespace ArtifactsDirNames {
  */
 export async function benchmark(
     benchmarkingItems: BenchmarkingItem[],
-    artifactsDirPath: string,
+    resolvedArtifactsDirPath: string,
     loggerSeverity: SeverityLevel
 ): Promise<ExperimentResults> {
-    if (!checkDirectoryIsEmpty(artifactsDirPath)) {
-        throw Error(`\`artifactsDir\` should be empty: ${artifactsDirPath}`);
+    if (!checkDirectoryIsEmpty(resolvedArtifactsDirPath)) {
+        throw Error(
+            `artifacts directory should be empty: "${resolvedArtifactsDirPath}"`
+        );
     }
     const itemsReportsDirPath = createDirectory(
         true,
-        artifactsDirPath,
+        resolvedArtifactsDirPath,
         ArtifactsDirNames.itemsReportsDir
     );
     const parentLogger: BenchmarkingLogger = new BenchmarkingLoggerImpl(
@@ -80,7 +82,7 @@ export async function benchmark(
     const experimentResult = new ExperimentResults(benchmarkedItems);
 
     const experimentReportPath = joinPaths(
-        artifactsDirPath,
+        resolvedArtifactsDirPath,
         ArtifactsDirNames.experimentReportFileName
     );
     writeToFile(experimentResult.asJson(), experimentReportPath, (e) =>
