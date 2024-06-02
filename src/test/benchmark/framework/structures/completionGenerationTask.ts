@@ -72,6 +72,9 @@ export interface ParsedCoqFileData {
 }
 
 export interface WorkspaceRoot {
+    /**
+     * This path is expected to be an absolute resolved path inside the `dataset` directory.
+     */
     directoryPath: string;
     requiresNixEnvironment: boolean;
 }

@@ -1,6 +1,15 @@
 import * as fs from "fs";
 import * as path from "path";
 
+export function getRootDir(): string {
+    const relativeRoot = path.join(__dirname, "/../../../../");
+    return path.resolve(relativeRoot);
+}
+
+export function getDatasetDir(): string {
+    return path.join(getRootDir(), "dataset");
+}
+
 export const defaultEncoding = "utf-8";
 
 export function writeToFile<T>(
@@ -20,8 +29,12 @@ export function joinPaths(parentDirPath: string, ...paths: string[]): string {
     return path.join(parentDirPath, ...paths);
 }
 
-export function getLastName(filePath: string): string {
-    return path.parse(filePath).name;
+export function resolveAsAbsolutePath(inputPath: string): string {
+    return path.resolve(inputPath);
+}
+
+export function getLastName(inputPath: string): string {
+    return path.parse(inputPath).name;
 }
 
 export function checkDirectoryIsEmpty(dirPath: string): boolean {
@@ -39,4 +52,44 @@ export function createDirectory(
     }
     fs.mkdirSync(dirPath, { recursive: true });
     return dirPath;
+}
+
+export function getPathStats(inputPath: string): fs.Stats {
+    return fs.lstatSync(inputPath);
+}
+
+export function isDirectory(inputPath: string): boolean {
+    return getPathStats(inputPath).isDirectory();
+}
+
+export function isFile(inputPath: string): boolean {
+    return getPathStats(inputPath).isFile();
+}
+
+export function isCoqSourceFile(inputPath: string): boolean {
+    return (
+        isFile(inputPath) &&
+        path.extname(inputPath) === ".v" &&
+        !inputPath.endsWith("_cp_aux.v")
+    );
+}
+
+/**
+ * @param dirPath resolved absolute directory path.
+ * @returns resolved absolute paths for the files inside `dirPath`.
+ */
+export function listCoqSourceFiles(dirPath: string): string[] {
+    let sourceFilePaths: string[] = [];
+    function traverseDirectory(curDirPath: string) {
+        fs.readdirSync(curDirPath).forEach((child) => {
+            const childPath = path.join(curDirPath, child);
+            if (isDirectory(childPath)) {
+                traverseDirectory(childPath);
+            } else if (isCoqSourceFile(childPath)) {
+                sourceFilePaths.push(childPath);
+            }
+        });
+    }
+    traverseDirectory(dirPath);
+    return sourceFilePaths;
 }
