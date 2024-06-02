@@ -9,7 +9,7 @@ import {
 } from "../utils/fsUtils";
 import { getOrPut } from "../utils/mapUtils";
 
-import { InputTargets } from "./benchmarkingBundle";
+export type InputTargets = WorkspaceToFileTargets;
 
 export type WorkspaceToFileTargets = Map<
     WorkspaceRoot | undefined,
@@ -34,14 +34,25 @@ export interface TheoremTarget {
     proveTheoremTarget: boolean;
 }
 
+export type EnvironmentStringType = "nix" | "no-special-environment";
+
 export class TargetsBuilder {
     /**
      * @param directoryPath path relative to the `dataset` directory.
      */
     withWorkspaceRoot(
         directoryPath: string,
-        requiresNixEnvironment: boolean
+        environment: EnvironmentStringType
     ): TargetsBuilderWithWorkspaceRoot {
+        let requiresNixEnvironment: boolean;
+        switch (environment) {
+            case "nix":
+                requiresNixEnvironment = true;
+                break;
+            case "no-special-environment":
+                requiresNixEnvironment = false;
+                break;
+        }
         return new TargetsBuilderWithWorkspaceRoot({
             directoryPath: resolveDatasetPath(directoryPath),
             requiresNixEnvironment: requiresNixEnvironment,
@@ -232,6 +243,67 @@ export class TargetsBuilderWithWorkspaceRoot {
             }
         }
     }
+}
+
+export function mergeInputTargets(
+    multipleInputTargets: InputTargets[]
+): InputTargets {
+    return multipleInputTargets.reduce((acc, inputTargets) =>
+        mergeTwoInputTargets(acc, inputTargets)
+    );
+}
+
+/**
+ * Merges `otherInputTargets` into `baseInputTargets`.
+ */
+function mergeTwoInputTargets(
+    baseInputTargets: InputTargets,
+    otherInputTargets: InputTargets
+): InputTargets {
+    for (const [
+        workspaceRoot,
+        otherFilePathToFileTargets,
+    ] of otherInputTargets) {
+        const baseFilePathToFileTargets = baseInputTargets.get(workspaceRoot);
+        if (baseFilePathToFileTargets === undefined) {
+            baseInputTargets.set(workspaceRoot, otherFilePathToFileTargets);
+            continue;
+        }
+        for (const [filePath, otherFileTarget] of otherFilePathToFileTargets) {
+            const baseFileTarget = baseFilePathToFileTargets.get(filePath);
+            if (baseFileTarget === undefined) {
+                baseFilePathToFileTargets.set(filePath, otherFileTarget);
+                continue;
+            }
+            if (otherFileTarget.allTheoremsAsAdmitTargets) {
+                baseFileTarget.allTheoremsAsAdmitTargets = true;
+            }
+            if (otherFileTarget.allTheoremsAsProveTheoremTargets) {
+                baseFileTarget.allTheoremsAsProveTheoremTargets = true;
+            }
+            for (const [
+                theoremName,
+                otherTheoremTarget,
+            ] of otherFileTarget.specificTheoremTargets) {
+                const baseTheoremTarget =
+                    baseFileTarget.specificTheoremTargets.get(theoremName);
+                if (baseTheoremTarget === undefined) {
+                    baseFileTarget.specificTheoremTargets.set(
+                        theoremName,
+                        otherTheoremTarget
+                    );
+                    continue;
+                }
+                if (otherTheoremTarget.admitTargets) {
+                    baseTheoremTarget.admitTargets = true;
+                }
+                if (otherTheoremTarget.proveTheoremTarget) {
+                    baseTheoremTarget.proveTheoremTarget = true;
+                }
+            }
+        }
+    }
+    return baseInputTargets;
 }
 
 function resolveDatasetPath(inputPath: string): string {
