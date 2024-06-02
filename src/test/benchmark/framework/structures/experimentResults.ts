@@ -1,3 +1,5 @@
+import { benchmarkedItemsToJson } from "../reportBuilders/toJson";
+
 import { BenchmarkedItem } from "./benchmarkedItem";
 
 export class ExperimentResults {
@@ -7,7 +9,11 @@ export class ExperimentResults {
         return this.benchmarkedItems;
     }
 
+    asJson(): string {
+        return benchmarkedItemsToJson(this.benchmarkedItems);
+    }
+
     // TODO: add convenient getters
 
-    // TODO: add JSON serialization-deserialization
+    // TODO: add proper JSON serialization-deserialization
 }

@@ -1,15 +1,144 @@
-import { benchmarkCompletionGenerationTask } from "./benchmarkCompletionGeneration/benchmarkTask";
-import { BenchmarkingItem } from "./structures/benchmarkingItem";
+import { stringifyAnyValue } from "../../../utils/printers";
 
-// TODO: get Experiment as input?
-export async function benchmark(benchmarkingItems: BenchmarkingItem[]) {
-    // TODO: mutex for all tasks with same model (by condition) => model groups
-    // groups = by same service & same model
-    const itemPromises = benchmarkingItems.map((benchmarkingItem) => {
-        return benchmarkCompletionGenerationTask(benchmarkingItem);
-    });
-    // TODO: handle errors? or tasks handle them by themselves surely?
-    await Promise.allSettled(itemPromises);
-    // TODO: just gather a list of returned BenchmarkedItem-s, create ExperimentResult
-    // TODO: save as JSON
+import { executeBenchmarkingTask } from "./benchmarkCompletionGeneration/executeBenchmarkingTask";
+import {
+    BenchmarkingLogger,
+    BenchmarkingLoggerImpl,
+    SeverityLevel,
+} from "./logging/benchmarkingLogger";
+import { BenchmarkedItem } from "./structures/benchmarkedItem";
+import { BenchmarkingItem } from "./structures/benchmarkingItem";
+import { ExperimentResults } from "./structures/experimentResults";
+import {
+    checkDirectoryIsEmpty,
+    createDirectory,
+    getLastName,
+    joinPaths,
+    writeToFile,
+} from "./utils/fsUtils";
+import { getShortName } from "./utils/llmServicesUtils";
+
+namespace ArtifactsDirNames {
+    export const itemsReportsDir = "items";
+    export const experimentReportFileName = "experiment-report.json";
+}
+
+/**
+ * TODO: add mutexes
+ * - 1 for process directory
+ * - 1 per each group (by condition, same service & same model name)
+ *
+ * TODO: support changing working dir in tasks before proof check
+ */
+export async function benchmark(
+    benchmarkingItems: BenchmarkingItem[],
+    artifactsDirPath: string,
+    loggerSeverity: SeverityLevel
+): Promise<ExperimentResults> {
+    if (!checkDirectoryIsEmpty(artifactsDirPath)) {
+        throw Error(`\`artifactsDir\` should be empty: ${artifactsDirPath}`);
+    }
+    const itemsReportsDirPath = createDirectory(
+        true,
+        artifactsDirPath,
+        ArtifactsDirNames.itemsReportsDir
+    );
+    const parentLogger: BenchmarkingLogger = new BenchmarkingLoggerImpl(
+        loggerSeverity
+    );
+
+    const itemsPromises: Promise<BenchmarkedItem | undefined>[] = [];
+    for (let i = 0; i < benchmarkingItems.length; i++) {
+        const item = benchmarkingItems[i];
+        const itemReportPath = joinPaths(
+            itemsReportsDirPath,
+            buildUniqueItemReportFileName(i, benchmarkingItems.length - 1, item)
+        );
+        const itemLogger = buildItemLogger(item, parentLogger);
+        itemsPromises.push(
+            executeBenchmarkingTask(item, itemReportPath, itemLogger)
+        );
+    }
+
+    const benchmarkingResults = await Promise.allSettled(itemsPromises);
+    const benchmarkedItems = benchmarkingResults
+        .filter(
+            (result) =>
+                result.status === "fulfilled" && result.value !== undefined
+        )
+        .map(
+            (result) =>
+                (result as PromiseFulfilledResult<BenchmarkedItem>).value
+        );
+    parentLogger
+        .asOneRecord()
+        .info("Finish experiment benchmarking: ", "magenta")
+        .info(
+            `${benchmarkedItems.length} completed / ${benchmarkingItems.length} total items`
+        );
+
+    const experimentResult = new ExperimentResults(benchmarkedItems);
+
+    const experimentReportPath = joinPaths(
+        artifactsDirPath,
+        ArtifactsDirNames.experimentReportFileName
+    );
+    writeToFile(experimentResult.asJson(), experimentReportPath, (e) =>
+        parentLogger
+            .asOneRecord()
+            .error(
+                `Failed to save experiment results into ${experimentReportPath}`
+            )
+            .debug(`Cause: ${stringifyAnyValue(e)}`)
+    );
+
+    return experimentResult;
+}
+
+function buildUniqueItemReportFileName(
+    itemIndex: number,
+    maxIndex: number,
+    item: BenchmarkingItem
+): string {
+    const augmentedIndex = prependWithZeros(itemIndex, maxIndex);
+    const modelId = item.params.modelParams.modelId;
+    const fileIdentifierPath =
+        item.task.workspaceRoot !== undefined
+            ? item.task.workspaceRoot.directoryPath
+            : item.task.sourceFilePath;
+    return translateToSafeFileName(
+        [
+            `${augmentedIndex}-${getShortName(item.llmServiceIdentifier)}-${modelId}`,
+            `-${getLastName(fileIdentifierPath)}-${item.task.sourceTheorem.name}`,
+            ".json",
+        ].join("")
+    );
+}
+
+function prependWithZeros(n: number, maxN: number): string {
+    const maxDigitsNumber = maxN.toString().length;
+    const zerosToPrependNumber = maxDigitsNumber - n.toString().length;
+    return `${"0".repeat(zerosToPrependNumber)}${n}`;
+}
+
+function translateToSafeFileName(text: string): string {
+    return text.replace(/[_ &\/\\#,+()$~%.'":*?<>{}]/g, "-").toLowerCase();
+}
+
+function buildItemLogger(
+    item: BenchmarkingItem,
+    parentLogger: BenchmarkingLogger
+): BenchmarkingLogger {
+    const task = item.task;
+    const params = item.params;
+    return parentLogger.createChildLoggerWithIdentifier(
+        [
+            "[",
+            `modelId: ${params.modelParams.modelId}`,
+            `theorem: ${task.sourceTheorem.name}`,
+            `completion position: ${task.targetPositionRange.start}`,
+            "]\n",
+            `[file: ${task.sourceFilePath}]`,
+        ].join("")
+    );
 }

@@ -6,3 +6,13 @@ export function benchmarkedItemToJson(
 ): string {
     return JSON.stringify(benchmarkedItem, null, 2);
 }
+
+export function benchmarkedItemsToJson(
+    benchmarkedItems: BenchmarkedItem[]
+): string {
+    return JSON.stringify(
+        benchmarkedItems.map((item) => benchmarkedItemToJson(item)),
+        null,
+        2
+    );
+}

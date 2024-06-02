@@ -4,9 +4,8 @@ import { millisToString } from "../../../../llm/llmServices/utils/time";
 import { CoqProofChecker } from "../../../../core/coqProofChecker";
 
 import { stringifyAnyValue } from "../../../../utils/printers";
-import { writeToFile } from "../fsUtils";
 import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
-import { heavyCheckMark } from "../logging/specialSymbols";
+import { heavyCheckMark, heavyCrossMark } from "../logging/specialSymbols";
 import { benchmarkedItemToJson } from "../reportBuilders/toJson";
 import {
     BenchmarkedCompletionGeneration,
@@ -16,29 +15,19 @@ import {
     SuccessfulCompletionGeneration,
 } from "../structures/benchmarkedItem";
 import { BenchmarkingItem } from "../structures/benchmarkingItem";
-import { selectLLMServiceBuilder } from "../structures/llmServiceIdentifier";
+import { writeToFile } from "../utils/fsUtils";
+import { selectLLMServiceBuilder } from "../utils/llmServicesUtils";
 
 import { benchmarkSingleCompletionGeneration } from "./benchmarkSingleCompletionGeneration";
 import { TimeMark } from "./measureUtils";
 
 export async function executeBenchmarkingTask(
     benchmarkingItem: BenchmarkingItem,
-    parentLogger: BenchmarkingLogger,
-    saveToFilePath: string
+    saveToFilePath: string,
+    itemLogger: BenchmarkingLogger
 ): Promise<BenchmarkedItem | undefined> {
     const task = benchmarkingItem.task;
     const params = benchmarkingItem.params;
-
-    const itemLogger = parentLogger.createChildLoggerWithIdentifier(
-        [
-            "[",
-            `modelId: ${params.modelParams.modelId}`,
-            `theorem: ${task.sourceTheorem.name}`,
-            `completion position: ${task.targetPositionRange.start}`,
-            "]\n",
-            `[file: ${task.sourceFilePath}]`,
-        ].join("")
-    );
     const llmService = selectLLMServiceBuilder(
         benchmarkingItem.llmServiceIdentifier
     )();
@@ -137,7 +126,7 @@ function logResult(
         }
         const asOneRecordLogs = itemLogger
             .asOneRecord()
-            .info(failureMessage, "red");
+            .info(`${failureMessage} ${heavyCrossMark}`, "red");
         if (logCause) {
             asOneRecordLogs.debug(`Cause: ${failure.causeMessage}`);
         }
