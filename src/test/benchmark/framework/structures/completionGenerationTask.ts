@@ -14,6 +14,7 @@ export class CompletionGenerationTask {
     constructor(
         readonly targetGoalToProve: Goal<PpString>,
         readonly targetPositionRange: CodeElementRange,
+        readonly targetType: TargetType,
         readonly preparedEnvironment: PreparedBenchmarkingTaskEnvironment,
         readonly sourceTheorem: TheoremData,
         readonly workspaceRoot: WorkspaceRoot | undefined
@@ -52,6 +53,11 @@ export class CompletionGenerationTask {
             dirPath: path.dirname(parsedFileData.filePath),
         };
     }
+}
+
+export enum TargetType {
+    ADMIT,
+    PROVE_THEOREM,
 }
 
 export interface PreparedBenchmarkingTaskEnvironment {

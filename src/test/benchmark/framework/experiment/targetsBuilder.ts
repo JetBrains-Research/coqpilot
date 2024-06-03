@@ -1,4 +1,7 @@
-import { WorkspaceRoot } from "../structures/completionGenerationTask";
+import {
+    TargetType,
+    WorkspaceRoot,
+} from "../structures/completionGenerationTask";
 import {
     getDatasetDir,
     isCoqSourceFile,
@@ -62,10 +65,6 @@ export class TargetsBuilder {
     withoutWorkspaceRoot(): TargetsBuilderWithWorkspaceRoot {
         return new TargetsBuilderWithWorkspaceRoot(undefined);
     }
-}
-enum TargetType {
-    ADMIT,
-    PROVE_THEOREM,
 }
 
 export class TargetsBuilderWithWorkspaceRoot {
@@ -245,11 +244,15 @@ export class TargetsBuilderWithWorkspaceRoot {
     }
 }
 
+/**
+ * Merges `multipleInputTargets` into a new `InputTargets` without modifying themselves.
+ */
 export function mergeInputTargets(
     multipleInputTargets: InputTargets[]
 ): InputTargets {
-    return multipleInputTargets.reduce((acc, inputTargets) =>
-        mergeTwoInputTargets(acc, inputTargets)
+    return multipleInputTargets.reduce(
+        (acc, inputTargets) => mergeTwoInputTargets(acc, inputTargets),
+        new Map()
     );
 }
 
