@@ -1,7 +1,7 @@
 import { JSONSchemaType, ValidateFunction } from "ajv";
 
-import { AjvMode, buildAjv } from "../../../../../utils/ajvErrorsHandling";
-import { SeverityLevel } from "../../logging/benchmarkingLogger";
+import { AjvMode, buildAjv } from "../../../../../../utils/ajvErrorsHandling";
+import { SeverityLevel } from "../../../logging/benchmarkingLogger";
 
 export type IPCMessageType =
     | "args"
