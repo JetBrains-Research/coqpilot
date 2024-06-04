@@ -155,23 +155,31 @@ export class BenchmarkingLoggerImpl extends BenchmarkingLogger {
     ): BenchmarkingLogger {
         return new BenchmarkingLoggerImpl(
             this.loggerSeverity,
-            recordIdentifier
+            [this.recordIdentifier, recordIdentifier]
+                .filter((identifier) => identifier !== "")
+                .join(this.lineEnd)
         );
     }
 
-    protected log(severity: SeverityLevel, message: string, color?: LogColor) {
+    protected log(
+        severity: SeverityLevel,
+        message: string,
+        color: LogColor | undefined,
+        lineEnd: string,
+        recordIdentifier: string
+    ) {
         if (this.loggerSeverity < severity) {
             return;
         }
-        this.print(this.recordIdentifier);
+        this.print(recordIdentifier, lineEnd);
         if (color === undefined) {
-            this.print(message);
+            this.print(message, lineEnd);
         } else {
-            this.print(colorize(message, color));
+            this.print(colorize(message, color), lineEnd);
         }
     }
 
-    private print(message: string) {
-        console.log(message);
+    private print(message: string, lineEnd: string) {
+        process.stdout.write(`${message}${lineEnd}`);
     }
 }
