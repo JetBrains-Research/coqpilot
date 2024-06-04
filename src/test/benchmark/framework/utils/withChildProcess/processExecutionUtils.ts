@@ -5,8 +5,7 @@ import { failedAjvValidatorErrorsAsString } from "../../../../../utils/ajvErrors
 import { stringifyAnyValue } from "../../../../../utils/printers";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 
-import { IPCError } from "./executeChildProcess";
-import { IPCMessage, stopIPCMessage } from "./ipcProtocol";
+import { IPCError, IPCMessage, createStopIPCMessage } from "./ipcProtocol";
 
 export type ResolveType<T> = (value: T | PromiseLike<T>) => void;
 export type RejectType = (reason?: any) => void;
@@ -80,7 +79,7 @@ export function finishSubprocess(lifetime: LifetimeObjects) {
          * it may cause undefined behaviour (if the subprocess already exited and
          * another process with the same PID receives this signal).
          */
-        subprocess.send(stopIPCMessage);
+        subprocess.send(createStopIPCMessage());
         /*
          * However, even if subprocess doesn't react on the stop message,
          * it should be terminated after `options.timeoutMillis` milliseconds anyway.

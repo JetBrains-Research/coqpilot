@@ -1,7 +1,10 @@
 import { JSONSchemaType, ValidateFunction } from "ajv";
 
 import { AjvMode, buildAjv } from "../../../../../utils/ajvErrorsHandling";
+import { ErrorWithCause } from "../../../../../utils/errorsUtils";
 import { SeverityLevel } from "../../logging/benchmarkingLogger";
+
+export class IPCError extends ErrorWithCause {}
 
 export type IPCMessageType =
     | "args"
@@ -20,9 +23,23 @@ export interface ArgsIPCMessage<T> extends IPCMessage {
     args: T;
 }
 
+export function createArgsIPCMessage<T>(args: T): ArgsIPCMessage<T> {
+    return {
+        messageType: "args",
+        args: args,
+    };
+}
+
 export interface ResultIPCMessage<T> extends IPCMessage {
     messageType: "result";
     result: T;
+}
+
+export function createResultIPCMessage<T>(result: T): ResultIPCMessage<T> {
+    return {
+        messageType: "result",
+        result: result,
+    };
 }
 
 export interface ExecutionErrorIPCMessage extends IPCMessage {
@@ -31,9 +48,29 @@ export interface ExecutionErrorIPCMessage extends IPCMessage {
     errorTypeName?: string;
 }
 
+export function createExecutionErrorIPCMessage(
+    errorMessage: string,
+    errorTypeName?: string
+): ExecutionErrorIPCMessage {
+    return {
+        messageType: "execution-error",
+        errorMessage: errorMessage,
+        errorTypeName: errorTypeName,
+    };
+}
+
 export interface IPCErrorIPCMessage extends IPCMessage {
     messageType: "ipc-error";
     errorMessage: string;
+}
+
+export function createIPCErrorIPCMessage(
+    errorMessage: string
+): IPCErrorIPCMessage {
+    return {
+        messageType: "ipc-error",
+        errorMessage: errorMessage,
+    };
 }
 
 export interface LogIPCMessage extends IPCMessage {
@@ -42,24 +79,40 @@ export interface LogIPCMessage extends IPCMessage {
     severityLevel: SeverityLevel;
 }
 
-export const stopIPCMessage: IPCMessage = {
-    messageType: "stop",
-};
+export function createLogIPCMessage(
+    logMessage: string,
+    severityLevel: SeverityLevel
+): LogIPCMessage {
+    return {
+        messageType: "log",
+        logMessage: logMessage,
+        severityLevel: severityLevel,
+    };
+}
 
-export interface IPCMessageSchemaValidators<ResultType> {
+export function createStopIPCMessage(): IPCMessage {
+    return {
+        messageType: "stop",
+    };
+}
+
+export interface IPCMessageSchemaValidators<ArgsType, ResultType> {
     validateIPCMessage: ValidateFunction<IPCMessage>;
+    validateArgsMessage: ValidateFunction<ArgsIPCMessage<ArgsType>>;
     validateResultMessage: ValidateFunction<ResultIPCMessage<ResultType>>;
     validateExecutionErrorMessage: ValidateFunction<ExecutionErrorIPCMessage>;
     validateIPCErrorMessage: ValidateFunction<IPCErrorIPCMessage>;
     validateLogMessage: ValidateFunction<LogIPCMessage>;
 }
 
-export function compileIPCMessageSchemas<ResultType>(
+export function compileIPCMessageSchemas<ArgsType, ResultType>(
+    argsSchema: JSONSchemaType<ArgsType>,
     resultSchema: JSONSchemaType<ResultType>
-): IPCMessageSchemaValidators<ResultType> {
+): IPCMessageSchemaValidators<ArgsType, ResultType> {
     const ajv = buildAjv(AjvMode.COLLECT_ALL_ERRORS);
     return {
         validateIPCMessage: ajv.compile(ipcMessageSchema),
+        validateArgsMessage: ajv.compile(argsMessageSchema(argsSchema)),
         validateResultMessage: ajv.compile(resultMessageSchema(resultSchema)),
         validateExecutionErrorMessage: ajv.compile(executionErrorMessageSchema),
         validateIPCErrorMessage: ajv.compile(ipcErrorMessageSchema),

@@ -3,7 +3,6 @@ import * as child from "child_process";
 
 import { time, timeToMillis } from "../../../../../llm/llmServices/utils/time";
 
-import { ErrorWithCause } from "../../../../../utils/errorsUtils";
 import { stringifyAnyValue } from "../../../../../utils/printers";
 import {
     BenchmarkingLogger,
@@ -16,7 +15,6 @@ import {
     SuccessfullExecution,
 } from "./executionResult";
 import {
-    ArgsIPCMessage,
     ExecutionErrorIPCMessage,
     IPCErrorIPCMessage,
     IPCMessage,
@@ -24,6 +22,7 @@ import {
     LogIPCMessage,
     ResultIPCMessage,
     compileIPCMessageSchemas,
+    createArgsIPCMessage,
 } from "./ipcProtocol";
 import {
     LifetimeObjects,
@@ -55,8 +54,6 @@ export const defaultChildProcessTimeoutMillis = timeToMillis(
     time(10, "minute")
 );
 
-export class IPCError extends ErrorWithCause {}
-
 // TODO: implement complementary child executor
 
 // TODO: document invariants
@@ -66,6 +63,7 @@ export async function executeProcessAsFunction<
 >(
     commandToExecute: CommandToExecute,
     args: ArgsType,
+    argsSchema: JSONSchemaType<ArgsType>,
     resultSchema: JSONSchemaType<ResultType>,
     options: ChildProcessOptions,
     benchmarkingLogger: BenchmarkingLogger,
@@ -112,13 +110,13 @@ export async function executeProcessAsFunction<
             );
         }
 
-        registerEventListeners<ResultType>(lifetime, resultSchema);
+        registerEventListeners<ArgsType, ResultType>(
+            lifetime,
+            argsSchema,
+            resultSchema
+        );
 
-        const argsIPCMessage: ArgsIPCMessage<ArgsType> = {
-            messageType: "args",
-            args: args,
-        };
-        const argsSent = lifetime.subprocess.send(argsIPCMessage);
+        const argsSent = lifetime.subprocess.send(createArgsIPCMessage(args));
         if (!argsSent) {
             return handleIPCError(
                 `failed to send arguments to the child process (IPC channel is closed or messages buffer is full)`,
@@ -145,11 +143,15 @@ function createSpawnOptions(
     return spawnOptions;
 }
 
-function registerEventListeners<ResultType>(
+function registerEventListeners<ArgsType, ResultType>(
     lifetime: LifetimeObjects,
+    argsSchema: JSONSchemaType<ArgsType>,
     resultSchema: JSONSchemaType<ResultType>
 ) {
-    const ipcMessageValidators = compileIPCMessageSchemas(resultSchema);
+    const ipcMessageValidators = compileIPCMessageSchemas(
+        argsSchema,
+        resultSchema
+    );
     const subprocess = lifetime.subprocess!;
 
     // Is triggered right after subprocess is spawned successfully.
@@ -202,9 +204,9 @@ function registerEventListeners<ResultType>(
     });
 }
 
-function onMessageReceived<ResultType>(
+function onMessageReceived<ArgsType, ResultType>(
     message: child.Serializable,
-    ipcMessageValidators: IPCMessageSchemaValidators<ResultType>,
+    ipcMessageValidators: IPCMessageSchemaValidators<ArgsType, ResultType>,
     lifetime: LifetimeObjects
 ) {
     const ipcMessage = message as IPCMessage;
