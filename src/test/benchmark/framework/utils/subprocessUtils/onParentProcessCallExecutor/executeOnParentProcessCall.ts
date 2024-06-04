@@ -1,20 +1,21 @@
-import { JSONSchemaType, ValidateFunction } from "ajv";
+import { JSONSchemaType } from "ajv";
 
-import { failedAjvValidatorErrorsAsString } from "../../../../../utils/ajvErrorsHandling";
-import { stringifyAnyValue } from "../../../../../utils/printers";
-import { SeverityLevel } from "../../logging/benchmarkingLogger";
-
+import { stringifyAnyValue } from "../../../../../../utils/printers";
+import { SeverityLevel } from "../../../logging/benchmarkingLogger";
+import { PromiseExecutor } from "../commonUtils";
+import { IPCError } from "../ipcError";
 import {
     ArgsIPCMessage,
-    IPCError,
     IPCMessage,
     compileIPCMessageSchemas,
     createExecutionErrorIPCMessage,
-    createIPCErrorIPCMessage,
     createLogIPCMessage,
     createResultIPCMessage,
-} from "./ipcProtocol";
-import { PromiseExecutor } from "./processExecutionUtils";
+} from "../ipcProtocol";
+
+import { OnParentProcessCallExecutorUtils } from "./utils";
+
+import Utils = OnParentProcessCallExecutorUtils;
 
 // TODO: document
 export async function executeAsFunctionOnParentProcessCall<
@@ -44,7 +45,7 @@ export async function executeAsFunctionOnParentProcessCall<
                 )
             );
         }
-        const lifetime: LifetimeObjects = {
+        const lifetime: Utils.LifetimeObjects = {
             promiseExecutor: promiseExecutor,
             send: send,
         };
@@ -56,7 +57,7 @@ export async function executeAsFunctionOnParentProcessCall<
         process.on("message", async (message) => {
             const ipcMessage = message as IPCMessage;
             if (!ipcMessageValidators.validateIPCMessage(ipcMessage)) {
-                return handleInvalidIPCMessageSchemaError(
+                return Utils.handleInvalidIPCMessageSchemaError(
                     "",
                     ipcMessage,
                     ipcMessageValidators.validateIPCMessage,
@@ -70,7 +71,7 @@ export async function executeAsFunctionOnParentProcessCall<
                     if (
                         !ipcMessageValidators.validateArgsMessage(argsMessage)
                     ) {
-                        return handleInvalidIPCMessageSchemaError(
+                        return Utils.handleInvalidIPCMessageSchemaError(
                             "args",
                             argsMessage,
                             ipcMessageValidators.validateArgsMessage,
@@ -85,7 +86,7 @@ export async function executeAsFunctionOnParentProcessCall<
                 case "stop":
                     return lifetime.promiseExecutor.resolve();
                 default:
-                    return tryToReportIPCErrorToParentAndThrow(
+                    return Utils.tryToReportIPCErrorToParentAndThrow(
                         `parent process sent message of unexpected "${ipcMessage.messageType}" type: ${stringifyAnyValue(ipcMessage)}`,
                         lifetime
                     );
@@ -116,15 +117,10 @@ export class LogsIPCSender {
     }
 }
 
-interface LifetimeObjects {
-    promiseExecutor: PromiseExecutor<void>;
-    send: SenderFunction;
-}
-
-async function executeBodyAndSendResult<ArgsType, ResultType>(
+export async function executeBodyAndSendResult<ArgsType, ResultType>(
     body: (args: ArgsType, logger: LogsIPCSender) => Promise<ResultType>,
     args: ArgsType,
-    lifetime: LifetimeObjects
+    lifetime: Utils.LifetimeObjects
 ) {
     const logger = new LogsIPCSender(lifetime.send);
     let result: ResultType;
@@ -142,33 +138,9 @@ async function executeBodyAndSendResult<ArgsType, ResultType>(
     }
     const resultSent = lifetime.send(createResultIPCMessage(result));
     if (!resultSent) {
-        return tryToReportIPCErrorToParentAndThrow(
+        return Utils.tryToReportIPCErrorToParentAndThrow(
             `failed to send execution result to the parent process (IPC channel is closed or messages buffer is full)`,
             lifetime
         );
     }
-}
-
-function tryToReportIPCErrorToParentAndThrow(
-    errorMessage: string,
-    lifetime: LifetimeObjects
-) {
-    lifetime.send(createIPCErrorIPCMessage(errorMessage)); // it's okay if it fails for some reason
-    lifetime.promiseExecutor.reject(new IPCError(errorMessage));
-}
-
-function handleInvalidIPCMessageSchemaError<T extends IPCMessage>(
-    ipcMessageTypeName: string,
-    ipcMessage: T,
-    failedValidator: ValidateFunction<T>,
-    lifetime: LifetimeObjects
-) {
-    tryToReportIPCErrorToParentAndThrow(
-        [
-            `received IPC ${ipcMessageTypeName}${ipcMessageTypeName === "" ? "" : " "}message `,
-            `of invalid structure ${stringifyAnyValue(ipcMessage)}: `,
-            `${failedAjvValidatorErrorsAsString(failedValidator)}`,
-        ].join(""),
-        lifetime
-    );
 }

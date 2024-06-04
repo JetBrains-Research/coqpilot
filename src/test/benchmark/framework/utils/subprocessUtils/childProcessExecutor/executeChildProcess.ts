@@ -1,19 +1,17 @@
 import { JSONSchemaType } from "ajv";
 import * as child from "child_process";
 
-import { time, timeToMillis } from "../../../../../llm/llmServices/utils/time";
+import {
+    time,
+    timeToMillis,
+} from "../../../../../../llm/llmServices/utils/time";
 
-import { stringifyAnyValue } from "../../../../../utils/printers";
+import { stringifyAnyValue } from "../../../../../../utils/printers";
 import {
     BenchmarkingLogger,
     SeverityLevel,
-} from "../../logging/benchmarkingLogger";
-
-import {
-    ExecutionResult,
-    FailedExecution,
-    SuccessfullExecution,
-} from "./executionResult";
+} from "../../../logging/benchmarkingLogger";
+import { PromiseExecutor } from "../commonUtils";
 import {
     ExecutionErrorIPCMessage,
     IPCErrorIPCMessage,
@@ -23,15 +21,16 @@ import {
     ResultIPCMessage,
     compileIPCMessageSchemas,
     createArgsIPCMessage,
-} from "./ipcProtocol";
+} from "../ipcProtocol";
+
 import {
-    LifetimeObjects,
-    PromiseExecutor,
-    buildDebugExecutionLoggerShortcut,
-    finishSubprocess,
-    handleIPCError,
-    handleInvalidIPCMessageSchemaError,
-} from "./processExecutionUtils";
+    ExecutionResult,
+    FailedExecution,
+    SuccessfullExecution,
+} from "./executionResult";
+import { ChildProcessExecutorUtils } from "./utils";
+
+import Utils = ChildProcessExecutorUtils;
 
 export interface CommandToExecute {
     command: string;
@@ -85,12 +84,12 @@ export async function executeProcessAsFunction<
                     "]",
                 ].join("")
             );
-        const lifetime: LifetimeObjects = {
+        const lifetime: Utils.LifetimeObjects = {
             subprocess: undefined,
             executionLogger: executionLogger,
             enableProcessLifetimeDebugLogs: enableProcessLifetimeDebugLogs,
             promiseExecutor: promiseExecutor,
-            debug: buildDebugExecutionLoggerShortcut(
+            debug: Utils.buildDebugExecutionLoggerShortcut(
                 executionLogger,
                 enableProcessLifetimeDebugLogs
             ),
@@ -104,7 +103,7 @@ export async function executeProcessAsFunction<
             );
         } catch (e) {
             const error = e as Error;
-            return handleIPCError(
+            return Utils.rejectOnIPCError(
                 `failed to spawn a child process (${error !== null ? error.message : stringifyAnyValue(error)})`,
                 lifetime
             );
@@ -118,7 +117,7 @@ export async function executeProcessAsFunction<
 
         const argsSent = lifetime.subprocess.send(createArgsIPCMessage(args));
         if (!argsSent) {
-            return handleIPCError(
+            return Utils.rejectOnIPCError(
                 `failed to send arguments to the child process (IPC channel is closed or messages buffer is full)`,
                 lifetime
             );
@@ -144,7 +143,7 @@ function createSpawnOptions(
 }
 
 function registerEventListeners<ArgsType, ResultType>(
-    lifetime: LifetimeObjects,
+    lifetime: Utils.LifetimeObjects,
     argsSchema: JSONSchemaType<ArgsType>,
     resultSchema: JSONSchemaType<ResultType>
 ) {
@@ -169,7 +168,9 @@ function registerEventListeners<ArgsType, ResultType>(
      * subprocess could not be spawned / subprocess could not be killed / sending message failed / subprocess was aborted.
      * Note: exit event might not fire afterwards.
      */
-    subprocess.on("error", (error) => handleIPCError(error.message, lifetime));
+    subprocess.on("error", (error) =>
+        Utils.rejectOnIPCError(error.message, lifetime)
+    );
 
     // Is triggered once the parent process or the child process called `disconnect` (closes IPC channel).
     subprocess.on("disconnect", () => {
@@ -207,11 +208,11 @@ function registerEventListeners<ArgsType, ResultType>(
 function onMessageReceived<ArgsType, ResultType>(
     message: child.Serializable,
     ipcMessageValidators: IPCMessageSchemaValidators<ArgsType, ResultType>,
-    lifetime: LifetimeObjects
+    lifetime: Utils.LifetimeObjects
 ) {
     const ipcMessage = message as IPCMessage;
     if (!ipcMessageValidators.validateIPCMessage(ipcMessage)) {
-        return handleInvalidIPCMessageSchemaError(
+        return Utils.rejectOnInvalidIPCMessageSchemaError(
             "",
             ipcMessage,
             ipcMessageValidators.validateIPCMessage,
@@ -223,7 +224,7 @@ function onMessageReceived<ArgsType, ResultType>(
         case "result":
             const resultMessage = message as ResultIPCMessage<ResultType>;
             if (!ipcMessageValidators.validateResultMessage(resultMessage)) {
-                return handleInvalidIPCMessageSchemaError(
+                return Utils.rejectOnInvalidIPCMessageSchemaError(
                     "result",
                     resultMessage,
                     ipcMessageValidators.validateResultMessage,
@@ -233,7 +234,7 @@ function onMessageReceived<ArgsType, ResultType>(
             lifetime.debug(
                 "Successfully received execution result from the child process"
             );
-            finishSubprocess(lifetime);
+            Utils.finishSubprocess(lifetime);
             return lifetime.promiseExecutor.resolve(
                 new SuccessfullExecution(resultMessage.result)
             );
@@ -245,7 +246,7 @@ function onMessageReceived<ArgsType, ResultType>(
                     executionErrorMessage
                 )
             ) {
-                return handleInvalidIPCMessageSchemaError(
+                return Utils.rejectOnInvalidIPCMessageSchemaError(
                     "execution error",
                     executionErrorMessage,
                     ipcMessageValidators.validateExecutionErrorMessage,
@@ -255,7 +256,7 @@ function onMessageReceived<ArgsType, ResultType>(
             lifetime.debug(
                 `Error occurred during execution in the child process: "${executionErrorMessage.errorTypeName}: ${executionErrorMessage.errorMessage}"`
             );
-            finishSubprocess(lifetime);
+            Utils.finishSubprocess(lifetime);
             return lifetime.promiseExecutor.resolve(
                 new FailedExecution(
                     executionErrorMessage.errorTypeName,
@@ -268,19 +269,22 @@ function onMessageReceived<ArgsType, ResultType>(
             if (
                 !ipcMessageValidators.validateIPCErrorMessage(ipcErrorMessage)
             ) {
-                return handleInvalidIPCMessageSchemaError(
+                return Utils.rejectOnInvalidIPCMessageSchemaError(
                     "IPC error",
                     ipcErrorMessage,
                     ipcMessageValidators.validateIPCErrorMessage,
                     lifetime
                 );
             }
-            return handleIPCError(ipcErrorMessage.errorMessage, lifetime);
+            return Utils.rejectOnIPCError(
+                ipcErrorMessage.errorMessage,
+                lifetime
+            );
 
         case "log":
             const logMessage = message as LogIPCMessage;
             if (!ipcMessageValidators.validateLogMessage(logMessage)) {
-                return handleInvalidIPCMessageSchemaError(
+                return Utils.rejectOnInvalidIPCMessageSchemaError(
                     "log",
                     logMessage,
                     ipcMessageValidators.validateLogMessage,
@@ -301,7 +305,7 @@ function onMessageReceived<ArgsType, ResultType>(
             return;
 
         default:
-            return handleIPCError(
+            return Utils.rejectOnIPCError(
                 `child process sent message of unexpected "${ipcMessage.messageType}" type: ${stringifyAnyValue(ipcMessage)}`,
                 lifetime
             );

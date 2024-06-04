@@ -1,10 +1,7 @@
 import { JSONSchemaType, ValidateFunction } from "ajv";
 
 import { AjvMode, buildAjv } from "../../../../../utils/ajvErrorsHandling";
-import { ErrorWithCause } from "../../../../../utils/errorsUtils";
 import { SeverityLevel } from "../../logging/benchmarkingLogger";
-
-export class IPCError extends ErrorWithCause {}
 
 export type IPCMessageType =
     | "args"
