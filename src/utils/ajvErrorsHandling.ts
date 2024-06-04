@@ -1,4 +1,4 @@
-import Ajv, { DefinedError, Options } from "ajv";
+import Ajv, { DefinedError, Options, ValidateFunction } from "ajv";
 
 import { stringifyDefinedValue } from "./printers";
 
@@ -13,10 +13,20 @@ export function buildAjv(mode: AjvMode): Ajv {
     return new Ajv(ajvOptions);
 }
 
+export function failedAjvValidatorErrorsAsString(
+    validator: ValidateFunction<any>,
+    ignoreErrorsWithKeywords: string[] = []
+): string {
+    return ajvErrorsAsString(
+        validator.errors as DefinedError[],
+        ignoreErrorsWithKeywords
+    );
+}
+
 export function ajvErrorsAsString(
     errorObjects: DefinedError[],
     ignoreErrorsWithKeywords: string[] = []
-) {
+): string {
     const errorsToReport = errorObjects.filter(
         (errorObject) => !ignoreErrorsWithKeywords.includes(errorObject.keyword)
     );
