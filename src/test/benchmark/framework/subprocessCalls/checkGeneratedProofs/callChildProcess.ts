@@ -6,14 +6,12 @@ import {
 
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { WorkspaceRoot } from "../../structures/completionGenerationTask";
-import { getRootDir } from "../../utils/fsUtils";
 import {
     ChildProcessOptions,
-    CommandToExecute,
     executeProcessAsFunction,
 } from "../../utils/subprocessUtils/ipc/childProcessExecutor/executeChildProcess";
 import { ExecutionResult } from "../../utils/subprocessUtils/ipc/childProcessExecutor/executionResult";
-import { getSubprocessExecutableSuiteName } from "../../utils/subprocessUtils/ipc/onParentProcessCallExecutor/subprocessExecutableTestWrapper";
+import { buildExecuteSubprocessInWorkspaceCommand } from "../../utils/subprocessUtils/subprocessExecutionCommandBuilder";
 import { SubprocessesScheduler } from "../../utils/subprocessUtils/subprocessesScheduler";
 
 import { CheckProofsBySubprocessSignature } from "./callSignature";
@@ -30,13 +28,11 @@ export async function checkGeneratedProofsInSubprocess(
     benchmarkingLogger: BenchmarkingLogger,
     enableProcessLifetimeDebugLogs: boolean = false
 ): Promise<ExecutionResult<Signature.Result>> {
-    // TODO: design run in nix wrapper ~ workspaceRoot.requireesNixEnvironment
-    const cdRoot = `cd ${getRootDir()}`;
-    const runSubprocessExecutableTestSuite = `npm run test-executables-unsafe -- -g="${getSubprocessExecutableSuiteName(Signature.subprocessName)}"`;
-    const executeSubprocessAsTestSuite: CommandToExecute = {
-        command: "nix-shell", // TODO: it might break IPC channel between two node.js processes
-        args: ["--run", `'${cdRoot} && ${runSubprocessExecutableTestSuite}'`],
-    };
+    const enterWorkspaceAndExecuteSubprocessCommand =
+        buildExecuteSubprocessInWorkspaceCommand(
+            workspaceRoot,
+            Signature.subprocessName
+        );
     const args: Signature.Args = {
         workspaceRootPath: workspaceRoot?.directoryPath,
         sourceFileDirPath: sourceFileEnvironment.dirPath,
@@ -48,13 +44,14 @@ export async function checkGeneratedProofsInSubprocess(
         preparedProofs: preparedProofs,
     };
     const options: ChildProcessOptions = {
-        workingDirectory: workspaceRoot?.directoryPath,
+        workingDirectory:
+            enterWorkspaceAndExecuteSubprocessCommand.workingDirectory,
         timeoutMillis: timeoutMillis,
     };
     return subprocessesScheduler.scheduleSubprocess(
         () =>
             executeProcessAsFunction(
-                executeSubprocessAsTestSuite,
+                enterWorkspaceAndExecuteSubprocessCommand,
                 args,
                 Signature.argsSchema,
                 Signature.resultSchema,
