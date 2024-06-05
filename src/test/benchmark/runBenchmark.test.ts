@@ -19,6 +19,11 @@ interface Benchmark {
     benchmarkFullTheorems: Boolean;
     benchmarkAdmits: Boolean;
     timeoutMinutes: number;
+    // The maximum number of premises used as a few-shot
+    // prompt for the model.
+    // If undefined, no limit is set and all possible premises
+    // that fit into the context window will be used.
+    maximumUsedPremisesAmount?: number;
 }
 
 class DatasetItem {
@@ -44,6 +49,7 @@ const simpleAutoBenchmark: Benchmark = {
     benchmarkFullTheorems: true,
     benchmarkAdmits: true,
     timeoutMinutes: 1,
+    maximumUsedPremisesAmount: undefined,
 };
 
 const mixedAutoBenchmark: Benchmark = {
@@ -54,6 +60,7 @@ const mixedAutoBenchmark: Benchmark = {
     benchmarkFullTheorems: true,
     benchmarkAdmits: true,
     timeoutMinutes: 1,
+    maximumUsedPremisesAmount: undefined,
 };
 
 const benchmarks: Benchmark[] = [simpleAutoBenchmark, mixedAutoBenchmark];
@@ -90,7 +97,8 @@ suite("Benchmark", () => {
                             benchmark.benchmarkFullTheorems,
                             benchmark.benchmarkAdmits,
                             resolvedWorkspaceRootPath,
-                            benchmark.requireAllAdmitsCompleted
+                            benchmark.requireAllAdmitsCompleted,
+                            benchmark.maximumUsedPremisesAmount
                         );
                     admitsCompletedInTotal.add(
                         admitsCompleted ?? new BenchmarkResult(0, 0)
