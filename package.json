@@ -369,12 +369,14 @@
     "watch": "tsc -watch -p ./",
     "lint": "eslint \"src/**/*.{ts,js}\" --ext .ts",
     "format": "prettier --write \"src/**/*.{ts,js}\" && eslint \"src/**/*.{ts,js}\" --ext .ts --fix",
+    "test-executables-unsafe": "node ./out/test/runTest.js",
+    "test-only": "npm run test-executables-unsafe -- -g=\"\\[SubprocessExecutable\\]\" -i=true",
     "pretest": "npm run compile && npm run lint",
-    "test": "node ./out/test/runTest.js",
+    "test": "npm run test-only",
     "clean": "rm -rf out",
     "rebuild-test-resources": "cd ./src/test/resources/coqProj && make clean && make",
     "preclean-test": "npm run clean && npm run rebuild-test-resources && npm run compile && npm run lint",
-    "clean-test": "node ./out/test/runTest.js",
+    "clean-test": "npm run test-only",
     "benchmark": "npm run clean-test -- -g='Benchmark'"
   },
   "devDependencies": {
