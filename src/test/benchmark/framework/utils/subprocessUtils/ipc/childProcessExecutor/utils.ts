@@ -4,7 +4,7 @@ import * as child from "child_process";
 import { failedAjvValidatorErrorsAsString } from "../../../../../../../utils/ajvErrorsHandling";
 import { stringifyAnyValue } from "../../../../../../../utils/printers";
 import { BenchmarkingLogger } from "../../../../logging/benchmarkingLogger";
-import { PromiseExecutor } from "../../commonUtils";
+import { PromiseExecutor } from "../../../promiseUtils";
 import { IPCError } from "../ipcError";
 import { IPCMessage, createStopIPCMessage } from "../ipcProtocol";
 

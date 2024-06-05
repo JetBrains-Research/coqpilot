@@ -11,7 +11,7 @@ import {
     BenchmarkingLogger,
     SeverityLevel,
 } from "../../../../logging/benchmarkingLogger";
-import { PromiseExecutor } from "../../commonUtils";
+import { PromiseExecutor } from "../../../promiseUtils";
 import {
     ExecutionErrorIPCMessage,
     IPCErrorIPCMessage,

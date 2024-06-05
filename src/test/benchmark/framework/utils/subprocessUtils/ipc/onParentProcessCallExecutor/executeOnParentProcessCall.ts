@@ -2,7 +2,7 @@ import { JSONSchemaType } from "ajv";
 
 import { stringifyAnyValue } from "../../../../../../../utils/printers";
 import { SeverityLevel } from "../../../../logging/benchmarkingLogger";
-import { PromiseExecutor } from "../../commonUtils";
+import { PromiseExecutor } from "../../../promiseUtils";
 import { IPCError } from "../ipcError";
 import {
     ArgsIPCMessage,

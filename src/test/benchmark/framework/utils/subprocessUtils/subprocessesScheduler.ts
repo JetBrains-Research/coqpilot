@@ -1,6 +1,5 @@
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-
-import { ResolveType } from "./commonUtils";
+import { ResolveType } from "../promiseUtils";
 
 export class SubprocessesScheduler {
     constructor(
