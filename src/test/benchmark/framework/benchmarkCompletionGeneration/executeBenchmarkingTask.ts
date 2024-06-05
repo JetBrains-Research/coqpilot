@@ -1,8 +1,6 @@
 import { ConfigurationError } from "../../../../llm/llmServiceErrors";
 import { millisToString } from "../../../../llm/llmServices/utils/time";
 
-import { CoqProofChecker } from "../../../../core/coqProofChecker";
-
 import { stringifyAnyValue } from "../../../../utils/printers";
 import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
 import { heavyCheckMark, heavyCrossMark } from "../logging/specialSymbols";
@@ -15,8 +13,10 @@ import {
     SuccessfulCompletionGeneration,
 } from "../structures/benchmarkedItem";
 import { BenchmarkingItem } from "../structures/benchmarkingItem";
+import { ExperimentRunOptions } from "../structures/experimentRunOptions";
 import { writeToFile } from "../utils/fsUtils";
 import { selectLLMServiceBuilder } from "../utils/llmServicesUtils";
+import { SubprocessesScheduler } from "../utils/subprocessUtils/subprocessesScheduler";
 
 import { benchmarkSingleCompletionGeneration } from "./benchmarkSingleCompletionGeneration";
 import { TimeMark } from "./measureUtils";
@@ -24,7 +24,9 @@ import { TimeMark } from "./measureUtils";
 export async function executeBenchmarkingTask(
     benchmarkingItem: BenchmarkingItem,
     saveToFilePath: string,
-    itemLogger: BenchmarkingLogger
+    itemLogger: BenchmarkingLogger,
+    subprocessesScheduler: SubprocessesScheduler,
+    experimentRunOptions: ExperimentRunOptions
 ): Promise<BenchmarkedItem | undefined> {
     const task = benchmarkingItem.task;
     const params = benchmarkingItem.params;
@@ -38,9 +40,10 @@ export async function executeBenchmarkingTask(
             task.getSourceFileEnvironment(),
             params,
             llmService,
-            // TODO: each coq proof checker should use its own prefix to work good in parallel (many checkers for the same theorem in the same file)
-            new CoqProofChecker(task.preparedEnvironment.coqLspClient),
-            itemLogger
+            task.workspaceRoot,
+            itemLogger,
+            subprocessesScheduler,
+            experimentRunOptions
         );
         logResult(result, totalTime.measureElapsedMillis(), itemLogger);
 

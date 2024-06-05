@@ -25,11 +25,19 @@ export namespace CheckProofsBySubprocessSignature {
         proofsValidationMillis: number;
     }
 
-    export type FailureType = "timeout" | "coq-proof-checker-error";
+    export type FailureType = "TIMEOUT" | "COQ_PROOF_CHECKER_ERROR";
 
     export interface FailureResult {
         failureType: FailureType;
         causeMessage: string;
+    }
+
+    export function isSuccess(result: Result): result is SuccessResult {
+        return "proofCheckResults" in result;
+    }
+
+    export function isFailure(result: Result): result is FailureResult {
+        return "failureType" in result;
     }
 
     export const positionSchema: JSONSchemaType<Position> = {
@@ -117,7 +125,7 @@ export namespace CheckProofsBySubprocessSignature {
         properties: {
             failureType: {
                 type: "string",
-                enum: ["timeout", "coq-proof-checker-error"],
+                enum: ["TIMEOUT", "COQ_PROOF_CHECKER_ERROR"],
             },
             causeMessage: {
                 type: "string",

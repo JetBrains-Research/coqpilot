@@ -4,11 +4,11 @@ import { executeBenchmarkingTask } from "./benchmarkCompletionGeneration/execute
 import {
     BenchmarkingLogger,
     BenchmarkingLoggerImpl,
-    SeverityLevel,
 } from "./logging/benchmarkingLogger";
 import { BenchmarkedItem } from "./structures/benchmarkedItem";
 import { BenchmarkingItem } from "./structures/benchmarkingItem";
 import { ExperimentResults } from "./structures/experimentResults";
+import { ExperimentRunOptions } from "./structures/experimentRunOptions";
 import {
     checkDirectoryIsEmpty,
     createDirectory,
@@ -17,6 +17,7 @@ import {
     writeToFile,
 } from "./utils/fsUtils";
 import { getShortName } from "./utils/llmServicesUtils";
+import { SubprocessesScheduler } from "./utils/subprocessUtils/subprocessesScheduler";
 
 namespace ArtifactsDirNames {
     export const itemsReportsDir = "items";
@@ -25,15 +26,12 @@ namespace ArtifactsDirNames {
 
 /**
  * TODO: add mutexes
- * - 1 for process directory
  * - 1 per each group (by condition, same service & same model name)
- *
- * TODO: support changing working dir in tasks before proof check
  */
 export async function benchmark(
     benchmarkingItems: BenchmarkingItem[],
     resolvedArtifactsDirPath: string,
-    loggerSeverity: SeverityLevel
+    experimentRunOptions: ExperimentRunOptions
 ): Promise<ExperimentResults> {
     if (!checkDirectoryIsEmpty(resolvedArtifactsDirPath)) {
         throw Error(
@@ -46,7 +44,11 @@ export async function benchmark(
         ArtifactsDirNames.itemsReportsDir
     );
     const parentLogger: BenchmarkingLogger = new BenchmarkingLoggerImpl(
-        loggerSeverity
+        experimentRunOptions.loggerSeverity
+    );
+    const subprocessesScheduler = new SubprocessesScheduler(
+        experimentRunOptions.maxActiveSubprocessesNumber,
+        experimentRunOptions.enableSchedulingDebugLogs
     );
 
     const itemsPromises: Promise<BenchmarkedItem | undefined>[] = [];
@@ -58,7 +60,13 @@ export async function benchmark(
         );
         const itemLogger = buildItemLogger(item, parentLogger);
         itemsPromises.push(
-            executeBenchmarkingTask(item, itemReportPath, itemLogger)
+            executeBenchmarkingTask(
+                item,
+                itemReportPath,
+                itemLogger,
+                subprocessesScheduler,
+                experimentRunOptions
+            )
         );
     }
 

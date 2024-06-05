@@ -20,16 +20,10 @@ import { ProofGenerationContext } from "../../../../llm/proofGenerationContext";
 import {
     CompletionContext,
     SourceFileEnvironment,
-    getTextBeforePosition,
     goalToTargetLemma,
     prepareProofToCheck,
 } from "../../../../core/completionGenerator";
 import { ContextTheoremsRanker } from "../../../../core/contextTheoremRanker/contextTheoremsRanker";
-import {
-    CoqLspTimeoutError,
-    CoqProofChecker,
-    ProofCheckResult,
-} from "../../../../core/coqProofChecker";
 
 import { Theorem } from "../../../../coqParser/parsedTypes";
 import { stringifyAnyValue } from "../../../../utils/printers";
@@ -42,12 +36,16 @@ import {
     SuccessfulCompletionGeneration,
 } from "../structures/benchmarkedItem";
 import { BenchmarkingModelParams } from "../structures/benchmarkingModelParams";
+import { WorkspaceRoot } from "../structures/completionGenerationTask";
+import { ExperimentRunOptions } from "../structures/experimentRunOptions";
+import { checkGeneratedProofsInSubprocess } from "../subprocessCalls/checkGeneratedProofs/callChildProcess";
+import { CheckProofsBySubprocessSignature } from "../subprocessCalls/checkGeneratedProofs/callSignature";
+import { SubprocessesScheduler } from "../utils/subprocessUtils/subprocessesScheduler";
 
 import {
     CompletionGenerationTimeImpl,
     MeasuredProofImpl,
     TimeMark,
-    measureElapsedMillis,
 } from "./measureUtils";
 
 /**
@@ -72,8 +70,10 @@ export async function benchmarkSingleCompletionGeneration<
     sourceFileEnvironment: SourceFileEnvironment,
     benchmarkingModelParams: BenchmarkingModelParams<ResolvedModelParams>,
     llmService: LLMServiceType,
-    coqProofChecker: CoqProofChecker,
-    logger: BenchmarkingLogger
+    workspaceRoot: WorkspaceRoot | undefined,
+    logger: BenchmarkingLogger,
+    subprocessesScheduler: SubprocessesScheduler,
+    experimentRunOptions: ExperimentRunOptions
 ): Promise<BenchmarkedCompletionGeneration> {
     const [generatedProofs, proofsGenerationMillis] =
         await generateProofWithRetriesMeasured(
@@ -104,26 +104,34 @@ export async function benchmarkSingleCompletionGeneration<
         chatTokens: undefined, // TODO
     };
 
-    const measuredProofCheckResultsOrFailure =
-        await checkGeneratedProofsMeasured(
+    const proofsValidationExecutionResult =
+        await checkGeneratedProofsInSubprocess(
             preparedProofs,
             completionContext,
             sourceFileEnvironment,
-            coqProofChecker,
+            workspaceRoot,
+            experimentRunOptions.checkProofsSubprocessTimeoutMillis,
+            subprocessesScheduler,
+            logger,
+            experimentRunOptions.enableSubprocessLifetimeDebugLogs
+        );
+    if (proofsValidationExecutionResult.isFailed()) {
+        // proofs check throws only `Error`-s
+        throw Error(proofsValidationExecutionResult.errorMessage);
+    }
+    const proofsValidationResult = proofsValidationExecutionResult.maybeResult!;
+    if (CheckProofsBySubprocessSignature.isFailure(proofsValidationResult)) {
+        const failureCauseMessage = proofsValidationResult.causeMessage;
+        logger.info(`failed to validate proofs: ${failureCauseMessage}`);
+        return buildFailedCompletionGeneration(
             resultMetrics,
-            logger
+            CompletionGenerationFailureType[proofsValidationResult.failureType],
+            failureCauseMessage
         );
-    const proofsValidationFailure =
-        measuredProofCheckResultsOrFailure as FailedCompletionGeneration;
-    if (proofsValidationFailure !== null) {
-        logger.info(
-            `failed to validate proofs: ${proofsValidationFailure.causeMessage}`
-        );
-        return proofsValidationFailure;
     }
 
-    const [proofCheckResults, proofsValidationMillis] =
-        measuredProofCheckResultsOrFailure as [ProofCheckResult[], number];
+    const { proofCheckResults, proofsValidationMillis } =
+        proofsValidationResult as CheckProofsBySubprocessSignature.SuccessResult;
     const validProofs = proofCheckResults
         .filter((checkResult) => checkResult.isValid)
         .map((checkResult) => new MeasuredProofImpl(checkResult.proof));
@@ -239,56 +247,6 @@ async function generateProofWithRetriesMeasured<
             // wait and try again
             await delay(delayMillis);
             attemptIndex += 1;
-        }
-    }
-}
-
-async function checkGeneratedProofsMeasured(
-    preparedProofs: string[],
-    completionContext: CompletionContext,
-    sourceFileEnvironment: SourceFileEnvironment,
-    coqProofChecker: CoqProofChecker,
-    resultMetrics: BenchmarkedCompletionGeneration,
-    logger: BenchmarkingLogger
-): Promise<[ProofCheckResult[], number] | FailedCompletionGeneration> {
-    const sourceFileContentPrefix = getTextBeforePosition(
-        sourceFileEnvironment.fileLines,
-        completionContext.prefixEndPosition
-    );
-    try {
-        return await measureElapsedMillis(async () => {
-            return await coqProofChecker.checkProofs(
-                sourceFileEnvironment.dirPath,
-                sourceFileContentPrefix,
-                completionContext.prefixEndPosition,
-                preparedProofs
-            );
-        });
-    } catch (e) {
-        const error = e as Error;
-        if (error === null) {
-            throw Error(
-                `got unexpected error from \`CoqProofChecker\`: ${stringifyAnyValue(e)}`
-            );
-        }
-        if (error instanceof CoqLspTimeoutError) {
-            logger.debug(
-                `coq-lsp timeout error: ${stringifyAnyValue(error.message)}`
-            );
-            return buildFailedCompletionGeneration(
-                resultMetrics,
-                CompletionGenerationFailureType.TIMEOUT,
-                error.message
-            );
-        } else {
-            logger.debug(
-                `\`CoqProofChecker\` error: ${stringifyAnyValue(error.message)}`
-            );
-            return buildFailedCompletionGeneration(
-                resultMetrics,
-                CompletionGenerationFailureType.COQ_PROOF_CHECKER_ERROR,
-                error.message
-            );
         }
     }
 }

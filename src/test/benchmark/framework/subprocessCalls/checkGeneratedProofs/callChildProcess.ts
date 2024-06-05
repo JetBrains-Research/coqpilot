@@ -5,6 +5,7 @@ import {
 } from "../../../../../core/completionGenerator";
 
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
+import { WorkspaceRoot } from "../../structures/completionGenerationTask";
 import { getRootDir } from "../../utils/fsUtils";
 import {
     ChildProcessOptions,
@@ -23,13 +24,13 @@ export async function checkGeneratedProofsInSubprocess(
     preparedProofs: string[],
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
-    workspaceRootPath: string | undefined,
+    workspaceRoot: WorkspaceRoot | undefined,
     timeoutMillis: number | undefined,
     subprocessesScheduler: SubprocessesScheduler,
     benchmarkingLogger: BenchmarkingLogger,
     enableProcessLifetimeDebugLogs: boolean = false
 ): Promise<ExecutionResult<Signature.Result>> {
-    // TODO: design run in nix wrapper
+    // TODO: design run in nix wrapper ~ workspaceRoot.requireesNixEnvironment
     const cdRoot = `cd ${getRootDir()}`;
     const runSubprocessExecutableTestSuite = `npm run test-executables-unsafe -- -g="${getSubprocessExecutableSuiteName(Signature.subprocessName)}"`;
     const executeSubprocessAsTestSuite: CommandToExecute = {
@@ -37,7 +38,7 @@ export async function checkGeneratedProofsInSubprocess(
         args: ["--run", `'${cdRoot} && ${runSubprocessExecutableTestSuite}'`],
     };
     const args: Signature.Args = {
-        workspaceRootPath: workspaceRootPath,
+        workspaceRootPath: workspaceRoot?.directoryPath,
         sourceFileDirPath: sourceFileEnvironment.dirPath,
         sourceFileContentPrefix: getTextBeforePosition(
             sourceFileEnvironment.fileLines,
@@ -47,7 +48,7 @@ export async function checkGeneratedProofsInSubprocess(
         preparedProofs: preparedProofs,
     };
     const options: ChildProcessOptions = {
-        workingDirectory: workspaceRootPath,
+        workingDirectory: workspaceRoot?.directoryPath,
         timeoutMillis: timeoutMillis,
     };
     return subprocessesScheduler.scheduleSubprocess(

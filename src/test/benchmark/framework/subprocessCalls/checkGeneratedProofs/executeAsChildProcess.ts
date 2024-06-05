@@ -31,6 +31,7 @@ async function checkGeneratedProofsMeasured(
 ): Promise<Signature.Result> {
     const coqLspClient = createCoqLspClient(args.workspaceRootPath);
     const coqProofChecker = new CoqProofChecker(coqLspClient);
+    // TODO: each coq proof checker should use its own prefix to work good in parallel (many checkers for the same theorem in the same file)
 
     try {
         const timeMark = new TimeMark();
@@ -54,12 +55,12 @@ async function checkGeneratedProofsMeasured(
             logger.debug(
                 `coq-lsp timeout error: ${stringifyAnyValue(error.message)}`
             );
-            return buildFailureResult("timeout", error.message);
+            return buildFailureResult("TIMEOUT", error.message);
         } else {
             logger.debug(
                 `\`CoqProofChecker\` error: ${stringifyAnyValue(error.message)}`
             );
-            return buildFailureResult("coq-proof-checker-error", error.message);
+            return buildFailureResult("COQ_PROOF_CHECKER_ERROR", error.message);
         }
     }
 }
