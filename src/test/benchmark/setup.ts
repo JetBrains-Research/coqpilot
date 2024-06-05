@@ -45,9 +45,8 @@ new BenchmarkingBundle()
     .addTo(experiment);
 
 test("Run benchmarking experiment", async () => {
-    const experimentResults = await experiment.run(
-        "benchmarksOutput",
-        SeverityLevel.DEBUG
-    );
+    const experimentResults = await experiment.run("benchmarksOutput", {
+        loggerSeverity: SeverityLevel.DEBUG,
+    });
     expect(experimentResults.getBenchmarkedItems()).not.toBeEmpty();
 });
