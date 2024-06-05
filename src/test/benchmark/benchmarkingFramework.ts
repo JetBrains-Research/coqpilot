@@ -37,7 +37,8 @@ export async function runTestBenchmark(
     benchmarkFullTheorems: Boolean = true,
     benchmarkAdmits: Boolean = true,
     workspaceRootPath?: string,
-    requireAllAdmitsCompleted: Boolean = false
+    requireAllAdmitsCompleted: Boolean = false,
+    maximumUsedPremisesAmount?: number
 ): Promise<BenchmarkReport> {
     consoleLog(`run benchmarks for file: ${filePath}\n`, "blue");
     const shouldCompleteHole = (_hole: ProofStep) => true;
@@ -74,7 +75,8 @@ export async function runTestBenchmark(
         admitTargetsResults = await benchmarkTargets(
             filteredCompletionTargets.admitTargets,
             sourceFileEnvironment,
-            processEnvironment
+            processEnvironment,
+            maximumUsedPremisesAmount
         );
         consoleLog(
             `BENCHMARK RESULT, ADMITS COMPLETED: ${admitTargetsResults}\n`
@@ -91,7 +93,8 @@ export async function runTestBenchmark(
         theoremTargetsResults = await benchmarkTargets(
             filteredCompletionTargets.theoremTargets,
             sourceFileEnvironment,
-            processEnvironment
+            processEnvironment,
+            maximumUsedPremisesAmount
         );
         consoleLog(
             `BENCHMARK RESULT, THEOREMS PROVED: ${theoremTargetsResults}\n`
@@ -142,7 +145,8 @@ export interface BenchmarkReport {
 export async function benchmarkTargets(
     targets: BenchmarkingCompletionContext[],
     sourceFileEnvironment: SourceFileEnvironment,
-    processEnvironment: ProcessEnvironment
+    processEnvironment: ProcessEnvironment,
+    maximumUsedPremisesAmount?: number
 ): Promise<BenchmarkResult> {
     const totalCompletionsNumber = targets.length;
     let successfulCompletionsNumber = 0;
@@ -150,7 +154,8 @@ export async function benchmarkTargets(
         const success = await benchmarkCompletionGeneration(
             completionContext,
             sourceFileEnvironment,
-            processEnvironment
+            processEnvironment,
+            maximumUsedPremisesAmount
         );
         if (success) {
             successfulCompletionsNumber += 1;
@@ -165,7 +170,8 @@ export async function benchmarkTargets(
 async function benchmarkCompletionGeneration(
     completionContext: BenchmarkingCompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
-    processEnvironment: ProcessEnvironment
+    processEnvironment: ProcessEnvironment,
+    maximumUsedPremisesAmount?: number
 ): Promise<boolean> {
     const completionPosition = completionContext.admitEndPosition;
     consoleLog(
@@ -176,9 +182,9 @@ async function benchmarkCompletionGeneration(
 
     const sourceFileEnvironmentWithFilteredContext: SourceFileEnvironment = {
         ...sourceFileEnvironment,
-        fileTheorems: sourceFileEnvironment.fileTheorems.filter(
-            (thr) => completionContext.parentTheorem !== thr
-        ),
+        fileTheorems: sourceFileEnvironment.fileTheorems
+            .filter((thr) => completionContext.parentTheorem.name !== thr.name)
+            .slice(0, maximumUsedPremisesAmount),
     };
 
     const result = await generateCompletion(
