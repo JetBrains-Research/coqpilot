@@ -1,4 +1,4 @@
-export const consoleLoggingIsMuted = true;
+export const consoleLoggingIsMuted = false;
 
 export type LogColor = "red" | "green" | "blue" | "magenta" | "reset";
 
