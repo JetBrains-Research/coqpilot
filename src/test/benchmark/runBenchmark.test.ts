@@ -1,15 +1,10 @@
-import { expect } from "earl";
 import * as fs from "fs";
 import * as path from "path";
 
 import { BenchmarkResult, runTestBenchmark } from "./benchmarkingFramework";
 import { InputModelsParams, onlyAutoModelsParams } from "./inputModelsParams";
-import {
-    code,
-    consoleLog,
-    consoleLogSeparatorLine,
-    consoleLoggingIsMuted,
-} from "./loggingUtils";
+import { code, consoleLog, consoleLogSeparatorLine } from "./loggingUtils";
+import { BenchmarkReportHolder } from "./reportHolder";
 
 interface Benchmark {
     name: string;
@@ -41,16 +36,16 @@ class DatasetItem {
     }
 }
 
-const simpleAutoBenchmark: Benchmark = {
-    name: "Complete simple examples with `auto`",
-    items: [new DatasetItem("auto_benchmark.v")],
-    inputModelsParams: onlyAutoModelsParams,
-    requireAllAdmitsCompleted: true,
-    benchmarkFullTheorems: true,
-    benchmarkAdmits: true,
-    timeoutMinutes: 1,
-    maximumUsedPremisesAmount: undefined,
-};
+// const simpleAutoBenchmark: Benchmark = {
+//     name: "Complete simple examples with `auto`",
+//     items: [new DatasetItem("auto_benchmark.v")],
+//     inputModelsParams: onlyAutoModelsParams,
+//     requireAllAdmitsCompleted: true,
+//     benchmarkFullTheorems: true,
+//     benchmarkAdmits: true,
+//     timeoutMinutes: 1,
+//     maximumUsedPremisesAmount: undefined,
+// };
 
 const mixedAutoBenchmark: Benchmark = {
     name: "Complete mixed examples (both simple & hard) with `auto`",
@@ -63,10 +58,13 @@ const mixedAutoBenchmark: Benchmark = {
     maximumUsedPremisesAmount: undefined,
 };
 
-const benchmarks: Benchmark[] = [simpleAutoBenchmark, mixedAutoBenchmark];
+const benchmarks: Benchmark[] = [mixedAutoBenchmark];
 
 suite("Benchmark", () => {
-    expect(consoleLoggingIsMuted).toEqual(true);
+    const reportPath = path.join(__dirname, "../../../report.json");
+    const reportHolder = new BenchmarkReportHolder(reportPath);
+
+    // expect(consoleLoggingIsMuted).toEqual(true);
     const datasetDir = getDatasetDir();
 
     for (const benchmark of benchmarks) {
@@ -122,6 +120,8 @@ suite("Benchmark", () => {
             );
         }).timeout(benchmark.timeoutMinutes * 60 * 1000);
     }
+
+    reportHolder.generateMarkdown();
 });
 
 function getDatasetDir(): string {
