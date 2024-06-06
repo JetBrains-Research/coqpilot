@@ -17,7 +17,7 @@ export const onlyAutoModelsParams: InputModelsParams = {
     grazieParams: [],
     predefinedProofsModelParams: [
         {
-            modelId: "Predefined `auto`",
+            modelId: "Predefined tactic",
             tactics: ["auto."],
         },
     ],

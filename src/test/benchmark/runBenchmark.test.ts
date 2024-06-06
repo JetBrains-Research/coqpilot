@@ -14,6 +14,7 @@ interface Benchmark {
     benchmarkFullTheorems: Boolean;
     benchmarkAdmits: Boolean;
     timeoutMinutes: number;
+    groupName: string;
     // The maximum number of premises used as a few-shot
     // prompt for the model.
     // If undefined, no limit is set and all possible premises
@@ -36,25 +37,15 @@ class DatasetItem {
     }
 }
 
-// const simpleAutoBenchmark: Benchmark = {
-//     name: "Complete simple examples with `auto`",
-//     items: [new DatasetItem("auto_benchmark.v")],
-//     inputModelsParams: onlyAutoModelsParams,
-//     requireAllAdmitsCompleted: true,
-//     benchmarkFullTheorems: true,
-//     benchmarkAdmits: true,
-//     timeoutMinutes: 1,
-//     maximumUsedPremisesAmount: undefined,
-// };
-
 const mixedAutoBenchmark: Benchmark = {
     name: "Complete mixed examples (both simple & hard) with `auto`",
     items: [new DatasetItem("mixed_benchmark.v")],
     inputModelsParams: onlyAutoModelsParams,
     requireAllAdmitsCompleted: false,
     benchmarkFullTheorems: true,
-    benchmarkAdmits: true,
+    benchmarkAdmits: false,
     timeoutMinutes: 1,
+    groupName: "A",
     maximumUsedPremisesAmount: undefined,
 };
 
@@ -64,7 +55,6 @@ suite("Benchmark", () => {
     const reportPath = path.join(__dirname, "../../../report.json");
     const reportHolder = new BenchmarkReportHolder(reportPath);
 
-    // expect(consoleLoggingIsMuted).toEqual(true);
     const datasetDir = getDatasetDir();
 
     for (const benchmark of benchmarks) {
@@ -91,12 +81,15 @@ suite("Benchmark", () => {
                         await runTestBenchmark(
                             resolvedFilePath,
                             benchmark.inputModelsParams,
+                            item.path,
                             item.specificTheoremForBenchmark,
                             benchmark.benchmarkFullTheorems,
                             benchmark.benchmarkAdmits,
                             resolvedWorkspaceRootPath,
                             benchmark.requireAllAdmitsCompleted,
-                            benchmark.maximumUsedPremisesAmount
+                            benchmark.maximumUsedPremisesAmount,
+                            benchmark.groupName,
+                            reportHolder
                         );
                     admitsCompletedInTotal.add(
                         admitsCompleted ?? new BenchmarkResult(0, 0)
@@ -118,10 +111,10 @@ suite("Benchmark", () => {
             consoleLog(
                 `- THEOREMS PROVED IN TOTAL: ${theoremsProvedInTotal}\n`
             );
+
+            reportHolder.generateMarkdown();
         }).timeout(benchmark.timeoutMinutes * 60 * 1000);
     }
-
-    reportHolder.generateMarkdown();
 });
 
 function getDatasetDir(): string {

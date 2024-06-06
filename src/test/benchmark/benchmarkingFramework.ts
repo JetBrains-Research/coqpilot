@@ -29,16 +29,20 @@ import { resolveParametersOrThrow } from "../commonTestFunctions/resolveOrThrow"
 
 import { InputModelsParams } from "./inputModelsParams";
 import { consoleLog, consoleLogSeparatorLine } from "./loggingUtils";
+import { BenchmarkReportHolder, TheoremProofResult } from "./reportHolder";
 
 export async function runTestBenchmark(
     filePath: string,
     inputModelsParams: InputModelsParams,
+    relativePathToFile: string,
     specificTheoremsForBenchmark: string[] | undefined,
     benchmarkFullTheorems: Boolean = true,
     benchmarkAdmits: Boolean = true,
     workspaceRootPath?: string,
     requireAllAdmitsCompleted: Boolean = false,
-    maximumUsedPremisesAmount?: number
+    maximumUsedPremisesAmount?: number,
+    groupName: string = "Unnamed",
+    reportHolder?: BenchmarkReportHolder
 ): Promise<BenchmarkReport> {
     consoleLog(`run benchmarks for file: ${filePath}\n`, "blue");
     const shouldCompleteHole = (_hole: ProofStep) => true;
@@ -76,7 +80,11 @@ export async function runTestBenchmark(
             filteredCompletionTargets.admitTargets,
             sourceFileEnvironment,
             processEnvironment,
-            maximumUsedPremisesAmount
+            getSingleModelId(inputModelsParams),
+            relativePathToFile,
+            groupName,
+            maximumUsedPremisesAmount,
+            reportHolder
         );
         consoleLog(
             `BENCHMARK RESULT, ADMITS COMPLETED: ${admitTargetsResults}\n`
@@ -94,7 +102,11 @@ export async function runTestBenchmark(
             filteredCompletionTargets.theoremTargets,
             sourceFileEnvironment,
             processEnvironment,
-            maximumUsedPremisesAmount
+            getSingleModelId(inputModelsParams),
+            relativePathToFile,
+            groupName,
+            maximumUsedPremisesAmount,
+            reportHolder
         );
         consoleLog(
             `BENCHMARK RESULT, THEOREMS PROVED: ${theoremTargetsResults}\n`
@@ -106,6 +118,24 @@ export async function runTestBenchmark(
         admitsCompleted: admitTargetsResults,
         theoremsProved: theoremTargetsResults,
     };
+}
+
+function getSingleModelId(inputModelsParams: InputModelsParams): string {
+    const modelIds = [
+        ...inputModelsParams.predefinedProofsModelParams.map(
+            (params) => params.modelId
+        ),
+        ...inputModelsParams.openAiParams.map((params) => params.modelId),
+        ...inputModelsParams.grazieParams.map((params) => params.modelId),
+        ...inputModelsParams.lmStudioParams.map((params) => params.modelId),
+    ];
+    if (modelIds.length !== 1) {
+        throw Error(
+            `Expected exactly one model id, but got ${modelIds.length}`
+        );
+    }
+
+    return modelIds[0];
 }
 
 export interface BenchmarkingCompletionContext extends CompletionContext {
@@ -146,7 +176,11 @@ export async function benchmarkTargets(
     targets: BenchmarkingCompletionContext[],
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
-    maximumUsedPremisesAmount?: number
+    modelId: string,
+    checkedFilePath: string,
+    groupName: string,
+    maximumUsedPremisesAmount?: number,
+    reportHolder?: BenchmarkReportHolder
 ): Promise<BenchmarkResult> {
     const totalCompletionsNumber = targets.length;
     let successfulCompletionsNumber = 0;
@@ -155,7 +189,11 @@ export async function benchmarkTargets(
             completionContext,
             sourceFileEnvironment,
             processEnvironment,
-            maximumUsedPremisesAmount
+            modelId,
+            checkedFilePath,
+            groupName,
+            maximumUsedPremisesAmount,
+            reportHolder
         );
         if (success) {
             successfulCompletionsNumber += 1;
@@ -171,7 +209,11 @@ async function benchmarkCompletionGeneration(
     completionContext: BenchmarkingCompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
-    maximumUsedPremisesAmount?: number
+    modelId: string,
+    checkedFilePath: string,
+    groupName: string,
+    maximumUsedPremisesAmount?: number,
+    reportHolder?: BenchmarkReportHolder
 ): Promise<boolean> {
     const completionPosition = completionContext.admitEndPosition;
     consoleLog(
@@ -197,6 +239,20 @@ async function benchmarkCompletionGeneration(
     if (result instanceof SuccessGenerationResult) {
         message = `Success: ${result.data}`;
         success = true;
+
+        const proofStats: TheoremProofResult = {
+            theoremName: completionContext.parentTheorem.name,
+            filePath: checkedFilePath,
+            modelId: modelId,
+            generatedProof: result.data,
+            chosenPremises:
+                sourceFileEnvironmentWithFilteredContext.fileTheorems.map(
+                    (thr) => thr.name
+                ),
+            generatedAtAttempt: result.attempt,
+            group: groupName,
+        };
+        reportHolder?.addProofResult(proofStats);
     } else if (result instanceof FailureGenerationResult) {
         switch (result.status) {
             case FailureGenerationStatus.TIMEOUT_EXCEEDED:

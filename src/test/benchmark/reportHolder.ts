@@ -95,7 +95,9 @@ export class BenchmarkReportHolder {
                         rowTemplate.group = result.group;
                         rowTemplate.filePath = `[${result.filePath.split("/").pop()}](https://github.com/weakmemory/imm/tree/coq819/src/${result.filePath})`;
 
-                        if (result.modelId === "OpenAI GPT-4") {
+                        if (result.modelId === "Predefined tactic") {
+                            rowTemplate.predefined = `[&#x2713;](#${result.theoremName.toLowerCase()})`;
+                        } else if (result.modelId === "OpenAI GPT-4") {
                             rowTemplate.gpt4 = `[&#x2713;](#${result.theoremName.toLowerCase()})`;
                         } else if (result.modelId === "OpenAI GPT-3.5") {
                             rowTemplate.gpt35 = `[&#x2713;](#${result.theoremName.toLowerCase()})`;
