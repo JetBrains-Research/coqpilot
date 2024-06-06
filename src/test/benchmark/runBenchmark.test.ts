@@ -127,6 +127,8 @@ suite("Benchmark", () => {
             reportHolder.generateMarkdown();
         }).timeout(benchmark.timeoutMinutes * 60 * 1000);
     }
+
+    reportHolder.generateMarkdown();
 });
 
 function getDatasetDir(): string {
