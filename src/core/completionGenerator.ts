@@ -47,7 +47,10 @@ export interface ProcessEnvironment {
 export interface GenerationResult {}
 
 export class SuccessGenerationResult implements GenerationResult {
-    constructor(public data: string) {}
+    constructor(
+        public data: string,
+        public attempt: number
+    ) {}
 }
 
 export class FailureGenerationResult implements GenerationResult {
@@ -187,7 +190,8 @@ export async function checkAndFixProofs(
     );
     const completion = getFirstValidProof(proofCheckResults);
     if (completion) {
-        return new SuccessGenerationResult(completion);
+        const [proof, index] = completion;
+        return new SuccessGenerationResult(proof, index);
     }
 
     // fix proofs checked on this iteration
@@ -270,11 +274,13 @@ async function fixProofs(
 
 function getFirstValidProof(
     proofCheckResults: ProofCheckResult[]
-): string | undefined {
+): [string, number] | undefined {
+    let index = 0;
     for (const proofCheckResult of proofCheckResults) {
         if (proofCheckResult.isValid) {
-            return proofCheckResult.proof;
+            return [proofCheckResult.proof, index];
         }
+        index++;
     }
     return undefined;
 }
