@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { BenchmarkResult, runTestBenchmark } from "./benchmarkingFramework";
-import { InputModelsParams, onlyAutoModelsParams } from "./inputModelsParams";
+import { InputModelsParams, grazieModelsParams } from "./inputModelsParams";
 import { code, consoleLog, consoleLogSeparatorLine } from "./loggingUtils";
 import { BenchmarkReportHolder } from "./reportHolder";
 
@@ -40,7 +40,7 @@ class DatasetItem {
 const mixedAutoBenchmark: Benchmark = {
     name: "Complete mixed examples (both simple & hard) with `auto`",
     items: [new DatasetItem("mixed_benchmark.v")],
-    inputModelsParams: onlyAutoModelsParams,
+    inputModelsParams: grazieModelsParams,
     requireAllAdmitsCompleted: false,
     benchmarkFullTheorems: true,
     benchmarkAdmits: false,

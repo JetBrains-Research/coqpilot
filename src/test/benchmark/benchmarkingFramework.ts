@@ -2,6 +2,10 @@ import * as assert from "assert";
 
 import { LLMServices } from "../../llm/llmServices";
 import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
+import {
+    LLMServiceImpl,
+    LLMServiceRequest,
+} from "../../llm/llmServices/llmService";
 import { LMStudioService } from "../../llm/llmServices/lmStudio/lmStudioService";
 import { ModelsParams } from "../../llm/llmServices/modelParams";
 import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
@@ -24,6 +28,7 @@ import { CoqProofChecker } from "../../core/coqProofChecker";
 import { createSourceFileEnvironment } from "../../core/inspectSourceFile";
 
 import { ProofStep, Theorem } from "../../coqParser/parsedTypes";
+import { EventLogger } from "../../logging/eventLogger";
 import { Uri } from "../../utils/uri";
 import { resolveParametersOrThrow } from "../commonTestFunctions/resolveOrThrow";
 
@@ -46,13 +51,15 @@ export async function runTestBenchmark(
 ): Promise<BenchmarkReport> {
     consoleLog(`run benchmarks for file: ${filePath}\n`, "blue");
     const shouldCompleteHole = (_hole: ProofStep) => true;
+    const eventLogger = new EventLogger();
 
     const [completionTargets, sourceFileEnvironment, processEnvironment] =
         await prepareForBenchmarkCompletions(
             inputModelsParams,
             shouldCompleteHole,
             workspaceRootPath,
-            filePath
+            filePath,
+            eventLogger
         );
     const filteredCompletionTargets = {
         admitTargets: completionTargets.admitTargets.filter(
@@ -83,6 +90,7 @@ export async function runTestBenchmark(
             getSingleModelId(inputModelsParams),
             relativePathToFile,
             groupName,
+            eventLogger,
             maximumUsedPremisesAmount,
             reportHolder
         );
@@ -105,6 +113,7 @@ export async function runTestBenchmark(
             getSingleModelId(inputModelsParams),
             relativePathToFile,
             groupName,
+            eventLogger,
             maximumUsedPremisesAmount,
             reportHolder
         );
@@ -179,6 +188,7 @@ export async function benchmarkTargets(
     modelId: string,
     checkedFilePath: string,
     groupName: string,
+    eventLogger: EventLogger,
     maximumUsedPremisesAmount?: number,
     reportHolder?: BenchmarkReportHolder
 ): Promise<BenchmarkResult> {
@@ -192,6 +202,7 @@ export async function benchmarkTargets(
             modelId,
             checkedFilePath,
             groupName,
+            eventLogger,
             maximumUsedPremisesAmount,
             reportHolder
         );
@@ -212,6 +223,7 @@ async function benchmarkCompletionGeneration(
     modelId: string,
     checkedFilePath: string,
     groupName: string,
+    eventLogger: EventLogger,
     maximumUsedPremisesAmount?: number,
     reportHolder?: BenchmarkReportHolder
 ): Promise<boolean> {
@@ -229,6 +241,16 @@ async function benchmarkCompletionGeneration(
             .slice(0, maximumUsedPremisesAmount),
     };
 
+    const contextTheorems: ContextTheoremsHolder = {};
+    const succeededSubscriptionId = eventLogger.subscribeToLogicEvent(
+        LLMServiceImpl.requestSucceededEvent,
+        reactToRequestEvent(contextTheorems)
+    );
+    const failedSubscriptionId = eventLogger.subscribeToLogicEvent(
+        LLMServiceImpl.requestFailedEvent,
+        reactToRequestEvent(contextTheorems)
+    );
+
     const result = await generateCompletion(
         completionContext,
         sourceFileEnvironmentWithFilteredContext,
@@ -245,10 +267,7 @@ async function benchmarkCompletionGeneration(
             filePath: checkedFilePath,
             modelId: modelId,
             generatedProof: result.data,
-            chosenPremises:
-                sourceFileEnvironmentWithFilteredContext.fileTheorems.map(
-                    (thr) => thr.name
-                ),
+            chosenPremises: contextTheorems.contextTheorems ?? [],
             generatedAtAttempt: result.attempt,
             group: groupName,
         };
@@ -266,6 +285,16 @@ async function benchmarkCompletionGeneration(
                 break;
         }
     }
+
+    eventLogger.unsubscribe(
+        LLMServiceImpl.requestSucceededEvent,
+        succeededSubscriptionId
+    );
+    eventLogger.unsubscribe(
+        LLMServiceImpl.requestFailedEvent,
+        failedSubscriptionId
+    );
+
     consoleLog(message, success ? "green" : "red");
     consoleLog("");
     return success;
@@ -275,11 +304,30 @@ function goalToString(proofGoal: Goal<PpString>): string {
     return `${proofGoal?.ty}`;
 }
 
+interface ContextTheoremsHolder {
+    contextTheorems?: string[];
+}
+
+function reactToRequestEvent(
+    contextTheorems: ContextTheoremsHolder
+): (data: any) => void {
+    return (data: any) => {
+        const request = data as LLMServiceRequest;
+        if (request === null) {
+            throw Error(
+                `Request succeeded event received with null data: ${data}`
+            );
+        }
+        contextTheorems.contextTheorems = request.analyzedChat?.contextTheorems;
+    };
+}
+
 async function prepareForBenchmarkCompletions(
     inputModelsParams: InputModelsParams,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     workspaceRootPath: string | undefined,
-    filePath: string
+    filePath: string,
+    eventLogger: EventLogger
 ): Promise<
     [BenchmarkingCompletionTargets, SourceFileEnvironment, ProcessEnvironment]
 > {
@@ -298,10 +346,10 @@ async function prepareForBenchmarkCompletions(
             client
         );
     const llmServices: LLMServices = {
-        openAiService: new OpenAiService(),
-        grazieService: new GrazieService(),
-        predefinedProofsService: new PredefinedProofsService(),
-        lmStudioService: new LMStudioService(),
+        openAiService: new OpenAiService(eventLogger),
+        grazieService: new GrazieService(eventLogger),
+        predefinedProofsService: new PredefinedProofsService(eventLogger),
+        lmStudioService: new LMStudioService(eventLogger),
     };
     const processEnvironment: ProcessEnvironment = {
         coqProofChecker: coqProofChecker,
