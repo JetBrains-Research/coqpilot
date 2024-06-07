@@ -29,7 +29,7 @@ interface Benchmark {
 
 const resPath = path.join(
     __dirname,
-    "../../../src/test/benchmark/benchmarkPrivate/resources/test.json"
+    "../../../src/test/benchmark/benchmarkPrivate/resources/group_A.json"
 );
 const immBenchmark: Benchmark = {
     name: "Benchmark predef tactics in IMM group A",
@@ -38,7 +38,7 @@ const immBenchmark: Benchmark = {
     requireAllAdmitsCompleted: false,
     benchmarkFullTheorems: true,
     benchmarkAdmits: false,
-    timeoutMinutes: 1,
+    timeoutMinutes: 1000,
     groupName: "A",
     maximumUsedPremisesAmount: undefined,
 };
