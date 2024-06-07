@@ -18,7 +18,7 @@ export const onlyAutoModelsParams: InputModelsParams = {
     predefinedProofsModelParams: [
         {
             modelId: "Predefined tactic",
-            tactics: ["auto."],
+            tactics: ["firstorder auto with *."],
         },
     ],
     lmStudioParams: [],
