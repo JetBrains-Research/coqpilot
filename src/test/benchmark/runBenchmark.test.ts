@@ -3,8 +3,13 @@ import * as path from "path";
 
 import { BenchmarkResult, runTestBenchmark } from "./benchmarkingFramework";
 import { InputModelsParams, onlyAutoModelsParams } from "./inputModelsParams";
-import { code, consoleLog, consoleLogSeparatorLine } from "./loggingUtils";
 import { BenchmarkReportHolder } from "./reportHolder";
+import { DatasetItem, datasetFromJson } from "./utils/datasetConstructionUtils";
+import {
+    code,
+    consoleLog,
+    consoleLogSeparatorLine,
+} from "./utils/loggingUtils";
 
 interface Benchmark {
     name: string;
@@ -22,24 +27,13 @@ interface Benchmark {
     maximumUsedPremisesAmount?: number;
 }
 
-class DatasetItem {
-    workspaceRootPath: string | undefined;
-    specificTheoremForBenchmark: string[] | undefined;
-
-    /* Paths should be relative to 'dataset' folder */
-    constructor(
-        public path: string,
-        specificTheoremForBenchmark: string[] | undefined = undefined,
-        workspaceRootPath: string | undefined = undefined
-    ) {
-        this.workspaceRootPath = workspaceRootPath;
-        this.specificTheoremForBenchmark = specificTheoremForBenchmark;
-    }
-}
-
-const mixedAutoBenchmark: Benchmark = {
-    name: "Complete mixed examples (both simple & hard) with `auto`",
-    items: [new DatasetItem("mixed_benchmark.v")],
+const resPath = path.join(
+    __dirname,
+    "../../../src/test/benchmark/benchmarkPrivate/resources/test.json"
+);
+const immBenchmark: Benchmark = {
+    name: "Benchmark predef tactics in IMM group A",
+    items: datasetFromJson(resPath, "imm"),
     inputModelsParams: onlyAutoModelsParams,
     requireAllAdmitsCompleted: false,
     benchmarkFullTheorems: true,
@@ -49,10 +43,13 @@ const mixedAutoBenchmark: Benchmark = {
     maximumUsedPremisesAmount: undefined,
 };
 
-const benchmarks: Benchmark[] = [mixedAutoBenchmark];
+const benchmarks: Benchmark[] = [immBenchmark];
 
 suite("Benchmark", () => {
-    const reportPath = path.join(__dirname, "../../../report.json");
+    const reportPath = path.join(
+        __dirname,
+        "../../../src/test/benchmark/benchmarkPrivate/report.json"
+    );
     const reportHolder = new BenchmarkReportHolder(reportPath);
 
     const datasetDir = getDatasetDir();

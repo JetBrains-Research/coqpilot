@@ -33,8 +33,8 @@ import { Uri } from "../../utils/uri";
 import { resolveParametersOrThrow } from "../commonTestFunctions/resolveOrThrow";
 
 import { InputModelsParams } from "./inputModelsParams";
-import { consoleLog, consoleLogSeparatorLine } from "./loggingUtils";
 import { BenchmarkReportHolder, TheoremProofResult } from "./reportHolder";
+import { consoleLog, consoleLogSeparatorLine } from "./utils/loggingUtils";
 
 export async function runTestBenchmark(
     filePath: string,
