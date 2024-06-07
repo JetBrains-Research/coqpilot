@@ -25,11 +25,8 @@ export function datasetFromJson(
 
     let dataset: DatasetItem[] = [];
     for (const [theoremFilePath, theorems] of Object.entries(datasetJson)) {
-        dataset = dataset.concat(
-            theorems.map(
-                (theorem) =>
-                    new DatasetItem(theoremFilePath, [theorem], projectRootPath)
-            )
+        dataset.push(
+            new DatasetItem(theoremFilePath, theorems, projectRootPath)
         );
     }
 
