@@ -32,6 +32,7 @@ import { EventLogger } from "../../logging/eventLogger";
 import { Uri } from "../../utils/uri";
 import { resolveParametersOrThrow } from "../commonTestFunctions/resolveOrThrow";
 
+import { AdditionalFileImport } from "./additionalImports";
 import { InputModelsParams } from "./inputModelsParams";
 import { BenchmarkReportHolder, TheoremProofResult } from "./reportHolder";
 import { consoleLog, consoleLogSeparatorLine } from "./utils/loggingUtils";
@@ -47,7 +48,8 @@ export async function runTestBenchmark(
     requireAllAdmitsCompleted: Boolean = false,
     maximumUsedPremisesAmount?: number,
     groupName: string = "Unnamed",
-    reportHolder?: BenchmarkReportHolder
+    reportHolder?: BenchmarkReportHolder,
+    additionalImports?: AdditionalFileImport[]
 ): Promise<BenchmarkReport> {
     consoleLog(`run benchmarks for file: ${filePath}\n`, "blue");
     const shouldCompleteHole = (_hole: ProofStep) => true;
@@ -74,6 +76,13 @@ export async function runTestBenchmark(
                     target.parentTheorem.name
                 ) ?? true
         ),
+    };
+
+    const importStrings =
+        additionalImports?.map((importFile) => importFile.get()) ?? [];
+    const modifiedSourceFileEnvironment: SourceFileEnvironment = {
+        ...sourceFileEnvironment,
+        fileLines: importStrings.concat(sourceFileEnvironment.fileLines),
     };
 
     consoleLogSeparatorLine("\n");
@@ -108,7 +117,7 @@ export async function runTestBenchmark(
         consoleLog("try to prove theorems\n");
         theoremTargetsResults = await benchmarkTargets(
             filteredCompletionTargets.theoremTargets,
-            sourceFileEnvironment,
+            modifiedSourceFileEnvironment,
             processEnvironment,
             getSingleModelId(inputModelsParams),
             relativePathToFile,

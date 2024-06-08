@@ -23,3 +23,15 @@ export const onlyAutoModelsParams: InputModelsParams = {
     ],
     lmStudioParams: [],
 };
+
+export const tacticianModelsParams: InputModelsParams = {
+    openAiParams: [],
+    grazieParams: [],
+    predefinedProofsModelParams: [
+        {
+            modelId: "Tactician",
+            tactics: ["synth."],
+        },
+    ],
+    lmStudioParams: [],
+};

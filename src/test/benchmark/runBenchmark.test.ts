@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 
+import { AdditionalFileImport } from "./additionalImports";
 import { BenchmarkResult, runTestBenchmark } from "./benchmarkingFramework";
 import { InputModelsParams, onlyAutoModelsParams } from "./inputModelsParams";
 import { BenchmarkReportHolder } from "./reportHolder";
@@ -20,6 +21,7 @@ interface Benchmark {
     benchmarkAdmits: Boolean;
     timeoutMinutes: number;
     groupName: string;
+    additionalImports?: AdditionalFileImport[];
     // The maximum number of premises used as a few-shot
     // prompt for the model.
     // If undefined, no limit is set and all possible premises
@@ -40,6 +42,10 @@ const immBenchmark: Benchmark = {
     benchmarkAdmits: false,
     timeoutMinutes: 1000,
     groupName: "A",
+    additionalImports: [
+        AdditionalFileImport.tactician(),
+        AdditionalFileImport.coqHammer(),
+    ],
     maximumUsedPremisesAmount: undefined,
 };
 
@@ -86,7 +92,8 @@ suite("Benchmark", () => {
                             benchmark.requireAllAdmitsCompleted,
                             benchmark.maximumUsedPremisesAmount,
                             benchmark.groupName,
-                            reportHolder
+                            reportHolder,
+                            benchmark.additionalImports
                         );
                     admitsCompletedInTotal.add(
                         admitsCompleted ?? new BenchmarkResult(0, 0)
