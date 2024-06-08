@@ -81,6 +81,13 @@ export async function runTestBenchmark(
         ),
     };
 
+    const importStrings =
+        additionalImports?.map((importFile) => importFile.get()) ?? [];
+    const modifiedSourceFileEnvironment: SourceFileEnvironment = {
+        ...sourceFileEnvironment,
+        fileLines: importStrings.concat(sourceFileEnvironment.fileLines),
+    };
+
     consoleLogSeparatorLine("\n");
 
     let admitTargetsResults: BenchmarkResult | undefined = undefined;
@@ -115,7 +122,7 @@ export async function runTestBenchmark(
         consoleLog("try to prove theorems\n");
         theoremTargetsResults = await benchmarkTargets(
             filteredCompletionTargets.theoremTargets,
-            sourceFileEnvironment,
+            modifiedSourceFileEnvironment,
             processEnvironment,
             getSingleModelId(inputModelsParams),
             relativePathToFile,
