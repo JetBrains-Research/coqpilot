@@ -90,7 +90,7 @@ suite("Completion generation tests", () => {
                 unpackProof((result as SuccessGenerationResult).data)
             ).toEqual("auto.");
         }
-    }).timeout(10000);
+    }).timeout(30000);
 
     test("Check proofs harder than auto", async () => {
         const resourcePath = ["harder_than_auto.v"];

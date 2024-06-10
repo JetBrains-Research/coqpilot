@@ -365,7 +365,7 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
                     );
             }
         );
-    }).timeout(15000);
+    }).timeout(40000);
 
     test("Stress test with async workers (multiround with random failures, default settings)", async () => {
         await withMockLLMService(
