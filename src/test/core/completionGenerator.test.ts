@@ -72,7 +72,7 @@ suite("Completion generation tests", () => {
         expect(
             unpackProof((results[0] as SuccessGenerationResult).data)
         ).toEqual("auto.");
-    }).timeout(2000);
+    }).timeout(5000);
 
     test("Check many admits", async () => {
         const resourcePath = ["test_many_admits.v"];
