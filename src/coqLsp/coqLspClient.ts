@@ -189,6 +189,7 @@ export class CoqLspClient implements CoqLspClientInterface {
         requestType: ProtocolNotificationType<any, any>,
         params: any,
         uri: Uri,
+        version: number,
         lastDocumentEndPosition?: Position,
         timeout: number = 300000
     ): Promise<DiagnosticMessage> {
@@ -210,7 +211,10 @@ export class CoqLspClient implements CoqLspClientInterface {
             this.client.onNotification(
                 PublishDiagnosticsNotification.type,
                 (params) => {
-                    if (params.uri.toString() === uri.uri) {
+                    if (
+                        params.uri.toString() === uri.uri &&
+                        params.version === version
+                    ) {
                         pendingDiagnostic = false;
                         awaitedDiagnostics = params.diagnostics;
 
@@ -242,6 +246,8 @@ export class CoqLspClient implements CoqLspClientInterface {
             throw new CoqLspError("coq-lsp did not respond in time");
         }
 
+        this.subscriptions.forEach((d) => d.dispose());
+
         return this.filterDiagnostics(
             awaitedDiagnostics,
             lastDocumentEndPosition ?? Position.create(0, 0)
@@ -266,7 +272,8 @@ export class CoqLspClient implements CoqLspClientInterface {
         return await this.waitUntilFileFullyChecked(
             DidOpenTextDocumentNotification.type,
             params,
-            uri
+            uri,
+            version
         );
     }
 
@@ -302,6 +309,7 @@ export class CoqLspClient implements CoqLspClientInterface {
             DidChangeTextDocumentNotification.type,
             params,
             uri,
+            version,
             oldEndPosition
         );
     }
