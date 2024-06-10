@@ -1,12 +1,12 @@
-# coqpilot
+# CoqPilot
 
 *Authors:* Andrei Kozyrev, Gleb Solovev, Nikita Khramov, and Anton Podkopaev, [Programming Languages and Tools Lab](https://lp.jetbrains.com/research/plt_lab/) at JetBrains Research.
 
-`Coqpilot` is a [Visual Studio Code](https://code.visualstudio.com/) extension that is designed to help automate writing of Coq proofs. It uses Large Language Models to generate multiple potential proofs and then uses [coq-lsp](https://github.com/ejgallego/coq-lsp) to typecheck them. It substitutes the proof in the editor only if a valid proof is found. 
+`CoqPilot` is a [Visual Studio Code](https://code.visualstudio.com/) extension that is designed to help automate writing of Coq proofs. It uses Large Language Models to generate multiple potential proofs and then uses [coq-lsp](https://github.com/ejgallego/coq-lsp) to typecheck them. It substitutes the proof in the editor only if a valid proof is found. 
 
 # Table of Contents
 
-- 🚀 [Coqpilot Overview](#coqpilot)
+- 🚀 [CoqPilot Overview](#coqpilot)
 - 📋 [Requirements](#requirements)
 - 🔍 [Brief Technical Overview](#brief-technical-overview)
 - 💡 [Example Usage](#example-usage)
@@ -16,10 +16,13 @@
 - ⚠️ [Important Information](#important)
 - ⚙️ [Extension Settings](#extension-settings)
 - 📐 [Guide to Model Configuration](#guide-to-model-configuration)
-  - 🎛 [How VsCode settings work](#how-vscode-settings-work)
+  - 🎛 [How VSCode settings work](#how-vscode-settings-work)
   - 🧰 [Model Configuration](#model-configuration)
 - 📌 [Contributed Commands](#contributed-commands)
 - 📊 [Benchmark](#benchmark)
+- 🧩 [Integrating other solutions](#integrating-other-solutions)
+  - 🧠 [Tactician](#tactician)
+  - 🔨 [CoqHammer](#coqhammer)
 - 🔜 [Future Plans](#future-plans)
 - 📜 [Release Notes](#release-notes)
 
@@ -29,9 +32,9 @@
 
 ## Brief technical overview
 
-`Coqpilot` fetches proofs from multiple completion services. Now we support: 
+`CoqPilot` fetches proofs from multiple completion services. Now we support: 
 - a service that always returns a list of pre-defined in the settings tactics/coq sentances.
-- an [open-ai](https://openai.com) gpt service.
+- an [OpenAI](https://openai.com) gpt service.
 - a service that fetches completions from the model, running locally in LM Studio.
 - a service that uses Grazie platform (only for JetBrains employees for now).
 
@@ -43,19 +46,19 @@ For each `admit.` present in the file, an independent completion process is issu
 
 As soon as at least one valid proof is found, it is substituted in the editor and the process is finished.
 
-**Notice:** By default, coqpilot sets only `predefinedProofs` and `open-ai` services. The first one tries `auto.` tactic and the second one has one model -- `gpt-3.5`. By default the `apiKey` for open-ai is not set, i.e. set to `None`. Do not forget to change that in the settings before using this service.
+**Notice:** By default, CoqPilot sets only `PredefinedProofs` and `OpenAI` services. The first one tries `auto.` tactic and the second one has one model -- `gpt-3.5`. By default the `apiKey` for OpenAI is not set, i.e. set to `None`. Do not forget to change that in the settings before using this service.
 
-**Notice:** File `settings.json` declares not all the settings, but those that are overriden from the defaults. Keep that in mind, if you want, for example, to turn off the `open-ai` service. For that, you would need to override the corresponding setting with an empty array, but not delete this property from the file.
+**Notice:** File `settings.json` declares not all the settings, but those that are overriden from the defaults. Keep that in mind, if you want, for example, to turn off the `OpenAI` service. For that, you would need to override the corresponding setting with an empty array, but not delete this property from the file.
 
 ## Example usage
 
-`Coqpilot` only runs on an opened `coq` file. User can:
-- Run `coqpilot` with some chosen selection to try substitute all admits in this selection.
+`CoqPilot` only runs on an opened `coq` file. User can:
+- Run `CoqPilot` with some chosen selection to try substitute all admits in this selection.
 
 <img src="./etc/gif/solve-in-selection.gif"/>
 
-- Run `coqpilot` to try substitute all admits in the file.
-- Run `coqpilot` to substitute the proof for the admit if there is one under the cursor.
+- Run `CoqPilot` to try substitute all admits in the file.
+- Run `CoqPilot` to substitute the proof for the admit if there is one under the cursor.
 
 ## Installation
 
@@ -72,13 +75,13 @@ With coq-lsp, extension should have everything it needs to run.
 
 ### Building locally
 
-First, clone the Coqpilot repository and navigate into its directory.
+First, clone the CoqPilot repository and navigate into its directory.
 ```bash
 git clone https://github.com/JetBrains-Research/coqpilot.git
 cd coqpilot
 ```
 
-To build the extension locally, you'll need Node.js installed. The recommended way to manage Node.js versions is by using `nvm`. From the Coqpilot root directory, execute:
+To build the extension locally, you'll need Node.js installed. The recommended way to manage Node.js versions is by using `nvm`. From the CoqPilot root directory, execute:
 ```bash
 nvm use
 ```
@@ -105,7 +108,7 @@ The extension's architecture overview is stored in the [ARCHITECTURE.md](https:/
 
 ## Important 
 
-Coqpilot generates aux files with `_cp_aux.v` suffix. Sometimes when generation fails with exception, it is possible that such file will not be deleted. When a project is open, extension shall show a window that asks if you want to add such files to the local project gitignore. 
+CoqPilot generates aux files with `_cp_aux.v` suffix. Sometimes when generation fails with exception, it is possible that such file will not be deleted. When a project is open, extension shall show a window that asks if you want to add such files to the local project gitignore. 
 
 Moreover, this repository contains a script for your convenience that adds the format of such files to the global gitignore file on your system.  
 - Copy the [`set_gitignore.sh`](https://github.com/K-dizzled/coqpilot/blob/main/set_gitignore.sh) file to your computer. Then: 
@@ -113,7 +116,7 @@ Moreover, this repository contains a script for your convenience that adds the f
 chmod +x set_gitignore.sh
 ./set_gitignore.sh
 ```
-It will add the format of coqpilot aux files to your global gitignore file on the system, so that even if coqpilot forgets to clean files up, they will not be marked as new files in git.
+It will add the format of CoqPilot aux files to your global gitignore file on the system, so that even if CoqPilot forgets to clean files up, they will not be marked as new files in git.
 Comment: Such files are not visible in the vscode explorer, because plugin adds them to the `files.exclude` setting on startup.
 
 ## Extension Settings
@@ -125,11 +128,11 @@ This extension contributes the following settings:
 
 * `coqpilot.predefinedProofsModelsParameters`, `coqpilot.openAiModelsParameters`, `coqpilot.grazieModelsParameters` and `coqpilot.lmStudioModelsParameters`:
 
-Each of these settings are modified in `settings.json` and contain an array of models from this service. Each model will be used for generation independantly. Multiple models for a single service could be defined. For example, you can define parameters for two open-ai gpt models. One would be using `gpt-3.5` and the other one `gpt-4`. CoqPilot will first try to generate proofs using the first model, and if it doesn't succeed, it will try the second one. This way coqpilot iterates over all services (currently 4 of them) and for each service it iterates over all models. 
+Each of these settings are modified in `settings.json` and contain an array of models from this service. Each model will be used for generation independantly. Multiple models for a single service could be defined. For example, you can define parameters for two OpenAI gpt models. One would be using `gpt-3.5` and the other one `gpt-4`. CoqPilot will first try to generate proofs using the first model, and if it doesn't succeed, it will try the second one. This way CoqPilot iterates over all services (currently 4 of them) and for each service it iterates over all models. 
 
 ## Guide to Model Configuration
 
-### How VsCode settings work
+### How VSCode settings work
 
 A common way to change the settings, contributed by the extension, is to open the `settings.json` file, or click `Edit in settings.json` on some field in settings UI. Say, by default extension contributes field (setting) `A` with default state `a'`. When you click edit, this field is being copied to the `settings.json` file with the value `a'`: 
 ```json
@@ -143,11 +146,11 @@ From that moment and until you completely remove this field from the `settings.j
 
 As mentioned in the previous section, at the moment, four services are supported. 
 
-By default, only `predefinedProofs` and `open-ai` services are enabled. The first one tries `auto.` tactic and the second one has one model -- `gpt-3.5`. Models for other services are defaulted with empty arrays. That denotes that we do not create any models from these services. 
+By default, only `PredefinedProofs` and `OpenAI` services are enabled. The first one tries `auto.` tactic and the second one has one model -- `gpt-3.5`. Models for other services are defaulted with empty arrays. That denotes that we do not create any models from these services. 
 
 Each and every service is configured with an array of independent models. This was made to easily experiment with different models and their parameters. 
 
-The simplest service to configure is `predefinedProofs`: 
+The simplest service to configure is `PredefinedProofs`: 
 ```json
 {
     "coqpilot.predefinedProofsModelsParameters": [
@@ -164,7 +167,7 @@ The simplest service to configure is `predefinedProofs`:
 ```
 The `modelId` property may be any string you like, but it should be unique for each model. This way, CoqPilot will be able to correctly tell you which model might have configuration issues.
 
-The most commonly used service is `open-ai` (`grazie` and `lmStudio` are configured very similarly). 
+The most commonly used service is `OpenAI` (`Grazie` and `LmStudio` are configured very similarly). 
 ```json
 {
     "coqpilot.openAiModelsParameters": [
@@ -186,7 +189,7 @@ The most commonly used service is `open-ai` (`grazie` and `lmStudio` are configu
     ],
 }
 ```
-Don't forget to set up the `apiKey` field, by default it is set to `None`. Moreover, make sure that your open-ai key is valid and has enough credits to run the models. If you create a free version of the key, it will not work (it has some weird limitations like 5 requests per inf). You can check you key here: https://platform.openai.com/playground/chat. If the playground works, the key is probably valid.
+Don't forget to set up the `apiKey` field, by default it is set to `None`. Moreover, make sure that your OpenAI key is valid and has enough credits to run the models. If you create a free version of the key, it will not work (it has some weird limitations like 5 requests per inf). You can check you key here: https://platform.openai.com/playground/chat. If the playground works, the key is probably valid.
 
 Multi-round profile setting configures the number of attempts to fix the proof if it is incorrect. If the proof is incorrect, the compiler message is sent to the LLM with a request to repair it. The number of round attempts for one proof is set by `maxRoundsNumber`. The number of choices for the proof fixing is set by `proofFixChoices`. By default, values are set to 1 and that means that **NO** attempts to fix the proof are made. That means that proof is only being generated once. That's equivalent to say that multi-round fixing is turned off. 0 is not a valid value for `maxRoundsNumber` nor for `proofFixChoices`.  
 
@@ -236,6 +239,42 @@ First things first, the process of running the benchmark is not perfectly automa
     npm run benchmark
     ```    
 
+## Integrating other solutions
+
+As CoqPilot supports adding predefined commands to try as completion both in the plugin and the benchmark, you can integrate `Coq` generation methods, that contribute a specific tactic and are triggered from OCaml. 
+
+### Tactician
+
+[Tactician](https://coq-tactician.github.io) is a tactic learner and prover for the Coq Proof Assistant. To install: 
+```bash
+opam pin coq-tactician https://github.com/coq-tactician/coq-tactician.git#coq8.19
+opam install coq-tactician
+tactician enable
+```
+
+To use completion tactics from `Tactician` you need to add an import: 
+```coq
+From Tactician Require Import Ltac1.
+```
+
+After that, add the `synth.` tactic to the predefined tactics in the settings. 
+
+Neural `Graph2Tac` completion unfortunately requires `coq < 8.12~`. 
+
+### CoqHammer
+
+[CoqHammer](https://coqhammer.github.io) is an automated reasoning tool for Coq. To install: 
+```bash
+opam install coq-hammer
+```
+
+Import the tactics: 
+```coq
+From Hammer Require Import Hammer.
+```
+
+Then add the `hammer.`, `sauto.` or any other tactic from `CoqHammer` to the predefined tactics in the settings.
+
 ## Future plans
 
 - Currently the user needs to manually enter the nix shell to get the correct environment for the benchmarks. We are working on automating this process.
@@ -244,4 +283,4 @@ First things first, the process of running the benchmark is not perfectly automa
 
 ## Release Notes
 
-Release notes could be found in the [CHANGELOG.md](https://github.com/JetBrains-Research/coqpilot/blob/refactor/CHANGELOG.md) file.
+Release notes could be found in the [CHANGELOG.md](https://github.com/JetBrains-Research/coqpilot/blob/main/CHANGELOG.md) file.

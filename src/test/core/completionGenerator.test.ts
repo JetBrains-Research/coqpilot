@@ -72,7 +72,7 @@ suite("Completion generation tests", () => {
         expect(
             unpackProof((results[0] as SuccessGenerationResult).data)
         ).toEqual("auto.");
-    }).timeout(2000);
+    }).timeout(5000);
 
     test("Check many admits", async () => {
         const resourcePath = ["test_many_admits.v"];
@@ -90,7 +90,7 @@ suite("Completion generation tests", () => {
                 unpackProof((result as SuccessGenerationResult).data)
             ).toEqual("auto.");
         }
-    }).timeout(5000);
+    }).timeout(10000);
 
     test("Check proofs harder than auto", async () => {
         const resourcePath = ["harder_than_auto.v"];
@@ -115,7 +115,7 @@ suite("Completion generation tests", () => {
         expect((results[1] as FailureGenerationResult).status).toEqual(
             FailureGenerationStatus.SEARCH_FAILED
         );
-    }).timeout(2000);
+    }).timeout(5000);
 
     test("Check generation in project", async () => {
         const resourcePath = ["coqProj", "theories", "C.v"];
@@ -133,5 +133,5 @@ suite("Completion generation tests", () => {
         expect(
             unpackProof((results[0] as SuccessGenerationResult).data)
         ).toEqual("auto.");
-    }).timeout(2000);
+    }).timeout(5000);
 });
