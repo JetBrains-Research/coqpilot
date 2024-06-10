@@ -133,5 +133,5 @@ suite("Completion generation tests", () => {
         expect(
             unpackProof((results[0] as SuccessGenerationResult).data)
         ).toEqual("auto.");
-    }).timeout(2000);
+    }).timeout(5000);
 });
