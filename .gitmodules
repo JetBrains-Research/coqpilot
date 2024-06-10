@@ -1,5 +1,4 @@
 [submodule "dataset/imm"]
 	path = dataset/imm
 	url = https://github.com/weakmemory/imm.git
-	branch = coq819
 	ignore = dirty
