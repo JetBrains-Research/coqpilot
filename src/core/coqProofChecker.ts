@@ -126,7 +126,6 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
                 auxFileVersion += 1;
                 // 3.2. Append the proof the end of the aux file
                 appendFileSync(auxFileUri.fsPath, proof);
-
                 // 3.3. Issue update text request
                 const diagnosticMessage =
                     await this.coqLspClient.updateTextDocument(
@@ -145,6 +144,15 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
 
                 // 3.5. Bring file to the previous state
                 writeFileSync(auxFileUri.fsPath, sourceFileContent);
+
+                // 3.6. Issue update text request
+                auxFileVersion += 1;
+                await this.coqLspClient.updateTextDocument(
+                    sourceFileContentPrefix,
+                    "",
+                    auxFileUri,
+                    auxFileVersion
+                );
             }
         } finally {
             // 4. Issue close text document request

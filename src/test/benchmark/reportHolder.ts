@@ -44,7 +44,6 @@ export class BenchmarkReportHolder {
     private readonly groupOrder = ["A", "B", "C"];
 
     constructor(private readonly reportPath: string) {
-        console.log("Report path: ", reportPath);
         if (!existsSync(reportPath)) {
             writeFileSync(reportPath, "{}");
         }
