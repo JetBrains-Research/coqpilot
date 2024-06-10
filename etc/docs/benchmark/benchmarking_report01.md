@@ -391,63 +391,6 @@ apply (ct_of_trans (co_trans WF)).
     rewrite (rmw_in_sb WF).
     clear; rewrite no_sb_to_init; basic_solver.
 
-
-#### Theorem name: 
-#### `sbnl_hb_scb`
-
-#### OpenAI GPT-4 Proof:
-
-    unfold OCaml.hb.
-    arewrite (hb ⊆ sb ∪ sb ⨾ ((sb \ same_loc) ∪ rf ⨾ ⦗Sc⦘ ∪ co ∪ fr)^* ⨾ sb).
-    hahn_frame.
-    apply inclusion_t_ind.
-    2: by apply transitiveI; basic_solver.
-    rewrite <- !(union_ct rt_rw) at 1.
-    bynre.
-    rewrite seq_union_r.
-    apply inclusion_union_l.
-    rewrite seq_union_r.
-    apply inclusion_union_l.
-    - rewrite (dom_l (wf_sbE G)).
-      rewrite !seqA, (seq_eqvC (same_loc)).
-      arewrite (⦗E \₁ F ∩₁ R ∩₁ Sc⦘ ⨾ sb ⊆ ⦗E \₁ F⦘ ⨾ sb ⨾ ⦗Sc⦘) by (mode_solver 21).
-      sin_rewrite sb_rf_sc_sc.
-      basic_solver.
-    - rewrite (dom_l (wf_sbE G)).
-      rewrite !seqA, (seq_eqvC (same_loc)).
-      arewrite (⦗E \₁ F⦘ ⨾ sb ⊆ sb ⨾ ⦗F⦘ ⨾ sb) by (mode_solver 21).
-      sin_rewrite sb_rf_sc_sc.
-      basic_solver.
-    - rewrite (dom_l (wf_sbE G)).
-      rewrite !seqA, (seq_eqvC (same_loc)).
-      arewrite (⦗E \₁ F ∩₁ W⦘ ⨾ sb ⊆ ⦗E \₁ F⦘ ⨾ sb ⨾ ⦗Sc⦘) by (mode_solver 21).
-      arewrite (rf ⨾ ⦗Sc⦘ ⊆ sb ∪ co) at 1.
-      { rewrite WRLXF, FSUPPCO; basic_solver. }
-      rewrite rt_unionE.
-      bynb.
-      rewrite !seq_union_l, !seq_union_r.
-      apply inclusion_union_l.
-      rewrite unionC.
-      sin_rewrite sb_rf_sc_sc.
-      basic_solver.
-      arewrite (rf ⨾ ⦗Sc⦘ ⊆ sb ∪ co) at 1.
-      { rewrite RMWSC; basic_solver. }
-      rewrite rt_unionE.
-      bynb.
-      rewrite !seq_union_l, !seq_union_r.
-      apply inclusion_union_l.
-      rewrite RMWSC at 2 4.
-      basic_solver.
-      arewrite (co ⊆ rf^? ⨾ co ⨾ rf^?) by (rewrite fsupp_imm_t; eauto; basic_solver).
-      rewrite !seqA.
-      bynb.
-      rewrite !seq_union_l, !seq_union_r.
-      apply inclusion_union_l.
-      rewrite RMWSC at 2 4.
-      basic_solver.
-      rewrite RMWSC at 2 4.
-      basic_solver.
-
 #### Theorem name: 
 #### `issued_ta_issue`
 
