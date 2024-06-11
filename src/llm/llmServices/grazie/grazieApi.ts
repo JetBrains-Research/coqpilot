@@ -10,12 +10,15 @@ export type GrazieFormattedHistory = { role: GrazieChatRole; text: string }[];
 interface GrazieConfig {
     gateawayUrl: string;
     chatUrl: string;
+    quotaUrl: string;
 }
 
 export class GrazieApi {
     private readonly config: GrazieConfig = {
         chatUrl: "v5/llm/chat/stream/v3",
-        gateawayUrl: "https://api.app.stgn.grazie.aws.intellij.net/service/",
+        quotaUrl: "v5/quota/get",
+        gateawayUrl:
+            "https://api.app.stgn.grazie.aws.intellij.net/application/",
     };
 
     constructor(private readonly debug: DebugWrappers) {}
@@ -26,6 +29,16 @@ export class GrazieApi {
     ): Promise<string> {
         const body = this.createRequestBody(history, params);
         return this.post(this.config.chatUrl, body, params.apiKey);
+    }
+
+    async checkQuota(apiToken: string): Promise<any> {
+        const headers = this.createHeaders(apiToken);
+
+        const response = await axios.get(this.config.quotaUrl, {
+            headers: headers,
+        });
+
+        return response.data;
     }
 
     private createRequestBody(
@@ -68,7 +81,6 @@ export class GrazieApi {
             Accept: "*/*",
             "Content-Type": "application/json",
             "Grazie-Authenticate-Jwt": token,
-            "Grazie-Original-Service-JWT": token,
         };
         /* eslint-enable @typescript-eslint/naming-convention */
     }
