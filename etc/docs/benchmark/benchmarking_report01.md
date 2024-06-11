@@ -4,7 +4,7 @@ We have conducted several experiments using the [imm project](https://github.com
 
 ## Update: 10-06-2024
 
-We have found a critical bug in the checker of proofs, which caused false positive results in a few cases in the experiment. The data below was corrected and updated. Yet, these results were referenced at the submission to AITP'24 and one shall consider only the updated data.
+We have found a critical bug in the checker of proofs, which caused false positive results in a few cases in the experiment. The data below was corrected and updated.
 
 ## Data Preparation
 
