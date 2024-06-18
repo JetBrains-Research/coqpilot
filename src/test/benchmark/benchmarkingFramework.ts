@@ -1,4 +1,5 @@
 import * as assert from "assert";
+import * as fs from "fs";
 
 import { LLMServices } from "../../llm/llmServices";
 import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
@@ -61,7 +62,8 @@ export async function runTestBenchmark(
             shouldCompleteHole,
             workspaceRootPath,
             filePath,
-            eventLogger
+            eventLogger,
+            additionalImports
         );
     const filteredCompletionTargets = {
         admitTargets: completionTargets.admitTargets.filter(
@@ -76,13 +78,6 @@ export async function runTestBenchmark(
                     target.parentTheorem.name
                 ) ?? true
         ),
-    };
-
-    const importStrings =
-        additionalImports?.map((importFile) => importFile.get()) ?? [];
-    const modifiedSourceFileEnvironment: SourceFileEnvironment = {
-        ...sourceFileEnvironment,
-        fileLines: importStrings.concat(sourceFileEnvironment.fileLines),
     };
 
     consoleLogSeparatorLine("\n");
@@ -117,7 +112,7 @@ export async function runTestBenchmark(
         consoleLog("try to prove theorems\n");
         theoremTargetsResults = await benchmarkTargets(
             filteredCompletionTargets.theoremTargets,
-            modifiedSourceFileEnvironment,
+            sourceFileEnvironment,
             processEnvironment,
             getSingleModelId(inputModelsParams),
             relativePathToFile,
@@ -331,16 +326,48 @@ function reactToRequestEvent(
     };
 }
 
+function buildAuxFileUri(filePath: string, unique: boolean = true): Uri {
+    let auxFilePath = filePath.replace(/\.v$/, "_cp_aux.v");
+    if (unique && fs.existsSync(auxFilePath)) {
+        const randomSuffix = Math.floor(Math.random() * 1000000);
+        auxFilePath = auxFilePath.replace(
+            /\_cp_aux.v$/,
+            `_${randomSuffix}_cp_aux.v`
+        );
+    }
+
+    return Uri.fromPath(auxFilePath);
+}
+
 async function prepareForBenchmarkCompletions(
     inputModelsParams: InputModelsParams,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     workspaceRootPath: string | undefined,
     filePath: string,
-    eventLogger: EventLogger
+    eventLogger: EventLogger,
+    additionalImports?: AdditionalFileImport[]
 ): Promise<
     [BenchmarkingCompletionTargets, SourceFileEnvironment, ProcessEnvironment]
 > {
-    const fileUri = Uri.fromPath(filePath);
+    function getFileUriWithImports(
+        filePath: string,
+        additionalImports?: AdditionalFileImport[]
+    ): [Uri, boolean] {
+        if (additionalImports === undefined) {
+            return [Uri.fromPath(filePath), false];
+        }
+
+        const importStrings =
+            additionalImports?.map((importFile) => importFile.get()) ?? [];
+        const fileContent = fs.readFileSync(filePath, "utf8");
+        const updatedFileContent =
+            importStrings.join("\n") + "\n" + fileContent;
+        const auxFilePath = buildAuxFileUri(filePath);
+        fs.writeFileSync(auxFilePath.fsPath, updatedFileContent);
+        return [auxFilePath, true];
+    }
+
+    const [fileUri, isNew] = getFileUriWithImports(filePath, additionalImports);
 
     const client = createCoqLspClient(workspaceRootPath);
     await client.openTextDocument(fileUri);
@@ -368,6 +395,10 @@ async function prepareForBenchmarkCompletions(
         ),
         services: llmServices,
     };
+
+    if (isNew) {
+        fs.unlinkSync(fileUri.fsPath);
+    }
 
     return [completionTargets, sourceFileEnvironment, processEnvironment];
 }
