@@ -21,3 +21,6 @@ src/test/resources/**/.vscode
 # Ignore the generated build files in datatests inside benchmarks
 dataset/**/result
 dataset/**/.vscode/
+
+# Ignore private files used while benchmarking
+src/test/benchmark/benchmarkPrivate/
