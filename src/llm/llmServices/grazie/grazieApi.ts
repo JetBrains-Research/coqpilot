@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { ResponseType } from "axios";
 
 import { DebugWrappers } from "../llmServiceInternal";
@@ -34,7 +34,7 @@ export class GrazieApi {
     async checkQuota(apiToken: string): Promise<any> {
         const headers = this.createHeaders(apiToken);
 
-        const response = await axios.get(this.config.quotaUrl, {
+        const response = await axios.post(this.config.quotaUrl, {
             headers: headers,
         });
 
