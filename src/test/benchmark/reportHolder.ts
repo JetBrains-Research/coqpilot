@@ -69,7 +69,8 @@ export class BenchmarkReportHolder {
             results.forEach((result) => services.add(result.modelId));
         }
 
-        const serviceList = Array.from(services);
+        const serviceL = Array.from(services);
+        const serviceList = serviceL.filter((service) => service !== "NOPROOF");
 
         let markdownContent = "## Results\n\n";
         markdownContent +=
@@ -101,10 +102,11 @@ export class BenchmarkReportHolder {
 
                     results.forEach((result) => {
                         rowTemplate.group = result.group;
-                        rowTemplate.filePath = `[${result.filePath.split("/").pop()}](https://github.com/weakmemory/imm/tree/coq819/src/${result.filePath})`;
-
-                        rowTemplate[result.modelId] =
-                            `[&#x2713;](#${result.theoremName.toLowerCase()})`;
+                        rowTemplate.filePath = `[${result.filePath.split("/").pop()}](https://github.com/weakmemory/imm/tree/master/${result.filePath.slice(4)})`;
+                        if (result.modelId !== "NOPROOF") {
+                            rowTemplate[result.modelId] =
+                                `[&#x2713;](#${result.theoremName.toLowerCase()})`;
+                        }
                     });
 
                     let row = `| ${rowTemplate.group} | ${rowTemplate.filePath} | \`${rowTemplate.theoremName}\` `;
@@ -129,11 +131,16 @@ export class BenchmarkReportHolder {
 
             for (const [theoremName, results] of Object.entries(report)) {
                 if (results[0].group === group) {
-                    markdownContent += `#### Theorem name: \n#### \`${theoremName}\`\n\n`;
+                    if (
+                        results.filter((result) => result.modelId !== "NOPROOF")
+                            .length !== 0
+                    ) {
+                        markdownContent += `#### Theorem name: \n#### \`${theoremName}\`\n\n`;
 
-                    results.forEach((result) => {
-                        markdownContent += `#### ${result.modelId} Proof:\n\n\`\`\`\n${result.generatedProof}\n\`\`\`\n\n`;
-                    });
+                        results.forEach((result) => {
+                            markdownContent += `#### ${result.modelId} Proof:\n\n\`\`\`\n${result.generatedProof}\n\`\`\`\n\n`;
+                        });
+                    }
                 }
             }
         });

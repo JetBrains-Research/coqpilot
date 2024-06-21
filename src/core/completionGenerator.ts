@@ -10,6 +10,7 @@ import { Goal, Hyp, PpString } from "../coqLsp/coqLspTypes";
 
 import { Theorem } from "../coqParser/parsedTypes";
 import { EventLogger } from "../logging/eventLogger";
+import { createCoqLspClient } from "../test/commonTestFunctions/coqLspBuilder";
 import { stringifyAnyValue } from "../utils/printers";
 
 import { ContextTheoremsRanker } from "./contextTheoremRanker/contextTheoremsRanker";
@@ -226,6 +227,13 @@ async function checkGeneratedProofs(
         (generatedProof: GeneratedProof) =>
             prepareProofToCheck(generatedProof.proof())
     );
+
+    // processEnvironment.coqProofChecker.dispose();
+    // const workspaceRootPath = ...;
+    // const client = createCoqLspClient(workspaceRootPath);
+    // const coqProofChecker = new CoqProofChecker(client);
+    // processEnvironment.coqProofChecker = coqProofChecker;
+
     return processEnvironment.coqProofChecker.checkProofs(
         sourceFileEnvironment.dirPath,
         sourceFileContentPrefix,
