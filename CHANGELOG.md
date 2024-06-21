@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.4
+
+Contains no public changes. Updates the endpoints for the Grazie LLM Service in order to make it work with the latest version of Grazie service tokens. 
+
 ## 2.2.3
 
 - Fix critical issue with proof checking. Before, when the choices parameter was high, sometimes the wrong proof could be generated and not identified as incorrect. 
