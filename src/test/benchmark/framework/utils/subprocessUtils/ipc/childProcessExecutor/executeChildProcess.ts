@@ -53,23 +53,23 @@ export const defaultChildProcessTimeoutMillis = timeToMillis(
     time(10, "minute")
 );
 
-// TODO: implement complementary child executor
-
 // TODO: document invariants
 export async function executeProcessAsFunction<
     ArgsType extends child.Serializable,
     ResultType extends child.Serializable,
+    T,
 >(
     commandToExecute: CommandToExecute,
     args: ArgsType,
     argsSchema: JSONSchemaType<ArgsType>,
     resultSchema: JSONSchemaType<ResultType>,
+    resultMapper: (result: ResultType) => T,
     options: ChildProcessOptions,
     benchmarkingLogger: BenchmarkingLogger,
     enableProcessLifetimeDebugLogs: boolean = false
-): Promise<ExecutionResult<ResultType>> {
+): Promise<ExecutionResult<T>> {
     return new Promise((resolve, reject) => {
-        const promiseExecutor: PromiseExecutor<ExecutionResult<ResultType>> = {
+        const promiseExecutor: PromiseExecutor<ExecutionResult<T>> = {
             resolve: resolve,
             reject: reject,
         };
@@ -84,11 +84,12 @@ export async function executeProcessAsFunction<
                     "]",
                 ].join("")
             );
-        const lifetime: Utils.LifetimeObjects = {
+        const lifetime: Utils.LifetimeObjects<ResultType, T> = {
             subprocess: undefined,
             executionLogger: executionLogger,
             enableProcessLifetimeDebugLogs: enableProcessLifetimeDebugLogs,
             promiseExecutor: promiseExecutor,
+            resultMapper: resultMapper,
             debug: Utils.buildDebugExecutionLoggerShortcut(
                 executionLogger,
                 enableProcessLifetimeDebugLogs
@@ -109,7 +110,7 @@ export async function executeProcessAsFunction<
             );
         }
 
-        registerEventListeners<ArgsType, ResultType>(
+        registerEventListeners<ArgsType, ResultType, T>(
             lifetime,
             argsSchema,
             resultSchema
@@ -142,8 +143,8 @@ function createSpawnOptions(
     return spawnOptions;
 }
 
-function registerEventListeners<ArgsType, ResultType>(
-    lifetime: Utils.LifetimeObjects,
+function registerEventListeners<ArgsType, ResultType, T>(
+    lifetime: Utils.LifetimeObjects<ResultType, T>,
     argsSchema: JSONSchemaType<ArgsType>,
     resultSchema: JSONSchemaType<ResultType>
 ) {
@@ -205,10 +206,10 @@ function registerEventListeners<ArgsType, ResultType>(
     });
 }
 
-function onMessageReceived<ArgsType, ResultType>(
+function onMessageReceived<ArgsType, ResultType, T>(
     message: child.Serializable,
     ipcMessageValidators: IPCMessageSchemaValidators<ArgsType, ResultType>,
-    lifetime: Utils.LifetimeObjects
+    lifetime: Utils.LifetimeObjects<ResultType, T>
 ) {
     const ipcMessage = message as IPCMessage;
     if (!ipcMessageValidators.validateIPCMessage(ipcMessage)) {
@@ -236,7 +237,9 @@ function onMessageReceived<ArgsType, ResultType>(
             );
             Utils.finishSubprocess(lifetime);
             return lifetime.promiseExecutor.resolve(
-                new SuccessfullExecution(resultMessage.result)
+                new SuccessfullExecution(
+                    lifetime.resultMapper(resultMessage.result)
+                )
             );
 
         case "execution-error":

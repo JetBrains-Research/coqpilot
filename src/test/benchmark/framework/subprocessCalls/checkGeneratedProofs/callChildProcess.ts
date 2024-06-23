@@ -55,6 +55,7 @@ export async function checkGeneratedProofsInSubprocess(
                 args,
                 Signature.argsSchema,
                 Signature.resultSchema,
+                (result) => result,
                 options,
                 benchmarkingLogger,
                 enableProcessLifetimeDebugLogs

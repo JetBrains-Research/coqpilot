@@ -8,12 +8,15 @@ import { PromiseExecutor } from "../../../promiseUtils";
 import { IPCError } from "../ipcError";
 import { IPCMessage, createStopIPCMessage } from "../ipcProtocol";
 
+import { ExecutionResult } from "./executionResult";
+
 export namespace ChildProcessExecutorUtils {
-    export interface LifetimeObjects {
+    export interface LifetimeObjects<ResultType, T> {
         subprocess: child.ChildProcess | undefined;
         executionLogger: BenchmarkingLogger;
         enableProcessLifetimeDebugLogs: boolean;
-        promiseExecutor: PromiseExecutor<any>;
+        promiseExecutor: PromiseExecutor<ExecutionResult<T>>;
+        resultMapper: (result: ResultType) => T;
         debug: ConditionalExecutionLoggerDebug;
     }
 
@@ -30,9 +33,9 @@ export namespace ChildProcessExecutorUtils {
         };
     }
 
-    export function rejectOnIPCError(
+    export function rejectOnIPCError<ResultType, T>(
         errorMessage: string,
-        lifetime: LifetimeObjects
+        lifetime: LifetimeObjects<ResultType, T>
     ) {
         const asOneRecord = lifetime.executionLogger.asOneRecord();
         asOneRecord.error(
@@ -45,11 +48,15 @@ export namespace ChildProcessExecutorUtils {
         lifetime.promiseExecutor.reject(new IPCError(errorMessage));
     }
 
-    export function rejectOnInvalidIPCMessageSchemaError<T extends IPCMessage>(
+    export function rejectOnInvalidIPCMessageSchemaError<
+        IPCMessageType extends IPCMessage,
+        ResultType,
+        T,
+    >(
         ipcMessageTypeName: string,
-        ipcMessage: T,
-        failedValidator: ValidateFunction<T>,
-        lifetime: LifetimeObjects
+        ipcMessage: IPCMessageType,
+        failedValidator: ValidateFunction<IPCMessageType>,
+        lifetime: LifetimeObjects<ResultType, T>
     ) {
         rejectOnIPCError(
             [
@@ -61,7 +68,9 @@ export namespace ChildProcessExecutorUtils {
         );
     }
 
-    export function finishSubprocess(lifetime: LifetimeObjects) {
+    export function finishSubprocess<ResultType, T>(
+        lifetime: LifetimeObjects<ResultType, T>
+    ) {
         const subprocess = lifetime.subprocess;
         if (subprocess === undefined) {
             return;
