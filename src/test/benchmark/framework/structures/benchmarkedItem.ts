@@ -1,9 +1,6 @@
 import { BenchmarkingItem } from "./benchmarkingItem";
-import {
-    EstimatedChatTokens,
-    LengthMetrics,
-    TheoremData,
-} from "./utilStructures";
+import { TheoremData } from "./theoremData";
+import { EstimatedChatTokens, LengthMetrics } from "./utilStructures";
 
 export interface BenchmarkedItem {
     item: BenchmarkingItem;

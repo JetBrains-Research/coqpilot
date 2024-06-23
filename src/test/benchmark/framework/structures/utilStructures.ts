@@ -1,16 +1,4 @@
-import { Theorem } from "../../../../coqParser/parsedTypes";
-
-export class TheoremData {
-    constructor(readonly theorem: Theorem) {}
-
-    readonly name = this.theorem.name;
-    readonly proof = this.theorem.proof;
-
-    // TODO: count length accurately
-    // readonly proofLength: LengthMetrics = {
-    //     inSteps: this.theorem.proof?.proof_steps.length ?? 0,
-    // };
-}
+import { JSONSchemaType } from "ajv";
 
 export interface LengthMetrics {
     inSteps?: number;
@@ -44,6 +32,76 @@ export class CodeElementPosition {
     toString(): string {
         return `${this.line}:${this.character}`;
     }
+}
 
-    // TODO: build from vscode Position
+export interface SerializedCodeElementRange {
+    start: SerializedCodeElementPosition;
+    end: SerializedCodeElementPosition;
+}
+
+export interface SerializedCodeElementPosition {
+    line: number;
+    character: number;
+}
+
+export const serializedCodeElementPositionSchema: JSONSchemaType<SerializedCodeElementPosition> =
+    {
+        type: "object",
+        properties: {
+            line: {
+                type: "number",
+            },
+            character: {
+                type: "number",
+            },
+        },
+        required: ["line", "character"],
+        additionalProperties: false,
+    };
+
+export const serializedCodeElementRangeSchema: JSONSchemaType<SerializedCodeElementRange> =
+    {
+        type: "object",
+        properties: {
+            start: serializedCodeElementPositionSchema,
+            end: serializedCodeElementPositionSchema,
+        },
+        required: ["start", "end"],
+        additionalProperties: false,
+    };
+
+export function deserializeCodeElementRange(
+    serializedCodeElementRange: SerializedCodeElementRange
+): CodeElementRange {
+    return new CodeElementRange(
+        deserializeCodeElementPosition(serializedCodeElementRange.start),
+        deserializeCodeElementPosition(serializedCodeElementRange.end)
+    );
+}
+
+export function serializeCodeElementRange(
+    codeElementRange: CodeElementRange
+): SerializedCodeElementRange {
+    return {
+        start: serializeCodeElementPosition(codeElementRange.start),
+        end: serializeCodeElementPosition(codeElementRange.end),
+    };
+}
+
+export function deserializeCodeElementPosition(
+    serializedCodeElementPosition: SerializedCodeElementPosition
+): CodeElementPosition {
+    return new CodeElementPosition(
+        serializedCodeElementPosition.line,
+        serializedCodeElementPosition.character
+    );
+}
+
+export function serializeCodeElementPosition(
+    codeElementPosition: CodeElementPosition
+): SerializedCodeElementPosition {
+    return {
+        line: codeElementPosition.line,
+        character: codeElementPosition.character,
+    };
 }

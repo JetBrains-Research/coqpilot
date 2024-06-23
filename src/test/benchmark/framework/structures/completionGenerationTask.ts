@@ -8,7 +8,8 @@ import {
     SourceFileEnvironment,
 } from "../../../../core/completionGenerator";
 
-import { CodeElementRange, TheoremData } from "./utilStructures";
+import { TheoremData } from "./theoremData";
+import { CodeElementRange } from "./utilStructures";
 
 export class CompletionGenerationTask {
     constructor(
