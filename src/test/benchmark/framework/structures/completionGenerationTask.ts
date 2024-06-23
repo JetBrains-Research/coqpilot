@@ -1,6 +1,5 @@
 import * as path from "path";
 
-import { CoqLspClient } from "../../../../coqLsp/coqLspClient";
 import { Goal, PpString } from "../../../../coqLsp/coqLspTypes";
 
 import {
@@ -17,13 +16,12 @@ export class CompletionGenerationTask {
         readonly targetGoalToProve: Goal<PpString>,
         readonly targetPositionRange: CodeElementRange,
         readonly targetType: TargetType,
-        readonly preparedEnvironment: PreparedBenchmarkingTaskEnvironment,
+        readonly parsedSourceFileData: ParsedCoqFileData,
         readonly sourceTheorem: TheoremData,
         readonly workspaceRoot: WorkspaceRoot | undefined
     ) {}
 
-    readonly sourceFilePath =
-        this.preparedEnvironment.parsedSourceFileData.filePath;
+    readonly sourceFilePath = this.parsedSourceFileData.filePath;
     readonly targetGoalToProveAsString = `${this.targetGoalToProve.ty}`;
 
     getCompletionContext(): CompletionContext {
@@ -36,7 +34,7 @@ export class CompletionGenerationTask {
 
     getSourceFileEnvironment(): SourceFileEnvironment {
         return CompletionGenerationTask.constructSourceFileEnvironment(
-            this.preparedEnvironment.parsedSourceFileData
+            this.parsedSourceFileData
         );
     }
 
@@ -60,11 +58,6 @@ export class CompletionGenerationTask {
 export enum TargetType {
     ADMIT,
     PROVE_THEOREM,
-}
-
-export interface PreparedBenchmarkingTaskEnvironment {
-    coqLspClient: CoqLspClient;
-    parsedSourceFileData: ParsedCoqFileData;
 }
 
 export interface WorkspaceRoot {

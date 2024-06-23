@@ -1,10 +1,7 @@
 import { stringifyAnyValue } from "../../../utils/printers";
 
 import { executeBenchmarkingTask } from "./benchmarkCompletionGeneration/executeBenchmarkingTask";
-import {
-    BenchmarkingLogger,
-    BenchmarkingLoggerImpl,
-} from "./logging/benchmarkingLogger";
+import { BenchmarkingLogger } from "./logging/benchmarkingLogger";
 import { BenchmarkedItem } from "./structures/benchmarkedItem";
 import { BenchmarkingItem } from "./structures/benchmarkingItem";
 import { ExperimentResults } from "./structures/experimentResults";
@@ -31,7 +28,9 @@ namespace ArtifactsDirNames {
 export async function benchmark(
     benchmarkingItems: BenchmarkingItem[],
     resolvedArtifactsDirPath: string,
-    experimentRunOptions: ExperimentRunOptions
+    experimentRunOptions: ExperimentRunOptions,
+    subprocessesScheduler: SubprocessesScheduler,
+    parentLogger: BenchmarkingLogger
 ): Promise<ExperimentResults> {
     if (!checkDirectoryIsEmpty(resolvedArtifactsDirPath)) {
         throw Error(
@@ -42,13 +41,6 @@ export async function benchmark(
         true,
         resolvedArtifactsDirPath,
         ArtifactsDirNames.itemsReportsDir
-    );
-    const parentLogger: BenchmarkingLogger = new BenchmarkingLoggerImpl(
-        experimentRunOptions.loggerSeverity
-    );
-    const subprocessesScheduler = new SubprocessesScheduler(
-        experimentRunOptions.maxActiveSubprocessesNumber,
-        experimentRunOptions.enableSchedulingDebugLogs
     );
 
     const itemsPromises: Promise<BenchmarkedItem | undefined>[] = [];

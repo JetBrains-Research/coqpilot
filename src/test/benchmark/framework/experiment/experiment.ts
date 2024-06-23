@@ -1,14 +1,26 @@
 import { benchmark } from "../benchmark";
-import { SeverityLevel } from "../logging/benchmarkingLogger";
-import { BenchmarkingItem } from "../structures/benchmarkingItem";
-import { TargetType } from "../structures/completionGenerationTask";
+import {
+    BenchmarkingLogger,
+    BenchmarkingLoggerImpl,
+    SeverityLevel,
+} from "../logging/benchmarkingLogger";
 import { ExperimentResults } from "../structures/experimentResults";
 import { ExperimentRunOptions } from "../structures/experimentRunOptions";
 import { LLMServiceIdentifier } from "../structures/llmServiceIdentifier";
 import { getRootDir, joinPaths, resolveAsAbsolutePath } from "../utils/fsUtils";
+import { SubprocessesScheduler } from "../utils/subprocessUtils/subprocessesScheduler";
 
+import { buildBenchmarkingItems } from "./buildBenchmarkingItems";
 import { InputBenchmarkingModelParams } from "./inputBenchmarkingModelParams";
 import { InputTargets, mergeInputTargets } from "./targetsBuilder";
+
+export interface InputBenchmarkingBundle<
+    InputParams extends InputBenchmarkingModelParams.Params,
+> {
+    llmServiceIdentifier: LLMServiceIdentifier;
+    inputBenchmarkingModelsParams: InputParams[];
+    targets: InputTargets;
+}
 
 export class Experiment {
     private inputTargets: InputTargets | undefined = undefined;
@@ -28,16 +40,35 @@ export class Experiment {
      */
     async run(
         artifactsDirPath: string,
-        inputExperimentRunOptions: Partial<ExperimentRunOptions>
+        inputRunOptions: Partial<ExperimentRunOptions>
     ): Promise<ExperimentResults> {
-        // TODO: build nix projects in dataset dir
         this.inputTargets = mergeInputTargets(
             this.bundles.map((bundle) => bundle.targets)
         );
+        const resolvedRunOptions =
+            this.resolveExperimentRunOptions(inputRunOptions);
+
+        const logger: BenchmarkingLogger = new BenchmarkingLoggerImpl(
+            resolvedRunOptions.loggerSeverity
+        );
+        const subprocessesScheduler = new SubprocessesScheduler(
+            resolvedRunOptions.maxActiveSubprocessesNumber,
+            resolvedRunOptions.enableSchedulingDebugLogs
+        );
+        const benchmarkingItems = await buildBenchmarkingItems(
+            this.bundles,
+            this.inputTargets,
+            resolvedRunOptions,
+            subprocessesScheduler,
+            logger
+        );
+
         return benchmark(
-            this.buildBenchmarkingItems(),
+            benchmarkingItems,
             resolveAsAbsolutePath(joinPaths(getRootDir(), artifactsDirPath)),
-            this.resolveExperimentRunOptions(inputExperimentRunOptions)
+            resolvedRunOptions,
+            subprocessesScheduler,
+            logger
         );
     }
 
@@ -56,6 +87,8 @@ export class Experiment {
                     this.inputTargets.size,
                 1
             ),
+            buildAndParseCoqProjectSubprocessTimeoutMillis:
+                inputOptions.buildAndParseCoqProjectSubprocessTimeoutMillis,
             checkProofsSubprocessTimeoutMillis:
                 inputOptions.checkProofsSubprocessTimeoutMillis,
             enableSubprocessLifetimeDebugLogs:
@@ -64,68 +97,4 @@ export class Experiment {
                 inputOptions.enableSchedulingDebugLogs ?? false,
         };
     }
-
-    // TODO: add logging
-    private buildBenchmarkingItems(): BenchmarkingItem[] {
-        if (this.inputTargets === undefined) {
-            throw Error(
-                "`inputTargets` should be built before building benchmarking items"
-            );
-        }
-        const benchmarkingItems: BenchmarkingItem[] = [];
-        for (const [
-            workspaceRoot,
-            filePathToFileTargets,
-        ] of this.inputTargets.entries()) {
-            // TODO: enter workspace
-            for (const [
-                filePath,
-                fileTarget,
-            ] of filePathToFileTargets.entries()) {
-                // TODO: parse source file
-                const targetTypesForAllTheorems = [];
-                if (fileTarget.allTheoremsAsAdmitTargets) {
-                    targetTypesForAllTheorems.push(TargetType.ADMIT);
-                }
-                if (fileTarget.allTheoremsAsProveTheoremTargets) {
-                    targetTypesForAllTheorems.push(TargetType.PROVE_THEOREM);
-                }
-                targetTypesForAllTheorems.forEach(
-                    (targetType) =>
-                        benchmarkingItems.push({} as BenchmarkingItem) // TODO: fill with data
-                );
-                for (const [
-                    theoremName,
-                    theoremTarget,
-                ] of fileTarget.specificTheoremTargets) {
-                    const targetTypes = [];
-                    if (
-                        theoremTarget.admitTargets &&
-                        !fileTarget.allTheoremsAsAdmitTargets
-                    ) {
-                        targetTypes.push(TargetType.ADMIT);
-                    }
-                    if (
-                        theoremTarget.proveTheoremTarget &&
-                        !fileTarget.allTheoremsAsProveTheoremTargets
-                    ) {
-                        targetTypes.push(TargetType.PROVE_THEOREM);
-                    }
-                    targetTypes.forEach(
-                        (targetType) =>
-                            benchmarkingItems.push({} as BenchmarkingItem) // TODO: fill with data
-                    );
-                }
-            }
-        }
-        return benchmarkingItems;
-    }
-}
-
-export interface InputBenchmarkingBundle<
-    InputParams extends InputBenchmarkingModelParams.Params,
-> {
-    llmServiceIdentifier: LLMServiceIdentifier;
-    inputBenchmarkingModelsParams: InputParams[];
-    targets: InputTargets;
 }
