@@ -8,9 +8,10 @@ export interface ExecuteSubprocessInWorkspaceCommand extends CommandToExecute {
     workingDirectory: string | undefined;
 }
 
-export function buildExecuteSubprocessInWorkspaceCommand(
+export function buildCommandToExecuteSubprocessInWorkspace(
     workspaceRoot: WorkspaceRoot | undefined,
-    subprocessName: string
+    subprocessName: string,
+    commandToPrepareWorkspace?: string
 ): ExecuteSubprocessInWorkspaceCommand {
     const npmArgs = [
         "run",
@@ -19,17 +20,25 @@ export function buildExecuteSubprocessInWorkspaceCommand(
         `-g="${getSubprocessExecutableSuiteName(subprocessName)}"`,
     ];
     if (workspaceRoot === undefined || !workspaceRoot.requiresNixEnvironment) {
+        // TODO: support workspace preparation if workspaceRoot is set but does not require nix
         return {
             command: "npm",
             args: npmArgs,
             workingDirectory: getRootDir(),
         };
     }
+    const prepareWorkspace =
+        commandToPrepareWorkspace === undefined
+            ? ""
+            : `${commandToPrepareWorkspace} && `;
     const cdRoot = `cd ${getRootDir()}`;
     const runSubprocessExecutableTestSuite = `npm ${npmArgs.join(" ")}`;
     return {
         command: "nix-shell", // TODO: `nix-shell` might break IPC channel between two node.js processes...
-        args: ["--run", `'${cdRoot} && ${runSubprocessExecutableTestSuite}'`],
+        args: [
+            "--run",
+            `'${prepareWorkspace}${cdRoot} && ${runSubprocessExecutableTestSuite}'`,
+        ],
         workingDirectory: workspaceRoot.directoryPath,
     };
 }

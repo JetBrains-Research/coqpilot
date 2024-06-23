@@ -11,7 +11,7 @@ import {
     executeProcessAsFunction,
 } from "../../utils/subprocessUtils/ipc/childProcessExecutor/executeChildProcess";
 import { ExecutionResult } from "../../utils/subprocessUtils/ipc/childProcessExecutor/executionResult";
-import { buildExecuteSubprocessInWorkspaceCommand } from "../../utils/subprocessUtils/subprocessExecutionCommandBuilder";
+import { buildCommandToExecuteSubprocessInWorkspace } from "../../utils/subprocessUtils/subprocessExecutionCommandBuilder";
 import { SubprocessesScheduler } from "../../utils/subprocessUtils/subprocessesScheduler";
 
 import { CheckProofsBySubprocessSignature } from "./callSignature";
@@ -29,7 +29,7 @@ export async function checkGeneratedProofsInSubprocess(
     enableProcessLifetimeDebugLogs: boolean = false
 ): Promise<ExecutionResult<Signature.Result>> {
     const enterWorkspaceAndExecuteSubprocessCommand =
-        buildExecuteSubprocessInWorkspaceCommand(
+        buildCommandToExecuteSubprocessInWorkspace(
             workspaceRoot,
             Signature.subprocessName
         );
