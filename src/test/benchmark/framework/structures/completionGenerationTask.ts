@@ -8,6 +8,7 @@ import {
     SourceFileEnvironment,
 } from "../../../../core/completionGenerator";
 
+import { ParsedCoqFileData } from "./parsedCoqFileData";
 import { TheoremData } from "./theoremData";
 import { CodeElementRange } from "./utilStructures";
 
@@ -64,18 +65,6 @@ export enum TargetType {
 export interface PreparedBenchmarkingTaskEnvironment {
     coqLspClient: CoqLspClient;
     parsedSourceFileData: ParsedCoqFileData;
-}
-
-export interface ParsedCoqFileData {
-    /**
-     * All theorems that were successfully parsed from the file.
-     * Ones that don't end with `Qed.` are also included.
-     */
-    allFileTheorems: TheoremData[];
-
-    fileLines: string[];
-    fileVersion: number;
-    filePath: string;
 }
 
 export interface WorkspaceRoot {
