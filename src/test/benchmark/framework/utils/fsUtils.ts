@@ -29,12 +29,26 @@ export function joinPaths(parentDirPath: string, ...paths: string[]): string {
     return path.join(parentDirPath, ...paths);
 }
 
+export function isAbsolutePath(inputPath: string): boolean {
+    return path.isAbsolute(inputPath);
+}
+
 export function resolveAsAbsolutePath(inputPath: string): string {
     return path.resolve(inputPath);
 }
 
 export function getLastName(inputPath: string): string {
     return path.parse(inputPath).name;
+}
+
+/**
+ * Both input paths are expected to be resolved and absolute paths.
+ */
+export function checkIsInsideDirectory(
+    inputPath: string,
+    dirPath: string
+): boolean {
+    return inputPath.startsWith(dirPath);
 }
 
 export function checkDirectoryIsEmpty(dirPath: string): boolean {
