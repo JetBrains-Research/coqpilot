@@ -1,9 +1,13 @@
+import { Goal, PpString } from "../../../../../coqLsp/coqLspTypes";
+
+import { FilePathToFileTarget } from "../../experiment/targetsBuilder";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import { WorkspaceRoot } from "../../structures/completionGenerationTask";
 import {
-    ParsedCoqFileData,
-    deserializeParsedCoqFile,
-} from "../../structures/parsedCoqFileData";
+    TargetType,
+    WorkspaceRoot,
+} from "../../structures/completionGenerationTask";
+import { deserializeParsedCoqFile } from "../../structures/parsedCoqFileData";
+import { deserializeCodeElementRange } from "../../structures/utilStructures";
 import { checkIsInsideDirectory, getDatasetDir } from "../../utils/fsUtils";
 import {
     ChildProcessOptions,
@@ -19,13 +23,13 @@ import Signature = BuildAndParseCoqProjectBySubprocessSignature;
 
 export async function buildAndParseCoqProjectInSubprocess(
     workspaceRoot: WorkspaceRoot | undefined,
-    sourceFilesToParsePaths: string[],
+    sourceFileTargetsToParse: FilePathToFileTarget,
     buildProject: boolean,
     timeoutMillis: number | undefined,
     subprocessesScheduler: SubprocessesScheduler,
     benchmarkingLogger: BenchmarkingLogger,
     enableProcessLifetimeDebugLogs: boolean = false
-): Promise<ExecutionResult<ParsedCoqFileData[]>> {
+): Promise<ExecutionResult<Signature.UnpackedResultModels.UnpackedResult>> {
     const enterWorkspaceAndExecuteSubprocessCommand =
         buildCommandToExecuteSubprocessInWorkspace(
             workspaceRoot,
@@ -38,11 +42,13 @@ export async function buildAndParseCoqProjectInSubprocess(
         );
     validateRequestedFilesAreInsideWorkspace(
         workspaceRoot,
-        sourceFilesToParsePaths
+        Array.from(sourceFileTargetsToParse.keys())
     );
-    const args: Signature.Args = {
+    const args: Signature.ArgsModels.Args = {
         workspaceRootPath: workspaceRoot?.directoryPath,
-        sourceFilesToParsePaths: sourceFilesToParsePaths,
+        sourceFilePathToTarget: packFileTargetsIntoArgs(
+            sourceFileTargetsToParse
+        ),
     };
     const options: ChildProcessOptions = {
         workingDirectory:
@@ -54,10 +60,9 @@ export async function buildAndParseCoqProjectInSubprocess(
             executeProcessAsFunction(
                 enterWorkspaceAndExecuteSubprocessCommand,
                 args,
-                Signature.argsSchema,
-                Signature.resultSchema,
-                (serializedParsedFiles) =>
-                    serializedParsedFiles.map(deserializeParsedCoqFile),
+                Signature.ArgsModels.argsSchema,
+                Signature.ResultModels.resultSchema,
+                unpackParsedFileTargets,
                 options,
                 benchmarkingLogger,
                 enableProcessLifetimeDebugLogs
@@ -68,10 +73,10 @@ export async function buildAndParseCoqProjectInSubprocess(
 
 function validateRequestedFilesAreInsideWorkspace(
     workspaceRoot: WorkspaceRoot | undefined,
-    sourceFilesToParsePaths: string[]
+    sourceFilesPaths: string[]
 ) {
     const parentDirPath = workspaceRoot?.directoryPath ?? getDatasetDir();
-    for (const filePath of sourceFilesToParsePaths) {
+    for (const filePath of sourceFilesPaths) {
         // note: assume paths are absolute and resolved
         if (!checkIsInsideDirectory(filePath, parentDirPath)) {
             throw Error(
@@ -79,4 +84,83 @@ function validateRequestedFilesAreInsideWorkspace(
             );
         }
     }
+}
+
+function packFileTargetsIntoArgs(
+    sourceFileTargetsToParse: FilePathToFileTarget
+): Signature.ArgsModels.FilePathToFileTarget {
+    const packedFileTargets: Signature.ArgsModels.FilePathToFileTarget = {};
+    for (const [filePath, fileTarget] of sourceFileTargetsToParse.entries()) {
+        const packedFileTarget: Signature.ArgsModels.FileTarget = {
+            specificTheoremTargets: {},
+            allTheoremsTargetTypes: [],
+        };
+        if (fileTarget.allTheoremsAsAdmitTargets) {
+            packedFileTarget.allTheoremsTargetTypes.push("ADMIT");
+        }
+        if (fileTarget.allTheoremsAsProveTheoremTargets) {
+            packedFileTarget.allTheoremsTargetTypes.push("PROVE_THEOREM");
+        }
+        for (const [
+            theoremName,
+            theoremTarget,
+        ] of fileTarget.specificTheoremTargets.entries()) {
+            const packedTheoremTarget: Signature.ArgsModels.TheoremTarget = {
+                targetTypes: [],
+            };
+            if (
+                theoremTarget.admitTargets &&
+                !fileTarget.allTheoremsAsAdmitTargets
+            ) {
+                packedTheoremTarget.targetTypes.push("ADMIT");
+            }
+            if (
+                theoremTarget.proveTheoremTarget &&
+                !fileTarget.allTheoremsAsProveTheoremTargets
+            ) {
+                packedTheoremTarget.targetTypes.push("PROVE_THEOREM");
+            }
+            if (packedTheoremTarget.targetTypes.length === 0) {
+                continue;
+            }
+            packedFileTarget.specificTheoremTargets[theoremName] =
+                packedTheoremTarget;
+        }
+        packedFileTargets[filePath] = packedFileTarget;
+    }
+    return packedFileTargets;
+}
+
+function unpackParsedFileTargets(
+    parsedFileTargets: Signature.ResultModels.Result
+): Signature.UnpackedResultModels.UnpackedResult {
+    const unpackedParsedFileTargets: Signature.UnpackedResultModels.UnpackedResult =
+        new Map();
+    for (const filePath in parsedFileTargets) {
+        const parsedFileTarget = parsedFileTargets[filePath];
+        const unpackedFileTarget: Signature.UnpackedResultModels.ParsedFileTarget =
+            {
+                parsedFile: deserializeParsedCoqFile(
+                    parsedFileTarget.serializedParsedFile
+                ),
+                extractedTaskTargets: parsedFileTarget.extractedTaskTargets.map(
+                    (taskTarget) => {
+                        return {
+                            targetGoalToProve: JSON.parse(
+                                taskTarget.targetGoalToProve
+                            ) as Goal<PpString>, // TODO: come up with better (de)serialization
+                            targetPositionRange: deserializeCodeElementRange(
+                                taskTarget.targetPositionRange
+                            ),
+                            targetType:
+                                TargetType[
+                                    taskTarget.targetType as keyof typeof TargetType
+                                ],
+                        };
+                    }
+                ),
+            };
+        unpackedParsedFileTargets.set(filePath, unpackedFileTarget);
+    }
+    return unpackedParsedFileTargets;
 }
