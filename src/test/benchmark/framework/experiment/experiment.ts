@@ -23,7 +23,7 @@ export interface InputBenchmarkingBundle<
 }
 
 export class Experiment {
-    private inputTargets: InputTargets | undefined = undefined;
+    private mergedInputTargets: InputTargets | undefined = undefined;
 
     constructor(
         private readonly bundles: InputBenchmarkingBundle<InputBenchmarkingModelParams.Params>[] = []
@@ -42,7 +42,7 @@ export class Experiment {
         artifactsDirPath: string,
         inputRunOptions: Partial<ExperimentRunOptions>
     ): Promise<ExperimentResults> {
-        this.inputTargets = mergeInputTargets(
+        this.mergedInputTargets = mergeInputTargets(
             this.bundles.map((bundle) => bundle.targets)
         );
         const resolvedRunOptions =
@@ -57,7 +57,7 @@ export class Experiment {
         );
         const benchmarkingItems = await buildBenchmarkingItems(
             this.bundles,
-            this.inputTargets,
+            this.mergedInputTargets,
             resolvedRunOptions,
             subprocessesScheduler,
             logger
@@ -75,7 +75,7 @@ export class Experiment {
     private resolveExperimentRunOptions(
         inputOptions: Partial<ExperimentRunOptions>
     ): ExperimentRunOptions {
-        if (this.inputTargets === undefined) {
+        if (this.mergedInputTargets === undefined) {
             throw Error(
                 "`inputTargets` should be built before input options resolution"
             );
@@ -84,7 +84,7 @@ export class Experiment {
             loggerSeverity: inputOptions.loggerSeverity ?? SeverityLevel.INFO,
             maxActiveSubprocessesNumber: Math.max(
                 inputOptions.maxActiveSubprocessesNumber ??
-                    this.inputTargets.size,
+                    this.mergedInputTargets.size,
                 1
             ),
             buildAndParseCoqProjectSubprocessTimeoutMillis:

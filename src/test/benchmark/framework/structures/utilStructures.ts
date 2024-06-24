@@ -12,7 +12,12 @@ export interface EstimatedChatTokens {
     tokensInTotal: number;
 }
 
-export class CodeElementRange {
+export interface CodeElementRangeInterface {
+    start: CodeElementPositionInterface;
+    end: CodeElementPositionInterface;
+}
+
+export class CodeElementRange implements CodeElementRangeInterface {
     constructor(
         readonly start: CodeElementPosition,
         readonly end: CodeElementPosition
@@ -21,9 +26,18 @@ export class CodeElementRange {
     toString(): string {
         return `(${this.start}):(${this.end})`;
     }
+
+    equalsTo(other: CodeElementRange): boolean {
+        return this.start.equalsTo(other.start) && this.end.equalsTo(other.end);
+    }
 }
 
-export class CodeElementPosition {
+export interface CodeElementPositionInterface {
+    line: number;
+    character: number;
+}
+
+export class CodeElementPosition implements CodeElementPositionInterface {
     constructor(
         readonly line: number,
         readonly character: number
@@ -31,6 +45,10 @@ export class CodeElementPosition {
 
     toString(): string {
         return `${this.line}:${this.character}`;
+    }
+
+    equalsTo(other: CodeElementPosition): boolean {
+        return this.line === other.line && this.character === other.character;
     }
 }
 
@@ -80,7 +98,7 @@ export function deserializeCodeElementRange(
 }
 
 export function serializeCodeElementRange(
-    codeElementRange: CodeElementRange
+    codeElementRange: CodeElementRangeInterface
 ): SerializedCodeElementRange {
     return {
         start: serializeCodeElementPosition(codeElementRange.start),
@@ -98,7 +116,7 @@ export function deserializeCodeElementPosition(
 }
 
 export function serializeCodeElementPosition(
-    codeElementPosition: CodeElementPosition
+    codeElementPosition: CodeElementPositionInterface
 ): SerializedCodeElementPosition {
     return {
         line: codeElementPosition.line,
