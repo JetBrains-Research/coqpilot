@@ -7,6 +7,7 @@ import {
     WorkspaceRoot,
 } from "../../structures/completionGenerationTask";
 import { deserializeParsedCoqFile } from "../../structures/parsedCoqFileData";
+import { TheoremData, deserializeTheorem } from "../../structures/theoremData";
 import { deserializeCodeElementRange } from "../../structures/utilStructures";
 import { checkIsInsideDirectory, getDatasetDir } from "../../utils/fsUtils";
 import {
@@ -156,6 +157,14 @@ function unpackParsedFileTargets(
                                 TargetType[
                                     taskTarget.targetType as keyof typeof TargetType
                                 ],
+                            sourceTheorem: new TheoremData(
+                                deserializeTheorem(
+                                    parsedFileTarget.serializedParsedFile
+                                        .allFileTheorems[
+                                        taskTarget.sourceTheoremIndex
+                                    ]
+                                )
+                            ),
                         };
                     }
                 ),

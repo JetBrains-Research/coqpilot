@@ -8,6 +8,7 @@ import {
     SerializedParsedCoqFile,
     serializedParsedCoqFileSchema,
 } from "../../structures/parsedCoqFileData";
+import { TheoremData } from "../../structures/theoremData";
 import {
     CodeElementRange,
     SerializedCodeElementRange,
@@ -136,6 +137,7 @@ export namespace BuildAndParseCoqProjectBySubprocessSignature {
             targetGoalToProve: ParsedGoal;
             targetPositionRange: SerializedCodeElementRange;
             targetType: CommonModels.TargetType;
+            sourceTheoremIndex: number;
         }
 
         export const taskTargetSchema: JSONSchemaType<TaskTarget> = {
@@ -146,11 +148,15 @@ export namespace BuildAndParseCoqProjectBySubprocessSignature {
                 },
                 targetPositionRange: serializedCodeElementRangeSchema,
                 targetType: CommonModels.targetTypeSchema,
+                sourceTheoremIndex: {
+                    type: "number",
+                },
             },
             required: [
                 "targetGoalToProve",
                 "targetPositionRange",
                 "targetType",
+                "sourceTheoremIndex",
             ],
             additionalProperties: false,
         };
@@ -198,6 +204,7 @@ export namespace BuildAndParseCoqProjectBySubprocessSignature {
             targetGoalToProve: Goal<PpString>;
             targetPositionRange: CodeElementRange;
             targetType: TargetType;
+            sourceTheorem: TheoremData;
         }
     }
 }

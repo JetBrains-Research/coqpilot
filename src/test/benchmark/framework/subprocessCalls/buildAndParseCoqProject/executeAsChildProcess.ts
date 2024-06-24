@@ -94,9 +94,11 @@ async function extractTaskTargetsFromFile(
 
     // construct all theorems targets
     for (const targetType of fileTarget.allTheoremsTargetTypes) {
-        for (const theorem of serializedParsedFile.allFileTheorems) {
+        for (let i = 0; i < serializedParsedFile.allFileTheorems.length; i++) {
+            const theorem = serializedParsedFile.allFileTheorems[i];
             const taskTargets = await extractTaskTargetsFromTheorem(
                 theorem,
+                i,
                 targetType,
                 serializedParsedFile,
                 coqLspClient,
@@ -107,23 +109,28 @@ async function extractTaskTargetsFromFile(
     }
 
     // construct specific theorems targets
-    const theoremNameToTheorem = new Map(
-        serializedParsedFile.allFileTheorems.map((serializedTheorem) => [
+    const theoremNameToTheoremWithIndex: Map<
+        string,
+        [SerializedTheorem, number]
+    > = new Map(
+        serializedParsedFile.allFileTheorems.map((serializedTheorem, i) => [
             serializedTheorem.name,
-            serializedTheorem,
+            [serializedTheorem, i],
         ])
     );
     for (const theoremName in fileTarget.specificTheoremTargets) {
         const theoremTarget = fileTarget.specificTheoremTargets[theoremName];
-        const theorem = theoremNameToTheorem.get(theoremName);
-        if (theorem === undefined) {
+        const theoremWithIndex = theoremNameToTheoremWithIndex.get(theoremName);
+        if (theoremWithIndex === undefined) {
             throw Error(
                 `no parsed theorem data for requested theorem "${theoremName}" of "${serializedParsedFile.filePath}" file`
             );
         }
+        const [theorem, theoremIndex] = theoremWithIndex;
         for (const targetType of theoremTarget.targetTypes) {
             const taskTargets = await extractTaskTargetsFromTheorem(
                 theorem,
+                theoremIndex,
                 targetType,
                 serializedParsedFile,
                 coqLspClient,
@@ -138,6 +145,7 @@ async function extractTaskTargetsFromFile(
 
 async function extractTaskTargetsFromTheorem(
     theorem: SerializedTheorem,
+    sourceTheoremIndex: number,
     targetType: Signature.CommonModels.TargetType,
     serializedParsedFile: SerializedParsedCoqFile,
     coqLspClient: CoqLspClient,
@@ -150,6 +158,7 @@ async function extractTaskTargetsFromTheorem(
                 taskTargets.push(
                     await buildTaskTarget(
                         holeProofStep,
+                        sourceTheoremIndex,
                         targetType,
                         serializedParsedFile,
                         coqLspClient,
@@ -163,6 +172,7 @@ async function extractTaskTargetsFromTheorem(
             return [
                 await buildTaskTarget(
                     firstProofStep,
+                    sourceTheoremIndex,
                     targetType,
                     serializedParsedFile,
                     coqLspClient,
@@ -174,6 +184,7 @@ async function extractTaskTargetsFromTheorem(
 
 async function buildTaskTarget(
     proofStep: SerializedProofStep,
+    sourceTheoremIndex: number,
     targetType: Signature.CommonModels.TargetType,
     serializedParsedFile: SerializedParsedCoqFile,
     coqLspClient: CoqLspClient,
@@ -199,5 +210,6 @@ async function buildTaskTarget(
         targetGoalToProve: JSON.stringify(goal), // TODO: come up with better (de)serialization
         targetPositionRange: proofStep.range,
         targetType: targetType,
+        sourceTheoremIndex: sourceTheoremIndex,
     };
 }
