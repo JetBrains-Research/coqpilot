@@ -47,35 +47,46 @@ export namespace BuildAndParseCoqProjectBySubprocessSignature {
 
         export interface FileTarget {
             specificTheoremTargets: TheoremNameToTheoremTarget;
-            allTheoremsTargetTypes: CommonModels.TargetType[];
+            allTheoremsTargetTypes: TargetTypeToBundleIds;
         }
 
         export type TheoremNameToTheoremTarget = {
             [key: string]: TheoremTarget;
         };
 
-        export interface TheoremTarget {
-            targetTypes: CommonModels.TargetType[];
-        }
+        export type TheoremTarget = TargetTypeToBundleIds;
 
-        export const theoremTargetSchema: JSONSchemaType<TheoremTarget> = {
-            type: "object",
-            properties: {
-                targetTypes: {
-                    type: "array",
-                    items: CommonModels.targetTypeSchema,
-                },
-            },
-            required: ["targetTypes"],
-            additionalProperties: false,
+        export type TargetTypeToBundleIds = {
+            [key in CommonModels.TargetType]: number[];
         };
+
+        export const targetTypeToBundleIdsSchema: JSONSchemaType<TargetTypeToBundleIds> =
+            {
+                type: "object",
+                properties: {
+                    ADMIT: {
+                        type: "array",
+                        items: {
+                            type: "number",
+                        },
+                    },
+                    PROVE_THEOREM: {
+                        type: "array",
+                        items: {
+                            type: "number",
+                        },
+                    },
+                },
+                required: ["ADMIT", "PROVE_THEOREM"],
+                additionalProperties: false,
+            };
 
         export const theoremNameToTheoremTargetSchema: JSONSchemaType<TheoremNameToTheoremTarget> =
             {
                 type: "object",
                 patternProperties: {
                     // eslint-disable-next-line @typescript-eslint/naming-convention
-                    "^.*$": theoremTargetSchema,
+                    "^.*$": targetTypeToBundleIdsSchema,
                 },
                 required: [],
                 additionalProperties: false,
@@ -85,10 +96,7 @@ export namespace BuildAndParseCoqProjectBySubprocessSignature {
             type: "object",
             properties: {
                 specificTheoremTargets: theoremNameToTheoremTargetSchema,
-                allTheoremsTargetTypes: {
-                    type: "array",
-                    items: CommonModels.targetTypeSchema,
-                },
+                allTheoremsTargetTypes: targetTypeToBundleIdsSchema,
             },
             required: ["specificTheoremTargets", "allTheoremsTargetTypes"],
             additionalProperties: false,
@@ -138,6 +146,7 @@ export namespace BuildAndParseCoqProjectBySubprocessSignature {
             targetPositionRange: SerializedCodeElementRange;
             targetType: CommonModels.TargetType;
             sourceTheoremIndex: number;
+            bundleIds: number[];
         }
 
         export const taskTargetSchema: JSONSchemaType<TaskTarget> = {
@@ -151,12 +160,19 @@ export namespace BuildAndParseCoqProjectBySubprocessSignature {
                 sourceTheoremIndex: {
                     type: "number",
                 },
+                bundleIds: {
+                    type: "array",
+                    items: {
+                        type: "number",
+                    },
+                },
             },
             required: [
                 "targetGoalToProve",
                 "targetPositionRange",
                 "targetType",
                 "sourceTheoremIndex",
+                "bundleIds",
             ],
             additionalProperties: false,
         };
@@ -205,6 +221,7 @@ export namespace BuildAndParseCoqProjectBySubprocessSignature {
             targetPositionRange: CodeElementRange;
             targetType: TargetType;
             sourceTheorem: TheoremData;
+            bundleIds: Set<number>;
         }
     }
 }

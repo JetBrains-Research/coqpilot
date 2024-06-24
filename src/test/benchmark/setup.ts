@@ -1,6 +1,6 @@
 import { expect } from "earl";
 
-import { BenchmarkingBundle } from "./framework/experiment/benchmarkingBundle";
+import { BenchmarkingBundle } from "./framework/experiment/benchmarkingBundleBuilder";
 import { Experiment } from "./framework/experiment/experiment";
 import { TargetsBuilder } from "./framework/experiment/targetsBuilder";
 import { SeverityLevel } from "./framework/logging/benchmarkingLogger";

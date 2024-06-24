@@ -17,16 +17,16 @@ import { getParamsResolver, getShortName } from "../utils/llmServicesUtils";
 import { resolveTheoremsRanker } from "../utils/resolveTheoremsRanker";
 import { SubprocessesScheduler } from "../utils/subprocessUtils/subprocessesScheduler";
 
-import { InputBenchmarkingBundle } from "./experiment";
+import { BaseInputBenchmarkingBundle } from "./experiment";
 import { InputBenchmarkingModelParams } from "./inputBenchmarkingModelParams";
-import { FilePathToFileTarget, InputTargets } from "./targetsBuilder";
+import { MergedInputTargets } from "./mergedInputTargets";
 
 /**
  * Builds and parses requested Coq projects via subprocesses, then constructs benchmarking items.
  */
 export async function buildBenchmarkingItems(
-    inputBundles: InputBenchmarkingBundle<InputBenchmarkingModelParams.Params>[],
-    mergedInputTargets: InputTargets,
+    inputBundles: BaseInputBenchmarkingBundle[],
+    mergedInputTargets: MergedInputTargets,
     runOptions: ExperimentRunOptions,
     subprocessesScheduler: SubprocessesScheduler,
     logger: BenchmarkingLogger
@@ -90,7 +90,7 @@ type WorkspaceToParsedFileTargets = Map<
 >;
 
 async function buildAndParseRequestedCoqProjects(
-    inputTargets: InputTargets,
+    inputTargets: MergedInputTargets,
     runOptions: ExperimentRunOptions,
     subprocessesScheduler: SubprocessesScheduler,
     logger: BenchmarkingLogger
@@ -116,7 +116,7 @@ async function buildAndParseRequestedCoqProjects(
 
 async function buildAndParseCoqProjectOrThrow(
     workspaceRoot: WorkspaceRoot | undefined,
-    sourceFileTargetsToParse: FilePathToFileTarget,
+    sourceFileTargetsToParse: BuildAndParseCoqProjectBySubprocessSignature.ArgsModels.FilePathToFileTarget,
     runOptions: ExperimentRunOptions,
     subprocessesScheduler: SubprocessesScheduler,
     logger: BenchmarkingLogger
@@ -139,7 +139,7 @@ async function buildAndParseCoqProjectOrThrow(
             .asOneRecord()
             .error(`failed to build and parse ${projectId}`, undefined, "")
             .debug(
-                `: ${Array.from(sourceFileTargetsToParse.keys()).join(", ")}`,
+                `: ${Object.keys(sourceFileTargetsToParse).join(", ")}`,
                 undefined,
                 ""
             )
@@ -156,7 +156,7 @@ async function buildAndParseCoqProjectOrThrow(
 }
 
 function constructBenchmarkingItems(
-    inputBundles: InputBenchmarkingBundle<InputBenchmarkingModelParams.Params>[],
+    inputBundles: BaseInputBenchmarkingBundle[],
     workspaceToParsedFileTargets: WorkspaceToParsedFileTargets
 ): BenchmarkingItem[] {
     const modelIdToAllRequestedTasks: Map<string, CompletionGenerationTask[]> =
@@ -167,7 +167,7 @@ function constructBenchmarkingItems(
     > = new Map();
     for (const inputBundle of inputBundles) {
         const bundleTasks = constructTasksForBundleTargets(
-            inputBundle.targets,
+            inputBundle.bundleId,
             workspaceToParsedFileTargets
         ) as CompletionGenerationTask[];
         for (const inputParams of inputBundle.inputBenchmarkingModelsParams) {
@@ -243,98 +243,32 @@ function resolveInputBenchmarkingModelParams(
     };
 }
 
-// TODO: add bundle id to the request, so as to make possible to just filter by it here
 function constructTasksForBundleTargets(
-    bundleTargets: InputTargets,
+    bundleId: number,
     workspaceToParsedFileTargets: WorkspaceToParsedFileTargets
 ): CompletionGenerationTask[] {
     const tasks: CompletionGenerationTask[] = [];
     for (const [
         workspaceRoot,
-        filePathToFileTargets,
-    ] of bundleTargets.entries()) {
-        const parsedFileTargets =
-            workspaceToParsedFileTargets.get(workspaceRoot);
-        if (parsedFileTargets === undefined) {
-            throw Error(
-                `no parsed file targets data found for requested workspace root: "${workspaceRoot?.directoryPath}"`
-            );
-        }
-        for (const [filePath, fileTarget] of filePathToFileTargets.entries()) {
-            const parsedFileTarget = parsedFileTargets.get(filePath);
-            if (parsedFileTarget === undefined) {
-                throw Error(
-                    `no parsed file target data found for requested source file: "${filePath}"`
+        parsedFileTargets,
+    ] of workspaceToParsedFileTargets.entries()) {
+        for (const parsedFileTarget of parsedFileTargets.values()) {
+            const bundleTaskTargets =
+                parsedFileTarget.extractedTaskTargets.filter((taskTarget) =>
+                    taskTarget.bundleIds.has(bundleId)
                 );
-            }
-
-            // find all theorems targets for this bundle
-            const targetTypesForAllTheorems = [];
-            if (fileTarget.allTheoremsAsAdmitTargets) {
-                targetTypesForAllTheorems.push(TargetType.ADMIT);
-            }
-            if (fileTarget.allTheoremsAsProveTheoremTargets) {
-                targetTypesForAllTheorems.push(TargetType.PROVE_THEOREM);
-            }
-            targetTypesForAllTheorems.forEach((targetType) => {
-                const bundleTaskTargets =
-                    parsedFileTarget.extractedTaskTargets.filter(
-                        (parsedTaskTarget) =>
-                            parsedTaskTarget.targetType === targetType
-                    );
-                bundleTaskTargets.forEach((taskTarget) =>
-                    tasks.push(
-                        new CompletionGenerationTask(
-                            taskTarget.targetGoalToProve,
-                            taskTarget.targetPositionRange,
-                            taskTarget.targetType,
-                            parsedFileTarget.parsedFile,
-                            taskTarget.sourceTheorem,
-                            workspaceRoot
-                        )
+            bundleTaskTargets.forEach((taskTarget) =>
+                tasks.push(
+                    new CompletionGenerationTask(
+                        taskTarget.targetGoalToProve,
+                        taskTarget.targetPositionRange,
+                        taskTarget.targetType,
+                        parsedFileTarget.parsedFile,
+                        taskTarget.sourceTheorem,
+                        workspaceRoot
                     )
-                );
-            });
-
-            for (const [
-                theoremName,
-                theoremTarget,
-            ] of fileTarget.specificTheoremTargets) {
-                const targetTypes = [];
-                if (
-                    theoremTarget.admitTargets &&
-                    !fileTarget.allTheoremsAsAdmitTargets
-                ) {
-                    targetTypes.push(TargetType.ADMIT);
-                }
-                if (
-                    theoremTarget.proveTheoremTarget &&
-                    !fileTarget.allTheoremsAsProveTheoremTargets
-                ) {
-                    targetTypes.push(TargetType.PROVE_THEOREM);
-                }
-                targetTypes.forEach((targetType) => {
-                    const bundleTaskTargets =
-                        parsedFileTarget.extractedTaskTargets.filter(
-                            (parsedTaskTarget) =>
-                                parsedTaskTarget.sourceTheorem.name ===
-                                    theoremName &&
-                                parsedTaskTarget.targetType === targetType
-                        );
-                    bundleTaskTargets.forEach((taskTarget) =>
-                        tasks.push(
-                            new CompletionGenerationTask(
-                                taskTarget.targetGoalToProve,
-                                taskTarget.targetPositionRange,
-                                taskTarget.targetType,
-                                parsedFileTarget.parsedFile,
-                                taskTarget.sourceTheorem,
-                                workspaceRoot
-                            )
-                        )
-                    );
-                });
-            }
+                )
+            );
         }
     }
     return tasks;

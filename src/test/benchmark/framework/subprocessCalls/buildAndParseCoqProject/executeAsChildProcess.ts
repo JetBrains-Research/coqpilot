@@ -93,13 +93,16 @@ async function extractTaskTargetsFromFile(
     const taskTargets: Signature.ResultModels.TaskTarget[] = [];
 
     // construct all theorems targets
-    for (const targetType of fileTarget.allTheoremsTargetTypes) {
+    for (const [targetType, bundleIds] of flattenTargetTypesToBundleIds(
+        fileTarget.allTheoremsTargetTypes
+    )) {
         for (let i = 0; i < serializedParsedFile.allFileTheorems.length; i++) {
             const theorem = serializedParsedFile.allFileTheorems[i];
             const taskTargets = await extractTaskTargetsFromTheorem(
                 theorem,
-                i,
                 targetType,
+                i,
+                bundleIds,
                 serializedParsedFile,
                 coqLspClient,
                 logger
@@ -127,11 +130,14 @@ async function extractTaskTargetsFromFile(
             );
         }
         const [theorem, theoremIndex] = theoremWithIndex;
-        for (const targetType of theoremTarget.targetTypes) {
+        for (const [targetType, bundleIds] of flattenTargetTypesToBundleIds(
+            theoremTarget
+        )) {
             const taskTargets = await extractTaskTargetsFromTheorem(
                 theorem,
-                theoremIndex,
                 targetType,
+                theoremIndex,
+                bundleIds,
                 serializedParsedFile,
                 coqLspClient,
                 logger
@@ -145,8 +151,9 @@ async function extractTaskTargetsFromFile(
 
 async function extractTaskTargetsFromTheorem(
     theorem: SerializedTheorem,
-    sourceTheoremIndex: number,
     targetType: Signature.CommonModels.TargetType,
+    sourceTheoremIndex: number,
+    bundleIds: number[],
     serializedParsedFile: SerializedParsedCoqFile,
     coqLspClient: CoqLspClient,
     logger: LogsIPCSender
@@ -158,8 +165,9 @@ async function extractTaskTargetsFromTheorem(
                 taskTargets.push(
                     await buildTaskTarget(
                         holeProofStep,
-                        sourceTheoremIndex,
                         targetType,
+                        sourceTheoremIndex,
+                        bundleIds,
                         serializedParsedFile,
                         coqLspClient,
                         logger
@@ -172,8 +180,9 @@ async function extractTaskTargetsFromTheorem(
             return [
                 await buildTaskTarget(
                     firstProofStep,
-                    sourceTheoremIndex,
                     targetType,
+                    sourceTheoremIndex,
+                    bundleIds,
                     serializedParsedFile,
                     coqLspClient,
                     logger
@@ -184,8 +193,9 @@ async function extractTaskTargetsFromTheorem(
 
 async function buildTaskTarget(
     proofStep: SerializedProofStep,
-    sourceTheoremIndex: number,
     targetType: Signature.CommonModels.TargetType,
+    sourceTheoremIndex: number,
+    bundleIds: number[],
     serializedParsedFile: SerializedParsedCoqFile,
     coqLspClient: CoqLspClient,
     logger: LogsIPCSender
@@ -211,5 +221,15 @@ async function buildTaskTarget(
         targetPositionRange: proofStep.range,
         targetType: targetType,
         sourceTheoremIndex: sourceTheoremIndex,
+        bundleIds: bundleIds,
     };
+}
+
+function flattenTargetTypesToBundleIds(
+    targetTypeToBundleIds: Signature.ArgsModels.TargetTypeToBundleIds
+): [Signature.CommonModels.TargetType, number[]][] {
+    return [
+        ["ADMIT", targetTypeToBundleIds.ADMIT],
+        ["PROVE_THEOREM", targetTypeToBundleIds.PROVE_THEOREM],
+    ];
 }

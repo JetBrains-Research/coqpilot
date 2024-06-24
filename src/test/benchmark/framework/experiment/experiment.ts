@@ -12,27 +12,41 @@ import { SubprocessesScheduler } from "../utils/subprocessUtils/subprocessesSche
 
 import { buildBenchmarkingItems } from "./buildBenchmarkingItems";
 import { InputBenchmarkingModelParams } from "./inputBenchmarkingModelParams";
-import { InputTargets, mergeInputTargets } from "./targetsBuilder";
+import {
+    MergedInputTargets,
+    mergeRequestedTargets,
+} from "./mergedInputTargets";
+import { InputTargets } from "./targetsBuilder";
+
+export type BaseInputBenchmarkingBundle =
+    InputBenchmarkingBundle<InputBenchmarkingModelParams.Params>;
 
 export interface InputBenchmarkingBundle<
+    InputParams extends InputBenchmarkingModelParams.Params,
+> extends NewInputBenchmarkingBundle<InputParams> {
+    bundleId: number;
+}
+
+export interface NewInputBenchmarkingBundle<
     InputParams extends InputBenchmarkingModelParams.Params,
 > {
     llmServiceIdentifier: LLMServiceIdentifier;
     inputBenchmarkingModelsParams: InputParams[];
-    targets: InputTargets;
+    requestedTargets: InputTargets[];
 }
 
 export class Experiment {
-    private mergedInputTargets: InputTargets | undefined = undefined;
+    private mergedInputTargets: MergedInputTargets | undefined = undefined;
 
-    constructor(
-        private readonly bundles: InputBenchmarkingBundle<InputBenchmarkingModelParams.Params>[] = []
-    ) {}
+    constructor(private readonly bundles: BaseInputBenchmarkingBundle[] = []) {}
 
     addBundle(
-        bundle: InputBenchmarkingBundle<InputBenchmarkingModelParams.Params>
+        newBundle: NewInputBenchmarkingBundle<InputBenchmarkingModelParams.Params>
     ) {
-        this.bundles.push(bundle);
+        this.bundles.push({
+            ...newBundle,
+            bundleId: this.bundles.length,
+        });
     }
 
     /**
@@ -42,9 +56,7 @@ export class Experiment {
         artifactsDirPath: string,
         inputRunOptions: Partial<ExperimentRunOptions>
     ): Promise<ExperimentResults> {
-        this.mergedInputTargets = mergeInputTargets(
-            this.bundles.map((bundle) => bundle.targets)
-        );
+        this.mergedInputTargets = mergeRequestedTargets(this.bundles);
         const resolvedRunOptions =
             this.resolveExperimentRunOptions(inputRunOptions);
 
