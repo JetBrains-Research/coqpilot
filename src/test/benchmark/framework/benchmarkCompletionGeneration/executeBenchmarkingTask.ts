@@ -31,7 +31,7 @@ export async function executeBenchmarkingTask(
     const task = benchmarkingItem.task;
     const params = benchmarkingItem.params;
     const llmService = selectLLMServiceBuilder(
-        benchmarkingItem.llmServiceIdentifier
+        benchmarkingItem.params.llmServiceIdentifier
     )();
     try {
         const totalTime = new TimeMark();

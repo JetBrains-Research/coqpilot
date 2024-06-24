@@ -110,7 +110,7 @@ function buildUniqueItemReportFileName(
             : item.task.sourceFilePath;
     return translateToSafeFileName(
         [
-            `${augmentedIndex}-${getShortName(item.llmServiceIdentifier)}-${modelId}`,
+            `${augmentedIndex}-${getShortName(item.params.llmServiceIdentifier)}-${modelId}`,
             `-${getLastName(fileIdentifierPath)}-${item.task.sourceTheorem.name}`,
             ".json",
         ].join("")
