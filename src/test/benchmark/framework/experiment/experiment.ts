@@ -61,12 +61,18 @@ export class Experiment {
             this.resolveExperimentRunOptions(inputRunOptions);
 
         const logger: BenchmarkingLogger = new BenchmarkingLoggerImpl(
-            resolvedRunOptions.loggerSeverity
+            resolvedRunOptions.loggerSeverity,
+            resolvedRunOptions.logsFilePath === undefined
+                ? undefined
+                : resolveAsAbsolutePath(
+                      joinPaths(getRootDir(), resolvedRunOptions.logsFilePath)
+                  )
         );
         const subprocessesScheduler = new SubprocessesScheduler(
             resolvedRunOptions.maxActiveSubprocessesNumber,
             resolvedRunOptions.enableSchedulingDebugLogs
         );
+
         const benchmarkingItems = await buildBenchmarkingItems(
             this.bundles,
             this.mergedInputTargets,
@@ -94,6 +100,7 @@ export class Experiment {
         }
         return {
             loggerSeverity: inputOptions.loggerSeverity ?? SeverityLevel.INFO,
+            logsFilePath: inputOptions.logsFilePath,
             maxActiveSubprocessesNumber: Math.max(
                 inputOptions.maxActiveSubprocessesNumber ??
                     this.mergedInputTargets.size,

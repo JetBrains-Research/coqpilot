@@ -25,6 +25,19 @@ export function writeToFile<T>(
     }
 }
 
+export function appendToFile<T>(
+    text: string,
+    filePath: string,
+    onError: (e: any) => T
+): T | undefined {
+    try {
+        fs.appendFileSync(filePath, text, defaultEncoding);
+        return undefined;
+    } catch (e) {
+        return onError(e);
+    }
+}
+
 export function joinPaths(parentDirPath: string, ...paths: string[]): string {
     return path.join(parentDirPath, ...paths);
 }
@@ -66,6 +79,22 @@ export function createDirectory(
     }
     fs.mkdirSync(dirPath, { recursive: true });
     return dirPath;
+}
+
+export function createFileWithParentDirectories(
+    throwOnExisting: boolean,
+    filePath: string
+) {
+    if (fs.existsSync(filePath)) {
+        if (throwOnExisting) {
+            throw Error(`failed to create ${filePath}: it already exists`);
+        } else {
+            return;
+        }
+    }
+    const parentDirPath = path.dirname(filePath);
+    createDirectory(false, parentDirPath);
+    fs.writeFileSync(filePath, "");
 }
 
 export function getPathStats(inputPath: string): fs.Stats {

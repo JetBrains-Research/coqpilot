@@ -1,3 +1,9 @@
+import { stringifyAnyValue } from "../../../../utils/printers";
+import {
+    appendToFile,
+    createFileWithParentDirectories,
+} from "../utils/fsUtils";
+
 import { LogColor, colorize } from "./colorLogging";
 
 export enum SeverityLevel {
@@ -150,6 +156,18 @@ export class AsOneRecordLogsBuilder {
 }
 
 export class BenchmarkingLoggerImpl extends BenchmarkingLogger {
+    constructor(
+        loggerSeverity: SeverityLevel,
+        readonly resolvedFilePath: string | undefined,
+        recordIdentifier: string = "",
+        lineEnd: string = "\n"
+    ) {
+        super(loggerSeverity, recordIdentifier, lineEnd);
+        if (this.resolvedFilePath !== undefined) {
+            createFileWithParentDirectories(false, this.resolvedFilePath);
+        }
+    }
+
     createChildLoggerWithIdentifier(
         recordIdentifier: string
     ): BenchmarkingLogger {
@@ -180,6 +198,18 @@ export class BenchmarkingLoggerImpl extends BenchmarkingLogger {
     }
 
     private print(message: string, lineEnd: string) {
-        process.stdout.write(`${message}${lineEnd}`);
+        const messageWithLineEnd = `${message}${lineEnd}`;
+        if (this.resolvedFilePath === undefined) {
+            // TODO: does not work in tests => will be fixed after moving out from tests
+            // for now, `console.error` can be used (but `lineEnd`-s won't be supported then)
+            console.error(message);
+            // process.stderr.write(messageWithLineEnd);
+        } else {
+            appendToFile(messageWithLineEnd, this.resolvedFilePath, (e) =>
+                console.error(
+                    `Failed to append message to logs file "${this.resolvedFilePath}": "${message}"\nCause: ${stringifyAnyValue(e)}`
+                )
+            );
+        }
     }
 }

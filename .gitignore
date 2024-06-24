@@ -24,3 +24,6 @@ dataset/**/.vscode/
 
 # Ignore private files used while benchmarking
 src/test/benchmark/benchmarkPrivate/
+
+# Ignore benchmark logs
+benchmarkLogs/
