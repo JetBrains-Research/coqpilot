@@ -59,7 +59,7 @@ const mixedAutoBenchmark: Benchmark = {
 
 const benchmarks: Benchmark[] = [simpleAutoBenchmark, mixedAutoBenchmark];
 
-suite("Benchmark", () => {
+suite("Deprecated benchmark", () => {
     expect(consoleLoggingIsMuted).toEqual(false);
     const datasetDir = getDatasetDir();
 

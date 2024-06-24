@@ -377,7 +377,8 @@
     "rebuild-test-resources": "cd ./src/test/resources/coqProj && make clean && make",
     "preclean-test": "npm run clean && npm run rebuild-test-resources && npm run compile && npm run lint",
     "clean-test": "npm run test-only",
-    "benchmark": "npm run clean-test -- -g='Benchmark'"
+    "prebenchmark": "npm run preclean-test",
+    "benchmark": "npm run test-executables-unsafe -- -g=\"Full-fledged benchmark\""
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
