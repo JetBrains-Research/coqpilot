@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 export function getRootDir(): string {
-    const relativeRoot = path.join(__dirname, "/../../../../");
+    const relativeRoot = path.join(__dirname, "/../../../../../");
     return path.resolve(relativeRoot);
 }
 
