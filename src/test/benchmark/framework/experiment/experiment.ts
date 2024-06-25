@@ -62,12 +62,15 @@ export class Experiment {
             inputOptionsWithResolvedLoggerOptions.loggerSeverity,
             inputOptionsWithResolvedLoggerOptions.logsFilePath === undefined
                 ? undefined
-                : resolveAsAbsolutePath(
-                      joinPaths(
-                          getRootDir(),
-                          inputOptionsWithResolvedLoggerOptions.logsFilePath
-                      )
-                  )
+                : {
+                      resolvedFilePath: resolveAsAbsolutePath(
+                          joinPaths(
+                              getRootDir(),
+                              inputOptionsWithResolvedLoggerOptions.logsFilePath
+                          )
+                      ),
+                      clearOnStart: true,
+                  }
         );
 
         this.mergedInputTargets = mergeRequestedTargets(this.bundles, logger);
@@ -79,9 +82,6 @@ export class Experiment {
             resolvedRunOptions.maxActiveSubprocessesNumber,
             resolvedRunOptions.enableSchedulingDebugLogs
         );
-        if (2 < 5) {
-            throw Error("stop here for now");
-        }
 
         const benchmarkingItems = await buildBenchmarkingItems(
             this.bundles,
@@ -90,6 +90,9 @@ export class Experiment {
             subprocessesScheduler,
             logger
         );
+        if (2 < 5) {
+            throw Error("stop here for now");
+        }
 
         return benchmark(
             benchmarkingItems,

@@ -76,13 +76,13 @@ export async function executeProcessAsFunction<
         const executionLogger =
             benchmarkingLogger.createChildLoggerWithIdentifier(
                 [
-                    "[",
-                    `commandToExecute: "${[commandToExecute.command, ...commandToExecute.args].join(" ")}"`,
-                    `args: ${stringifyAnyValue(args)}`,
-                    `workindDirectory: ${options.workingDirectory}`,
-                    `timeout: ${options.timeoutMillis} ms`,
+                    "\n[",
+                    `- commandToExecute: "${[commandToExecute.command, ...commandToExecute.args].join(" ")}"`,
+                    `- args: ${stringifyAnyValue(args)}`,
+                    `- workindDirectory: ${options.workingDirectory}`,
+                    `- timeout: ${options.timeoutMillis} ms`,
                     "]",
-                ].join("")
+                ].join("\n")
             );
         const lifetime: Utils.LifetimeObjects<ResultType, T> = {
             subprocess: undefined,

@@ -45,8 +45,8 @@ export abstract class BenchmarkingLogger {
             SeverityLevel.ERROR,
             message,
             color,
-            recordIdentifier,
-            lineEnd
+            lineEnd,
+            recordIdentifier
         );
     }
 
@@ -56,7 +56,7 @@ export abstract class BenchmarkingLogger {
         lineEnd: string = this.lineEnd,
         recordIdentifier: string = this.recordIdentifier
     ) {
-        this.log(SeverityLevel.INFO, message, color, recordIdentifier, lineEnd);
+        this.log(SeverityLevel.INFO, message, color, lineEnd, recordIdentifier);
     }
 
     debug(
@@ -69,8 +69,8 @@ export abstract class BenchmarkingLogger {
             SeverityLevel.DEBUG,
             message,
             color,
-            recordIdentifier,
-            lineEnd
+            lineEnd,
+            recordIdentifier
         );
     }
 
@@ -155,16 +155,24 @@ export class AsOneRecordLogsBuilder {
     }
 }
 
+export interface LogsFile {
+    resolvedFilePath: string;
+    clearOnStart: boolean;
+}
+
 export class BenchmarkingLoggerImpl extends BenchmarkingLogger {
     constructor(
         loggerSeverity: SeverityLevel,
-        readonly resolvedFilePath: string | undefined,
+        readonly logsFile: LogsFile | undefined,
         recordIdentifier: string = "",
         lineEnd: string = "\n"
     ) {
         super(loggerSeverity, recordIdentifier, lineEnd);
-        if (this.resolvedFilePath !== undefined) {
-            createFileWithParentDirectories("clear", this.resolvedFilePath);
+        if (this.logsFile !== undefined && this.logsFile.clearOnStart) {
+            createFileWithParentDirectories(
+                "clear",
+                this.logsFile.resolvedFilePath
+            );
         }
     }
 
@@ -173,10 +181,21 @@ export class BenchmarkingLoggerImpl extends BenchmarkingLogger {
     ): BenchmarkingLogger {
         return new BenchmarkingLoggerImpl(
             this.loggerSeverity,
-            [this.recordIdentifier, recordIdentifier]
-                .filter((identifier) => identifier !== "")
-                .join(this.lineEnd)
+            this.logsFile === undefined
+                ? undefined
+                : {
+                      ...this.logsFile,
+                      clearOnStart: false,
+                  },
+            `${this.buildChildRecordIdentifier(recordIdentifier)}`,
+            this.lineEnd
         );
+    }
+
+    private buildChildRecordIdentifier(recordIdentifier: string): string {
+        return [this.recordIdentifier, recordIdentifier]
+            .filter((identifier) => identifier !== "")
+            .join(this.lineEnd);
     }
 
     protected log(
@@ -190,7 +209,7 @@ export class BenchmarkingLoggerImpl extends BenchmarkingLogger {
             return;
         }
         this.print(recordIdentifier, lineEnd);
-        if (color === undefined || this.resolvedFilePath !== undefined) {
+        if (color === undefined || this.logsFile !== undefined) {
             // Typically, colors are not supported in files.
             this.print(message, lineEnd);
         } else {
@@ -200,16 +219,19 @@ export class BenchmarkingLoggerImpl extends BenchmarkingLogger {
 
     private print(message: string, lineEnd: string) {
         const messageWithLineEnd = `${message}${lineEnd}`;
-        if (this.resolvedFilePath === undefined) {
+        if (this.logsFile === undefined) {
             // TODO: does not work in tests => will be fixed after moving out from tests
             // for now, `console.error` can be used (but `lineEnd`-s won't be supported then)
             console.error(message);
             // process.stderr.write(messageWithLineEnd);
         } else {
-            appendToFile(messageWithLineEnd, this.resolvedFilePath, (e) =>
-                console.error(
-                    `Failed to append message to logs file "${this.resolvedFilePath}": "${message}"\nCause: ${stringifyAnyValue(e)}`
-                )
+            appendToFile(
+                messageWithLineEnd,
+                this.logsFile.resolvedFilePath,
+                (e) =>
+                    console.error(
+                        `Failed to append message to logs file "${this.logsFile}": "${message}"\nCause: ${stringifyAnyValue(e)}`
+                    )
             );
         }
     }
