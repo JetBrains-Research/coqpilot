@@ -73,7 +73,7 @@ export class TargetsBuilderWithWorkspaceRoot {
     private readonly inputFileTargets: FilePathToFileTarget = new Map();
 
     /**
-     * @param filePath Coq source file path relative to the `dataset` directory.
+     * @param filePath Coq source file path relative to the workspace directory (or to the "dataset" directory if the workspace is not specified).
      * @param theoremNames names of the theorems inside `filePath`. Leave it empty to select all the theorems.
      */
     withAdmitTargetsFromFile(
@@ -85,7 +85,7 @@ export class TargetsBuilderWithWorkspaceRoot {
     }
 
     /**
-     * @param filePath Coq source file path relative to the `dataset` directory.
+     * @param filePath Coq source file path relative to the workspace directory (or to the "dataset" directory if the workspace is not specified).
      * @param theoremNames names of the theorems inside `filePath`. Leave it empty to select all the theorems.
      */
     withProveTheoremTargetsFromFile(
@@ -101,7 +101,7 @@ export class TargetsBuilderWithWorkspaceRoot {
     }
 
     /**
-     * @param directoryPath directory path relative to the `dataset` directory.
+     * @param directoryPath directory path relative to the workspace directory (or to the "dataset" directory if the workspace is not specified).
      * @param relativeFilePaths Coq source file paths relative to the `directoryPath`. Leave it empty to select all the source files inside the directory.
      */
     withAdmitTargetsFromDirectory(
@@ -117,7 +117,7 @@ export class TargetsBuilderWithWorkspaceRoot {
     }
 
     /**
-     * @param directoryPath directory path relative to the `dataset` directory.
+     * @param directoryPath directory path relative to the workspace directory (or to the "dataset" directory if the workspace is not specified).
      * @param relativeFilePaths Coq source file paths relative to the `directoryPath`. Leave it empty to select all the source files inside the directory.
      */
     withProveTheoremTargetsFromDirectory(
@@ -141,7 +141,10 @@ export class TargetsBuilderWithWorkspaceRoot {
         relativeFilePaths: string[],
         targetType: TargetType
     ) {
-        const resolvedDirectoryPath = resolveDatasetPath(directoryPath);
+        const resolvedDirectoryPath = resolveWorkspacePath(
+            this.workspaceRoot!,
+            directoryPath
+        );
         if (!isDirectory(resolvedDirectoryPath)) {
             throw Error(
                 `resolved path "${directoryPath}" should be a directory: "${resolvedDirectoryPath}"`
@@ -164,6 +167,7 @@ export class TargetsBuilderWithWorkspaceRoot {
             resolvedDirectoryFilesPaths
         );
         for (const relativeFilePath of relativeFilePaths) {
+            // TODO: test whether works correctly
             const resolvedFilePath = resolveDatasetPath(
                 joinPaths(directoryPath, relativeFilePath)
             );
@@ -181,7 +185,10 @@ export class TargetsBuilderWithWorkspaceRoot {
         theoremNames: string[],
         targetType: TargetType
     ) {
-        const resolvedFilePath = resolveDatasetPath(relativeFilePath);
+        const resolvedFilePath = resolveWorkspacePath(
+            this.workspaceRoot!,
+            relativeFilePath
+        );
         if (!isCoqSourceFile(resolvedFilePath)) {
             throw Error(
                 `resolved path "${relativeFilePath}" should be a Coq source file: "${resolvedFilePath}"`
@@ -242,6 +249,15 @@ export class TargetsBuilderWithWorkspaceRoot {
             }
         }
     }
+}
+
+function resolveWorkspacePath(
+    workspaceRoot: WorkspaceRoot,
+    inputPath: string
+): string {
+    return resolveAsAbsolutePath(
+        joinPaths(workspaceRoot.directoryPath, inputPath)
+    );
 }
 
 function resolveDatasetPath(inputPath: string): string {
