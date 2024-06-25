@@ -370,7 +370,7 @@
     "lint": "eslint \"src/**/*.{ts,js}\" --ext .ts",
     "format": "prettier --write \"src/**/*.{ts,js}\" && eslint \"src/**/*.{ts,js}\" --ext .ts --fix",
     "test-executables-unsafe": "node ./out/test/runTest.js",
-    "test-only": "npm run test-executables-unsafe -- -g=\"\\[SubprocessExecutable\\]\" -i=true",
+    "test-only": "npm run test-executables-unsafe -- -r=\"\\[SubprocessExecutable\\] *\" -i=true",
     "pretest": "npm run compile && npm run lint",
     "test": "npm run test-only",
     "clean": "rm -rf out",
