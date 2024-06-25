@@ -190,7 +190,8 @@ export class BenchmarkingLoggerImpl extends BenchmarkingLogger {
             return;
         }
         this.print(recordIdentifier, lineEnd);
-        if (color === undefined) {
+        if (color === undefined || this.resolvedFilePath !== undefined) {
+            // Typically, colors are not supported in files.
             this.print(message, lineEnd);
         } else {
             this.print(colorize(message, color), lineEnd);
