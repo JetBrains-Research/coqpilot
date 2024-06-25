@@ -70,7 +70,8 @@ export class Experiment {
                           )
                       ),
                       clearOnStart: true,
-                  }
+                  },
+            "[Benchmarking]" // TODO: customize through run options
         );
 
         this.mergedInputTargets = mergeRequestedTargets(this.bundles, logger);

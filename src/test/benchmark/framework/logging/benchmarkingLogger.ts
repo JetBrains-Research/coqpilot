@@ -168,6 +168,9 @@ export class BenchmarkingLoggerImpl extends BenchmarkingLogger {
         lineEnd: string = "\n"
     ) {
         super(loggerSeverity, recordIdentifier, lineEnd);
+        if (!this.recordIdentifier.startsWith("\n")) {
+            this.recordIdentifier = `\n${this.recordIdentifier}`;
+        }
         if (this.logsFile !== undefined && this.logsFile.clearOnStart) {
             createFileWithParentDirectories(
                 "clear",
@@ -208,7 +211,10 @@ export class BenchmarkingLoggerImpl extends BenchmarkingLogger {
         if (this.loggerSeverity < severity) {
             return;
         }
-        this.print(recordIdentifier, lineEnd);
+        // This condition is needed, for example, for `asOneRecord()`.
+        if (recordIdentifier !== "") {
+            this.print(recordIdentifier, lineEnd);
+        }
         if (color === undefined || this.logsFile !== undefined) {
             // Typically, colors are not supported in files.
             this.print(message, lineEnd);

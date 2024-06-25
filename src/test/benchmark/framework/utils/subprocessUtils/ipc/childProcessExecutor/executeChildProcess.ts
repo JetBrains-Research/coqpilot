@@ -76,7 +76,7 @@ export async function executeProcessAsFunction<
         const executionLogger =
             benchmarkingLogger.createChildLoggerWithIdentifier(
                 [
-                    "\n[",
+                    "[",
                     `- commandToExecute: "${[commandToExecute.command, ...commandToExecute.args].join(" ")}"`,
                     `- args: ${stringifyAnyValue(args)}`,
                     `- workindDirectory: ${options.workingDirectory}`,
