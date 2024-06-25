@@ -56,22 +56,32 @@ export class Experiment {
         artifactsDirPath: string,
         inputRunOptions: Partial<ExperimentRunOptions>
     ): Promise<ExperimentResults> {
-        this.mergedInputTargets = mergeRequestedTargets(this.bundles);
-        const resolvedRunOptions =
-            this.resolveExperimentRunOptions(inputRunOptions);
-
+        const inputOptionsWithResolvedLoggerOptions =
+            this.resolveLoggerOptions(inputRunOptions);
         const logger: BenchmarkingLogger = new BenchmarkingLoggerImpl(
-            resolvedRunOptions.loggerSeverity,
-            resolvedRunOptions.logsFilePath === undefined
+            inputOptionsWithResolvedLoggerOptions.loggerSeverity,
+            inputOptionsWithResolvedLoggerOptions.logsFilePath === undefined
                 ? undefined
                 : resolveAsAbsolutePath(
-                      joinPaths(getRootDir(), resolvedRunOptions.logsFilePath)
+                      joinPaths(
+                          getRootDir(),
+                          inputOptionsWithResolvedLoggerOptions.logsFilePath
+                      )
                   )
         );
+
+        this.mergedInputTargets = mergeRequestedTargets(this.bundles, logger);
+        const resolvedRunOptions = this.resolveAllExperimentRunOptions(
+            inputOptionsWithResolvedLoggerOptions
+        );
+
         const subprocessesScheduler = new SubprocessesScheduler(
             resolvedRunOptions.maxActiveSubprocessesNumber,
             resolvedRunOptions.enableSchedulingDebugLogs
         );
+        if (2 < 5) {
+            throw Error("stop here for now");
+        }
 
         const benchmarkingItems = await buildBenchmarkingItems(
             this.bundles,
@@ -90,8 +100,24 @@ export class Experiment {
         );
     }
 
-    private resolveExperimentRunOptions(
+    private resolveLoggerOptions(
         inputOptions: Partial<ExperimentRunOptions>
+    ): Partial<ExperimentRunOptions> & {
+        loggerSeverity: SeverityLevel;
+        logsFilePath: string | undefined;
+    } {
+        return {
+            ...inputOptions,
+            loggerSeverity: inputOptions.loggerSeverity ?? SeverityLevel.INFO,
+            logsFilePath: inputOptions.logsFilePath,
+        };
+    }
+
+    private resolveAllExperimentRunOptions(
+        inputOptionsWithResolvedLoggerOptions: Partial<ExperimentRunOptions> & {
+            loggerSeverity: SeverityLevel;
+            logsFilePath: string | undefined;
+        }
     ): ExperimentRunOptions {
         if (this.mergedInputTargets === undefined) {
             throw Error(
@@ -99,21 +125,24 @@ export class Experiment {
             );
         }
         return {
-            loggerSeverity: inputOptions.loggerSeverity ?? SeverityLevel.INFO,
-            logsFilePath: inputOptions.logsFilePath,
+            loggerSeverity:
+                inputOptionsWithResolvedLoggerOptions.loggerSeverity,
+            logsFilePath: inputOptionsWithResolvedLoggerOptions.logsFilePath,
             maxActiveSubprocessesNumber: Math.max(
-                inputOptions.maxActiveSubprocessesNumber ??
+                inputOptionsWithResolvedLoggerOptions.maxActiveSubprocessesNumber ??
                     this.mergedInputTargets.size,
                 1
             ),
             buildAndParseCoqProjectSubprocessTimeoutMillis:
-                inputOptions.buildAndParseCoqProjectSubprocessTimeoutMillis,
+                inputOptionsWithResolvedLoggerOptions.buildAndParseCoqProjectSubprocessTimeoutMillis,
             checkProofsSubprocessTimeoutMillis:
-                inputOptions.checkProofsSubprocessTimeoutMillis,
+                inputOptionsWithResolvedLoggerOptions.checkProofsSubprocessTimeoutMillis,
             enableSubprocessLifetimeDebugLogs:
-                inputOptions.enableSubprocessLifetimeDebugLogs ?? false,
+                inputOptionsWithResolvedLoggerOptions.enableSubprocessLifetimeDebugLogs ??
+                false,
             enableSchedulingDebugLogs:
-                inputOptions.enableSchedulingDebugLogs ?? false,
+                inputOptionsWithResolvedLoggerOptions.enableSchedulingDebugLogs ??
+                false,
         };
     }
 }

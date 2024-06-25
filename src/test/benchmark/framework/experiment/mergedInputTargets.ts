@@ -1,3 +1,5 @@
+import { stringifyAnyValue } from "../../../../utils/printers";
+import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
 import { WorkspaceRoot } from "../structures/completionGenerationTask";
 import { BuildAndParseCoqProjectBySubprocessSignature } from "../subprocessCalls/buildAndParseCoqProject/callSignature";
 
@@ -12,12 +14,22 @@ export type MergedInputTargets = Map<
  * Merges `requestedTargets` of `inputBundles` into new `MergedInputTargets` without modifying themselves.
  */
 export function mergeRequestedTargets(
-    inputBundles: BaseInputBenchmarkingBundle[]
+    inputBundles: BaseInputBenchmarkingBundle[],
+    logger: BenchmarkingLogger
 ): MergedInputTargets {
-    return inputBundles.reduce(
+    const mergedTargets = inputBundles.reduce(
         (acc, inputBundle) => mergeTwoRequestedTargets(acc, inputBundle),
         new Map()
     );
+    logger.debug(
+        `Successfully merged requested targets: ${logMergedInputTargets(mergedTargets)}`
+    );
+    return mergedTargets;
+}
+
+function logMergedInputTargets(mergedInputTargets: MergedInputTargets): string {
+    // TODO: support better logging
+    return stringifyAnyValue(Array.from(mergedInputTargets.entries()), 2);
 }
 
 /**
