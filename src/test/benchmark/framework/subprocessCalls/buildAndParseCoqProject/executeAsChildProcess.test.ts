@@ -2,21 +2,20 @@ import { CoqLspClient } from "../../../../../coqLsp/coqLspClient";
 
 import { createSourceFileEnvironment } from "../../../../../core/inspectSourceFile";
 
-import { Uri } from "../../../../../utils/uri";
-import { SerializedParsedCoqFile } from "../../structures/parsedCoqFileData";
+import { SerializedParsedCoqFile } from "../../../../../benchmark/framework/structures/parsedCoqFileData";
 import {
     SerializedProofStep,
     SerializedTheorem,
     serializeTheorem,
-} from "../../structures/theoremData";
-import { createCoqLspClient } from "../../utils/coqLspUtils";
+} from "../../../../../benchmark/framework/structures/theoremData";
+import { BuildAndParseCoqProjectBySubprocessSignature } from "../../../../../benchmark/framework/subprocessCalls/buildAndParseCoqProject/callSignature";
 import {
     LogsIPCSender,
     executeAsFunctionOnParentProcessCall,
-} from "../../utils/subprocessUtils/ipc/onParentProcessCallExecutor/executeOnParentProcessCall";
-import { subprocessExecutable } from "../../utils/subprocessUtils/ipc/onParentProcessCallExecutor/subprocessExecutableTestWrapper";
-
-import { BuildAndParseCoqProjectBySubprocessSignature } from "./callSignature";
+} from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/executeOnParentProcessCall";
+import { subprocessExecutable } from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/subprocessExecutableTestWrapper";
+import { Uri } from "../../../../../utils/uri";
+import { createCoqLspClient } from "../../utils/coqLspUtils";
 
 import Signature = BuildAndParseCoqProjectBySubprocessSignature;
 

@@ -4,16 +4,15 @@ import {
     ProofCheckResult,
 } from "../../../../../core/coqProofChecker";
 
-import { stringifyAnyValue } from "../../../../../utils/printers";
-import { TimeMark } from "../../benchmarkCompletionGeneration/measureUtils";
-import { createCoqLspClient } from "../../utils/coqLspUtils";
+import { TimeMark } from "../../../../../benchmark/framework/benchmarkCompletionGeneration/measureUtils";
+import { CheckProofsBySubprocessSignature } from "../../../../../benchmark/framework/subprocessCalls/checkGeneratedProofs/callSignature";
 import {
     LogsIPCSender,
     executeAsFunctionOnParentProcessCall,
-} from "../../utils/subprocessUtils/ipc/onParentProcessCallExecutor/executeOnParentProcessCall";
-import { subprocessExecutable } from "../../utils/subprocessUtils/ipc/onParentProcessCallExecutor/subprocessExecutableTestWrapper";
-
-import { CheckProofsBySubprocessSignature } from "./callSignature";
+} from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/executeOnParentProcessCall";
+import { subprocessExecutable } from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/subprocessExecutableTestWrapper";
+import { stringifyAnyValue } from "../../../../../utils/printers";
+import { createCoqLspClient } from "../../utils/coqLspUtils";
 
 import Signature = CheckProofsBySubprocessSignature;
 

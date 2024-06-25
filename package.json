@@ -378,7 +378,7 @@
     "preclean-test": "npm run clean && npm run rebuild-test-resources && npm run compile && npm run lint",
     "clean-test": "npm run test-only",
     "prebenchmark": "npm run preclean-test",
-    "benchmark": "npm run test-executables-unsafe -- -g=\"Full-fledged benchmark\""
+    "benchmark": "node ./out/benchmark/setup.js"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
