@@ -18,6 +18,7 @@ import { OnParentProcessCallExecutorUtils } from "./utils";
 import Utils = OnParentProcessCallExecutorUtils;
 
 // TODO: document
+// TODO: design better logging through actual file
 export async function executeAsFunctionOnParentProcessCall<
     ArgsType,
     ResultType,

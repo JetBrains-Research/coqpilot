@@ -94,6 +94,7 @@ export async function executeProcessAsFunction<
                 executionLogger,
                 enableProcessLifetimeDebugLogs
             ),
+            hasFinished: false,
         };
 
         try {
@@ -155,9 +156,9 @@ function registerEventListeners<ArgsType, ResultType, T>(
     const subprocess = lifetime.subprocess!;
 
     // Is triggered right after subprocess is spawned successfully.
-    subprocess.on("spawn", () => {
-        lifetime.debug("Child process was successfully spawned");
-    });
+    subprocess.on("spawn", () =>
+        lifetime.debug("Child process was successfully spawned")
+    );
 
     // Is triggered after subprocess calls `process.send()`.
     subprocess.on("message", (message) =>
@@ -169,14 +170,20 @@ function registerEventListeners<ArgsType, ResultType, T>(
      * subprocess could not be spawned / subprocess could not be killed / sending message failed / subprocess was aborted.
      * Note: exit event might not fire afterwards.
      */
-    subprocess.on("error", (error) =>
-        Utils.rejectOnIPCError(error.message, lifetime)
-    );
+    subprocess.on("error", (error) => {
+        if (lifetime.hasFinished) {
+            lifetime.debug(
+                `Inter-process-communication error occurred on child process finish: ${error.message}`
+            );
+        } else {
+            Utils.rejectOnIPCError(error.message, lifetime);
+        }
+    });
 
     // Is triggered once the parent process or the child process called `disconnect` (closes IPC channel).
-    subprocess.on("disconnect", () => {
-        lifetime.debug("Child process was disconnected: IPC channel closed");
-    });
+    subprocess.on("disconnect", () =>
+        lifetime.debug("Child process was disconnected: IPC channel closed")
+    );
 
     /*
      * Is triggered after the subprocess finishes its work (but in the case of `error`, might not be fired).
@@ -202,6 +209,12 @@ function registerEventListeners<ArgsType, ResultType, T>(
             signalOrNull === null ? "no signal" : `with signal ${signalOrNull}`;
         lifetime.debug(
             `Child process completely finished, its resources are free: ${withExitCode}, ${withSignal}`
+        );
+        // TODO: maybe add a delay here (?)
+        // TODO: read child process logs from its file
+        Utils.rejectOnIPCError(
+            "Child process finished silently before sending result: communication error",
+            lifetime
         );
     });
 }

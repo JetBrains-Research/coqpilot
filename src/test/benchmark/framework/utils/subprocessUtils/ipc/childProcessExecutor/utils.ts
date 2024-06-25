@@ -18,6 +18,7 @@ export namespace ChildProcessExecutorUtils {
         promiseExecutor: PromiseExecutor<ExecutionResult<T>>;
         resultMapper: (result: ResultType) => T;
         debug: ConditionalExecutionLoggerDebug;
+        hasFinished: boolean;
     }
 
     export type ConditionalExecutionLoggerDebug = (message: string) => void;
@@ -71,6 +72,11 @@ export namespace ChildProcessExecutorUtils {
     export function finishSubprocess<ResultType, T>(
         lifetime: LifetimeObjects<ResultType, T>
     ) {
+        if (lifetime.hasFinished) {
+            return;
+        }
+        lifetime.hasFinished = true;
+
         const subprocess = lifetime.subprocess;
         if (subprocess === undefined) {
             return;
@@ -89,6 +95,10 @@ export namespace ChildProcessExecutorUtils {
              * it should be terminated after `options.timeoutMillis` milliseconds anyway.
              */
         }
-        subprocess.disconnect();
+        if (subprocess.connected) {
+            subprocess.disconnect();
+        }
+
+        lifetime.debug("Parent process finished subprocess");
     }
 }
