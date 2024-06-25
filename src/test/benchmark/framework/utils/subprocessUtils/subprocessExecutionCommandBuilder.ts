@@ -1,4 +1,7 @@
-import { WorkspaceRoot } from "../../structures/completionGenerationTask";
+import {
+    WorkspaceRoot,
+    isNoWorkspaceRoot,
+} from "../../structures/completionGenerationTask";
 import { getRootDir } from "../fsUtils";
 
 import { CommandToExecute } from "./ipc/childProcessExecutor/executeChildProcess";
@@ -9,7 +12,7 @@ export interface ExecuteSubprocessInWorkspaceCommand extends CommandToExecute {
 }
 
 export function buildCommandToExecuteSubprocessInWorkspace(
-    workspaceRoot: WorkspaceRoot | undefined,
+    workspaceRoot: WorkspaceRoot,
     subprocessName: string,
     commandToPrepareWorkspace?: string
 ): ExecuteSubprocessInWorkspaceCommand {
@@ -19,7 +22,10 @@ export function buildCommandToExecuteSubprocessInWorkspace(
         "--",
         `-g="${getSubprocessExecutableSuiteName(subprocessName)}"`,
     ];
-    if (workspaceRoot === undefined || !workspaceRoot.requiresNixEnvironment) {
+    if (
+        isNoWorkspaceRoot(workspaceRoot) ||
+        !workspaceRoot.requiresNixEnvironment
+    ) {
         // TODO: support workspace preparation if workspaceRoot is set but does not require nix
         return {
             command: "npm",

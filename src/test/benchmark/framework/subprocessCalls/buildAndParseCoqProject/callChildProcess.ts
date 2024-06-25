@@ -4,11 +4,12 @@ import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import {
     TargetType,
     WorkspaceRoot,
+    isNoWorkspaceRoot,
 } from "../../structures/completionGenerationTask";
 import { deserializeParsedCoqFile } from "../../structures/parsedCoqFileData";
 import { TheoremData, deserializeTheorem } from "../../structures/theoremData";
 import { deserializeCodeElementRange } from "../../structures/utilStructures";
-import { checkIsInsideDirectory, getDatasetDir } from "../../utils/fsUtils";
+import { checkIsInsideDirectory } from "../../utils/fsUtils";
 import {
     ChildProcessOptions,
     executeProcessAsFunction,
@@ -22,7 +23,7 @@ import { BuildAndParseCoqProjectBySubprocessSignature } from "./callSignature";
 import Signature = BuildAndParseCoqProjectBySubprocessSignature;
 
 export async function buildAndParseCoqProjectInSubprocess(
-    workspaceRoot: WorkspaceRoot | undefined,
+    workspaceRoot: WorkspaceRoot,
     sourceFileTargetsToParse: Signature.ArgsModels.FilePathToFileTarget,
     buildProject: boolean,
     timeoutMillis: number | undefined,
@@ -45,7 +46,9 @@ export async function buildAndParseCoqProjectInSubprocess(
         sourceFileTargetsToParse
     );
     const args: Signature.ArgsModels.Args = {
-        workspaceRootPath: workspaceRoot?.directoryPath,
+        workspaceRootPath: isNoWorkspaceRoot(workspaceRoot)
+            ? undefined
+            : workspaceRoot.directoryPath,
         sourceFilePathToTarget: sourceFileTargetsToParse,
     };
     const options: ChildProcessOptions = {
@@ -70,10 +73,10 @@ export async function buildAndParseCoqProjectInSubprocess(
 }
 
 function validateRequestedFilesAreInsideWorkspace(
-    workspaceRoot: WorkspaceRoot | undefined,
+    workspaceRoot: WorkspaceRoot,
     sourceFileTargetsToParse: Signature.ArgsModels.FilePathToFileTarget
 ) {
-    const parentDirPath = workspaceRoot?.directoryPath ?? getDatasetDir();
+    const parentDirPath = workspaceRoot.directoryPath;
     for (const filePath in sourceFileTargetsToParse) {
         // note: assume paths are absolute and resolved
         if (!checkIsInsideDirectory(filePath, parentDirPath)) {

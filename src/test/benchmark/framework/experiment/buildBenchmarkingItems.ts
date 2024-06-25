@@ -84,10 +84,7 @@ function getTargetTypeName(targetType: TargetType): string {
 type ParsedFileTargets =
     BuildAndParseCoqProjectBySubprocessSignature.UnpackedResultModels.UnpackedResult;
 
-type WorkspaceToParsedFileTargets = Map<
-    WorkspaceRoot | undefined,
-    ParsedFileTargets
->;
+type WorkspaceToParsedFileTargets = Map<WorkspaceRoot, ParsedFileTargets>;
 
 async function buildAndParseRequestedCoqProjects(
     inputTargets: MergedInputTargets,
@@ -115,7 +112,7 @@ async function buildAndParseRequestedCoqProjects(
 }
 
 async function buildAndParseCoqProjectOrThrow(
-    workspaceRoot: WorkspaceRoot | undefined,
+    workspaceRoot: WorkspaceRoot,
     sourceFileTargetsToParse: BuildAndParseCoqProjectBySubprocessSignature.ArgsModels.FilePathToFileTarget,
     runOptions: ExperimentRunOptions,
     subprocessesScheduler: SubprocessesScheduler,
@@ -124,7 +121,7 @@ async function buildAndParseCoqProjectOrThrow(
     const executionResult = await buildAndParseCoqProjectInSubprocess(
         workspaceRoot,
         sourceFileTargetsToParse,
-        true, // TODO: support turning projects rebuilding off
+        false, // TODO: support turning projects building on
         runOptions.buildAndParseCoqProjectSubprocessTimeoutMillis,
         subprocessesScheduler,
         logger,

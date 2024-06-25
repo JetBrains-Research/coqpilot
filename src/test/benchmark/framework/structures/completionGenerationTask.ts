@@ -7,6 +7,8 @@ import {
     SourceFileEnvironment,
 } from "../../../../core/completionGenerator";
 
+import { getDatasetDir } from "../utils/fsUtils";
+
 import { ParsedCoqFileData } from "./parsedCoqFileData";
 import { TheoremData } from "./theoremData";
 import { CodeElementRange } from "./utilStructures";
@@ -18,7 +20,7 @@ export class CompletionGenerationTask {
         readonly targetType: TargetType,
         readonly parsedSourceFileData: ParsedCoqFileData,
         readonly sourceTheorem: TheoremData,
-        readonly workspaceRoot: WorkspaceRoot | undefined
+        readonly workspaceRoot: WorkspaceRoot
     ) {}
 
     readonly sourceFilePath = this.parsedSourceFileData.filePath;
@@ -66,4 +68,22 @@ export interface WorkspaceRoot {
      */
     directoryPath: string;
     requiresNixEnvironment: boolean;
+}
+
+/**
+ * Mock `WorkspaceRoot` for target files that do not have an actual workspace.
+ *
+ * When working with `WorkspaceRoot` object, it should be checked via `isNoWorkspaceRoot` function.
+ * In case it is indeed this mock `noWorkspaceRoot`, it should be handled as a special case.
+ *
+ * Implementation note: `noWorkspaceRoot` was chosen instead of `undefined` due to
+ * its better support as a key of `Map` and general convenience of paths resolving.
+ */
+export const noWorkspaceRoot: WorkspaceRoot = {
+    directoryPath: getDatasetDir(),
+    requiresNixEnvironment: false,
+};
+
+export function isNoWorkspaceRoot(workspaceRoot: WorkspaceRoot): boolean {
+    return workspaceRoot === noWorkspaceRoot;
 }

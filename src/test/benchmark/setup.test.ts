@@ -19,6 +19,10 @@ suite("Full-fledged benchmark", () => {
             new TargetsBuilder()
                 .withoutWorkspaceRoot()
                 .withAdmitTargetsFromFile("auto_benchmark.v")
+                .buildInputTargets(),
+            new TargetsBuilder()
+                .withWorkspaceRoot("imm", "nix")
+                .withAdmitTargetsFromFile("src/basic/Events.v")
                 .buildInputTargets()
         )
         .addTo(experiment);

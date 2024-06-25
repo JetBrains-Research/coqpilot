@@ -1,6 +1,7 @@
 import {
     TargetType,
     WorkspaceRoot,
+    noWorkspaceRoot,
 } from "../structures/completionGenerationTask";
 import {
     getDatasetDir,
@@ -14,10 +15,7 @@ import { getOrPut } from "../utils/mapUtils";
 
 export type InputTargets = WorkspaceToFileTargets;
 
-export type WorkspaceToFileTargets = Map<
-    WorkspaceRoot | undefined,
-    FilePathToFileTarget
->;
+export type WorkspaceToFileTargets = Map<WorkspaceRoot, FilePathToFileTarget>;
 
 /**
  * File paths are expected to be absolute resolved paths inside `dataset` directory.
@@ -63,12 +61,12 @@ export class TargetsBuilder {
     }
 
     withoutWorkspaceRoot(): TargetsBuilderWithWorkspaceRoot {
-        return new TargetsBuilderWithWorkspaceRoot(undefined);
+        return new TargetsBuilderWithWorkspaceRoot(noWorkspaceRoot);
     }
 }
 
 export class TargetsBuilderWithWorkspaceRoot {
-    constructor(private readonly workspaceRoot: WorkspaceRoot | undefined) {}
+    constructor(private readonly workspaceRoot: WorkspaceRoot) {}
 
     private readonly inputFileTargets: FilePathToFileTarget = new Map();
 
@@ -142,7 +140,7 @@ export class TargetsBuilderWithWorkspaceRoot {
         targetType: TargetType
     ) {
         const resolvedDirectoryPath = resolveWorkspacePath(
-            this.workspaceRoot!,
+            this.workspaceRoot,
             directoryPath
         );
         if (!isDirectory(resolvedDirectoryPath)) {
@@ -186,7 +184,7 @@ export class TargetsBuilderWithWorkspaceRoot {
         targetType: TargetType
     ) {
         const resolvedFilePath = resolveWorkspacePath(
-            this.workspaceRoot!,
+            this.workspaceRoot,
             relativeFilePath
         );
         if (!isCoqSourceFile(resolvedFilePath)) {

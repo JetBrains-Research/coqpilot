@@ -5,7 +5,10 @@ import {
 } from "../../../../../core/completionGenerator";
 
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import { WorkspaceRoot } from "../../structures/completionGenerationTask";
+import {
+    WorkspaceRoot,
+    isNoWorkspaceRoot,
+} from "../../structures/completionGenerationTask";
 import {
     ChildProcessOptions,
     executeProcessAsFunction,
@@ -22,7 +25,7 @@ export async function checkGeneratedProofsInSubprocess(
     preparedProofs: string[],
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
-    workspaceRoot: WorkspaceRoot | undefined,
+    workspaceRoot: WorkspaceRoot,
     timeoutMillis: number | undefined,
     subprocessesScheduler: SubprocessesScheduler,
     benchmarkingLogger: BenchmarkingLogger,
@@ -34,7 +37,9 @@ export async function checkGeneratedProofsInSubprocess(
             Signature.subprocessName
         );
     const args: Signature.Args = {
-        workspaceRootPath: workspaceRoot?.directoryPath,
+        workspaceRootPath: isNoWorkspaceRoot(workspaceRoot)
+            ? undefined
+            : workspaceRoot.directoryPath,
         sourceFileDirPath: sourceFileEnvironment.dirPath,
         sourceFileContentPrefix: getTextBeforePosition(
             sourceFileEnvironment.fileLines,

@@ -70,7 +70,7 @@ export async function benchmarkSingleCompletionGeneration<
     sourceFileEnvironment: SourceFileEnvironment,
     benchmarkingModelParams: BenchmarkingModelParams<ResolvedModelParams>,
     llmService: LLMServiceType,
-    workspaceRoot: WorkspaceRoot | undefined,
+    workspaceRoot: WorkspaceRoot,
     logger: BenchmarkingLogger,
     subprocessesScheduler: SubprocessesScheduler,
     experimentRunOptions: ExperimentRunOptions

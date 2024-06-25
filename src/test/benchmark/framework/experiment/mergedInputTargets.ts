@@ -4,7 +4,7 @@ import { BuildAndParseCoqProjectBySubprocessSignature } from "../subprocessCalls
 import { BaseInputBenchmarkingBundle } from "./experiment";
 
 export type MergedInputTargets = Map<
-    WorkspaceRoot | undefined,
+    WorkspaceRoot,
     BuildAndParseCoqProjectBySubprocessSignature.ArgsModels.FilePathToFileTarget
 >;
 
