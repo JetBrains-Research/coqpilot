@@ -2,6 +2,7 @@ import { BenchmarkingBundle } from "./framework/experiment/benchmarkingBundleBui
 import { Experiment } from "./framework/experiment/experiment";
 import { TargetsBuilder } from "./framework/experiment/targetsBuilder";
 import { SeverityLevel } from "./framework/logging/benchmarkingLogger";
+import { colorize } from "./framework/logging/colorLogging";
 
 const experiment = new Experiment();
 
@@ -26,13 +27,17 @@ new BenchmarkingBundle()
 
 const experimentResults = experiment.run("benchmarksOutput", {
     loggerSeverity: SeverityLevel.DEBUG,
-    logsFilePath: "benchmarkLogs/logs.txt",
+    // logsFilePath: "benchmarkLogs/logs.txt",
     enableSchedulingDebugLogs: true,
     enableSubprocessLifetimeDebugLogs: true,
     maxActiveSubprocessesNumber: 1,
 });
 
 experimentResults.then(
-    () => console.log("Experiment has successfully finished!"),
-    (reason) => console.error(`Experiment has failed: ${reason}`)
+    () =>
+        console.log(
+            colorize("\nExperiment has successfully finished!", "green")
+        ),
+    (reason) =>
+        console.error(colorize(`\nExperiment has failed: ${reason}`, "red"))
 );

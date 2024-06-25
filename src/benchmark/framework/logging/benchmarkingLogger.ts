@@ -226,10 +226,7 @@ export class BenchmarkingLoggerImpl extends BenchmarkingLogger {
     private print(message: string, lineEnd: string) {
         const messageWithLineEnd = `${message}${lineEnd}`;
         if (this.logsFile === undefined) {
-            // TODO: does not work in tests => will be fixed after moving out from tests
-            // for now, `console.error` can be used (but `lineEnd`-s won't be supported then)
-            console.error(message);
-            // process.stderr.write(messageWithLineEnd);
+            process.stderr.write(messageWithLineEnd);
         } else {
             appendToFile(
                 messageWithLineEnd,
