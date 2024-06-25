@@ -20,7 +20,7 @@ In our experiments we compared different methods which can be used by CoqPilot: 
 
 ```
 {
-    modelName: "openai-gpt-4",
+    modelName: "openai-gpt-4o",
     choices: 12,
 
     systemPrompt: "..." ,
