@@ -38,6 +38,10 @@ export function appendToFile<T>(
     }
 }
 
+export function clearFile(filePath: string) {
+    fs.writeFileSync(filePath, "");
+}
+
 export function joinPaths(parentDirPath: string, ...paths: string[]): string {
     return path.join(parentDirPath, ...paths);
 }
@@ -81,20 +85,26 @@ export function createDirectory(
     return dirPath;
 }
 
+export type FileCreationModeOnExisting = "throw" | "clear" | "return";
+
 export function createFileWithParentDirectories(
-    throwOnExisting: boolean,
+    mode: FileCreationModeOnExisting,
     filePath: string
 ) {
     if (fs.existsSync(filePath)) {
-        if (throwOnExisting) {
-            throw Error(`failed to create ${filePath}: it already exists`);
-        } else {
-            return;
+        switch (mode) {
+            case "throw":
+                throw Error(`failed to create ${filePath}: it already exists`);
+            case "clear":
+                clearFile(filePath);
+                return;
+            case "return":
+                return;
         }
     }
     const parentDirPath = path.dirname(filePath);
     createDirectory(false, parentDirPath);
-    fs.writeFileSync(filePath, "");
+    clearFile(filePath);
 }
 
 export function getPathStats(inputPath: string): fs.Stats {

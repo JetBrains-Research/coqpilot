@@ -164,7 +164,7 @@ export class BenchmarkingLoggerImpl extends BenchmarkingLogger {
     ) {
         super(loggerSeverity, recordIdentifier, lineEnd);
         if (this.resolvedFilePath !== undefined) {
-            createFileWithParentDirectories(false, this.resolvedFilePath);
+            createFileWithParentDirectories("clear", this.resolvedFilePath);
         }
     }
 
