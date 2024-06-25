@@ -131,8 +131,8 @@ function createSpawnOptions(
     options: ChildProcessOptions
 ): child.CommonSpawnOptions {
     const spawnOptions: child.CommonSpawnOptions = {
-        stdio: ["ignore", "ignore", "ignore", "ipc"],
-        // shell: true // TODO: is it needed?
+        stdio: ["ignore", "pipe", "pipe", "ipc"],
+        shell: true,
     };
     if (options.workingDirectory !== undefined) {
         spawnOptions.cwd = options.workingDirectory;
@@ -159,6 +159,15 @@ function registerEventListeners<ArgsType, ResultType, T>(
     subprocess.on("spawn", () =>
         lifetime.debug("Child process was successfully spawned")
     );
+
+    // TODO: support stdout and stderr redirection better
+    subprocess.stdout?.on("data", (data) => {
+        lifetime.debug(`Child process reported to stdout:\n${data}`);
+    });
+
+    subprocess.stderr?.on("data", (data) => {
+        lifetime.debug(`Child process reported to stderr:\n${data}`);
+    });
 
     // Is triggered after subprocess calls `process.send()`.
     subprocess.on("message", (message) =>
