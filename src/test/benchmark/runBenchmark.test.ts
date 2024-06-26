@@ -31,7 +31,11 @@ interface Benchmark {
 
 const resPath = path.join(
     __dirname,
-    "../../../src/test/benchmark/benchmarkPrivate/resources/group_A.json"
+    "../../../src/test/benchmark/benchmarkPrivate/resources/test.json"
+);
+const reportPath = path.join(
+    __dirname,
+    "../../../src/test/benchmark/benchmarkPrivate/report.json"
 );
 const immBenchmark: Benchmark = {
     name: "Benchmark predef tactics in IMM group A",
@@ -42,20 +46,19 @@ const immBenchmark: Benchmark = {
     benchmarkAdmits: false,
     timeoutMinutes: 1000,
     groupName: "A",
-    additionalImports: [
-        AdditionalFileImport.tactician(),
-        AdditionalFileImport.coqHammer(),
-    ],
+    // Uncomment the following line to enable additional imports.
+    // This is necessary if you want to generate completion with
+    // an additional solver.
+    // additionalImports: [
+    //     AdditionalFileImport.tactician(),
+    //     AdditionalFileImport.coqHammer(),
+    // ],
     maximumUsedPremisesAmount: undefined,
 };
 
 const benchmarks: Benchmark[] = [immBenchmark];
 
 suite("Benchmark", () => {
-    const reportPath = path.join(
-        __dirname,
-        "../../../src/test/benchmark/benchmarkPrivate/report.json"
-    );
     const reportHolder = new BenchmarkReportHolder(reportPath);
 
     const datasetDir = getDatasetDir();

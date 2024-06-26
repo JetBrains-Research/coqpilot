@@ -71,7 +71,8 @@ export async function generateCompletion(
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
-    eventLogger?: EventLogger
+    eventLogger?: EventLogger,
+    workspaceRootPath?: string
 ): Promise<GenerationResult> {
     const context = buildProofGenerationContext(
         completionContext,
@@ -112,7 +113,8 @@ export async function generateCompletion(
                 completionContext,
                 sourceFileEnvironment,
                 processEnvironment,
-                eventLogger
+                eventLogger,
+                workspaceRootPath
             );
             if (fixedProofsOrCompletion instanceof SuccessGenerationResult) {
                 return fixedProofsOrCompletion;
@@ -127,7 +129,8 @@ export async function generateCompletion(
                 completionContext,
                 sourceFileEnvironment,
                 processEnvironment,
-                eventLogger
+                eventLogger,
+                workspaceRootPath
             );
             if (fixedProofsOrCompletion instanceof SuccessGenerationResult) {
                 return fixedProofsOrCompletion;
@@ -179,7 +182,8 @@ export async function checkAndFixProofs(
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
-    eventLogger?: EventLogger
+    eventLogger?: EventLogger,
+    workspaceRootPath?: string
 ): Promise<GeneratedProof[] | SuccessGenerationResult> {
     // check proofs and finish with success if at least one is valid
     const proofCheckResults = await checkGeneratedProofs(
@@ -187,7 +191,8 @@ export async function checkAndFixProofs(
         sourceFileContentPrefix,
         completionContext,
         sourceFileEnvironment,
-        processEnvironment
+        processEnvironment,
+        workspaceRootPath
     );
     const completion = getFirstValidProof(proofCheckResults);
     if (completion) {
@@ -221,18 +226,20 @@ async function checkGeneratedProofs(
     sourceFileContentPrefix: string[],
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
-    processEnvironment: ProcessEnvironment
+    processEnvironment: ProcessEnvironment,
+    workspaceRootPath?: string
 ): Promise<ProofCheckResult[]> {
     const preparedProofBatch = generatedProofs.map(
         (generatedProof: GeneratedProof) =>
             prepareProofToCheck(generatedProof.proof())
     );
 
-    // processEnvironment.coqProofChecker.dispose();
-    // const workspaceRootPath = ...;
-    // const client = createCoqLspClient(workspaceRootPath);
-    // const coqProofChecker = new CoqProofChecker(client);
-    // processEnvironment.coqProofChecker = coqProofChecker;
+    if (workspaceRootPath) {
+        processEnvironment.coqProofChecker.dispose();
+        const client = createCoqLspClient(workspaceRootPath);
+        const coqProofChecker = new CoqProofChecker(client);
+        processEnvironment.coqProofChecker = coqProofChecker;
+    }
 
     return processEnvironment.coqProofChecker.checkProofs(
         sourceFileEnvironment.dirPath,

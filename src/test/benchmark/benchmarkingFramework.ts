@@ -96,7 +96,8 @@ export async function runTestBenchmark(
             groupName,
             eventLogger,
             maximumUsedPremisesAmount,
-            reportHolder
+            reportHolder,
+            workspaceRootPath
         );
         consoleLog(
             `BENCHMARK RESULT, ADMITS COMPLETED: ${admitTargetsResults}\n`
@@ -119,7 +120,8 @@ export async function runTestBenchmark(
             groupName,
             eventLogger,
             maximumUsedPremisesAmount,
-            reportHolder
+            reportHolder,
+            workspaceRootPath
         );
         consoleLog(
             `BENCHMARK RESULT, THEOREMS PROVED: ${theoremTargetsResults}\n`
@@ -194,7 +196,8 @@ export async function benchmarkTargets(
     groupName: string,
     eventLogger: EventLogger,
     maximumUsedPremisesAmount?: number,
-    reportHolder?: BenchmarkReportHolder
+    reportHolder?: BenchmarkReportHolder,
+    workspaceRootPath?: string
 ): Promise<BenchmarkResult> {
     const totalCompletionsNumber = targets.length;
     let successfulCompletionsNumber = 0;
@@ -208,7 +211,8 @@ export async function benchmarkTargets(
             groupName,
             eventLogger,
             maximumUsedPremisesAmount,
-            reportHolder
+            reportHolder,
+            workspaceRootPath
         );
         if (success) {
             successfulCompletionsNumber += 1;
@@ -229,7 +233,8 @@ async function benchmarkCompletionGeneration(
     groupName: string,
     eventLogger: EventLogger,
     maximumUsedPremisesAmount?: number,
-    reportHolder?: BenchmarkReportHolder
+    reportHolder?: BenchmarkReportHolder,
+    workspaceRootPath?: string
 ): Promise<boolean> {
     const completionPosition = completionContext.admitEndPosition;
     consoleLog(
@@ -258,7 +263,9 @@ async function benchmarkCompletionGeneration(
     const result = await generateCompletion(
         completionContext,
         sourceFileEnvironmentWithFilteredContext,
-        processEnvironment
+        processEnvironment,
+        undefined,
+        workspaceRootPath
     );
     let message = "unknown";
     let success = false;
