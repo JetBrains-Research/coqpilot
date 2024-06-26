@@ -3,9 +3,9 @@ import * as path from "path";
 
 import { AdditionalFileImport } from "./additionalImports";
 import { BenchmarkResult, runTestBenchmark } from "./benchmarkingFramework";
-import { InputModelsParams, onlyAutoModelsParams } from "./inputModelsParams";
+import { InputModelsParams } from "./inputModelsParams";
 import { BenchmarkReportHolder } from "./reportHolder";
-import { DatasetItem, datasetFromJson } from "./utils/datasetConstructionUtils";
+import { DatasetItem } from "./utils/datasetConstructionUtils";
 import {
     code,
     consoleLog,
@@ -32,33 +32,33 @@ interface Benchmark {
     perProofTimeoutMillis: number;
 }
 
-const resPath = path.join(
-    __dirname,
-    "../../../src/test/benchmark/benchmarkPrivate/resources/test.json"
-);
+// const resPath = path.join(
+//     __dirname,
+//     "../../../src/test/benchmark/benchmarkPrivate/resources/test.json"
+// );
 const reportPath = path.join(
     __dirname,
-    "../../../src/test/benchmark/benchmarkPrivate/report.json"
+    "../../../src/test/benchmark/report.json"
 );
-export const immBenchmark: Benchmark = {
-    name: "Benchmark predef tactics in IMM group A",
-    items: datasetFromJson(resPath, "imm"),
-    inputModelsParams: onlyAutoModelsParams,
-    requireAllAdmitsCompleted: false,
-    benchmarkFullTheorems: true,
-    benchmarkAdmits: false,
-    timeoutMinutes: 1000,
-    groupName: "A",
-    // Uncomment the following line to enable additional imports.
-    // This is necessary if you want to generate completion with
-    // an additional solver.
-    // additionalImports: [
-    //     AdditionalFileImport.tactician(),
-    //     AdditionalFileImport.coqHammer(),
-    // ],
-    maximumUsedPremisesAmount: undefined,
-    perProofTimeoutMillis: 30000,
-};
+// const immBenchmark: Benchmark = {
+//     name: "Benchmark predef tactics in IMM group A",
+//     items: datasetFromJson(resPath, "imm"),
+//     inputModelsParams: onlyAutoModelsParams,
+//     requireAllAdmitsCompleted: false,
+//     benchmarkFullTheorems: true,
+//     benchmarkAdmits: false,
+//     timeoutMinutes: 1000,
+//     groupName: "A",
+// Uncomment the following line to enable additional imports.
+// This is necessary if you want to generate completion with
+// an additional solver.
+// additionalImports: [
+//     AdditionalFileImport.tactician(),
+//     AdditionalFileImport.coqHammer(),
+// ],
+//     maximumUsedPremisesAmount: undefined,
+//     perProofTimeoutMillis: 30000,
+// };
 
 const benchmarks: Benchmark[] = [];
 
