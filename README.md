@@ -282,7 +282,6 @@ Then add the `hammer.`, `sauto.` or any other tactic from `CoqHammer` to the pre
 ## Future plans
 
 - Currently the user needs to manually enter the nix shell to get the correct environment for the benchmarks. We are working on automating this process.
-- Benchmarking system is evolving and will soon become more stable with smart scheduling (choice of models/services depending on availability and token limit counts) and automatically generated informative reports for the user.
 - Get rid of the overhead due to hacks with coq-lsp and the aux files.
 
 ## Release Notes
