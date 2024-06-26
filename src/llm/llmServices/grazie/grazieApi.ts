@@ -1,4 +1,4 @@
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 import { ResponseType } from "axios";
 
 import { DebugWrappers } from "../llmServiceInternal";
