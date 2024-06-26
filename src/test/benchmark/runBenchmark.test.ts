@@ -40,7 +40,7 @@ const reportPath = path.join(
     __dirname,
     "../../../src/test/benchmark/benchmarkPrivate/report.json"
 );
-const immBenchmark: Benchmark = {
+export const immBenchmark: Benchmark = {
     name: "Benchmark predef tactics in IMM group A",
     items: datasetFromJson(resPath, "imm"),
     inputModelsParams: onlyAutoModelsParams,
@@ -60,7 +60,7 @@ const immBenchmark: Benchmark = {
     perProofTimeoutMillis: 30000,
 };
 
-const benchmarks: Benchmark[] = [immBenchmark];
+const benchmarks: Benchmark[] = [];
 
 suite("Benchmark", () => {
     const reportHolder = new BenchmarkReportHolder(reportPath);
