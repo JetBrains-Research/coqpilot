@@ -14,7 +14,7 @@ We have conducted several experiments using the [imm project](https://github.com
 
 The list of the chosen theorems divided by groups you can find in the table provided in the [Results](#results) section.
 
-In our experiments we compared different methods which can be used by CoqPilot:  Predefined tactic (`firstorder auto with *.`), OpenAI GPT-4o, OpenAI GPT-3.5, LLaMA-2 13B Chat, Anthropic Claude. Also we used Tactician's tactic `synth`, and CoqHammer's `hammer`. We have used following parameters for each of the models:
+In our experiments we compared different methods which can be used by CoqPilot:  Predefined tactic (`firstorder auto with *.`), OpenAI GPT-4o, OpenAI GPT-3.5, LLaMA-2 13B Chat, Anthropic Claude. Also, we used Tactician's tactic `synth`, and CoqHammer's `hammer` with timeouts of 30, 60, and 90 seconds for groups A, B, and C, respectively. If the proof was not found during the specified timeout, we consider the theorem as unsolved. We have used following parameters for each of the models:
 
 ### OpenAI GPT-4o 
 
