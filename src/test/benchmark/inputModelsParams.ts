@@ -17,8 +17,20 @@ export const onlyAutoModelsParams: InputModelsParams = {
     grazieParams: [],
     predefinedProofsModelParams: [
         {
-            modelId: "Predefined `auto`",
-            tactics: ["auto."],
+            modelId: "Predefined tactic",
+            tactics: ["firstorder auto with *."],
+        },
+    ],
+    lmStudioParams: [],
+};
+
+export const tacticianModelsParams: InputModelsParams = {
+    openAiParams: [],
+    grazieParams: [],
+    predefinedProofsModelParams: [
+        {
+            modelId: "Tactician",
+            tactics: ["synth."],
         },
     ],
     lmStudioParams: [],

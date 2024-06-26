@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.5
+
+- Contribute the new benchmarking report for 300 theorems. 
+- Update the README with clarifications regarding Nix/Opam for benchmarking 
+- Update the benchmarking framework to allow using external services
+- Allow configuring timeouts, specific theorems to check and other parameters for benchmarking
+
 ## 2.2.4
 
 Contains no public changes. Updates the endpoints for the Grazie LLM Service in order to make it work with the latest version of Grazie service tokens. 
@@ -92,7 +99,7 @@ Minor:
 
 ## 1.5.1
 
-- Add support for the Grazie platform as an LLM provider.  
+- Add support for the Grazie platform as an LLM provider.  
 
 ## 1.5.0
 
@@ -136,7 +143,7 @@ but most ones are. The ones that are not automatically reloaded: `useGpt`, `coqL
 ## 1.3.1
 
 - Test coverage increased.
-- Refactoring client and ProofView.  
+- Refactoring client and ProofView.  
 - Set up CI. 
 
 ## 1.3.0

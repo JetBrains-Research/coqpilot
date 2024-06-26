@@ -22,6 +22,8 @@ export interface CoqProofCheckerInterface {
         prefixEndPosition: Position,
         proofs: Proof[]
     ): Promise<ProofCheckResult[]>;
+
+    dispose(): void;
 }
 
 export class CoqLspTimeoutError extends Error {
@@ -41,7 +43,7 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
         sourceFileContentPrefix: string[],
         prefixEndPosition: Position,
         proofs: Proof[],
-        coqLspTimeoutMillis: number = 60000
+        coqLspTimeoutMillis: number = 15000
     ): Promise<ProofCheckResult[]> {
         return await this.mutex.runExclusive(async () => {
             const timeoutPromise = new Promise<ProofCheckResult[]>(
@@ -163,6 +165,10 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
         }
 
         return results;
+    }
+
+    dispose(): void {
+        this.coqLspClient.dispose();
     }
 }
 

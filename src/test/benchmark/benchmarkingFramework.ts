@@ -1,7 +1,12 @@
 import * as assert from "assert";
+import * as fs from "fs";
 
 import { LLMServices } from "../../llm/llmServices";
 import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
+import {
+    LLMServiceImpl,
+    LLMServiceRequest,
+} from "../../llm/llmServices/llmService";
 import { LMStudioService } from "../../llm/llmServices/lmStudio/lmStudioService";
 import { ModelsParams } from "../../llm/llmServices/modelParams";
 import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
@@ -24,30 +29,42 @@ import { CoqProofChecker } from "../../core/coqProofChecker";
 import { createSourceFileEnvironment } from "../../core/inspectSourceFile";
 
 import { ProofStep, Theorem } from "../../coqParser/parsedTypes";
+import { EventLogger } from "../../logging/eventLogger";
 import { Uri } from "../../utils/uri";
 import { resolveParametersOrThrow } from "../commonTestFunctions/resolveOrThrow";
 
+import { AdditionalFileImport } from "./additionalImports";
 import { InputModelsParams } from "./inputModelsParams";
-import { consoleLog, consoleLogSeparatorLine } from "./loggingUtils";
+import { BenchmarkReportHolder, TheoremProofResult } from "./reportHolder";
+import { consoleLog, consoleLogSeparatorLine } from "./utils/loggingUtils";
 
 export async function runTestBenchmark(
     filePath: string,
     inputModelsParams: InputModelsParams,
+    relativePathToFile: string,
     specificTheoremsForBenchmark: string[] | undefined,
     benchmarkFullTheorems: Boolean = true,
     benchmarkAdmits: Boolean = true,
     workspaceRootPath?: string,
-    requireAllAdmitsCompleted: Boolean = false
+    requireAllAdmitsCompleted: Boolean = false,
+    maximumUsedPremisesAmount?: number,
+    groupName: string = "Unnamed",
+    reportHolder?: BenchmarkReportHolder,
+    additionalImports?: AdditionalFileImport[],
+    perProofTimeoutMillis: number = 15000
 ): Promise<BenchmarkReport> {
     consoleLog(`run benchmarks for file: ${filePath}\n`, "blue");
     const shouldCompleteHole = (_hole: ProofStep) => true;
+    const eventLogger = new EventLogger();
 
     const [completionTargets, sourceFileEnvironment, processEnvironment] =
         await prepareForBenchmarkCompletions(
             inputModelsParams,
             shouldCompleteHole,
             workspaceRootPath,
-            filePath
+            filePath,
+            eventLogger,
+            additionalImports
         );
     const filteredCompletionTargets = {
         admitTargets: completionTargets.admitTargets.filter(
@@ -74,7 +91,15 @@ export async function runTestBenchmark(
         admitTargetsResults = await benchmarkTargets(
             filteredCompletionTargets.admitTargets,
             sourceFileEnvironment,
-            processEnvironment
+            processEnvironment,
+            getSingleModelId(inputModelsParams),
+            relativePathToFile,
+            groupName,
+            eventLogger,
+            maximumUsedPremisesAmount,
+            reportHolder,
+            workspaceRootPath,
+            perProofTimeoutMillis
         );
         consoleLog(
             `BENCHMARK RESULT, ADMITS COMPLETED: ${admitTargetsResults}\n`
@@ -91,7 +116,15 @@ export async function runTestBenchmark(
         theoremTargetsResults = await benchmarkTargets(
             filteredCompletionTargets.theoremTargets,
             sourceFileEnvironment,
-            processEnvironment
+            processEnvironment,
+            getSingleModelId(inputModelsParams),
+            relativePathToFile,
+            groupName,
+            eventLogger,
+            maximumUsedPremisesAmount,
+            reportHolder,
+            workspaceRootPath,
+            perProofTimeoutMillis
         );
         consoleLog(
             `BENCHMARK RESULT, THEOREMS PROVED: ${theoremTargetsResults}\n`
@@ -103,6 +136,24 @@ export async function runTestBenchmark(
         admitsCompleted: admitTargetsResults,
         theoremsProved: theoremTargetsResults,
     };
+}
+
+function getSingleModelId(inputModelsParams: InputModelsParams): string {
+    const modelIds = [
+        ...inputModelsParams.predefinedProofsModelParams.map(
+            (params) => params.modelId
+        ),
+        ...inputModelsParams.openAiParams.map((params) => params.modelId),
+        ...inputModelsParams.grazieParams.map((params) => params.modelId),
+        ...inputModelsParams.lmStudioParams.map((params) => params.modelId),
+    ];
+    if (modelIds.length !== 1) {
+        throw Error(
+            `Expected exactly one model id, but got ${modelIds.length}`
+        );
+    }
+
+    return modelIds[0];
 }
 
 export interface BenchmarkingCompletionContext extends CompletionContext {
@@ -142,7 +193,15 @@ export interface BenchmarkReport {
 export async function benchmarkTargets(
     targets: BenchmarkingCompletionContext[],
     sourceFileEnvironment: SourceFileEnvironment,
-    processEnvironment: ProcessEnvironment
+    processEnvironment: ProcessEnvironment,
+    modelId: string,
+    checkedFilePath: string,
+    groupName: string,
+    eventLogger: EventLogger,
+    maximumUsedPremisesAmount?: number,
+    reportHolder?: BenchmarkReportHolder,
+    workspaceRootPath?: string,
+    perProofTimeoutMillis: number = 15000
 ): Promise<BenchmarkResult> {
     const totalCompletionsNumber = targets.length;
     let successfulCompletionsNumber = 0;
@@ -150,7 +209,15 @@ export async function benchmarkTargets(
         const success = await benchmarkCompletionGeneration(
             completionContext,
             sourceFileEnvironment,
-            processEnvironment
+            processEnvironment,
+            modelId,
+            checkedFilePath,
+            groupName,
+            eventLogger,
+            maximumUsedPremisesAmount,
+            reportHolder,
+            workspaceRootPath,
+            perProofTimeoutMillis
         );
         if (success) {
             successfulCompletionsNumber += 1;
@@ -165,7 +232,15 @@ export async function benchmarkTargets(
 async function benchmarkCompletionGeneration(
     completionContext: BenchmarkingCompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
-    processEnvironment: ProcessEnvironment
+    processEnvironment: ProcessEnvironment,
+    modelId: string,
+    checkedFilePath: string,
+    groupName: string,
+    eventLogger: EventLogger,
+    maximumUsedPremisesAmount?: number,
+    reportHolder?: BenchmarkReportHolder,
+    workspaceRootPath?: string,
+    perProofTimeoutMillis: number = 15000
 ): Promise<boolean> {
     const completionPosition = completionContext.admitEndPosition;
     consoleLog(
@@ -176,21 +251,45 @@ async function benchmarkCompletionGeneration(
 
     const sourceFileEnvironmentWithFilteredContext: SourceFileEnvironment = {
         ...sourceFileEnvironment,
-        fileTheorems: sourceFileEnvironment.fileTheorems.filter(
-            (thr) => completionContext.parentTheorem !== thr
-        ),
+        fileTheorems: sourceFileEnvironment.fileTheorems
+            .filter((thr) => completionContext.parentTheorem.name !== thr.name)
+            .slice(0, maximumUsedPremisesAmount),
     };
+
+    const contextTheorems: ContextTheoremsHolder = {};
+    const succeededSubscriptionId = eventLogger.subscribeToLogicEvent(
+        LLMServiceImpl.requestSucceededEvent,
+        reactToRequestEvent(contextTheorems)
+    );
+    const failedSubscriptionId = eventLogger.subscribeToLogicEvent(
+        LLMServiceImpl.requestFailedEvent,
+        reactToRequestEvent(contextTheorems)
+    );
 
     const result = await generateCompletion(
         completionContext,
         sourceFileEnvironmentWithFilteredContext,
-        processEnvironment
+        processEnvironment,
+        undefined,
+        workspaceRootPath,
+        perProofTimeoutMillis
     );
     let message = "unknown";
     let success = false;
     if (result instanceof SuccessGenerationResult) {
         message = `Success: ${result.data}`;
         success = true;
+
+        const proofStats: TheoremProofResult = {
+            theoremName: completionContext.parentTheorem.name,
+            filePath: checkedFilePath,
+            modelId: modelId,
+            generatedProof: result.data,
+            chosenPremises: contextTheorems.contextTheorems ?? [],
+            generatedAtAttempt: result.attempt,
+            group: groupName,
+        };
+        reportHolder?.addProofResult(proofStats);
     } else if (result instanceof FailureGenerationResult) {
         switch (result.status) {
             case FailureGenerationStatus.TIMEOUT_EXCEEDED:
@@ -204,6 +303,16 @@ async function benchmarkCompletionGeneration(
                 break;
         }
     }
+
+    eventLogger.unsubscribe(
+        LLMServiceImpl.requestSucceededEvent,
+        succeededSubscriptionId
+    );
+    eventLogger.unsubscribe(
+        LLMServiceImpl.requestFailedEvent,
+        failedSubscriptionId
+    );
+
     consoleLog(message, success ? "green" : "red");
     consoleLog("");
     return success;
@@ -213,15 +322,66 @@ function goalToString(proofGoal: Goal<PpString>): string {
     return `${proofGoal?.ty}`;
 }
 
+interface ContextTheoremsHolder {
+    contextTheorems?: string[];
+}
+
+function reactToRequestEvent(
+    contextTheorems: ContextTheoremsHolder
+): (data: any) => void {
+    return (data: any) => {
+        const request = data as LLMServiceRequest;
+        if (request === null) {
+            throw Error(
+                `Request succeeded event received with null data: ${data}`
+            );
+        }
+        contextTheorems.contextTheorems = request.analyzedChat?.contextTheorems;
+    };
+}
+
+function buildAuxFileUri(filePath: string, unique: boolean = true): Uri {
+    let auxFilePath = filePath.replace(/\.v$/, "_cp_aux.v");
+    if (unique && fs.existsSync(auxFilePath)) {
+        const randomSuffix = Math.floor(Math.random() * 1000000);
+        auxFilePath = auxFilePath.replace(
+            /\_cp_aux.v$/,
+            `_${randomSuffix}_cp_aux.v`
+        );
+    }
+
+    return Uri.fromPath(auxFilePath);
+}
+
 async function prepareForBenchmarkCompletions(
     inputModelsParams: InputModelsParams,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     workspaceRootPath: string | undefined,
-    filePath: string
+    filePath: string,
+    eventLogger: EventLogger,
+    additionalImports?: AdditionalFileImport[]
 ): Promise<
     [BenchmarkingCompletionTargets, SourceFileEnvironment, ProcessEnvironment]
 > {
-    const fileUri = Uri.fromPath(filePath);
+    function getFileUriWithImports(
+        filePath: string,
+        additionalImports?: AdditionalFileImport[]
+    ): [Uri, boolean] {
+        if (additionalImports === undefined) {
+            return [Uri.fromPath(filePath), false];
+        }
+
+        const importStrings =
+            additionalImports?.map((importFile) => importFile.get()) ?? [];
+        const fileContent = fs.readFileSync(filePath, "utf8");
+        const updatedFileContent =
+            importStrings.join("\n") + "\n" + fileContent;
+        const auxFilePath = buildAuxFileUri(filePath);
+        fs.writeFileSync(auxFilePath.fsPath, updatedFileContent);
+        return [auxFilePath, true];
+    }
+
+    const [fileUri, isNew] = getFileUriWithImports(filePath, additionalImports);
 
     const client = createCoqLspClient(workspaceRootPath);
     await client.openTextDocument(fileUri);
@@ -236,10 +396,10 @@ async function prepareForBenchmarkCompletions(
             client
         );
     const llmServices: LLMServices = {
-        openAiService: new OpenAiService(),
-        grazieService: new GrazieService(),
-        predefinedProofsService: new PredefinedProofsService(),
-        lmStudioService: new LMStudioService(),
+        openAiService: new OpenAiService(eventLogger),
+        grazieService: new GrazieService(eventLogger),
+        predefinedProofsService: new PredefinedProofsService(eventLogger),
+        lmStudioService: new LMStudioService(eventLogger),
     };
     const processEnvironment: ProcessEnvironment = {
         coqProofChecker: coqProofChecker,
@@ -249,6 +409,10 @@ async function prepareForBenchmarkCompletions(
         ),
         services: llmServices,
     };
+
+    if (isNew) {
+        fs.unlinkSync(fileUri.fsPath);
+    }
 
     return [completionTargets, sourceFileEnvironment, processEnvironment];
 }

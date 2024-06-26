@@ -10,6 +10,7 @@ import { Goal, Hyp, PpString } from "../coqLsp/coqLspTypes";
 
 import { Theorem } from "../coqParser/parsedTypes";
 import { EventLogger } from "../logging/eventLogger";
+import { createCoqLspClient } from "../test/commonTestFunctions/coqLspBuilder";
 import { stringifyAnyValue } from "../utils/printers";
 
 import { ContextTheoremsRanker } from "./contextTheoremRanker/contextTheoremsRanker";
@@ -47,7 +48,10 @@ export interface ProcessEnvironment {
 export interface GenerationResult {}
 
 export class SuccessGenerationResult implements GenerationResult {
-    constructor(public data: string) {}
+    constructor(
+        public data: string,
+        public attempt: number
+    ) {}
 }
 
 export class FailureGenerationResult implements GenerationResult {
@@ -67,7 +71,9 @@ export async function generateCompletion(
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
-    eventLogger?: EventLogger
+    eventLogger?: EventLogger,
+    workspaceRootPath?: string,
+    perProofTimeoutMillis: number = 15000
 ): Promise<GenerationResult> {
     const context = buildProofGenerationContext(
         completionContext,
@@ -108,7 +114,9 @@ export async function generateCompletion(
                 completionContext,
                 sourceFileEnvironment,
                 processEnvironment,
-                eventLogger
+                eventLogger,
+                workspaceRootPath,
+                perProofTimeoutMillis
             );
             if (fixedProofsOrCompletion instanceof SuccessGenerationResult) {
                 return fixedProofsOrCompletion;
@@ -123,7 +131,9 @@ export async function generateCompletion(
                 completionContext,
                 sourceFileEnvironment,
                 processEnvironment,
-                eventLogger
+                eventLogger,
+                workspaceRootPath,
+                perProofTimeoutMillis
             );
             if (fixedProofsOrCompletion instanceof SuccessGenerationResult) {
                 return fixedProofsOrCompletion;
@@ -175,7 +185,9 @@ export async function checkAndFixProofs(
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
-    eventLogger?: EventLogger
+    eventLogger?: EventLogger,
+    workspaceRootPath?: string,
+    perProofTimeoutMillis: number = 15000
 ): Promise<GeneratedProof[] | SuccessGenerationResult> {
     // check proofs and finish with success if at least one is valid
     const proofCheckResults = await checkGeneratedProofs(
@@ -183,11 +195,14 @@ export async function checkAndFixProofs(
         sourceFileContentPrefix,
         completionContext,
         sourceFileEnvironment,
-        processEnvironment
+        processEnvironment,
+        workspaceRootPath,
+        perProofTimeoutMillis
     );
     const completion = getFirstValidProof(proofCheckResults);
     if (completion) {
-        return new SuccessGenerationResult(completion);
+        const [proof, index] = completion;
+        return new SuccessGenerationResult(proof, index);
     }
 
     // fix proofs checked on this iteration
@@ -216,17 +231,28 @@ async function checkGeneratedProofs(
     sourceFileContentPrefix: string[],
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
-    processEnvironment: ProcessEnvironment
+    processEnvironment: ProcessEnvironment,
+    workspaceRootPath?: string,
+    perProofTimeoutMillis = 15000
 ): Promise<ProofCheckResult[]> {
     const preparedProofBatch = generatedProofs.map(
         (generatedProof: GeneratedProof) =>
             prepareProofToCheck(generatedProof.proof())
     );
+
+    if (workspaceRootPath) {
+        processEnvironment.coqProofChecker.dispose();
+        const client = createCoqLspClient(workspaceRootPath);
+        const coqProofChecker = new CoqProofChecker(client);
+        processEnvironment.coqProofChecker = coqProofChecker;
+    }
+
     return processEnvironment.coqProofChecker.checkProofs(
         sourceFileEnvironment.dirPath,
         sourceFileContentPrefix,
         completionContext.prefixEndPosition,
-        preparedProofBatch
+        preparedProofBatch,
+        perProofTimeoutMillis
     );
 }
 
@@ -270,11 +296,13 @@ async function fixProofs(
 
 function getFirstValidProof(
     proofCheckResults: ProofCheckResult[]
-): string | undefined {
+): [string, number] | undefined {
+    let index = 0;
     for (const proofCheckResult of proofCheckResults) {
         if (proofCheckResult.isValid) {
-            return proofCheckResult.proof;
+            return [proofCheckResult.proof, index];
         }
+        index++;
     }
     return undefined;
 }
