@@ -27,6 +27,9 @@ interface Benchmark {
     // If undefined, no limit is set and all possible premises
     // that fit into the context window will be used.
     maximumUsedPremisesAmount?: number;
+    // When using additional tools, issued for Coq, this timeout is used
+    // to define how long do we wait for the proof to be generated.
+    perProofTimeoutMillis: number;
 }
 
 const resPath = path.join(
@@ -54,6 +57,7 @@ const immBenchmark: Benchmark = {
     //     AdditionalFileImport.coqHammer(),
     // ],
     maximumUsedPremisesAmount: undefined,
+    perProofTimeoutMillis: 30000,
 };
 
 const benchmarks: Benchmark[] = [immBenchmark];
@@ -96,7 +100,8 @@ suite("Benchmark", () => {
                             benchmark.maximumUsedPremisesAmount,
                             benchmark.groupName,
                             reportHolder,
-                            benchmark.additionalImports
+                            benchmark.additionalImports,
+                            benchmark.perProofTimeoutMillis
                         );
                     admitsCompletedInTotal.add(
                         admitsCompleted ?? new BenchmarkResult(0, 0)
