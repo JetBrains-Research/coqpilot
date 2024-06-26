@@ -72,7 +72,8 @@ export async function generateCompletion(
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
     eventLogger?: EventLogger,
-    workspaceRootPath?: string
+    workspaceRootPath?: string,
+    perProofTimeoutMillis: number = 15000
 ): Promise<GenerationResult> {
     const context = buildProofGenerationContext(
         completionContext,
@@ -114,7 +115,8 @@ export async function generateCompletion(
                 sourceFileEnvironment,
                 processEnvironment,
                 eventLogger,
-                workspaceRootPath
+                workspaceRootPath,
+                perProofTimeoutMillis
             );
             if (fixedProofsOrCompletion instanceof SuccessGenerationResult) {
                 return fixedProofsOrCompletion;
@@ -130,7 +132,8 @@ export async function generateCompletion(
                 sourceFileEnvironment,
                 processEnvironment,
                 eventLogger,
-                workspaceRootPath
+                workspaceRootPath,
+                perProofTimeoutMillis
             );
             if (fixedProofsOrCompletion instanceof SuccessGenerationResult) {
                 return fixedProofsOrCompletion;
@@ -183,7 +186,8 @@ export async function checkAndFixProofs(
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
     eventLogger?: EventLogger,
-    workspaceRootPath?: string
+    workspaceRootPath?: string,
+    perProofTimeoutMillis: number = 15000
 ): Promise<GeneratedProof[] | SuccessGenerationResult> {
     // check proofs and finish with success if at least one is valid
     const proofCheckResults = await checkGeneratedProofs(
@@ -192,7 +196,8 @@ export async function checkAndFixProofs(
         completionContext,
         sourceFileEnvironment,
         processEnvironment,
-        workspaceRootPath
+        workspaceRootPath,
+        perProofTimeoutMillis
     );
     const completion = getFirstValidProof(proofCheckResults);
     if (completion) {
@@ -227,7 +232,8 @@ async function checkGeneratedProofs(
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
-    workspaceRootPath?: string
+    workspaceRootPath?: string,
+    perProofTimeoutMillis = 15000
 ): Promise<ProofCheckResult[]> {
     const preparedProofBatch = generatedProofs.map(
         (generatedProof: GeneratedProof) =>
@@ -245,7 +251,8 @@ async function checkGeneratedProofs(
         sourceFileEnvironment.dirPath,
         sourceFileContentPrefix,
         completionContext.prefixEndPosition,
-        preparedProofBatch
+        preparedProofBatch,
+        perProofTimeoutMillis
     );
 }
 

@@ -50,7 +50,8 @@ export async function runTestBenchmark(
     maximumUsedPremisesAmount?: number,
     groupName: string = "Unnamed",
     reportHolder?: BenchmarkReportHolder,
-    additionalImports?: AdditionalFileImport[]
+    additionalImports?: AdditionalFileImport[],
+    perProofTimeoutMillis: number = 15000
 ): Promise<BenchmarkReport> {
     consoleLog(`run benchmarks for file: ${filePath}\n`, "blue");
     const shouldCompleteHole = (_hole: ProofStep) => true;
@@ -97,7 +98,8 @@ export async function runTestBenchmark(
             eventLogger,
             maximumUsedPremisesAmount,
             reportHolder,
-            workspaceRootPath
+            workspaceRootPath,
+            perProofTimeoutMillis
         );
         consoleLog(
             `BENCHMARK RESULT, ADMITS COMPLETED: ${admitTargetsResults}\n`
@@ -121,7 +123,8 @@ export async function runTestBenchmark(
             eventLogger,
             maximumUsedPremisesAmount,
             reportHolder,
-            workspaceRootPath
+            workspaceRootPath,
+            perProofTimeoutMillis
         );
         consoleLog(
             `BENCHMARK RESULT, THEOREMS PROVED: ${theoremTargetsResults}\n`
@@ -197,7 +200,8 @@ export async function benchmarkTargets(
     eventLogger: EventLogger,
     maximumUsedPremisesAmount?: number,
     reportHolder?: BenchmarkReportHolder,
-    workspaceRootPath?: string
+    workspaceRootPath?: string,
+    perProofTimeoutMillis: number = 15000
 ): Promise<BenchmarkResult> {
     const totalCompletionsNumber = targets.length;
     let successfulCompletionsNumber = 0;
@@ -212,7 +216,8 @@ export async function benchmarkTargets(
             eventLogger,
             maximumUsedPremisesAmount,
             reportHolder,
-            workspaceRootPath
+            workspaceRootPath,
+            perProofTimeoutMillis
         );
         if (success) {
             successfulCompletionsNumber += 1;
@@ -234,7 +239,8 @@ async function benchmarkCompletionGeneration(
     eventLogger: EventLogger,
     maximumUsedPremisesAmount?: number,
     reportHolder?: BenchmarkReportHolder,
-    workspaceRootPath?: string
+    workspaceRootPath?: string,
+    perProofTimeoutMillis: number = 15000
 ): Promise<boolean> {
     const completionPosition = completionContext.admitEndPosition;
     consoleLog(
@@ -265,7 +271,8 @@ async function benchmarkCompletionGeneration(
         sourceFileEnvironmentWithFilteredContext,
         processEnvironment,
         undefined,
-        workspaceRootPath
+        workspaceRootPath,
+        perProofTimeoutMillis
     );
     let message = "unknown";
     let success = false;
