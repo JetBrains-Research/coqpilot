@@ -22,5 +22,5 @@ src/test/resources/**/.vscode
 dataset/**/result
 dataset/**/.vscode/
 
-# Benchmark experiment private config files 
+# Ignore private files used while benchmarking
 src/test/benchmark/benchmarkPrivate/
