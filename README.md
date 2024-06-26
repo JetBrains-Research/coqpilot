@@ -239,6 +239,8 @@ First things first, the process of running the benchmark is not perfectly automa
     npm run benchmark
     ```    
 
+If you aim to run the benchmark with the use of `Tactician`, you should install the `imm` project and `Tactician` with `opam`. For `opam` installation instrustion, you can refer to the [Tactician website](https://coq-tactician.github.io/manual/installation/) and [imm repository](https://github.com/weakmemory/imm/tree/master?tab=readme-ov-file#installation-via-opam-supported-up-to-the-15-version-of-imm) (this part of the README file is a little outdated, but the installation process for `coq-8.19.0` is still the same).
+
 ## Integrating other solutions
 
 As CoqPilot supports adding predefined commands to try as completion both in the plugin and the benchmark, you can integrate `Coq` generation methods, that contribute a specific tactic and are triggered from OCaml. 
@@ -267,6 +269,8 @@ Neural `Graph2Tac` completion unfortunately requires `coq < 8.12~`.
 ```bash
 opam install coq-hammer
 ```
+
+To install `CoqHammer` using `nix`, you can use the following command [nix configuration file](https://github.com/vbgl/nixpkgs/tree/coq-coq-hammer).
 
 Import the tactics: 
 ```coq

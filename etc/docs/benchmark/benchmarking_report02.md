@@ -1,3 +1,121 @@
+# Experiments Report
+
+We have conducted several experiments using the [imm project](https://github.com/weakmemory/imm). In this report we tell about the process of data preparations, used methods, conducted experiments, and their detailed results.
+
+## Data Preparation
+
+ We measured the performance of our solution on three groups of theorems. Grouping was done on the basis of length of human-written proofs measured in proof steps. Also the groups sizes were chosen with respect to the distribution of proofs lengths in the imm project. We have considered the theorems with proofs length in the interval $[3; 20]$. Such theorems amount to 84% of proofs from the imm project. We have randomly chosen theorems for each group. As the result we got 300 thereoms divided into the following groups:
+
+| Group | Length Interval | Size |
+|----------|----------|----------|
+| A | 3 – 4   | 131 |
+| B | 5 – 8   | 98 |
+| C | 9 – 20  | 71 |
+
+The list of the chosen theorems divided by groups you can find in the table provided in the [Results](#results) section.
+
+In our experiments we compared different methods which can be used by CoqPilot:  Predefined tactic (`firstorder auto with *.`), OpenAI GPT-4o, OpenAI GPT-3.5, LLaMA-2 13B Chat, Anthropic Claude. Also, we used Tactician's tactic `synth`, and CoqHammer's `hammer` with timeouts of 30, 60, and 90 seconds for groups A, B, and C, respectively. If the proof was not found during the specified timeout, we consider the theorem as unsolved. We have used following parameters for each of the models:
+
+### OpenAI GPT-4o 
+
+```
+{
+    modelName: "openai-gpt-4o",
+    choices: 12,
+
+    systemPrompt: "..." ,
+
+
+    newMessageMaxTokens: 2000,
+    tokensLimit: 4096,
+
+    multiroundProfile: ...,
+    apiKey: "...",
+}
+```
+
+### OpenAI GPT-3.5
+
+```
+{
+    modelName: "openai-chat-gpt",
+    choices: 20,
+
+    systemPrompt: "..." ,
+
+
+    newMessageMaxTokens: 800,
+    tokensLimit: 2500,
+
+    multiroundProfile: ...,
+    apiKey: "...",
+}
+```
+
+### LLaMA-2 13B Chat
+
+```
+{
+    modelName: "grazie-chat-llama-v2-13b",
+    choices: 20,
+
+    systemPrompt: "..." ,
+
+
+    newMessageMaxTokens: 160,
+    tokensLimit: 1160,
+
+    multiroundProfile: ...,
+    apiKey: "...",
+}
+
+```
+
+### Anthropic Claude
+
+```
+{
+    modelName: "anthropic-claude",
+    choices: 9,
+
+    systemPrompt: "..." ,
+
+
+    newMessageMaxTokens: 2000,
+    tokensLimit: 4096,
+
+    multiroundProfile: ...,
+    apiKey: "...",
+}
+```
+
+
+The `systemPrompt` used for all the models:
+
+ 
+
+```
+Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'.
+```
+
+The `proofFixPrompt` used for all the models:
+
+```
+Unfortunately, the last proof is not correct. Here is the compiler's feedback: '${diagnostic}'. Please, fix the proof.
+```
+
+The `multiroundProfile` used for all the models:
+
+```
+{
+    maxRoundsNumber: 1,
+    proofFixChoices: 1,
+    proofFixPrompt: "...",
+}
+```
+
+The temperature parameter in all models was set to `1`.
+
 ## Results
 
 In the table below you can find the results of our experiments. For each of the theorems we show its group and the methods which proved the theorem during our experiments.
@@ -132,6 +250,10 @@ In the table below you can find the results of our experiments. For each of the 
 | A | [TraversalConfigAlt.v](https://github.com/weakmemory/imm/tree/master/src/traversal/TraversalConfigAlt.v) | `tc_I_ar_rfrmw_I` | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
 | A | [SimClosure.v](https://github.com/weakmemory/imm/tree/master/src/travorder/SimClosure.v) | `ICOHs` | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
 | A | [Execution_eco.v](https://github.com/weakmemory/imm/tree/master/src/basic/Execution_eco.v) | `loceq_eco` | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
+| A | [TraversalConfig.v](https://github.com/weakmemory/imm/tree/master/src/traversal/TraversalConfig.v) | `t_acq_covered` | &#x2717; | &#x2717; | &#x2717; | &#x2717; | [&#x2713;](#t_acq_covered) | &#x2717; | &#x2717; |
+| A | [TraversalConfig.v](https://github.com/weakmemory/imm/tree/master/src/traversal/TraversalConfig.v) | `dom_detour_rmwrfi_rfe_acq_sb_issued` | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
+| A | [immToPower.v](https://github.com/weakmemory/imm/tree/master/src/hardware/immToPower.v) | `rmw_sb_W_in_ppo` | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
+| B | [TraversalConfig.v](https://github.com/weakmemory/imm/tree/master/src/traversal/TraversalConfig.v) | `ar_rf_ppo_loc_rt_I_in_I` | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
 | B | [Events.v](https://github.com/weakmemory/imm/tree/master/src/basic/Events.v) | `same_lab_u2v_dom_inclusion` | [&#x2713;](#same_lab_u2v_dom_inclusion) | &#x2717; | [&#x2713;](#same_lab_u2v_dom_inclusion) | [&#x2713;](#same_lab_u2v_dom_inclusion) | [&#x2713;](#same_lab_u2v_dom_inclusion) | &#x2717; | &#x2717; |
 | B | [C11Toimm_s.v](https://github.com/weakmemory/imm/tree/master/src/c11/C11Toimm_s.v) | `s_imm_consistentimplies_c11_consistent` | [&#x2713;](#s_imm_consistentimplies_c11_consistent) | &#x2717; | &#x2717; | &#x2717; | &#x2717; | [&#x2713;](#s_imm_consistentimplies_c11_consistent) | &#x2717; |
 | B | [TraversalConfig.v](https://github.com/weakmemory/imm/tree/master/src/traversal/TraversalConfig.v) | `dom_ar_ct_issuable` | &#x2717; | [&#x2713;](#dom_ar_ct_issuable) | &#x2717; | [&#x2713;](#dom_ar_ct_issuable) | [&#x2713;](#dom_ar_ct_issuable) | &#x2717; | &#x2717; |
@@ -299,6 +421,7 @@ In the table below you can find the results of our experiments. For each of the 
 | C | [imm_s_hb_hb.v](https://github.com/weakmemory/imm/tree/master/src/imm/imm_s_hb_hb.v) | `s_rs_in_rs` | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
 | C | [imm.v](https://github.com/weakmemory/imm/tree/master/src/imm/imm.v) | `CoherentPSC` | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
 | C | [SimIordTraversal.v](https://github.com/weakmemory/imm/tree/master/src/travorder/SimIordTraversal.v) | `sim_traversal_inf_full` | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
+| C | [EventsTraversalOrder.v](https://github.com/weakmemory/imm/tree/master/src/travorder/EventsTraversalOrder.v) | `ar_rf_ppo_loc_ct_issuable_in_I` | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; | &#x2717; |
 
 ## Generated Proofs
 
