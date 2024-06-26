@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.3
+
+- Fix critical issue with proof checking. Before, when the choices parameter was high, sometimes the wrong proof could be generated and not identified as incorrect. 
+- Updated CI with a build for MacOS. 
+- Deploy the README to gh-pages from CI using jekyll.
+- Fix and extend README, benchmarking report.
+
 ## 2.2.2
 
 - Fix and refactor CI. Publishing a new release is now a manual process.

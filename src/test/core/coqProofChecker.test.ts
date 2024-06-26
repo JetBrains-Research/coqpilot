@@ -199,5 +199,5 @@ suite("`CoqProofChecker` tests", () => {
                 expect(res).toEqual(expected[i][j]);
             }
         }
-    }).timeout(5000);
+    }).timeout(10000);
 });

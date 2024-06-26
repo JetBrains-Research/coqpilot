@@ -72,7 +72,7 @@ suite("Completion generation tests", () => {
         expect(
             unpackProof((results[0] as SuccessGenerationResult).data)
         ).toEqual("auto.");
-    }).timeout(2000);
+    }).timeout(5000);
 
     test("Check many admits", async () => {
         const resourcePath = ["test_many_admits.v"];
@@ -90,7 +90,7 @@ suite("Completion generation tests", () => {
                 unpackProof((result as SuccessGenerationResult).data)
             ).toEqual("auto.");
         }
-    }).timeout(10000);
+    }).timeout(30000);
 
     test("Check proofs harder than auto", async () => {
         const resourcePath = ["harder_than_auto.v"];
@@ -133,5 +133,5 @@ suite("Completion generation tests", () => {
         expect(
             unpackProof((results[0] as SuccessGenerationResult).data)
         ).toEqual("auto.");
-    }).timeout(2000);
+    }).timeout(5000);
 });
