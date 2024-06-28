@@ -6,9 +6,9 @@ import { PromiseExecutor } from "../../../promiseUtils";
 import { IPCError } from "../ipcError";
 import { IPCMessage, createIPCErrorIPCMessage } from "../ipcProtocol";
 
-import { SenderFunction } from "./executeOnParentProcessCall";
-
 export namespace OnParentProcessCallExecutorUtils {
+    export type SenderFunction = (message: any) => void;
+
     export interface LifetimeObjects {
         promiseExecutor: PromiseExecutor<void>;
         send: SenderFunction;

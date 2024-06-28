@@ -3,6 +3,15 @@ import { JSONSchemaType, ValidateFunction } from "ajv";
 import { AjvMode, buildAjv } from "../../../../../utils/ajvErrorsHandling";
 import { SeverityLevel } from "../../../logging/benchmarkingLogger";
 
+// TODO: move message types below to `ipc` message types
+export const IPC_APPSPACE_KEYWORD = "ipc";
+export const IPC_MESSAGE_KEYWORD = `${IPC_APPSPACE_KEYWORD}.message`;
+
+/*
+ * TODO: rework `logs`
+ * - make logs more efficient (maybe use `ipc` logger)
+ * - duplicate / save them to file to supprt debugging if socket breaks
+ */
 export type IPCMessageType =
     | "args"
     | "result"

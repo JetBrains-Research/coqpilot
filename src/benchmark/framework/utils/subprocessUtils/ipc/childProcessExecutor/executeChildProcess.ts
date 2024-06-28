@@ -1,5 +1,6 @@
 import { JSONSchemaType } from "ajv";
 import * as child from "child_process";
+import ipc from "node-ipc";
 
 import {
     time,
@@ -17,6 +18,8 @@ import {
     IPCErrorIPCMessage,
     IPCMessage,
     IPCMessageSchemaValidators,
+    IPC_APPSPACE_KEYWORD,
+    IPC_MESSAGE_KEYWORD,
     LogIPCMessage,
     ResultIPCMessage,
     compileIPCMessageSchemas,
@@ -90,12 +93,20 @@ export async function executeProcessAsFunction<
             enableProcessLifetimeDebugLogs: enableProcessLifetimeDebugLogs,
             promiseExecutor: promiseExecutor,
             resultMapper: resultMapper,
+            send: (socket, message) => {
+                ipc.server.emit(socket, IPC_MESSAGE_KEYWORD, {
+                    id: ipc.config.id, // TODO: is it needed?
+                    message: message,
+                });
+            },
             debug: Utils.buildDebugExecutionLoggerShortcut(
                 executionLogger,
                 enableProcessLifetimeDebugLogs
             ),
             hasFinished: false,
         };
+
+        registerIPCServer(args, argsSchema, resultSchema, lifetime);
 
         try {
             lifetime.subprocess = child.spawn(
@@ -107,23 +118,13 @@ export async function executeProcessAsFunction<
             const error = e as Error;
             return Utils.rejectOnIPCError(
                 `failed to spawn a child process (${error !== null ? error.message : stringifyAnyValue(error)})`,
+                undefined,
                 lifetime
             );
         }
+        registerSubprocessLifetimeEventListeners<ResultType, T>(lifetime);
 
-        registerEventListeners<ArgsType, ResultType, T>(
-            lifetime,
-            argsSchema,
-            resultSchema
-        );
-
-        const argsSent = lifetime.subprocess.send(createArgsIPCMessage(args));
-        if (!argsSent) {
-            return Utils.rejectOnIPCError(
-                `failed to send arguments to the child process (IPC channel is closed or messages buffer is full)`,
-                lifetime
-            );
-        }
+        startIPCServer(lifetime);
     });
 }
 
@@ -131,7 +132,7 @@ function createSpawnOptions(
     options: ChildProcessOptions
 ): child.CommonSpawnOptions {
     const spawnOptions: child.CommonSpawnOptions = {
-        stdio: ["ignore", "pipe", "pipe", "ipc"],
+        stdio: ["ignore", "pipe", "pipe"],
         shell: true,
     };
     if (options.workingDirectory !== undefined) {
@@ -144,15 +145,68 @@ function createSpawnOptions(
     return spawnOptions;
 }
 
-function registerEventListeners<ArgsType, ResultType, T>(
-    lifetime: Utils.LifetimeObjects<ResultType, T>,
+function registerIPCServer<ArgsType, ResultType, T>(
+    args: ArgsType,
     argsSchema: JSONSchemaType<ArgsType>,
-    resultSchema: JSONSchemaType<ResultType>
+    resultSchema: JSONSchemaType<ResultType>,
+    lifetime: Utils.LifetimeObjects<ResultType, T>
 ) {
     const ipcMessageValidators = compileIPCMessageSchemas(
         argsSchema,
         resultSchema
     );
+
+    // TODO: use multi-client broadcasting, because changing global `ipc` config in parallel will surely break ipc
+
+    // TODO: set up ipc config better + set up logger to be silent / log via benchmarking logger
+    ipc.config.appspace = IPC_APPSPACE_KEYWORD;
+    ipc.config.retry = 1500;
+
+    // TODO: parametrize with execution id and find a way to pass it to the child process + access it there
+    // ipc.config.id = `coqpilot-ipc-server-${serverIPCSocketId++}`;
+    ipc.config.id = "coqpilot";
+
+    ipc.serve(() => {
+        ipc.server.on(IPC_MESSAGE_KEYWORD, function (data, socket) {
+            // TODO: experimental code
+            const actualMessage =
+                data?.message === undefined ? data : data.message;
+            if (actualMessage === "hello") {
+                // TODO: set timeout for parent process to deliver args (?)
+                try {
+                    lifetime.send(socket, createArgsIPCMessage(args));
+                    lifetime.debug("Sent args to the child process");
+                } catch (e) {
+                    // TODO: move to utils
+                    const error = e as Error;
+                    const errorMessage =
+                        error !== null ? error.message : stringifyAnyValue(e);
+                    return Utils.rejectOnIPCError(
+                        `failed to send arguments to the child process: ${errorMessage}`,
+                        socket,
+                        lifetime
+                    );
+                }
+            } else {
+                onMessageReceived(
+                    actualMessage,
+                    ipcMessageValidators,
+                    socket,
+                    lifetime
+                );
+            }
+        });
+    });
+}
+
+function startIPCServer(lifetime: Utils.LifetimeObjects<any, any>) {
+    ipc.server.start();
+    lifetime.debug("Started the IPC server in the parent process");
+}
+
+function registerSubprocessLifetimeEventListeners<ResultType, T>(
+    lifetime: Utils.LifetimeObjects<ResultType, T>
+) {
     const subprocess = lifetime.subprocess!;
 
     // Is triggered right after subprocess is spawned successfully.
@@ -169,10 +223,11 @@ function registerEventListeners<ArgsType, ResultType, T>(
         lifetime.debug(`Child process reported to stderr:\n${data}`);
     });
 
+    // TODO: delete, because now `ipc` package is used instead of built-in pipe
     // Is triggered after subprocess calls `process.send()`.
-    subprocess.on("message", (message) =>
-        onMessageReceived(message, ipcMessageValidators, lifetime)
-    );
+    // subprocess.on("message", (message) =>
+    //     onMessageReceived(message, ipcMessageValidators, lifetime)
+    // );
 
     /*
      * Is triggered if one of the following errors occurred:
@@ -185,7 +240,7 @@ function registerEventListeners<ArgsType, ResultType, T>(
                 `Inter-process-communication error occurred on child process finish: ${error.message}`
             );
         } else {
-            Utils.rejectOnIPCError(error.message, lifetime);
+            Utils.rejectOnIPCError(error.message, undefined, lifetime);
         }
     });
 
@@ -219,18 +274,22 @@ function registerEventListeners<ArgsType, ResultType, T>(
         lifetime.debug(
             `Child process completely finished, its resources are free: ${withExitCode}, ${withSignal}`
         );
-        // TODO: maybe add a delay here (?)
-        // TODO: read child process logs from its file
-        Utils.rejectOnIPCError(
-            "Child process finished silently before sending result: communication error",
-            lifetime
-        );
+        if (!lifetime.hasFinished) {
+            // TODO: maybe add a delay here (?)
+            // TODO: read child process logs from its file
+            Utils.rejectOnIPCError(
+                "Child process finished silently before sending result: communication error",
+                undefined,
+                lifetime
+            );
+        }
     });
 }
 
 function onMessageReceived<ArgsType, ResultType, T>(
     message: child.Serializable,
     ipcMessageValidators: IPCMessageSchemaValidators<ArgsType, ResultType>,
+    socket: Utils.IPCSocket,
     lifetime: Utils.LifetimeObjects<ResultType, T>
 ) {
     const ipcMessage = message as IPCMessage;
@@ -239,6 +298,7 @@ function onMessageReceived<ArgsType, ResultType, T>(
             "",
             ipcMessage,
             ipcMessageValidators.validateIPCMessage,
+            socket,
             lifetime
         );
     }
@@ -251,13 +311,14 @@ function onMessageReceived<ArgsType, ResultType, T>(
                     "result",
                     resultMessage,
                     ipcMessageValidators.validateResultMessage,
+                    socket,
                     lifetime
                 );
             }
             lifetime.debug(
                 "Successfully received execution result from the child process"
             );
-            Utils.finishSubprocess(lifetime);
+            Utils.finishSubprocess(socket, lifetime);
             return lifetime.promiseExecutor.resolve(
                 new SuccessfullExecution(
                     lifetime.resultMapper(resultMessage.result)
@@ -275,13 +336,14 @@ function onMessageReceived<ArgsType, ResultType, T>(
                     "execution error",
                     executionErrorMessage,
                     ipcMessageValidators.validateExecutionErrorMessage,
+                    socket,
                     lifetime
                 );
             }
             lifetime.debug(
                 `Error occurred during execution in the child process: "${executionErrorMessage.errorTypeName}: ${executionErrorMessage.errorMessage}"`
             );
-            Utils.finishSubprocess(lifetime);
+            Utils.finishSubprocess(socket, lifetime);
             return lifetime.promiseExecutor.resolve(
                 new FailedExecution(
                     executionErrorMessage.errorTypeName,
@@ -298,11 +360,13 @@ function onMessageReceived<ArgsType, ResultType, T>(
                     "IPC error",
                     ipcErrorMessage,
                     ipcMessageValidators.validateIPCErrorMessage,
+                    socket,
                     lifetime
                 );
             }
             return Utils.rejectOnIPCError(
                 ipcErrorMessage.errorMessage,
+                socket,
                 lifetime
             );
 
@@ -313,6 +377,7 @@ function onMessageReceived<ArgsType, ResultType, T>(
                     "log",
                     logMessage,
                     ipcMessageValidators.validateLogMessage,
+                    socket,
                     lifetime
                 );
             }
@@ -332,6 +397,7 @@ function onMessageReceived<ArgsType, ResultType, T>(
         default:
             return Utils.rejectOnIPCError(
                 `child process sent message of unexpected "${ipcMessage.messageType}" type: ${stringifyAnyValue(ipcMessage)}`,
+                socket,
                 lifetime
             );
     }

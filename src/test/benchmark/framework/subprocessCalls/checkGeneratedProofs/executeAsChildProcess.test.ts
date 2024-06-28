@@ -6,10 +6,8 @@ import {
 
 import { TimeMark } from "../../../../../benchmark/framework/benchmarkCompletionGeneration/measureUtils";
 import { CheckProofsBySubprocessSignature } from "../../../../../benchmark/framework/subprocessCalls/checkGeneratedProofs/callSignature";
-import {
-    LogsIPCSender,
-    executeAsFunctionOnParentProcessCall,
-} from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/executeOnParentProcessCall";
+import { executeAsFunctionOnParentProcessCall } from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/executeOnParentProcessCall";
+import { LogsIPCSender } from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/logsIpcSender";
 import { subprocessExecutable } from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/subprocessExecutableTestWrapper";
 import { stringifyAnyValue } from "../../../../../utils/printers";
 import { createCoqLspClient } from "../../utils/coqLspUtils";

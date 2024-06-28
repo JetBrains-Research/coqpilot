@@ -1,18 +1,20 @@
 import { JSONSchemaType } from "ajv";
+import ipc from "node-ipc";
 
 import { stringifyAnyValue } from "../../../../../../utils/printers";
-import { SeverityLevel } from "../../../../logging/benchmarkingLogger";
 import { PromiseExecutor } from "../../../promiseUtils";
-import { IPCError } from "../ipcError";
 import {
     ArgsIPCMessage,
     IPCMessage,
+    IPCMessageSchemaValidators,
+    IPC_APPSPACE_KEYWORD,
+    IPC_MESSAGE_KEYWORD,
     compileIPCMessageSchemas,
     createExecutionErrorIPCMessage,
-    createLogIPCMessage,
     createResultIPCMessage,
 } from "../ipcProtocol";
 
+import { LogsIPCSender } from "./logsIpcSender";
 import { OnParentProcessCallExecutorUtils } from "./utils";
 
 import Utils = OnParentProcessCallExecutorUtils;
@@ -32,93 +34,100 @@ export async function executeAsFunctionOnParentProcessCall<
             resolve: resolve,
             reject: reject,
         };
-        const send = process.send;
-        if (!process.connected) {
-            return reject(
-                new IPCError(
-                    "this child process is not connected to the parent process via an IPC channel"
-                )
-            );
-        } else if (send === undefined) {
-            return reject(
-                new IPCError(
-                    "invariant failed: `process.connected` was true, but `process.send` is undefined"
-                )
-            );
-        }
         const lifetime: Utils.LifetimeObjects = {
             promiseExecutor: promiseExecutor,
-            send: send,
+            send: (message) =>
+                ipc.of.coqpilot.emit(IPC_MESSAGE_KEYWORD, message),
         };
-        const ipcMessageValidators = compileIPCMessageSchemas(
-            argsSchema,
-            resultSchema
-        );
+        connectAsIPCClient(lifetime, body, argsSchema, resultSchema);
+    });
+}
 
-        process.on("message", async (message) => {
-            const ipcMessage = message as IPCMessage;
-            if (!ipcMessageValidators.validateIPCMessage(ipcMessage)) {
-                return Utils.handleInvalidIPCMessageSchemaError(
-                    "",
-                    ipcMessage,
-                    ipcMessageValidators.validateIPCMessage,
-                    lifetime
-                );
-            }
+function connectAsIPCClient<ArgsType, ResultType>(
+    lifetime: Utils.LifetimeObjects,
+    body: (args: ArgsType, logger: LogsIPCSender) => Promise<ResultType>,
+    argsSchema: JSONSchemaType<ArgsType>,
+    resultSchema: JSONSchemaType<ResultType>
+) {
+    const ipcMessageValidators = compileIPCMessageSchemas(
+        argsSchema,
+        resultSchema
+    );
 
-            switch (ipcMessage.messageType) {
-                case "args":
-                    const argsMessage = message as ArgsIPCMessage<ArgsType>;
-                    if (
-                        !ipcMessageValidators.validateArgsMessage(argsMessage)
-                    ) {
-                        return Utils.handleInvalidIPCMessageSchemaError(
-                            "args",
-                            argsMessage,
-                            ipcMessageValidators.validateArgsMessage,
-                            lifetime
-                        );
-                    }
-                    return await executeBodyAndSendResult(
-                        body,
-                        argsMessage.args,
-                        lifetime
-                    );
-                case "stop":
-                    return lifetime.promiseExecutor.resolve();
-                default:
-                    return Utils.tryToReportIPCErrorToParentAndThrow(
-                        `parent process sent message of unexpected "${ipcMessage.messageType}" type: ${stringifyAnyValue(ipcMessage)}`,
-                        lifetime
-                    );
-            }
+    // TODO: set up ipc config better
+    ipc.config.appspace = IPC_APPSPACE_KEYWORD;
+    ipc.config.id = "coqpilot-ipc-client"; // TODO: is it needed at all?
+    ipc.config.retry = 1000;
+
+    // TODO: find the way to call `ipc.of` by parameterized id
+    ipc.connectTo("coqpilot", function () {
+        ipc.of.coqpilot.on("connect", function () {
+            console.error("connected to the IPC server of the parent process");
+            // TODO: maybe add first "hello" from the child process?
+            lifetime.send("hello");
+        });
+        ipc.of.coqpilot.on("disconnect", function () {
+            console.error(
+                "disconnected from the IPC server of the parent process"
+            );
+        });
+        ipc.of.coqpilot.on(IPC_MESSAGE_KEYWORD, async (data) => {
+            // TODO: is `await` needed here?
+            const actualMessage =
+                data?.message === undefined ? data : data.message;
+            await onMessageReceived(
+                actualMessage,
+                ipcMessageValidators,
+                lifetime,
+                body
+            );
         });
     });
 }
 
-export type SenderFunction = (message: any) => boolean;
-
-export class LogsIPCSender {
-    constructor(private readonly send: SenderFunction) {}
-
-    error(message: string) {
-        this.sendLog(SeverityLevel.ERROR, message);
+async function onMessageReceived<ArgsType, ResultType>(
+    message: any,
+    ipcMessageValidators: IPCMessageSchemaValidators<ArgsType, ResultType>,
+    lifetime: Utils.LifetimeObjects,
+    body: (args: ArgsType, logger: LogsIPCSender) => Promise<ResultType>
+) {
+    const ipcMessage = message as IPCMessage;
+    if (!ipcMessageValidators.validateIPCMessage(ipcMessage)) {
+        return Utils.handleInvalidIPCMessageSchemaError(
+            "",
+            ipcMessage,
+            ipcMessageValidators.validateIPCMessage,
+            lifetime
+        );
     }
 
-    info(message: string) {
-        this.sendLog(SeverityLevel.INFO, message);
-    }
-
-    debug(message: string) {
-        this.sendLog(SeverityLevel.DEBUG, message);
-    }
-
-    private sendLog(severity: SeverityLevel, message: string) {
-        this.send(createLogIPCMessage(message, severity));
+    switch (ipcMessage.messageType) {
+        case "args":
+            const argsMessage = message as ArgsIPCMessage<ArgsType>;
+            if (!ipcMessageValidators.validateArgsMessage(argsMessage)) {
+                return Utils.handleInvalidIPCMessageSchemaError(
+                    "args",
+                    argsMessage,
+                    ipcMessageValidators.validateArgsMessage,
+                    lifetime
+                );
+            }
+            return await executeBodyAndSendResult(
+                body,
+                argsMessage.args,
+                lifetime
+            );
+        case "stop":
+            return lifetime.promiseExecutor.resolve();
+        default:
+            return Utils.tryToReportIPCErrorToParentAndThrow(
+                `parent process sent message of unexpected "${ipcMessage.messageType}" type: ${stringifyAnyValue(ipcMessage)}`,
+                lifetime
+            );
     }
 }
 
-export async function executeBodyAndSendResult<ArgsType, ResultType>(
+async function executeBodyAndSendResult<ArgsType, ResultType>(
     body: (args: ArgsType, logger: LogsIPCSender) => Promise<ResultType>,
     args: ArgsType,
     lifetime: Utils.LifetimeObjects
@@ -137,10 +146,16 @@ export async function executeBodyAndSendResult<ArgsType, ResultType>(
         );
         return lifetime.promiseExecutor.resolve();
     }
-    const resultSent = lifetime.send(createResultIPCMessage(result));
-    if (!resultSent) {
+
+    try {
+        lifetime.send(createResultIPCMessage(result));
+    } catch (e) {
+        // TODO: move to utils
+        const error = e as Error;
+        const errorMessage =
+            error !== null ? error.message : stringifyAnyValue(e);
         return Utils.tryToReportIPCErrorToParentAndThrow(
-            `failed to send execution result to the parent process (IPC channel is closed or messages buffer is full)`,
+            `failed to send execution result to the parent process: ${errorMessage}`,
             lifetime
         );
     }

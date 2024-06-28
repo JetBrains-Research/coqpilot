@@ -9,10 +9,8 @@ import {
     serializeTheorem,
 } from "../../../../../benchmark/framework/structures/theoremData";
 import { BuildAndParseCoqProjectBySubprocessSignature } from "../../../../../benchmark/framework/subprocessCalls/buildAndParseCoqProject/callSignature";
-import {
-    LogsIPCSender,
-    executeAsFunctionOnParentProcessCall,
-} from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/executeOnParentProcessCall";
+import { executeAsFunctionOnParentProcessCall } from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/executeOnParentProcessCall";
+import { LogsIPCSender } from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/logsIpcSender";
 import { subprocessExecutable } from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/subprocessExecutableTestWrapper";
 import { Uri } from "../../../../../utils/uri";
 import { createCoqLspClient } from "../../utils/coqLspUtils";
