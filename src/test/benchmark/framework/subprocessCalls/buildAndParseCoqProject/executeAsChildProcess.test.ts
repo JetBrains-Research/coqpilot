@@ -36,7 +36,7 @@ async function buildAndParseCoqProject(
     const parsedFileTargets: Signature.ResultModels.Result = {};
     for (const filePath in args.sourceFilePathToTarget) {
         const fileTarget = args.sourceFilePathToTarget[filePath];
-        const serializedParsedFile = await parseSourceFile(
+        const serializedParsedFile = await openAndParseSourceFile(
             filePath,
             coqLspClient,
             logger
@@ -52,17 +52,21 @@ async function buildAndParseCoqProject(
         };
         parsedFileTargets[filePath] = parsedFileTarget;
     }
-    // TODO: add successful log report maybe
+    // TODO: use proper logging
+    console.error(
+        `Successfully parsed Coq project: analyzed ${Object.keys(parsedFileTargets).length} files`
+    );
     return parsedFileTargets;
 }
 
-async function parseSourceFile(
+async function openAndParseSourceFile(
     filePath: string,
     coqLspClient: CoqLspClient,
     logger: LogsIPCSender
 ): Promise<SerializedParsedCoqFile> {
     const mockFileVersion = 1;
     const sourceFileUri = Uri.fromPath(filePath);
+    await coqLspClient.openTextDocument(sourceFileUri);
     const sourceFileEnvironment = await createSourceFileEnvironment(
         mockFileVersion,
         sourceFileUri,
