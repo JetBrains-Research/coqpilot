@@ -85,8 +85,8 @@ export async function benchmarkSingleCompletionGeneration<
         );
     logger
         .asOneRecord()
-        .info(`successfully generated ${generatedProofs.length} proofs`)
-        .debug(`elapsed time: ${proofsGenerationMillis} ms`, "gray");
+        .info(`Successfully generated ${generatedProofs.length} proofs`)
+        .debug(`Elapsed time: ${proofsGenerationMillis} ms`, "gray");
     const preparedProofs = generatedProofs.map(
         (generatedProof: GeneratedProof) =>
             prepareProofToCheck(generatedProof.proof())
@@ -122,7 +122,7 @@ export async function benchmarkSingleCompletionGeneration<
     const proofsValidationResult = proofsValidationExecutionResult.maybeResult!;
     if (CheckProofsBySubprocessSignature.isFailure(proofsValidationResult)) {
         const failureCauseMessage = proofsValidationResult.causeMessage;
-        logger.info(`failed to validate proofs: ${failureCauseMessage}`);
+        logger.info(`Failed to validate proofs: ${failureCauseMessage}`);
         return buildFailedCompletionGeneration(
             resultMetrics,
             CompletionGenerationFailureType[proofsValidationResult.failureType],
@@ -139,9 +139,9 @@ export async function benchmarkSingleCompletionGeneration<
     logger
         .asOneRecord()
         .info(
-            `successfully verified proofs: ${validProofs.length} / ${preparedProofs.length} are valid`
+            `Successfully verified proofs: ${validProofs.length} / ${preparedProofs.length} are valid`
         )
-        .debug(`elapsed time: ${proofsValidationMillis} ms`, "gray");
+        .debug(`Elapsed time: ${proofsValidationMillis} ms`, "gray");
 
     if (validProofs.length > 0) {
         const successfulGeneration: SuccessfulCompletionGeneration = {
@@ -193,10 +193,10 @@ async function generateProofWithRetriesMeasured<
             logger
                 .asOneRecord()
                 .debug(
-                    `attempt #${attemptIndex}, successfully generated proofs`
+                    `Attempt #${attemptIndex}, successfully generated proofs`
                 )
                 .debug(
-                    `total elapsed time (all ${attemptIndex + 1} attempts): ${millisToString(totalTime.measureElapsedMillis())}`
+                    `Total elapsed time (all ${attemptIndex + 1} attempts): ${millisToString(totalTime.measureElapsedMillis())}`
                 );
             return [generatedProofs, measuredTime];
         } catch (e) {
@@ -208,7 +208,7 @@ async function generateProofWithRetriesMeasured<
             }
             if (llmServiceError instanceof ConfigurationError) {
                 logger.debug(
-                    `attempt #${attemptIndex}, configuration error: ${stringifyAnyValue(llmServiceError.message)}`
+                    `Attempt #${attemptIndex}, configuration error: ${stringifyAnyValue(llmServiceError.message)}`
                 );
                 throw llmServiceError;
             }
@@ -219,10 +219,10 @@ async function generateProofWithRetriesMeasured<
                 logger
                     .asOneRecord()
                     .debug(
-                        `attempt #${attemptIndex}, generation failed error: ${stringifyAnyValue(llmServiceError.message)}`
+                        `Attempt #${attemptIndex}, generation failed error: ${stringifyAnyValue(llmServiceError.message)}`
                     )
                     .debug(
-                        `estimated time to become available: ${timeToString(estimatedTime)}`
+                        `Estimated time to become available: ${timeToString(estimatedTime)}`
                     );
             } else if (llmServiceError instanceof RemoteConnectionError) {
                 if (prevFailureIsConnectionError) {
@@ -236,9 +236,9 @@ async function generateProofWithRetriesMeasured<
                 logger
                     .asOneRecord()
                     .debug(
-                        `attempt #${attemptIndex}, remote connection error: ${stringifyAnyValue(llmServiceError.message)}`
+                        `Attempt #${attemptIndex}, remote connection error: ${stringifyAnyValue(llmServiceError.message)}`
                     )
-                    .debug(`delay to wait for: ${millisToString(delayMillis)}`);
+                    .debug(`Delay to wait for: ${millisToString(delayMillis)}`);
             } else {
                 throw Error(
                     `unknown \`LLMServiceError\` type: ${stringifyAnyValue(llmServiceError.name)}, ${stringifyAnyValue(llmServiceError)}`

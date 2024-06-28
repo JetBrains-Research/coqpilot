@@ -66,6 +66,9 @@ function buildSuccessResult(
     proofCheckResults: ProofCheckResult[],
     proofsValidationMillis: number
 ): Signature.SuccessResult {
+    console.error(
+        `Proofs were successfully checked in ${proofsValidationMillis} ms`
+    );
     return {
         proofCheckResults: proofCheckResults,
         proofsValidationMillis: proofsValidationMillis,

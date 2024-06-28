@@ -34,10 +34,10 @@ export async function benchmark(
     parentLogger: BenchmarkingLogger
 ): Promise<ExperimentResults> {
     if (exists(resolvedArtifactsDirPath)) {
-    if (!checkDirectoryIsEmpty(resolvedArtifactsDirPath)) {
-        throw Error(
-            `artifacts directory should be empty: "${resolvedArtifactsDirPath}"`
-        );
+        if (!checkDirectoryIsEmpty(resolvedArtifactsDirPath)) {
+            throw Error(
+                `artifacts directory should be empty: "${resolvedArtifactsDirPath}"`
+            );
         }
     } else {
         createDirectory(true, resolvedArtifactsDirPath);
@@ -141,8 +141,8 @@ function buildItemLogger(
     return parentLogger.createChildLoggerWithIdentifier(
         [
             "[",
-            `modelId: ${params.modelParams.modelId}`,
-            `theorem: ${task.sourceTheorem.name}`,
+            `modelId: "${params.modelParams.modelId}", `,
+            `theorem: \`${task.sourceTheorem.name}\`, `,
             `completion position: ${task.targetPositionRange.start}`,
             "]\n",
             `[file: ${task.sourceFilePath}]`,

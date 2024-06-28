@@ -36,8 +36,8 @@ const experimentResults = experiment.run("benchmarksOutput", {
 experimentResults.then(
     () =>
         console.log(
-            colorize("\nExperiment has successfully finished!", "green")
+            colorize("\nExperiment has successfully finished!\n", "green")
         ),
     (reason) =>
-        console.error(colorize(`\nExperiment has failed: ${reason}`, "red"))
+        console.error(colorize(`\nExperiment has failed: ${reason}\n`, "red"))
 );

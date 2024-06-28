@@ -1,2 +1,2 @@
-export const heavyCheckMark = "&#x2714;";
-export const heavyCrossMark = "&#x2718;";
+export const heavyCheckMark = "\u2714";
+export const heavyCrossMark = "\u2718";

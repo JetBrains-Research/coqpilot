@@ -105,7 +105,7 @@ function logResult(
             .asOneRecord()
             .info(`Goal was succefully proven ${heavyCheckMark}`, "green")
             .debug("First valid proof:")
-            .debug(`${success.validProofs[0]}`)
+            .debug(`${success.validProofs[0].asString}`)
             .debug(
                 `Total elapsed time: ${millisToString(totalElapsedTimeMillis)}`
             );
