@@ -213,7 +213,7 @@ export class BenchmarkingLoggerImpl extends BenchmarkingLogger {
         }
         // This condition is needed, for example, for `asOneRecord()`.
         if (recordIdentifier !== "") {
-            this.print(recordIdentifier, lineEnd);
+            this.print(recordIdentifier, "\n");
         }
         if (color === undefined || this.logsFile !== undefined) {
             // Typically, colors are not supported in files.

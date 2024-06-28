@@ -58,6 +58,7 @@ function connectAsIPCClient<ArgsType, ResultType>(
     ipc.config.appspace = IPC_APPSPACE_KEYWORD;
     ipc.config.id = "coqpilot-ipc-client"; // TODO: is it needed at all?
     ipc.config.retry = 1000;
+    ipc.config.silent = true;
 
     // TODO: find the way to call `ipc.of` by parameterized id
     ipc.connectTo("coqpilot", function () {

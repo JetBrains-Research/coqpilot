@@ -161,6 +161,7 @@ function registerIPCServer<ArgsType, ResultType, T>(
     // TODO: set up ipc config better + set up logger to be silent / log via benchmarking logger
     ipc.config.appspace = IPC_APPSPACE_KEYWORD;
     ipc.config.retry = 1500;
+    ipc.config.silent = true;
 
     // TODO: parametrize with execution id and find a way to pass it to the child process + access it there
     // ipc.config.id = `coqpilot-ipc-server-${serverIPCSocketId++}`;
@@ -215,6 +216,7 @@ function registerSubprocessLifetimeEventListeners<ResultType, T>(
     );
 
     // TODO: support stdout and stderr redirection better
+    // namely, accumulate logs until execution finishes
     subprocess.stdout?.on("data", (data) => {
         lifetime.debug(`Child process reported to stdout:\n${data}`);
     });

@@ -8,6 +8,7 @@ import {
     CompletionGenerationTask,
     TargetType,
     WorkspaceRoot,
+    isNoWorkspaceRoot,
 } from "../structures/completionGenerationTask";
 import { ExperimentRunOptions } from "../structures/experimentRunOptions";
 import { LLMServiceIdentifier } from "../structures/llmServiceIdentifier";
@@ -45,7 +46,7 @@ export async function buildBenchmarkingItems(
     logger
         .asOneRecord()
         .info(
-            `successfully constructed ${benchmarkingItems.length} benchmarking items`,
+            `Successfully constructed ${benchmarkingItems.length} benchmarking items`,
             undefined,
             ""
         )
@@ -107,7 +108,7 @@ async function buildAndParseRequestedCoqProjects(
         );
         workspaceToParsedFileTargets.set(workspaceRoot, parsedFileTargets);
     }
-    logger.info("successfully built and parsed requested Coq projects");
+    logger.info("Successfully built and parsed requested Coq projects");
     return workspaceToParsedFileTargets;
 }
 
@@ -127,10 +128,9 @@ async function buildAndParseCoqProjectOrThrow(
         logger,
         runOptions.enableSubprocessLifetimeDebugLogs
     );
-    const projectId =
-        workspaceRoot === undefined
-            ? "standalone source files requested"
-            : `"${workspaceRoot}" project with source files requested`;
+    const projectId = isNoWorkspaceRoot(workspaceRoot)
+        ? "standalone source files requested"
+        : `"${workspaceRoot.directoryPath}" project with source files requested`;
     if (executionResult.isFailed()) {
         logger
             .asOneRecord()
@@ -147,7 +147,7 @@ async function buildAndParseCoqProjectOrThrow(
     }
     const parsedFileTargets = executionResult.maybeResult!;
     logger.info(
-        `successfully built and parsed ${projectId}: ${parsedFileTargets.size} parsed files`
+        `Successfully built and parsed ${projectId}: ${parsedFileTargets.size} parsed files`
     );
     return parsedFileTargets;
 }
