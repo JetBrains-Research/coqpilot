@@ -10,9 +10,7 @@ export function benchmarkedItemToJson(
 export function benchmarkedItemsToJson(
     benchmarkedItems: BenchmarkedItem[]
 ): string {
-    return JSON.stringify(
-        benchmarkedItems.map((item) => benchmarkedItemToJson(item)),
-        null,
-        2
-    );
+    return `[\n${benchmarkedItems
+        .map((item) => benchmarkedItemToJson(item))
+        .join(",\n")}\n]`;
 }
