@@ -9,6 +9,7 @@ import { ExperimentRunOptions } from "./structures/experimentRunOptions";
 import {
     checkDirectoryIsEmpty,
     createDirectory,
+    exists,
     getLastName,
     joinPaths,
     writeToFile,
@@ -32,10 +33,14 @@ export async function benchmark(
     subprocessesScheduler: SubprocessesScheduler,
     parentLogger: BenchmarkingLogger
 ): Promise<ExperimentResults> {
+    if (exists(resolvedArtifactsDirPath)) {
     if (!checkDirectoryIsEmpty(resolvedArtifactsDirPath)) {
         throw Error(
             `artifacts directory should be empty: "${resolvedArtifactsDirPath}"`
         );
+        }
+    } else {
+        createDirectory(true, resolvedArtifactsDirPath);
     }
     const itemsReportsDirPath = createDirectory(
         true,

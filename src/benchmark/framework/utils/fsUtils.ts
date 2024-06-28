@@ -42,6 +42,10 @@ export function clearFile(filePath: string) {
     fs.writeFileSync(filePath, "");
 }
 
+export function exists(inputPath: string): boolean {
+    return fs.existsSync(inputPath);
+}
+
 export function joinPaths(parentDirPath: string, ...paths: string[]): string {
     return path.join(parentDirPath, ...paths);
 }
