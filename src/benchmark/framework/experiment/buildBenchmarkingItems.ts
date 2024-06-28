@@ -58,7 +58,7 @@ function logBenchmarkingItems(benchmarkingItems: BenchmarkingItem[]): string {
     const benchmarkingItemsLogs = [];
     for (let i = 0; i < benchmarkingItems.length; i++) {
         benchmarkingItemsLogs.push(
-            `\tbenchmarking item ${i}:\n${logBenchmarkingItem(benchmarkingItems[i])}`
+            `benchmarking item ${i}:\n${logBenchmarkingItem(benchmarkingItems[i])}`
         );
     }
     return benchmarkingItemsLogs.join("\n---\n");
@@ -66,7 +66,7 @@ function logBenchmarkingItems(benchmarkingItems: BenchmarkingItem[]): string {
 
 function logBenchmarkingItem(benchmarkingItem: BenchmarkingItem): string {
     const task = benchmarkingItem.task;
-    const targetLog = `* target: ${getTargetTypeName(task.targetType)}, goal ${task.targetGoalToProveAsString}`;
+    const targetLog = `* target: ${getTargetTypeName(task.targetType)}, goal \`${task.targetGoalToProveAsString}\``;
     const sourceLog = `* source: ${task.targetPositionRange} of theorem "${task.sourceTheorem.name}" from "${task.sourceFilePath}"`;
     const paramsLog = `* model id: "${benchmarkingItem.params.modelParams.modelId}"`; // TODO: support theorem ranker name
     const llmServiceLog = `* LLM service: ${getShortName(benchmarkingItem.params.llmServiceIdentifier)}`;
