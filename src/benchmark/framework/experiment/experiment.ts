@@ -91,9 +91,6 @@ export class Experiment {
             subprocessesScheduler,
             logger
         );
-        if (2 < 5) {
-            throw Error("stop here for now");
-        }
 
         return benchmark(
             benchmarkingItems,

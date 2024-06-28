@@ -28,8 +28,8 @@ new BenchmarkingBundle()
 const experimentResults = experiment.run("benchmarksOutput", {
     loggerSeverity: SeverityLevel.DEBUG,
     // logsFilePath: "benchmarkLogs/logs.txt",
-    enableSchedulingDebugLogs: true,
-    enableSubprocessLifetimeDebugLogs: true,
+    enableSchedulingDebugLogs: false,
+    enableSubprocessLifetimeDebugLogs: false,
     maxActiveSubprocessesNumber: 1,
 });
 
