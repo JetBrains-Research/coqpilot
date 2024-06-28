@@ -99,7 +99,7 @@ async function extractTaskTargetsFromFile(
     )) {
         for (let i = 0; i < serializedParsedFile.allFileTheorems.length; i++) {
             const theorem = serializedParsedFile.allFileTheorems[i];
-            const taskTargets = await extractTaskTargetsFromTheorem(
+            const theoremTaskTargets = await extractTaskTargetsFromTheorem(
                 theorem,
                 targetType,
                 i,
@@ -108,7 +108,9 @@ async function extractTaskTargetsFromFile(
                 coqLspClient,
                 logger
             );
-            taskTargets.forEach((taskTarget) => taskTargets.push(taskTarget));
+            theoremTaskTargets.forEach((taskTarget) =>
+                taskTargets.push(taskTarget)
+            );
         }
     }
 
@@ -134,7 +136,7 @@ async function extractTaskTargetsFromFile(
         for (const [targetType, bundleIds] of flattenTargetTypesToBundleIds(
             theoremTarget
         )) {
-            const taskTargets = await extractTaskTargetsFromTheorem(
+            const theoremTaskTargets = await extractTaskTargetsFromTheorem(
                 theorem,
                 targetType,
                 theoremIndex,
@@ -143,7 +145,9 @@ async function extractTaskTargetsFromFile(
                 coqLspClient,
                 logger
             );
-            taskTargets.forEach((taskTarget) => taskTargets.push(taskTarget));
+            theoremTaskTargets.forEach((taskTarget) =>
+                taskTargets.push(taskTarget)
+            );
         }
     }
 
@@ -229,8 +233,12 @@ async function buildTaskTarget(
 function flattenTargetTypesToBundleIds(
     targetTypeToBundleIds: Signature.ArgsModels.TargetTypeToBundleIds
 ): [Signature.CommonModels.TargetType, number[]][] {
-    return [
-        ["ADMIT", targetTypeToBundleIds.ADMIT],
-        ["PROVE_THEOREM", targetTypeToBundleIds.PROVE_THEOREM],
-    ];
+    const result: [Signature.CommonModels.TargetType, number[]][] = [];
+    if (targetTypeToBundleIds.ADMIT.length !== 0) {
+        result.push(["ADMIT", targetTypeToBundleIds.ADMIT]);
+    }
+    if (targetTypeToBundleIds.PROVE_THEOREM.length !== 0) {
+        result.push(["PROVE_THEOREM", targetTypeToBundleIds.PROVE_THEOREM]);
+    }
+    return result;
 }

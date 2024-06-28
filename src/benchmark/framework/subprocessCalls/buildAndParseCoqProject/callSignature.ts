@@ -24,7 +24,7 @@ export namespace BuildAndParseCoqProjectBySubprocessSignature {
 
         export const targetTypeSchema: JSONSchemaType<TargetType> = {
             type: "string",
-            enum: ["TIMEOUT", "COQ_PROOF_CHECKER_ERROR"],
+            enum: ["ADMIT", "PROVE_THEOREM"],
         };
     }
 
