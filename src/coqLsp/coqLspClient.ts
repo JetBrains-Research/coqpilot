@@ -34,10 +34,12 @@ export interface CoqLspClientInterface extends Disposable {
         position: Position,
         documentUri: Uri,
         version: number,
-        pretac: string
+        command: string
     ): Promise<Goal<PpString> | Error>;
 
     openTextDocument(uri: Uri, version: number): Promise<DiagnosticMessage>;
+
+    getDocumentSymbols(uri: Uri): Promise<any>;
 
     updateTextDocument(
         oldDocumentText: string[],
@@ -76,18 +78,24 @@ export class CoqLspClient implements CoqLspClientInterface {
         this.client.start();
     }
 
+    async getDocumentSymbols(uri: Uri): Promise<any> {
+        return await this.mutex.runExclusive(async () => {
+            return this.getDocumentSymbolsUnsafe(uri);
+        });
+    }
+
     async getFirstGoalAtPoint(
         position: Position,
         documentUri: Uri,
         version: number,
-        pretac?: string
+        command?: string
     ): Promise<Goal<PpString> | Error> {
         return await this.mutex.runExclusive(async () => {
             return this.getFirstGoalAtPointUnsafe(
                 position,
                 documentUri,
                 version,
-                pretac
+                command
             );
         });
     }
@@ -149,11 +157,21 @@ export class CoqLspClient implements CoqLspClientInterface {
             .trim();
     }
 
+    private async getDocumentSymbolsUnsafe(uri: Uri): Promise<any> {
+        let textDocument = TextDocumentIdentifier.create(uri.uri);
+        let params: any = { textDocument };
+
+        return await this.client.sendRequest(
+            "textDocument/documentSymbol",
+            params
+        );
+    }
+
     private async getFirstGoalAtPointUnsafe(
         position: Position,
         documentUri: Uri,
         version: number,
-        pretac?: string
+        command?: string
     ): Promise<Goal<PpString> | Error> {
         let goalRequestParams: GoalRequest = {
             textDocument: VersionedTextDocumentIdentifier.create(
@@ -165,8 +183,9 @@ export class CoqLspClient implements CoqLspClientInterface {
             pp_format: "Str",
         };
 
-        if (pretac) {
-            goalRequestParams.pretac = pretac;
+        if (command) {
+            goalRequestParams.command = command;
+            // goalRequestParams.mode = "After";
         }
 
         const goals = await this.client.sendRequest(
