@@ -1,6 +1,6 @@
 import Ajv, { DefinedError, Options, ValidateFunction } from "ajv";
 
-import { stringifyDefinedValue } from "./printers";
+import { stringifyAnyValue, stringifyDefinedValue } from "./printers";
 
 export enum AjvMode {
     RETURN_AFTER_FIRST_ERROR,
@@ -17,10 +17,14 @@ export function failedAjvValidatorErrorsAsString(
     validator: ValidateFunction<any>,
     ignoreErrorsWithKeywords: string[] = []
 ): string {
-    return ajvErrorsAsString(
-        validator.errors as DefinedError[],
-        ignoreErrorsWithKeywords
-    );
+    if (validator.errors === null) {
+        return "there are not errors, validation is successfull";
+    }
+    const definedErrors = validator.errors as DefinedError[];
+    if (definedErrors === null) {
+        return `errors are not defined: "${stringifyAnyValue(validator.errors)}"`;
+    }
+    return ajvErrorsAsString(definedErrors, ignoreErrorsWithKeywords);
 }
 
 export function ajvErrorsAsString(

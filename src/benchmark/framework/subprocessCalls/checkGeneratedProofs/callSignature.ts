@@ -138,6 +138,5 @@ export namespace CheckProofsBySubprocessSignature {
     export const resultSchema: JSONSchemaType<SuccessResult | FailureResult> = {
         type: "object",
         oneOf: [successResultSchema, failureResultSchema],
-        additionalProperties: false,
     };
 }
