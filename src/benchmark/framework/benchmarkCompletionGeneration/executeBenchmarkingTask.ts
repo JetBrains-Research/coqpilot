@@ -9,8 +9,8 @@ import {
     BenchmarkedCompletionGeneration,
     BenchmarkedItem,
     CompletionGenerationFailureType,
-    FailedCompletionGeneration,
-    SuccessfulCompletionGeneration,
+    isFailedGeneration,
+    isSuccessfulGeneration,
 } from "../structures/benchmarkedItem";
 import { BenchmarkingItem } from "../structures/benchmarkingItem";
 import { ExperimentRunOptions } from "../structures/experimentRunOptions";
@@ -96,23 +96,19 @@ function logResult(
     result: BenchmarkedCompletionGeneration,
     itemLogger: BenchmarkingLogger
 ) {
-    const success = result as SuccessfulCompletionGeneration;
-    if (success !== null) {
+    if (isSuccessfulGeneration(result)) {
         itemLogger
             .asOneRecord()
             .info(`Goal was succefully proven ${heavyCheckMark}`, "green")
             .debug("First valid proof:")
-            .debug(`${success.validProofs[0].asString}`)
+            .debug(`${result.validProofs[0].asString}`)
             .debug(
                 `Total effective elapsed time: ${millisToString(result.elapsedTime.totalMillis)}`
             );
-        return;
-    }
-    const failure = result as FailedCompletionGeneration;
-    if (failure !== null) {
+    } else if (isFailedGeneration(result)) {
         let failureMessage: string;
         let logCause: boolean = true;
-        switch (failure.failureType) {
+        switch (result.failureType) {
             case CompletionGenerationFailureType.SEARCH_FAILED:
                 failureMessage = "Valid proofs not found";
                 logCause = false;
@@ -128,13 +124,14 @@ function logResult(
             .asOneRecord()
             .info(`${failureMessage} ${heavyCrossMark}`, "red");
         if (logCause) {
-            asOneRecordLogs.debug(`Cause: ${failure.causeMessage}`);
+            asOneRecordLogs.debug(`Cause: ${result.causeMessage}`);
         }
         asOneRecordLogs.debug(
             `Total effective elapsed time: ${millisToString(result.elapsedTime.totalMillis)}`
         );
+    } else {
+        itemLogger.error(
+            `Got unknown \`BenchmarkedCompletionGeneration\` type: ${stringifyAnyValue(result)}`
+        );
     }
-    itemLogger.error(
-        `Got unknown \`BenchmarkedCompletionGeneration\` type: ${stringifyAnyValue(result)}`
-    );
 }

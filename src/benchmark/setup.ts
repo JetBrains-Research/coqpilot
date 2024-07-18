@@ -8,11 +8,10 @@ const experiment = new Experiment();
 
 new BenchmarkingBundle()
     .withLLMService("predefined")
-    .withBenchmarkingModelsParams({
-        modelId: "prove-with-auto",
-        tactics: ["auto."],
-        ranker: "random",
-    })
+    .withBenchmarkingModelsParams(
+        { modelId: "prove-with-auto", tactics: ["a."], ranker: "random" },
+        { modelId: "prove-with-auto #2", tactics: ["auto."], ranker: "random" }
+    )
     .withTargets(
         new TargetsBuilder()
             .withoutWorkspaceRoot()

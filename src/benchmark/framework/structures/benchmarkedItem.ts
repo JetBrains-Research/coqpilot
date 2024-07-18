@@ -30,6 +30,12 @@ export interface SuccessfulCompletionGeneration
     validProofs: MeasuredProof[];
 }
 
+export function isSuccessfulGeneration(
+    result: BenchmarkedCompletionGeneration
+): result is SuccessfulCompletionGeneration {
+    return (result as SuccessfulCompletionGeneration).validProofs !== undefined;
+}
+
 export interface FailedCompletionGeneration
     extends BenchmarkedCompletionGeneration {
     failureType: CompletionGenerationFailureType;
@@ -41,4 +47,14 @@ export enum CompletionGenerationFailureType {
     SEARCH_FAILED,
     TIMEOUT, // coq proof checker / coq lsp timeout?
     COQ_PROOF_CHECKER_ERROR,
+}
+
+export function isFailedGeneration(
+    result: BenchmarkedCompletionGeneration
+): result is FailedCompletionGeneration {
+    const maybeFailedGeneration = result as FailedCompletionGeneration;
+    return (
+        maybeFailedGeneration.failureType !== undefined &&
+        maybeFailedGeneration.causeMessage !== undefined
+    );
 }
