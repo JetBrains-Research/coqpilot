@@ -40,7 +40,7 @@ import { WorkspaceRoot } from "../structures/completionGenerationTask";
 import { ExperimentRunOptions } from "../structures/experimentRunOptions";
 import { checkGeneratedProofsInSubprocess } from "../subprocessCalls/checkGeneratedProofs/callChildProcess";
 import { CheckProofsBySubprocessSignature } from "../subprocessCalls/checkGeneratedProofs/callSignature";
-import { SubprocessesScheduler } from "../utils/subprocessUtils/subprocessesScheduler";
+import { AsyncScheduler } from "../utils/asyncScheduler";
 
 import {
     CompletionGenerationTimeImpl,
@@ -72,7 +72,7 @@ export async function benchmarkSingleCompletionGeneration<
     llmService: LLMServiceType,
     workspaceRoot: WorkspaceRoot,
     logger: BenchmarkingLogger,
-    subprocessesScheduler: SubprocessesScheduler,
+    subprocessesScheduler: AsyncScheduler,
     experimentRunOptions: ExperimentRunOptions
 ): Promise<BenchmarkedCompletionGeneration> {
     const [generatedProofs, proofsGenerationMillis] =

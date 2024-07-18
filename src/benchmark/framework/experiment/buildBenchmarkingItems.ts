@@ -14,9 +14,9 @@ import { ExperimentRunOptions } from "../structures/experimentRunOptions";
 import { LLMServiceIdentifier } from "../structures/llmServiceIdentifier";
 import { buildAndParseCoqProjectInSubprocess } from "../subprocessCalls/buildAndParseCoqProject/callChildProcess";
 import { BuildAndParseCoqProjectBySubprocessSignature } from "../subprocessCalls/buildAndParseCoqProject/callSignature";
+import { AsyncScheduler } from "../utils/asyncScheduler";
 import { getParamsResolver, getShortName } from "../utils/llmServicesUtils";
 import { resolveTheoremsRanker } from "../utils/resolveTheoremsRanker";
-import { SubprocessesScheduler } from "../utils/subprocessUtils/subprocessesScheduler";
 
 import { BaseInputBenchmarkingBundle } from "./experiment";
 import { InputBenchmarkingModelParams } from "./inputBenchmarkingModelParams";
@@ -29,7 +29,7 @@ export async function buildBenchmarkingItems(
     inputBundles: BaseInputBenchmarkingBundle[],
     mergedInputTargets: MergedInputTargets,
     runOptions: ExperimentRunOptions,
-    subprocessesScheduler: SubprocessesScheduler,
+    subprocessesScheduler: AsyncScheduler,
     logger: BenchmarkingLogger
 ): Promise<BenchmarkingItem[]> {
     const workspaceToParsedFileTargets =
@@ -90,7 +90,7 @@ type WorkspaceToParsedFileTargets = Map<WorkspaceRoot, ParsedFileTargets>;
 async function buildAndParseRequestedCoqProjects(
     inputTargets: MergedInputTargets,
     runOptions: ExperimentRunOptions,
-    subprocessesScheduler: SubprocessesScheduler,
+    subprocessesScheduler: AsyncScheduler,
     logger: BenchmarkingLogger
 ): Promise<WorkspaceToParsedFileTargets> {
     const workspaceToParsedFileTargets: WorkspaceToParsedFileTargets =
@@ -116,7 +116,7 @@ async function buildAndParseCoqProjectOrThrow(
     workspaceRoot: WorkspaceRoot,
     sourceFileTargetsToParse: BuildAndParseCoqProjectBySubprocessSignature.ArgsModels.FilePathToFileTarget,
     runOptions: ExperimentRunOptions,
-    subprocessesScheduler: SubprocessesScheduler,
+    subprocessesScheduler: AsyncScheduler,
     logger: BenchmarkingLogger
 ): Promise<ParsedFileTargets> {
     const executionResult = await buildAndParseCoqProjectInSubprocess(

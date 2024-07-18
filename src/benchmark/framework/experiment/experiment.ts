@@ -7,8 +7,8 @@ import {
 import { ExperimentResults } from "../structures/experimentResults";
 import { ExperimentRunOptions } from "../structures/experimentRunOptions";
 import { LLMServiceIdentifier } from "../structures/llmServiceIdentifier";
+import { AsyncScheduler } from "../utils/asyncScheduler";
 import { getRootDir, joinPaths, resolveAsAbsolutePath } from "../utils/fsUtils";
-import { SubprocessesScheduler } from "../utils/subprocessUtils/subprocessesScheduler";
 
 import { buildBenchmarkingItems } from "./buildBenchmarkingItems";
 import { InputBenchmarkingModelParams } from "./inputBenchmarkingModelParams";
@@ -79,9 +79,10 @@ export class Experiment {
             inputOptionsWithResolvedLoggerOptions
         );
 
-        const subprocessesScheduler = new SubprocessesScheduler(
+        const subprocessesScheduler = new AsyncScheduler(
             resolvedRunOptions.maxActiveSubprocessesNumber,
-            resolvedRunOptions.enableSchedulingDebugLogs
+            resolvedRunOptions.enableSchedulingDebugLogs,
+            "Subprocesses Scheduler"
         );
 
         const benchmarkingItems = await buildBenchmarkingItems(

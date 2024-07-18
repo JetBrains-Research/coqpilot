@@ -14,9 +14,9 @@ import {
 } from "../structures/benchmarkedItem";
 import { BenchmarkingItem } from "../structures/benchmarkingItem";
 import { ExperimentRunOptions } from "../structures/experimentRunOptions";
+import { AsyncScheduler } from "../utils/asyncScheduler";
 import { writeToFile } from "../utils/fsUtils";
 import { selectLLMServiceBuilder } from "../utils/llmServicesUtils";
-import { SubprocessesScheduler } from "../utils/subprocessUtils/subprocessesScheduler";
 
 import { benchmarkSingleCompletionGeneration } from "./benchmarkSingleCompletionGeneration";
 import { TimeMark } from "./measureUtils";
@@ -25,7 +25,7 @@ export async function executeBenchmarkingTask(
     benchmarkingItem: BenchmarkingItem,
     saveToFilePath: string,
     itemLogger: BenchmarkingLogger,
-    subprocessesScheduler: SubprocessesScheduler,
+    subprocessesScheduler: AsyncScheduler,
     experimentRunOptions: ExperimentRunOptions
 ): Promise<BenchmarkedItem | undefined> {
     const task = benchmarkingItem.task;

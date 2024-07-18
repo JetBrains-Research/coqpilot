@@ -9,13 +9,13 @@ import {
     WorkspaceRoot,
     isNoWorkspaceRoot,
 } from "../../structures/completionGenerationTask";
+import { AsyncScheduler } from "../../utils/asyncScheduler";
 import {
     ChildProcessOptions,
     executeProcessAsFunction,
 } from "../../utils/subprocessUtils/ipc/childProcessExecutor/executeChildProcess";
 import { ExecutionResult } from "../../utils/subprocessUtils/ipc/childProcessExecutor/executionResult";
 import { buildCommandToExecuteSubprocessInWorkspace } from "../../utils/subprocessUtils/subprocessExecutionCommandBuilder";
-import { SubprocessesScheduler } from "../../utils/subprocessUtils/subprocessesScheduler";
 
 import { CheckProofsBySubprocessSignature } from "./callSignature";
 
@@ -27,7 +27,7 @@ export async function checkGeneratedProofsInSubprocess(
     sourceFileEnvironment: SourceFileEnvironment,
     workspaceRoot: WorkspaceRoot,
     timeoutMillis: number | undefined,
-    subprocessesScheduler: SubprocessesScheduler,
+    subprocessesScheduler: AsyncScheduler,
     benchmarkingLogger: BenchmarkingLogger,
     enableProcessLifetimeDebugLogs: boolean = false
 ): Promise<ExecutionResult<Signature.Result>> {
@@ -53,7 +53,7 @@ export async function checkGeneratedProofsInSubprocess(
             enterWorkspaceAndExecuteSubprocessCommand.workingDirectory,
         timeoutMillis: timeoutMillis,
     };
-    return subprocessesScheduler.scheduleSubprocess(
+    return subprocessesScheduler.scheduleTask(
         () =>
             executeProcessAsFunction(
                 enterWorkspaceAndExecuteSubprocessCommand,

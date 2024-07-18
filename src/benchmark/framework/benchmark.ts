@@ -6,6 +6,7 @@ import { BenchmarkedItem } from "./structures/benchmarkedItem";
 import { BenchmarkingItem } from "./structures/benchmarkingItem";
 import { ExperimentResults } from "./structures/experimentResults";
 import { ExperimentRunOptions } from "./structures/experimentRunOptions";
+import { AsyncScheduler } from "./utils/asyncScheduler";
 import {
     checkDirectoryIsEmpty,
     createDirectory,
@@ -15,7 +16,6 @@ import {
     writeToFile,
 } from "./utils/fsUtils";
 import { getShortName } from "./utils/llmServicesUtils";
-import { SubprocessesScheduler } from "./utils/subprocessUtils/subprocessesScheduler";
 
 namespace ArtifactsDirNames {
     export const itemsReportsDir = "items";
@@ -30,7 +30,7 @@ export async function benchmark(
     benchmarkingItems: BenchmarkingItem[],
     resolvedArtifactsDirPath: string,
     experimentRunOptions: ExperimentRunOptions,
-    subprocessesScheduler: SubprocessesScheduler,
+    subprocessesScheduler: AsyncScheduler,
     parentLogger: BenchmarkingLogger
 ): Promise<ExperimentResults> {
     if (exists(resolvedArtifactsDirPath)) {

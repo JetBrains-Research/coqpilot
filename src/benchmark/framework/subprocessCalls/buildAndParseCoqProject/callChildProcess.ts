@@ -9,6 +9,7 @@ import {
 import { deserializeParsedCoqFile } from "../../structures/parsedCoqFileData";
 import { TheoremData, deserializeTheorem } from "../../structures/theoremData";
 import { deserializeCodeElementRange } from "../../structures/utilStructures";
+import { AsyncScheduler } from "../../utils/asyncScheduler";
 import { checkIsInsideDirectory } from "../../utils/fsUtils";
 import {
     ChildProcessOptions,
@@ -16,7 +17,6 @@ import {
 } from "../../utils/subprocessUtils/ipc/childProcessExecutor/executeChildProcess";
 import { ExecutionResult } from "../../utils/subprocessUtils/ipc/childProcessExecutor/executionResult";
 import { buildCommandToExecuteSubprocessInWorkspace } from "../../utils/subprocessUtils/subprocessExecutionCommandBuilder";
-import { SubprocessesScheduler } from "../../utils/subprocessUtils/subprocessesScheduler";
 
 import { BuildAndParseCoqProjectBySubprocessSignature } from "./callSignature";
 
@@ -27,7 +27,7 @@ export async function buildAndParseCoqProjectInSubprocess(
     sourceFileTargetsToParse: Signature.ArgsModels.FilePathToFileTarget,
     buildProject: boolean,
     timeoutMillis: number | undefined,
-    subprocessesScheduler: SubprocessesScheduler,
+    subprocessesScheduler: AsyncScheduler,
     benchmarkingLogger: BenchmarkingLogger,
     enableProcessLifetimeDebugLogs: boolean = false
 ): Promise<ExecutionResult<Signature.UnpackedResultModels.UnpackedResult>> {
@@ -56,7 +56,7 @@ export async function buildAndParseCoqProjectInSubprocess(
             enterWorkspaceAndExecuteSubprocessCommand.workingDirectory,
         timeoutMillis: timeoutMillis,
     };
-    return subprocessesScheduler.scheduleSubprocess(
+    return subprocessesScheduler.scheduleTask(
         () =>
             executeProcessAsFunction(
                 enterWorkspaceAndExecuteSubprocessCommand,
