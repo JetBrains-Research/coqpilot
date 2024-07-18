@@ -1,4 +1,5 @@
 import { benchmark } from "../benchmark";
+import { TimeMark } from "../benchmarkCompletionGeneration/measureUtils";
 import {
     BenchmarkingLogger,
     BenchmarkingLoggerImpl,
@@ -56,6 +57,8 @@ export class Experiment {
         artifactsDirPath: string,
         inputRunOptions: Partial<ExperimentRunOptions>
     ): Promise<ExperimentResults> {
+        const totalTime = new TimeMark();
+
         const inputOptionsWithResolvedLoggerOptions =
             this.resolveLoggerOptions(inputRunOptions);
         const logger: BenchmarkingLogger = new BenchmarkingLoggerImpl(
@@ -98,7 +101,8 @@ export class Experiment {
             resolveAsAbsolutePath(joinPaths(getRootDir(), artifactsDirPath)),
             resolvedRunOptions,
             subprocessesScheduler,
-            logger
+            logger,
+            totalTime
         );
     }
 

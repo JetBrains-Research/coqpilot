@@ -86,7 +86,7 @@ export async function benchmarkSingleCompletionGeneration<
     logger
         .asOneRecord()
         .info(`Successfully generated ${generatedProofs.length} proofs`)
-        .debug(`Elapsed time: ${proofsGenerationMillis} ms`, "gray");
+        .debug(`Effective elapsed time: ${proofsGenerationMillis} ms`, "gray");
     const preparedProofs = generatedProofs.map(
         (generatedProof: GeneratedProof) =>
             prepareProofToCheck(generatedProof.proof())
@@ -141,7 +141,7 @@ export async function benchmarkSingleCompletionGeneration<
         .info(
             `Successfully verified proofs: ${validProofs.length} / ${preparedProofs.length} are valid`
         )
-        .debug(`Elapsed time: ${proofsValidationMillis} ms`, "gray");
+        .debug(`Effective elapsed time: ${proofsValidationMillis} ms`, "gray");
 
     if (validProofs.length > 0) {
         const successfulGeneration: SuccessfulCompletionGeneration = {

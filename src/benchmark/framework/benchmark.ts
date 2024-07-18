@@ -1,6 +1,9 @@
+import { millisToString } from "../../llm/llmServices/utils/time";
+
 import { stringifyAnyValue } from "../../utils/printers";
 
 import { executeBenchmarkingTask } from "./benchmarkCompletionGeneration/executeBenchmarkingTask";
+import { TimeMark } from "./benchmarkCompletionGeneration/measureUtils";
 import { BenchmarkingLogger } from "./logging/benchmarkingLogger";
 import { BenchmarkedItem } from "./structures/benchmarkedItem";
 import { BenchmarkingItem } from "./structures/benchmarkingItem";
@@ -31,7 +34,8 @@ export async function benchmark(
     resolvedArtifactsDirPath: string,
     experimentRunOptions: ExperimentRunOptions,
     subprocessesScheduler: AsyncScheduler,
-    parentLogger: BenchmarkingLogger
+    parentLogger: BenchmarkingLogger,
+    totalTime: TimeMark
 ): Promise<ExperimentResults> {
     if (exists(resolvedArtifactsDirPath)) {
         if (!checkDirectoryIsEmpty(resolvedArtifactsDirPath)) {
@@ -82,6 +86,9 @@ export async function benchmark(
         .info("Finish experiment benchmarking: ", "magenta")
         .info(
             `${benchmarkedItems.length} completed / ${benchmarkingItems.length} total items`
+        )
+        .debug(
+            `Total elapsed time: ${millisToString(totalTime.measureElapsedMillis())}`
         );
 
     const experimentResult = new ExperimentResults(benchmarkedItems);

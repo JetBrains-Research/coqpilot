@@ -19,7 +19,6 @@ import { writeToFile } from "../utils/fsUtils";
 import { selectLLMServiceBuilder } from "../utils/llmServicesUtils";
 
 import { benchmarkSingleCompletionGeneration } from "./benchmarkSingleCompletionGeneration";
-import { TimeMark } from "./measureUtils";
 
 export async function executeBenchmarkingTask(
     benchmarkingItem: BenchmarkingItem,
@@ -34,7 +33,6 @@ export async function executeBenchmarkingTask(
         benchmarkingItem.params.llmServiceIdentifier
     )();
     try {
-        const totalTime = new TimeMark();
         const result = await benchmarkSingleCompletionGeneration(
             task.getCompletionContext(),
             task.getSourceFileEnvironment(),
@@ -45,7 +43,7 @@ export async function executeBenchmarkingTask(
             subprocessesScheduler,
             experimentRunOptions
         );
-        logResult(result, totalTime.measureElapsedMillis(), itemLogger);
+        logResult(result, itemLogger);
 
         const benchmarkedItem: BenchmarkedItem = {
             item: benchmarkingItem,
@@ -96,7 +94,6 @@ function saveResultToFile(
 
 function logResult(
     result: BenchmarkedCompletionGeneration,
-    totalElapsedTimeMillis: number,
     itemLogger: BenchmarkingLogger
 ) {
     const success = result as SuccessfulCompletionGeneration;
@@ -107,7 +104,7 @@ function logResult(
             .debug("First valid proof:")
             .debug(`${success.validProofs[0].asString}`)
             .debug(
-                `Total elapsed time: ${millisToString(totalElapsedTimeMillis)}`
+                `Total effective elapsed time: ${millisToString(result.elapsedTime.totalMillis)}`
             );
         return;
     }
@@ -134,7 +131,7 @@ function logResult(
             asOneRecordLogs.debug(`Cause: ${failure.causeMessage}`);
         }
         asOneRecordLogs.debug(
-            `Total elapsed time: ${millisToString(totalElapsedTimeMillis)}`
+            `Total effective elapsed time: ${millisToString(result.elapsedTime.totalMillis)}`
         );
     }
     itemLogger.error(
