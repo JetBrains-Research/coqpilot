@@ -1,3 +1,5 @@
+import { createTestCoqLspClient } from "../../../../../coqLsp/coqLspBuilders";
+
 import {
     CoqLspTimeoutError,
     CoqProofChecker,
@@ -10,7 +12,6 @@ import { executeAsFunctionOnParentProcessCall } from "../../../../../benchmark/f
 import { LogsIPCSender } from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/logsIpcSender";
 import { subprocessExecutable } from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/subprocessExecutableTestWrapper";
 import { stringifyAnyValue } from "../../../../../utils/printers";
-import { createCoqLspClient } from "../../utils/coqLspUtils";
 
 import Signature = CheckProofsBySubprocessSignature;
 
@@ -26,7 +27,7 @@ async function checkGeneratedProofsMeasured(
     args: Signature.Args,
     logger: LogsIPCSender
 ): Promise<Signature.Result> {
-    const coqLspClient = createCoqLspClient(args.workspaceRootPath);
+    const coqLspClient = createTestCoqLspClient(args.workspaceRootPath);
     const coqProofChecker = new CoqProofChecker(coqLspClient);
     // TODO: each coq proof checker should use its own prefix to work good in parallel (many checkers for the same theorem in the same file)
 

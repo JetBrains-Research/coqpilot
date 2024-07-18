@@ -2,10 +2,11 @@ import { expect } from "earl";
 import { readFileSync } from "fs";
 import * as path from "path";
 
+import { createTestCoqLspClient } from "../../coqLsp/coqLspBuilders";
+
 import { CoqProofChecker } from "../../core/coqProofChecker";
 import { ProofCheckResult } from "../../core/coqProofChecker";
 
-import { createCoqLspClient } from "../commonTestFunctions/coqLspBuilder";
 import { resolveResourcesDir } from "../commonTestFunctions/pathsResolver";
 
 suite("`CoqProofChecker` tests", () => {
@@ -22,7 +23,7 @@ suite("`CoqProofChecker` tests", () => {
         const fileDir = path.dirname(filePath);
 
         const fileLines = readFileSync(filePath).toString().split("\n");
-        const client = createCoqLspClient(rootDir);
+        const client = createTestCoqLspClient(rootDir);
         const coqProofChecker = new CoqProofChecker(client);
         const preparedProofs = proofsToCheck.map((proofs) =>
             proofs.map(prepareProofBeforeCheck)

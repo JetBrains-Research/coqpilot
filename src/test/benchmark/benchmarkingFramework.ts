@@ -12,8 +12,8 @@ import { ModelsParams } from "../../llm/llmServices/modelParams";
 import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
 import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
 
+import { createTestCoqLspClient } from "../../coqLsp/coqLspBuilders";
 import { CoqLspClient } from "../../coqLsp/coqLspClient";
-import { CoqLspConfig } from "../../coqLsp/coqLspConfig";
 import { Goal, PpString } from "../../coqLsp/coqLspTypes";
 
 import {
@@ -272,6 +272,12 @@ async function benchmarkCompletionGeneration(
         completionContext,
         sourceFileEnvironmentWithFilteredContext,
         processEnvironment,
+        (processEnvironment) => {
+            processEnvironment.coqProofChecker.dispose();
+            processEnvironment.coqProofChecker = new CoqProofChecker(
+                createTestCoqLspClient(workspaceRootPath)
+            );
+        },
         undefined,
         workspaceRootPath,
         perProofTimeoutMillis
@@ -385,7 +391,7 @@ async function prepareForBenchmarkCompletions(
 
     const [fileUri, isNew] = getFileUriWithImports(filePath, additionalImports);
 
-    const client = createCoqLspClient(workspaceRootPath);
+    const client = createTestCoqLspClient(workspaceRootPath);
     await client.openTextDocument(fileUri);
 
     const coqProofChecker = new CoqProofChecker(client);
@@ -417,15 +423,6 @@ async function prepareForBenchmarkCompletions(
     }
 
     return [completionTargets, sourceFileEnvironment, processEnvironment];
-}
-
-function createCoqLspClient(workspaceRootPath?: string): CoqLspClient {
-    const coqLspServerConfig = CoqLspConfig.createServerConfig();
-    const coqLspClientConfig = CoqLspConfig.createClientConfig(
-        process.env.COQ_LSP_PATH || "coq-lsp",
-        workspaceRootPath
-    );
-    return new CoqLspClient(coqLspServerConfig, coqLspClientConfig);
 }
 
 async function extractCompletionTargets(

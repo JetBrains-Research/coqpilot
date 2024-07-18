@@ -1,3 +1,4 @@
+import { createTestCoqLspClient } from "../../../../../coqLsp/coqLspBuilders";
 import { CoqLspClient } from "../../../../../coqLsp/coqLspClient";
 
 import { createSourceFileEnvironment } from "../../../../../core/inspectSourceFile";
@@ -13,7 +14,6 @@ import { executeAsFunctionOnParentProcessCall } from "../../../../../benchmark/f
 import { LogsIPCSender } from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/logsIpcSender";
 import { subprocessExecutable } from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/subprocessExecutableTestWrapper";
 import { Uri } from "../../../../../utils/uri";
-import { createCoqLspClient } from "../../utils/coqLspUtils";
 
 import Signature = BuildAndParseCoqProjectBySubprocessSignature;
 
@@ -32,7 +32,7 @@ async function buildAndParseCoqProject(
     args: Signature.ArgsModels.Args,
     logger: LogsIPCSender
 ): Promise<Signature.ResultModels.Result> {
-    const coqLspClient = createCoqLspClient(args.workspaceRootPath);
+    const coqLspClient = createTestCoqLspClient(args.workspaceRootPath);
     const parsedFileTargets: Signature.ResultModels.Result = {};
     for (const filePath in args.sourceFilePathToTarget) {
         const fileTarget = args.sourceFilePathToTarget[filePath];

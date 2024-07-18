@@ -7,8 +7,7 @@ import {
     workspace,
 } from "vscode";
 
-import { CoqLspClient } from "../coqLsp/coqLspClient";
-import { CoqLspConfig } from "../coqLsp/coqLspConfig";
+import { createCoqLspClient } from "../coqLsp/coqLspBuilders";
 
 import {
     CompletionContext,
@@ -172,6 +171,12 @@ export class CoqPilot {
             completionContext,
             sourceFileEnvironment,
             processEnvironment,
+            (processEnvironment) => {
+                processEnvironment.coqProofChecker.dispose();
+                processEnvironment.coqProofChecker = new CoqProofChecker(
+                    createCoqLspClient()
+                );
+            },
             this.globalExtensionState.eventLogger
         );
 
@@ -237,9 +242,7 @@ export class CoqPilot {
         [CompletionContext[], SourceFileEnvironment, ProcessEnvironment]
     > {
         const fileUri = Uri.fromPath(filePath);
-        const coqLspServerConfig = CoqLspConfig.createServerConfig();
-        const coqLspClientConfig = CoqLspConfig.createClientConfig();
-        const client = new CoqLspClient(coqLspServerConfig, coqLspClientConfig);
+        const client = createCoqLspClient();
         const contextTheoremsRanker = buildTheoremsRankerFromConfig();
 
         const coqProofChecker = new CoqProofChecker(client);

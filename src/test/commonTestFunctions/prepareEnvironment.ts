@@ -1,5 +1,6 @@
 import { ProofGenerationContext } from "../../llm/proofGenerationContext";
 
+import { createTestCoqLspClient } from "../../coqLsp/coqLspBuilders";
 import { CoqLspClient } from "../../coqLsp/coqLspClient";
 
 import {
@@ -12,7 +13,6 @@ import { inspectSourceFile } from "../../core/inspectSourceFile";
 
 import { Uri } from "../../utils/uri";
 
-import { createCoqLspClient } from "./coqLspBuilder";
 import { resolveResourcesDir } from "./pathsResolver";
 
 export interface PreparedEnvironment {
@@ -34,7 +34,7 @@ export async function prepareEnvironment(
     );
     const fileUri = Uri.fromPath(filePath);
 
-    const client = createCoqLspClient(rootDir);
+    const client = createTestCoqLspClient(rootDir);
     const coqProofChecker = new CoqProofChecker(client);
 
     await client.openTextDocument(fileUri);
