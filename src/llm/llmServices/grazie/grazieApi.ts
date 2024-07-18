@@ -33,8 +33,7 @@ export class GrazieApi {
 
     async checkQuota(apiToken: string): Promise<any> {
         const headers = this.createHeaders(apiToken);
-
-        const response = await axios.post(this.config.quotaUrl, {
+        const response = await axios.get(this.config.quotaUrl, {
             headers: headers,
         });
 

@@ -57,10 +57,12 @@ export function buildChat(
 
 export function buildAndAnalyzeChat(
     fitter: ChatTokensFitter,
+    contextTheorems: string[],
     ...chats: (ChatHistory | ChatMessage)[]
 ): AnalyzedChatHistory {
     return {
         chat: buildChat(...chats),
+        contextTheorems: contextTheorems,
         estimatedTokens: fitter.estimateTokens(),
     };
 }
@@ -106,6 +108,7 @@ export function buildProofGenerationChat(
 
         return buildAndAnalyzeChat(
             fitter,
+            fittedContextTheorems.map((theorem) => theorem.name),
             systemMessage,
             contextTheoremsChat,
             completionTargetMessage
@@ -161,6 +164,7 @@ export function buildProofFixChat(
 
         return buildAndAnalyzeChat(
             fitter,
+            fittedContextTheorems.map((theorem) => theorem.name),
             systemMessage,
             contextTheoremsChat,
             completionTargetMessage,

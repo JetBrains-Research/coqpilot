@@ -1,16 +1,16 @@
-import { expect } from "earl";
 import * as fs from "fs";
 import * as path from "path";
 
+import { AdditionalFileImport } from "./additionalImports";
 import { BenchmarkResult, runTestBenchmark } from "./benchmarkingFramework";
-import { InputModelsParams, onlyAutoModelsParams } from "./inputModelsParams";
+import { InputModelsParams } from "./inputModelsParams";
+import { BenchmarkReportHolder } from "./reportHolder";
+import { DatasetItem } from "./utils/datasetConstructionUtils";
 import {
     code,
     consoleLog,
     consoleLogSeparatorLine,
-    consoleLoggingIsMuted,
-} from "./loggingUtils";
-import { Results } from "./results";
+} from "./utils/loggingUtils";
 
 interface Benchmark {
     name: string;
@@ -20,47 +20,51 @@ interface Benchmark {
     benchmarkFullTheorems: Boolean;
     benchmarkAdmits: Boolean;
     timeoutMinutes: number;
+    groupName: string;
+    additionalImports?: AdditionalFileImport[];
+    // The maximum number of premises used as a few-shot
+    // prompt for the model.
+    // If undefined, no limit is set and all possible premises
+    // that fit into the context window will be used.
+    maximumUsedPremisesAmount?: number;
+    // When using additional tools, issued for Coq, this timeout is used
+    // to define how long do we wait for the proof to be generated.
+    perProofTimeoutMillis: number;
 }
 
-class DatasetItem {
-    workspaceRootPath: string | undefined;
-    specificTheoremForBenchmark: string[] | undefined;
+// const resPath = path.join(
+//     __dirname,
+//     "../../../src/test/benchmark/benchmarkPrivate/resources/test.json"
+// );
+const reportPath = path.join(
+    __dirname,
+    "../../../src/test/benchmark/report.json"
+);
+// const immBenchmark: Benchmark = {
+//     name: "Benchmark predef tactics in IMM group A",
+//     items: datasetFromJson(resPath, "imm"),
+//     inputModelsParams: onlyAutoModelsParams,
+//     requireAllAdmitsCompleted: false,
+//     benchmarkFullTheorems: true,
+//     benchmarkAdmits: false,
+//     timeoutMinutes: 1000,
+//     groupName: "A",
+// Uncomment the following line to enable additional imports.
+// This is necessary if you want to generate completion with
+// an additional solver.
+// additionalImports: [
+//     AdditionalFileImport.tactician(),
+//     AdditionalFileImport.coqHammer(),
+// ],
+//     maximumUsedPremisesAmount: undefined,
+//     perProofTimeoutMillis: 30000,
+// };
 
-    /* Paths should be relative to 'dataset' folder */
-    constructor(
-        public path: string,
-        specificTheoremForBenchmark: string[] | undefined = undefined,
-        workspaceRootPath: string | undefined = undefined
-    ) {
-        this.workspaceRootPath = workspaceRootPath;
-        this.specificTheoremForBenchmark = specificTheoremForBenchmark;
-    }
-}
+const benchmarks: Benchmark[] = [];
 
-const simpleAutoBenchmark: Benchmark = {
-    name: "Complete simple examples with `auto`",
-    items: [new DatasetItem("auto_benchmark.v")],
-    inputModelsParams: onlyAutoModelsParams,
-    requireAllAdmitsCompleted: true,
-    benchmarkFullTheorems: true,
-    benchmarkAdmits: true,
-    timeoutMinutes: 1,
-};
+suite("Benchmark", () => {
+    const reportHolder = new BenchmarkReportHolder(reportPath);
 
-const mixedAutoBenchmark: Benchmark = {
-    name: "Complete mixed examples (both simple & hard) with `auto`",
-    items: [new DatasetItem("mixed_benchmark.v")],
-    inputModelsParams: onlyAutoModelsParams,
-    requireAllAdmitsCompleted: false,
-    benchmarkFullTheorems: true,
-    benchmarkAdmits: true,
-    timeoutMinutes: 1,
-};
-
-const benchmarks: Benchmark[] = [simpleAutoBenchmark, mixedAutoBenchmark];
-
-suite("Deprecated benchmark", () => {
-    expect(consoleLoggingIsMuted).toEqual(false);
     const datasetDir = getDatasetDir();
 
     for (const benchmark of benchmarks) {
@@ -83,21 +87,27 @@ suite("Deprecated benchmark", () => {
                     : [resolvedItemPath];
 
                 for (const resolvedFilePath of resolvedFilePaths) {
-                    const { admitsCompletions, theoremsCompletions } =
+                    const { admitsCompleted, theoremsProved } =
                         await runTestBenchmark(
                             resolvedFilePath,
                             benchmark.inputModelsParams,
+                            item.path,
                             item.specificTheoremForBenchmark,
                             benchmark.benchmarkFullTheorems,
                             benchmark.benchmarkAdmits,
                             resolvedWorkspaceRootPath,
-                            benchmark.requireAllAdmitsCompleted
+                            benchmark.requireAllAdmitsCompleted,
+                            benchmark.maximumUsedPremisesAmount,
+                            benchmark.groupName,
+                            reportHolder,
+                            benchmark.additionalImports,
+                            benchmark.perProofTimeoutMillis
                         );
                     admitsCompletedInTotal.add(
-                        approachSummaryToCounter(admitsCompletions)
+                        admitsCompleted ?? new BenchmarkResult(0, 0)
                     );
                     theoremsProvedInTotal.add(
-                        approachSummaryToCounter(theoremsCompletions)
+                        theoremsProved ?? new BenchmarkResult(0, 0)
                     );
                 }
             }
@@ -113,20 +123,11 @@ suite("Deprecated benchmark", () => {
             consoleLog(
                 `- THEOREMS PROVED IN TOTAL: ${theoremsProvedInTotal}\n`
             );
+
+            reportHolder.generateMarkdown();
         }).timeout(benchmark.timeoutMinutes * 60 * 1000);
     }
 });
-
-function approachSummaryToCounter(
-    summary: Results.ApproachBenchmarkingSummary | undefined
-): BenchmarkResult {
-    return summary === undefined
-        ? new BenchmarkResult(0, 0)
-        : new BenchmarkResult(
-              summary.benchmarkingResults.length,
-              summary.successfulBenchmarkingResults.length
-          );
-}
 
 function getDatasetDir(): string {
     const dirname: string = path.join(__dirname, "../../../");
