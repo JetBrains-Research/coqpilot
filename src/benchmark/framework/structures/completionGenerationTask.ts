@@ -5,7 +5,7 @@ import { Goal, PpString } from "../../../coqLsp/coqLspTypes";
 import {
     CompletionContext,
     SourceFileEnvironment,
-} from "../../../core/completionGenerator";
+} from "../../../core/completionGenerationContext";
 
 import { getDatasetDir } from "../utils/fsUtils";
 

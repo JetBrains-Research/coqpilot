@@ -10,7 +10,7 @@ import { Uri } from "../utils/uri";
 import {
     CompletionContext,
     SourceFileEnvironment,
-} from "./completionGenerator";
+} from "./completionGenerationContext";
 
 type AnalyzedFile = [CompletionContext[], SourceFileEnvironment];
 

@@ -1,7 +1,7 @@
 import { Goal, Hyp, PpString } from "../../coqLsp/coqLspTypes";
 
 import { Theorem } from "../../coqParser/parsedTypes";
-import { CompletionContext } from "../completionGenerator";
+import { CompletionContext } from "../completionGenerationContext";
 
 import { ContextTheoremsRanker } from "./contextTheoremsRanker";
 

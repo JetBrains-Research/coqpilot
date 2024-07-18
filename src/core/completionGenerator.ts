@@ -1,49 +1,25 @@
-import { Position } from "vscode-languageclient";
-
 import { LLMSequentialIterator } from "../llm/llmIterator";
-import { LLMServices } from "../llm/llmServices";
 import { GeneratedProof } from "../llm/llmServices/llmService";
-import { ModelsParams } from "../llm/llmServices/modelParams";
-import { ProofGenerationContext } from "../llm/proofGenerationContext";
 
-import { Goal, Hyp, PpString } from "../coqLsp/coqLspTypes";
-
-import { Theorem } from "../coqParser/parsedTypes";
 import { EventLogger } from "../logging/eventLogger";
 import { createCoqLspClient } from "../test/commonTestFunctions/coqLspBuilder";
 import { stringifyAnyValue } from "../utils/printers";
 
-import { ContextTheoremsRanker } from "./contextTheoremRanker/contextTheoremsRanker";
+import {
+    CompletionContext,
+    ProcessEnvironment,
+    SourceFileEnvironment,
+} from "./completionGenerationContext";
 import {
     CoqLspTimeoutError,
     CoqProofChecker,
     ProofCheckResult,
 } from "./coqProofChecker";
-
-export interface CompletionContext {
-    proofGoal: Goal<PpString>;
-    prefixEndPosition: Position;
-    admitEndPosition: Position;
-}
-
-export interface SourceFileEnvironment {
-    // `fileTheorems` contain only ones that successfully finish with Qed.
-    fileTheorems: Theorem[];
-    fileLines: string[];
-    fileVersion: number;
-    dirPath: string;
-}
-
-export interface ProcessEnvironment {
-    coqProofChecker: CoqProofChecker;
-    modelsParams: ModelsParams;
-    services: LLMServices;
-    /**
-     * If `theoremRanker` is not provided, the default one will be used:
-     * theorems would be passed sequentially in the same order as they are in the file
-     */
-    theoremRanker?: ContextTheoremsRanker;
-}
+import {
+    buildProofGenerationContext,
+    getTextBeforePosition,
+    prepareProofToCheck,
+} from "./exposedCompletionGeneratorUtils";
 
 export interface GenerationResult {}
 
@@ -179,7 +155,7 @@ export async function generateCompletion(
     }
 }
 
-export async function checkAndFixProofs(
+async function checkAndFixProofs(
     newlyGeneratedProofs: GeneratedProof[],
     sourceFileContentPrefix: string[],
     completionContext: CompletionContext,
@@ -305,56 +281,4 @@ function getFirstValidProof(
         index++;
     }
     return undefined;
-}
-
-export function prepareProofToCheck(proof: string) {
-    // 1. Remove backtiks -- coq-lsp dies from backticks randomly
-    let preparedProof = proof.replace(/`/g, "");
-
-    // 2. Remove Proof. and Qed.
-    preparedProof = preparedProof
-        .replace(/Proof using.*?\./g, "")
-        .replace(/Proof\./g, "")
-        .replace(/Qed\./g, "");
-
-    // 3. Wrap proof into { }
-    return ` { ${preparedProof} }`;
-}
-
-function hypToString(hyp: Hyp<PpString>): string {
-    return `${hyp.names.join(" ")} : ${hyp.ty}`;
-}
-
-export function goalToTargetLemma(proofGoal: Goal<PpString>): string {
-    const auxTheoremConcl = proofGoal?.ty;
-    const theoremIndeces = proofGoal?.hyps
-        .map((hyp) => `(${hypToString(hyp)})`)
-        .join(" ");
-    return `Lemma helper_theorem ${theoremIndeces} :\n   ${auxTheoremConcl}.`;
-}
-
-export function buildProofGenerationContext(
-    completionContext: CompletionContext,
-    fileTheorems: Theorem[],
-    theoremRanker?: ContextTheoremsRanker
-): ProofGenerationContext {
-    const rankedTheorems =
-        theoremRanker?.rankContextTheorems(fileTheorems, completionContext) ??
-        fileTheorems;
-    return {
-        contextTheorems: rankedTheorems,
-        completionTarget: goalToTargetLemma(completionContext.proofGoal),
-    };
-}
-
-export function getTextBeforePosition(
-    textLines: string[],
-    position: Position
-): string[] {
-    const textPrefix = textLines.slice(0, position.line + 1);
-    textPrefix[position.line] = textPrefix[position.line].slice(
-        0,
-        position.character
-    );
-    return textPrefix;
 }

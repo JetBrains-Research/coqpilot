@@ -20,10 +20,10 @@ import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 import {
     CompletionContext,
     SourceFileEnvironment,
-    goalToTargetLemma,
-    prepareProofToCheck,
-} from "../../../core/completionGenerator";
+} from "../../../core/completionGenerationContext";
 import { ContextTheoremsRanker } from "../../../core/contextTheoremRanker/contextTheoremsRanker";
+import { prepareProofToCheck } from "../../../core/exposedCompletionGeneratorUtils";
+import { goalToTargetLemma } from "../../../core/exposedCompletionGeneratorUtils";
 
 import { Theorem } from "../../../coqParser/parsedTypes";
 import { delay } from "../../../test/commonTestFunctions/delay";

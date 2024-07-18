@@ -18,10 +18,12 @@ import { Goal, PpString } from "../../coqLsp/coqLspTypes";
 
 import {
     CompletionContext,
-    FailureGenerationResult,
-    FailureGenerationStatus,
     ProcessEnvironment,
     SourceFileEnvironment,
+} from "../../core/completionGenerationContext";
+import {
+    FailureGenerationResult,
+    FailureGenerationStatus,
     SuccessGenerationResult,
     generateCompletion,
 } from "../../core/completionGenerator";

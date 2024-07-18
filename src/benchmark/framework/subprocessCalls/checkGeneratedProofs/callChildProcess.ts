@@ -1,8 +1,8 @@
 import {
     CompletionContext,
     SourceFileEnvironment,
-    getTextBeforePosition,
-} from "../../../../core/completionGenerator";
+} from "../../../../core/completionGenerationContext";
+import { getTextBeforePosition } from "../../../../core/exposedCompletionGeneratorUtils";
 
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import {

@@ -5,9 +5,9 @@ import { CoqLspClient } from "../../coqLsp/coqLspClient";
 import {
     CompletionContext,
     SourceFileEnvironment,
-    buildProofGenerationContext,
-} from "../../core/completionGenerator";
+} from "../../core/completionGenerationContext";
 import { CoqProofChecker } from "../../core/coqProofChecker";
+import { buildProofGenerationContext } from "../../core/exposedCompletionGeneratorUtils";
 import { inspectSourceFile } from "../../core/inspectSourceFile";
 
 import { Uri } from "../../utils/uri";

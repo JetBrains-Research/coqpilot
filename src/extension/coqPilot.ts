@@ -10,16 +10,16 @@ import {
 import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { CoqLspConfig } from "../coqLsp/coqLspConfig";
 
+import {
+    CompletionContext,
+    ProcessEnvironment,
+    SourceFileEnvironment,
+} from "../core/completionGenerationContext";
 import { generateCompletion } from "../core/completionGenerator";
 import {
     FailureGenerationResult,
     FailureGenerationStatus,
     SuccessGenerationResult,
-} from "../core/completionGenerator";
-import {
-    CompletionContext,
-    ProcessEnvironment,
-    SourceFileEnvironment,
 } from "../core/completionGenerator";
 import { CoqProofChecker } from "../core/coqProofChecker";
 import { inspectSourceFile } from "../core/inspectSourceFile";
