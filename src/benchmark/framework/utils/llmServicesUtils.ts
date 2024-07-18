@@ -27,21 +27,6 @@ export function getShortName(identifier: LLMServiceIdentifier): string {
     }
 }
 
-export function getParamsResolver(
-    identifier: LLMServiceIdentifier
-): ParamsResolverImpl<UserModelParams, ModelParams> {
-    switch (identifier) {
-        case LLMServiceIdentifier.PREDEFINED_PROOFS:
-            return new PredefinedProofsModelParamsResolver();
-        case LLMServiceIdentifier.OPENAI:
-            return new OpenAiModelParamsResolver();
-        case LLMServiceIdentifier.GRAZIE:
-            return new GrazieModelParamsResolver();
-        case LLMServiceIdentifier.LMSTUDIO:
-            return new LMStudioModelParamsResolver();
-    }
-}
-
 export type LLMServiceBuilder = () => LLMService<any, any>;
 
 export function selectLLMServiceBuilder(
@@ -57,5 +42,38 @@ export function selectLLMServiceBuilder(
             return () => new GrazieService(eventLogger);
         case LLMServiceIdentifier.LMSTUDIO:
             return () => new LMStudioService(eventLogger);
+    }
+}
+
+export interface LLMServicesParamsResolvers {
+    predefinedProofsModelParamsResolver: PredefinedProofsModelParamsResolver;
+    openAiModelParamsResolver: OpenAiModelParamsResolver;
+    grazieModelParamsResolver: GrazieModelParamsResolver;
+    lmStudioModelParamsResolver: LMStudioModelParamsResolver;
+}
+
+export function createParamsResolvers(): LLMServicesParamsResolvers {
+    return {
+        predefinedProofsModelParamsResolver:
+            new PredefinedProofsModelParamsResolver(),
+        openAiModelParamsResolver: new OpenAiModelParamsResolver(),
+        grazieModelParamsResolver: new GrazieModelParamsResolver(),
+        lmStudioModelParamsResolver: new LMStudioModelParamsResolver(),
+    };
+}
+
+export function getParamsResolver(
+    identifier: LLMServiceIdentifier,
+    paramsResolvers: LLMServicesParamsResolvers
+): ParamsResolverImpl<UserModelParams, ModelParams> {
+    switch (identifier) {
+        case LLMServiceIdentifier.PREDEFINED_PROOFS:
+            return paramsResolvers.predefinedProofsModelParamsResolver;
+        case LLMServiceIdentifier.OPENAI:
+            return paramsResolvers.openAiModelParamsResolver;
+        case LLMServiceIdentifier.GRAZIE:
+            return paramsResolvers.grazieModelParamsResolver;
+        case LLMServiceIdentifier.LMSTUDIO:
+            return paramsResolvers.lmStudioModelParamsResolver;
     }
 }

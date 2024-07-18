@@ -15,7 +15,12 @@ import { LLMServiceIdentifier } from "../structures/llmServiceIdentifier";
 import { buildAndParseCoqProjectInSubprocess } from "../subprocessCalls/buildAndParseCoqProject/callChildProcess";
 import { BuildAndParseCoqProjectBySubprocessSignature } from "../subprocessCalls/buildAndParseCoqProject/callSignature";
 import { AsyncScheduler } from "../utils/asyncScheduler";
-import { getParamsResolver, getShortName } from "../utils/llmServicesUtils";
+import {
+    LLMServicesParamsResolvers,
+    createParamsResolvers,
+    getParamsResolver,
+    getShortName,
+} from "../utils/llmServicesUtils";
 import { resolveTheoremsRanker } from "../utils/resolveTheoremsRanker";
 
 import { BaseInputBenchmarkingBundle } from "./experiment";
@@ -162,6 +167,8 @@ function constructBenchmarkingItems(
         string,
         BenchmarkingModelParams<ModelParams>
     > = new Map();
+    const paramsResolvers = createParamsResolvers();
+
     for (const inputBundle of inputBundles) {
         const bundleTasks = constructTasksForBundleTargets(
             inputBundle.bundleId,
@@ -175,7 +182,8 @@ function constructBenchmarkingItems(
                     modelId,
                     resolveInputBenchmarkingModelParams(
                         inputParams,
-                        inputBundle.llmServiceIdentifier
+                        inputBundle.llmServiceIdentifier,
+                        paramsResolvers
                     )
                 );
             }
@@ -229,9 +237,13 @@ function makeUnique(
 
 function resolveInputBenchmarkingModelParams(
     inputParams: InputBenchmarkingModelParams.Params,
-    llmServiceIdentifier: LLMServiceIdentifier
+    llmServiceIdentifier: LLMServiceIdentifier,
+    paramsResolvers: LLMServicesParamsResolvers
 ): BenchmarkingModelParams<ModelParams> {
-    const paramsResolver = getParamsResolver(llmServiceIdentifier);
+    const paramsResolver = getParamsResolver(
+        llmServiceIdentifier,
+        paramsResolvers
+    );
     const { ranker, ...pureInputModelParams } = inputParams;
     return {
         theoremRanker: resolveTheoremsRanker(inputParams.ranker),
