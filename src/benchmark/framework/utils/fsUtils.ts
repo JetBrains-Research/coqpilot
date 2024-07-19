@@ -12,6 +12,17 @@ export function getDatasetDir(): string {
 
 export const defaultEncoding = "utf-8";
 
+export function readFile<T>(
+    filePath: string,
+    onError: (e: any) => T
+): string | T {
+    try {
+        return fs.readFileSync(filePath, defaultEncoding);
+    } catch (e) {
+        return onError(e);
+    }
+}
+
 export function writeToFile<T>(
     text: string,
     filePath: string,

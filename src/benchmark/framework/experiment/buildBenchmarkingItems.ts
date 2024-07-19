@@ -247,7 +247,7 @@ function resolveInputBenchmarkingModelParams(
     const { ranker, ...pureInputModelParams } = inputParams;
     return {
         theoremRanker: resolveTheoremsRanker(inputParams.ranker),
-        modelParams: resolveOrThrow(paramsResolver, pureInputModelParams),
+        modelParams: resolveOrThrow(paramsResolver, pureInputModelParams), // TODO: get rid of test dependency
         llmServiceIdentifier: llmServiceIdentifier,
     };
 }
