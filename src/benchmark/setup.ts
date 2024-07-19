@@ -7,10 +7,24 @@ import { colorize } from "./framework/logging/colorLogging";
 const experiment = new Experiment();
 
 new BenchmarkingBundle()
-    .withLLMService("predefined")
+    .withLLMService("openai")
+    .withBenchmarkingModelsParamsCommons({
+        ranker: "random",
+        modelName: "gpt-3.5-turbo-0301",
+        apiKey: "",
+        choices: 1,
+        maxTokensToGenerate: 1000,
+        tokensLimit: 2000,
+    })
     .withBenchmarkingModelsParams(
-        { modelId: "prove-with-auto", tactics: ["a."], ranker: "random" },
-        { modelId: "prove-with-auto #2", tactics: ["auto."], ranker: "random" }
+        {
+            modelId: "openai-1",
+            temperature: 0.5,
+        },
+        {
+            modelId: "openai-2",
+            temperature: 1.5,
+        }
     )
     .withTargets(
         new TargetsBuilder()
@@ -27,8 +41,7 @@ new BenchmarkingBundle()
 const experimentResults = experiment.run("benchmarksOutput", {
     loggerSeverity: SeverityLevel.DEBUG,
     // logsFilePath: "benchmarkLogs/logs.txt",
-    enableSchedulingDebugLogs: false,
-    enableSubprocessLifetimeDebugLogs: false,
+    enableModelsSchedulingDebugLogs: true,
     maxActiveSubprocessesNumber: 1,
 });
 

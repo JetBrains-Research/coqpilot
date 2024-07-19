@@ -1,3 +1,4 @@
+import { modelName } from "../../llm/llmServices/utils/modelParamsAccessors";
 import { millisToString } from "../../llm/llmServices/utils/time";
 
 import { stringifyAnyValue } from "../../utils/printers";
@@ -9,6 +10,7 @@ import { BenchmarkedItem } from "./structures/benchmarkedItem";
 import { BenchmarkingItem } from "./structures/benchmarkingItem";
 import { ExperimentResults } from "./structures/experimentResults";
 import { ExperimentRunOptions } from "./structures/experimentRunOptions";
+import { LLMServiceIdentifier } from "./structures/llmServiceIdentifier";
 import { AsyncScheduler } from "./utils/asyncScheduler";
 import {
     checkDirectoryIsEmpty,
@@ -19,16 +21,13 @@ import {
     writeToFile,
 } from "./utils/fsUtils";
 import { getShortName } from "./utils/llmServicesUtils";
+import { groupBy, mapValues } from "./utils/mapUtils";
 
 namespace ArtifactsDirNames {
     export const itemsReportsDir = "items";
     export const experimentReportFileName = "experiment-report.json";
 }
 
-/**
- * TODO: add mutexes
- * - 1 per each group (by condition, same service & same model name)
- */
 export async function benchmark(
     benchmarkingItems: BenchmarkingItem[],
     resolvedArtifactsDirPath: string,
@@ -52,6 +51,11 @@ export async function benchmark(
         ArtifactsDirNames.itemsReportsDir
     );
 
+    const modelsSchedulers = ModelsSchedulers.buildModelsSchedulers(
+        benchmarkingItems,
+        experimentRunOptions
+    );
+
     const itemsPromises: Promise<BenchmarkedItem | undefined>[] = [];
     for (let i = 0; i < benchmarkingItems.length; i++) {
         const item = benchmarkingItems[i];
@@ -60,11 +64,17 @@ export async function benchmark(
             buildUniqueItemReportFileName(i, benchmarkingItems.length - 1, item)
         );
         const itemLogger = buildItemLogger(item, parentLogger);
+        const modelsScheduler = ModelsSchedulers.getScheduler(
+            modelsSchedulers,
+            item,
+            itemLogger
+        );
         itemsPromises.push(
             executeBenchmarkingTask(
                 item,
                 itemReportPath,
                 itemLogger,
+                modelsScheduler,
                 subprocessesScheduler,
                 experimentRunOptions
             )
@@ -107,6 +117,68 @@ export async function benchmark(
     );
 
     return experimentResult;
+}
+
+namespace ModelsSchedulers {
+    export type Mapping = Map<LLMServiceIdentifier, ModelNameToModelsScheduler>;
+    export type ModelNameToModelsScheduler = Map<string, AsyncScheduler>;
+
+    const NO_MODEL_NAME_KEYWORD = "";
+
+    export function getModelNameOrNoModelNameKeyword(
+        item: BenchmarkingItem
+    ): string {
+        return modelName(item.params.modelParams) ?? NO_MODEL_NAME_KEYWORD;
+    }
+
+    export function getScheduler(
+        modelsSchedulers: Mapping,
+        item: BenchmarkingItem,
+        itemLogger: BenchmarkingLogger
+    ): AsyncScheduler {
+        const modelsScheduler = modelsSchedulers
+            .get(item.params.llmServiceIdentifier)
+            ?.get(ModelsSchedulers.getModelNameOrNoModelNameKeyword(item));
+        if (modelsScheduler === undefined) {
+            itemLogger.error(
+                "Unexpected error: no models scheduler for this benchmarking item"
+            );
+            throw Error(
+                `Benchmarking failed: no models scheduler for the benchmarking item`
+            );
+        }
+        return modelsScheduler;
+    }
+
+    export function buildModelsSchedulers(
+        benchmarkingItems: BenchmarkingItem[],
+        experimentRunOptions: ExperimentRunOptions
+    ): Mapping {
+        return mapValues(
+            groupBy(
+                benchmarkingItems,
+                (item) => item.params.llmServiceIdentifier
+            ),
+            (
+                _: LLMServiceIdentifier,
+                sameLLMServiceItems: BenchmarkingItem[]
+            ) => {
+                const sameLLMServiceItemsByModelNames = groupBy(
+                    sameLLMServiceItems,
+                    (item) => getModelNameOrNoModelNameKeyword(item)
+                );
+                return mapValues(
+                    sameLLMServiceItemsByModelNames,
+                    (modelName: string, sameModelItems: BenchmarkingItem[]) =>
+                        new AsyncScheduler(
+                            experimentRunOptions.maxParallelGenerationRequestsToModel,
+                            experimentRunOptions.enableModelsSchedulingDebugLogs,
+                            `Models Scheduler for: ${getShortName(sameModelItems[0].params.llmServiceIdentifier)}, "${modelName}"`
+                        )
+                );
+            }
+        );
+    }
 }
 
 function buildUniqueItemReportFileName(

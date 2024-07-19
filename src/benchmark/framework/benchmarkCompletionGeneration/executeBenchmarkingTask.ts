@@ -24,6 +24,7 @@ export async function executeBenchmarkingTask(
     benchmarkingItem: BenchmarkingItem,
     saveToFilePath: string,
     itemLogger: BenchmarkingLogger,
+    modelsScheduler: AsyncScheduler,
     subprocessesScheduler: AsyncScheduler,
     experimentRunOptions: ExperimentRunOptions
 ): Promise<BenchmarkedItem | undefined> {
@@ -39,9 +40,10 @@ export async function executeBenchmarkingTask(
             params,
             llmService,
             task.workspaceRoot,
-            itemLogger,
+            modelsScheduler,
             subprocessesScheduler,
-            experimentRunOptions
+            experimentRunOptions,
+            itemLogger
         );
         logResult(result, itemLogger);
 

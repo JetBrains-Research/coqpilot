@@ -7,9 +7,15 @@ export interface ExperimentRunOptions {
      * Otherwise, they will be shown in the console.
      */
     logsFilePath: string | undefined;
+
     maxActiveSubprocessesNumber: number;
+    maxParallelGenerationRequestsToModel: number;
+
     buildAndParseCoqProjectSubprocessTimeoutMillis: number | undefined;
     checkProofsSubprocessTimeoutMillis: number | undefined;
+
     enableSubprocessLifetimeDebugLogs: boolean;
-    enableSchedulingDebugLogs: boolean;
+
+    enableSubprocessesSchedulingDebugLogs: boolean;
+    enableModelsSchedulingDebugLogs: boolean;
 }

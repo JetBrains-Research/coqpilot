@@ -10,3 +10,35 @@ export function getOrPut<K, V, M extends Map<K, V>>(
     map.set(key, value);
     return value;
 }
+
+export function groupByAndMap<T, K, V>(
+    elements: T[],
+    keyExtractor: (element: T) => K,
+    valueMapper: (element: T) => V
+): Map<K, V[]> {
+    const resultMap = new Map<K, V[]>();
+    for (const element of elements) {
+        const key = keyExtractor(element);
+        const values = getOrPut<K, V[], Map<K, V[]>>(resultMap, key, () => []);
+        values.push(valueMapper(element));
+    }
+    return resultMap;
+}
+
+export function groupBy<T, K>(
+    elements: T[],
+    keyExtractor: (element: T) => K
+): Map<K, T[]> {
+    return groupByAndMap(elements, keyExtractor, (element) => element);
+}
+
+export function mapValues<K, V, M extends Map<K, V>, T>(
+    map: M,
+    buildNewValue: (key: K, value: V) => T
+): Map<K, T> {
+    const resultMap = new Map<K, T>();
+    for (const [key, value] of map.entries()) {
+        resultMap.set(key, buildNewValue(key, value));
+    }
+    return resultMap;
+}

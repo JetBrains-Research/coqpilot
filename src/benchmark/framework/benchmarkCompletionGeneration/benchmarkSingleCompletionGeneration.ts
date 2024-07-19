@@ -71,16 +71,18 @@ export async function benchmarkSingleCompletionGeneration<
     benchmarkingModelParams: BenchmarkingModelParams<ResolvedModelParams>,
     llmService: LLMServiceType,
     workspaceRoot: WorkspaceRoot,
-    logger: BenchmarkingLogger,
+    modelsScheduler: AsyncScheduler,
     subprocessesScheduler: AsyncScheduler,
-    experimentRunOptions: ExperimentRunOptions
+    experimentRunOptions: ExperimentRunOptions,
+    logger: BenchmarkingLogger
 ): Promise<BenchmarkedCompletionGeneration> {
     const [generatedProofs, proofsGenerationMillis] =
-        await generateProofWithRetriesMeasured(
+        await generateProofWithRetriesExclusively(
             completionContext,
             sourceFileEnvironment,
             benchmarkingModelParams,
             llmService,
+            modelsScheduler,
             logger
         );
     logger
@@ -161,6 +163,38 @@ export async function benchmarkSingleCompletionGeneration<
 namespace RemoteConnectionErrorDelays {
     export const initialDelayMillis = 10_000;
     export const exponentialMultiplier = 2;
+}
+
+/**
+ * Note: scheduling could be done (in other words, "the same model semaphore" could be captured)
+ * more granurarly: namely, for each generation request and not for a whole `while` proof-generation cycle with retries.
+ * Such scheduling might improve performance indeed;
+ * however, this improvement could be possible only if the retries algorithm is not optimal enough
+ * (i.e. if the running task waits for too long despite the fact that the service is already available).
+ * Thus, a more reliable approach has been chosen so far: to wait until the running task suceeds with its retries and gets the response.
+ * This way, it is guaranteed that the system proceeds in general: requests are not too frequent to fail the remote service.
+ */
+async function generateProofWithRetriesExclusively<
+    ResolvedModelParams extends ModelParams,
+>(
+    completionContext: CompletionContext,
+    sourceFileEnvironment: SourceFileEnvironment,
+    benchmarkingModelParams: BenchmarkingModelParams<ResolvedModelParams>,
+    llmService: LLMService<any, any>,
+    modelsScheduler: AsyncScheduler,
+    logger: BenchmarkingLogger
+): Promise<[GeneratedProof[], number]> {
+    return modelsScheduler.scheduleTask(
+        () =>
+            generateProofWithRetriesMeasured(
+                completionContext,
+                sourceFileEnvironment,
+                benchmarkingModelParams,
+                llmService,
+                logger
+            ),
+        logger
+    );
 }
 
 async function generateProofWithRetriesMeasured<

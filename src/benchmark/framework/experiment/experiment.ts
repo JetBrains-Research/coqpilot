@@ -84,7 +84,7 @@ export class Experiment {
 
         const subprocessesScheduler = new AsyncScheduler(
             resolvedRunOptions.maxActiveSubprocessesNumber,
-            resolvedRunOptions.enableSchedulingDebugLogs,
+            resolvedRunOptions.enableSubprocessesSchedulingDebugLogs,
             "Subprocesses Scheduler"
         );
 
@@ -134,20 +134,30 @@ export class Experiment {
             loggerSeverity:
                 inputOptionsWithResolvedLoggerOptions.loggerSeverity,
             logsFilePath: inputOptionsWithResolvedLoggerOptions.logsFilePath,
+
             maxActiveSubprocessesNumber: Math.max(
                 inputOptionsWithResolvedLoggerOptions.maxActiveSubprocessesNumber ??
                     this.mergedInputTargets.size,
                 1
             ),
+            maxParallelGenerationRequestsToModel:
+                inputOptionsWithResolvedLoggerOptions.maxParallelGenerationRequestsToModel ??
+                1,
+
             buildAndParseCoqProjectSubprocessTimeoutMillis:
                 inputOptionsWithResolvedLoggerOptions.buildAndParseCoqProjectSubprocessTimeoutMillis,
             checkProofsSubprocessTimeoutMillis:
                 inputOptionsWithResolvedLoggerOptions.checkProofsSubprocessTimeoutMillis,
+
             enableSubprocessLifetimeDebugLogs:
                 inputOptionsWithResolvedLoggerOptions.enableSubprocessLifetimeDebugLogs ??
                 false,
-            enableSchedulingDebugLogs:
-                inputOptionsWithResolvedLoggerOptions.enableSchedulingDebugLogs ??
+
+            enableSubprocessesSchedulingDebugLogs:
+                inputOptionsWithResolvedLoggerOptions.enableSubprocessesSchedulingDebugLogs ??
+                false,
+            enableModelsSchedulingDebugLogs:
+                inputOptionsWithResolvedLoggerOptions.enableModelsSchedulingDebugLogs ??
                 false,
         };
     }
