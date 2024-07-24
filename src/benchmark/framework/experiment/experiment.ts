@@ -5,6 +5,7 @@ import {
     BenchmarkingLoggerImpl,
     SeverityLevel,
 } from "../logging/benchmarkingLogger";
+import { DatasetCacheUsageMode } from "../structures/datasetCaching";
 import { ExperimentResults } from "../structures/experimentResults";
 import { ExperimentRunOptions } from "../structures/experimentRunOptions";
 import { LLMServiceIdentifier } from "../structures/llmServiceIdentifier";
@@ -34,6 +35,10 @@ export interface NewInputBenchmarkingBundle<
     llmServiceIdentifier: LLMServiceIdentifier;
     inputBenchmarkingModelsParams: InputParams[];
     requestedTargets: InputTargets[];
+}
+
+namespace CacheDirNames {
+    export const defaultDatasetCacheDirectoryPath = "dataset/.parsingCache/";
 }
 
 export class Experiment {
@@ -134,6 +139,13 @@ export class Experiment {
             loggerSeverity:
                 inputOptionsWithResolvedLoggerOptions.loggerSeverity,
             logsFilePath: inputOptionsWithResolvedLoggerOptions.logsFilePath,
+
+            datasetCacheUsage:
+                inputOptionsWithResolvedLoggerOptions.datasetCacheUsage ??
+                DatasetCacheUsageMode.NO_CACHE_USAGE,
+            datasetCacheDirectoryPath:
+                inputOptionsWithResolvedLoggerOptions.datasetCacheDirectoryPath ??
+                CacheDirNames.defaultDatasetCacheDirectoryPath,
 
             maxActiveSubprocessesNumber: Math.max(
                 inputOptionsWithResolvedLoggerOptions.maxActiveSubprocessesNumber ??
