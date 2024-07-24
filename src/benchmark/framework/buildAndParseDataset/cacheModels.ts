@@ -26,6 +26,12 @@ export namespace DatasetCacheModels {
         [key: string]: CachedTheorem;
     };
 
+    /**
+     * Although some of the proof/admit targets might not be saved as parsed ones
+     * (their `goalToProve` will be `undefined`), the set of their potential locations is always complete.
+     * In other words, `CachedTheorem` always provides the set of
+     * all the available proof/admit targets the theorem has.
+     */
     export interface CachedTheorem {
         theorem: SerializedTheorem;
         proofTarget: CachedTarget;
@@ -33,7 +39,10 @@ export namespace DatasetCacheModels {
     }
 
     export interface CachedTarget {
-        goalToProve: ParsedGoal;
+        /**
+         * `undefined` value means that this goal is not present in the cache.
+         */
+        goalToProve: ParsedGoal | undefined;
         positionRange: SerializedCodeElementRange;
     }
 
@@ -44,10 +53,11 @@ export namespace DatasetCacheModels {
         properties: {
             goalToProve: {
                 type: "string",
+                nullable: true,
             },
             positionRange: serializedCodeElementRangeSchema,
         },
-        required: ["goalToProve", "positionRange"],
+        required: ["positionRange"],
         additionalProperties: false,
     };
 
