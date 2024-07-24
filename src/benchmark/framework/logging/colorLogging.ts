@@ -1,4 +1,11 @@
-export type LogColor = "red" | "green" | "blue" | "magenta" | "gray" | "reset";
+export type LogColor =
+    | "red"
+    | "green"
+    | "yellow"
+    | "blue"
+    | "magenta"
+    | "gray"
+    | "reset";
 
 export function colorize(text: string, color: LogColor | undefined): string {
     if (color === undefined) {
@@ -17,6 +24,8 @@ export function code(color: LogColor): string {
             return "\x1b[31m";
         case "green":
             return "\x1b[32m";
+        case "yellow":
+            return "\x1b[33m";
         case "blue":
             return "\x1b[34m";
         case "magenta":

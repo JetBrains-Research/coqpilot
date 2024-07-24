@@ -19,7 +19,7 @@ export interface ExperimentRunOptions {
      * Note: the benchmarking framework is allowed to modify `datasetCacheDirectoryPath` content
      * if the corresponding `datasetCacheUsage` mode is enabled.
      */
-    datasetCacheDirectoryPath: string | undefined;
+    datasetCacheDirectoryPath: string;
 
     maxActiveSubprocessesNumber: number;
     maxParallelGenerationRequestsToModel: number;
