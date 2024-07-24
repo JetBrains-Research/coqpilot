@@ -14,25 +14,25 @@ export const defaultEncoding = "utf-8";
 
 export function readFile<T>(
     filePath: string,
-    onError: (e: any) => T
+    onError: (error: Error) => T
 ): string | T {
     try {
         return fs.readFileSync(filePath, defaultEncoding);
     } catch (e) {
-        return onError(e);
+        return onError(e as Error);
     }
 }
 
 export function writeToFile<T>(
     text: string,
     filePath: string,
-    onError: (e: any) => T
+    onError: (error: Error) => T
 ): T | undefined {
     try {
         fs.writeFileSync(filePath, text, defaultEncoding);
         return undefined;
     } catch (e) {
-        return onError(e);
+        return onError(e as Error);
     }
 }
 
@@ -67,6 +67,10 @@ export function isAbsolutePath(inputPath: string): boolean {
 
 export function resolveAsAbsolutePath(inputPath: string): string {
     return path.resolve(inputPath);
+}
+
+export function relativizeAbsolutePaths(parentPath: string, childPath: string) {
+    return path.relative(parentPath, childPath);
 }
 
 export function getLastName(inputPath: string): string {
