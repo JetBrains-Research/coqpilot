@@ -1,8 +1,12 @@
 import {
-    TargetType,
     WorkspaceRoot,
     noWorkspaceRoot,
 } from "../structures/completionGenerationTask";
+import {
+    DatasetInputTargets,
+    TargetRequestType,
+    WorkspaceInputTargets,
+} from "../structures/inputTargets";
 import {
     getDatasetDir,
     isCoqSourceFile,
@@ -11,29 +15,6 @@ import {
     listCoqSourceFiles,
     resolveAsAbsolutePath,
 } from "../utils/fsUtils";
-import { getOrPut } from "../utils/mapUtils";
-
-export type InputTargets = WorkspaceToFileTargets;
-
-export type WorkspaceToFileTargets = Map<WorkspaceRoot, FilePathToFileTarget>;
-
-/**
- * File paths are expected to be absolute resolved paths inside `dataset` directory.
- */
-export type FilePathToFileTarget = Map<string, FileTarget>;
-
-export interface FileTarget {
-    specificTheoremTargets: TheoremNameToTheoremTarget;
-    allTheoremsAsAdmitTargets: boolean;
-    allTheoremsAsProveTheoremTargets: boolean;
-}
-
-export type TheoremNameToTheoremTarget = Map<string, TheoremTarget>;
-
-export interface TheoremTarget {
-    admitTargets: boolean;
-    proveTheoremTarget: boolean;
-}
 
 export type EnvironmentStringType = "nix" | "no-special-environment";
 
@@ -68,7 +49,7 @@ export class TargetsBuilder {
 export class TargetsBuilderWithWorkspaceRoot {
     constructor(private readonly workspaceRoot: WorkspaceRoot) {}
 
-    private readonly inputFileTargets: FilePathToFileTarget = new Map();
+    private readonly workspaceTargets = new WorkspaceInputTargets();
 
     /**
      * @param filePath Coq source file path relative to the workspace directory (or to the "dataset" directory if the workspace is not specified).
@@ -78,7 +59,11 @@ export class TargetsBuilderWithWorkspaceRoot {
         filePath: string,
         ...theoremNames: string[]
     ): TargetsBuilderWithWorkspaceRoot {
-        this.withTargetsFromFile(filePath, theoremNames, TargetType.ADMIT);
+        this.withTargetsFromFile(
+            filePath,
+            theoremNames,
+            TargetRequestType.ALL_ADMITS
+        );
         return this;
     }
 
@@ -93,7 +78,7 @@ export class TargetsBuilderWithWorkspaceRoot {
         this.withTargetsFromFile(
             filePath,
             theoremNames,
-            TargetType.PROVE_THEOREM
+            TargetRequestType.THEOREM_PROOF
         );
         return this;
     }
@@ -109,7 +94,7 @@ export class TargetsBuilderWithWorkspaceRoot {
         this.withTargetsFromDirectory(
             directoryPath,
             relativeFilePaths,
-            TargetType.ADMIT
+            TargetRequestType.ALL_ADMITS
         );
         return this;
     }
@@ -125,19 +110,22 @@ export class TargetsBuilderWithWorkspaceRoot {
         this.withTargetsFromDirectory(
             directoryPath,
             relativeFilePaths,
-            TargetType.PROVE_THEOREM
+            TargetRequestType.THEOREM_PROOF
         );
         return this;
     }
 
-    buildInputTargets(): InputTargets {
-        return new Map([[this.workspaceRoot, this.inputFileTargets]]);
+    buildInputTargets(): DatasetInputTargets {
+        return new DatasetInputTargets().addWorkspaceTargets(
+            this.workspaceRoot,
+            this.workspaceTargets
+        );
     }
 
     private withTargetsFromDirectory(
         directoryPath: string,
         relativeFilePaths: string[],
-        targetType: TargetType
+        requestType: TargetRequestType
     ) {
         const resolvedDirectoryPath = resolveWorkspacePath(
             this.workspaceRoot,
@@ -156,7 +144,7 @@ export class TargetsBuilderWithWorkspaceRoot {
                 this.withTargetsFromResolvedFile(
                     resolvedFilePath,
                     [],
-                    targetType
+                    requestType
                 )
             );
             return;
@@ -165,7 +153,6 @@ export class TargetsBuilderWithWorkspaceRoot {
             resolvedDirectoryFilesPaths
         );
         for (const relativeFilePath of relativeFilePaths) {
-            // TODO: test whether works correctly
             const resolvedFilePath = resolveDatasetPath(
                 joinPaths(directoryPath, relativeFilePath)
             );
@@ -174,14 +161,14 @@ export class TargetsBuilderWithWorkspaceRoot {
                     `resolved path "${relativeFilePath}" should be a Coq source file inside "${directoryPath}": "${resolvedFilePath}"`
                 );
             }
-            this.withTargetsFromResolvedFile(resolvedFilePath, [], targetType);
+            this.withTargetsFromResolvedFile(resolvedFilePath, [], requestType);
         }
     }
 
     private withTargetsFromFile(
         relativeFilePath: string,
         theoremNames: string[],
-        targetType: TargetType
+        requestType: TargetRequestType
     ) {
         const resolvedFilePath = resolveWorkspacePath(
             this.workspaceRoot,
@@ -195,57 +182,20 @@ export class TargetsBuilderWithWorkspaceRoot {
         this.withTargetsFromResolvedFile(
             resolvedFilePath,
             theoremNames,
-            targetType
+            requestType
         );
     }
 
     private withTargetsFromResolvedFile(
         resolvedFilePath: string,
         theoremNames: string[],
-        targetType: TargetType
+        requestType: TargetRequestType
     ) {
-        const fileTarget = getOrPut(
-            this.inputFileTargets,
+        this.workspaceTargets.addFileTargets(
             resolvedFilePath,
-            () => {
-                return {
-                    specificTheoremTargets: new Map(),
-                    allTheoremsAsAdmitTargets: false,
-                    allTheoremsAsProveTheoremTargets: false,
-                };
-            }
+            theoremNames,
+            requestType
         );
-        if (theoremNames.length === 0) {
-            switch (targetType) {
-                case TargetType.ADMIT:
-                    fileTarget.allTheoremsAsAdmitTargets = true;
-                    break;
-                case TargetType.PROVE_THEOREM:
-                    fileTarget.allTheoremsAsProveTheoremTargets = true;
-                    break;
-            }
-            return;
-        }
-        for (const theoremName of theoremNames) {
-            const theoremTarget = getOrPut(
-                fileTarget.specificTheoremTargets,
-                theoremName,
-                () => {
-                    return {
-                        admitTargets: false,
-                        proveTheoremTarget: false,
-                    };
-                }
-            );
-            switch (targetType) {
-                case TargetType.ADMIT:
-                    theoremTarget.admitTargets = true;
-                    break;
-                case TargetType.PROVE_THEOREM:
-                    theoremTarget.proveTheoremTarget = true;
-                    break;
-            }
-        }
     }
 }
 

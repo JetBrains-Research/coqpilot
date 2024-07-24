@@ -1,8 +1,11 @@
+import {
+    DatasetInputTargets,
+    mergeInputTargets,
+} from "../structures/inputTargets";
 import { LLMServiceIdentifier } from "../structures/llmServiceIdentifier";
 
 import { Experiment } from "./experiment";
 import { InputBenchmarkingModelParams } from "./inputBenchmarkingModelParams";
-import { InputTargets } from "./targetsBuilder";
 
 export type LLMServiceStringIdentifier =
     | "predefined"
@@ -110,7 +113,7 @@ export class BenchmarkingBundleWithModelsParams<
     ) {}
 
     withTargets(
-        ...targets: InputTargets[]
+        ...targets: DatasetInputTargets[]
     ): BenchmarkingBundleWithTargets<InputParams> {
         return new BenchmarkingBundleWithTargets(
             this.llmServiceIdentifier,
@@ -126,14 +129,14 @@ export class BenchmarkingBundleWithTargets<
     constructor(
         private readonly llmServiceIdentifier: LLMServiceIdentifier,
         private readonly inputBenchmarkingModelsParams: InputParams[],
-        private readonly targets: InputTargets[]
+        private readonly targets: DatasetInputTargets[]
     ) {}
 
     addTo(experiment: Experiment) {
         experiment.addBundle({
             llmServiceIdentifier: this.llmServiceIdentifier,
             inputBenchmarkingModelsParams: this.inputBenchmarkingModelsParams,
-            requestedTargets: this.targets,
+            requestedTargets: mergeInputTargets(this.targets).resolveRequests(),
         });
     }
 }

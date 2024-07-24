@@ -8,51 +8,27 @@ import {
 import { DatasetCacheUsageMode } from "../structures/datasetCaching";
 import { ExperimentResults } from "../structures/experimentResults";
 import { ExperimentRunOptions } from "../structures/experimentRunOptions";
-import { LLMServiceIdentifier } from "../structures/llmServiceIdentifier";
+import { InputBenchmarkingBundle } from "../structures/inputBenchmarkingBundle";
+import {
+    DatasetInputTargets,
+    mergeInputTargets,
+} from "../structures/inputTargets";
 import { AsyncScheduler } from "../utils/asyncScheduler";
 import { getRootDir, joinPaths, resolveAsAbsolutePath } from "../utils/fsUtils";
 
 import { buildBenchmarkingItems } from "./buildBenchmarkingItems";
-import { InputBenchmarkingModelParams } from "./inputBenchmarkingModelParams";
-import {
-    MergedInputTargets,
-    mergeRequestedTargets,
-} from "./mergedInputTargets";
-import { InputTargets } from "./targetsBuilder";
-
-export type BaseInputBenchmarkingBundle =
-    InputBenchmarkingBundle<InputBenchmarkingModelParams.Params>;
-
-export interface InputBenchmarkingBundle<
-    InputParams extends InputBenchmarkingModelParams.Params,
-> extends NewInputBenchmarkingBundle<InputParams> {
-    bundleId: number;
-}
-
-export interface NewInputBenchmarkingBundle<
-    InputParams extends InputBenchmarkingModelParams.Params,
-> {
-    llmServiceIdentifier: LLMServiceIdentifier;
-    inputBenchmarkingModelsParams: InputParams[];
-    requestedTargets: InputTargets[];
-}
 
 namespace CacheDirNames {
     export const defaultDatasetCacheDirectoryPath = "dataset/.parsingCache/";
 }
 
 export class Experiment {
-    private mergedInputTargets: MergedInputTargets | undefined = undefined;
+    private mergedRequestedTargets: DatasetInputTargets | undefined = undefined;
 
-    constructor(private readonly bundles: BaseInputBenchmarkingBundle[] = []) {}
+    constructor(private readonly bundles: InputBenchmarkingBundle[] = []) {}
 
-    addBundle(
-        newBundle: NewInputBenchmarkingBundle<InputBenchmarkingModelParams.Params>
-    ) {
-        this.bundles.push({
-            ...newBundle,
-            bundleId: this.bundles.length,
-        });
+    addBundle(newBundle: InputBenchmarkingBundle) {
+        this.bundles.push(newBundle);
     }
 
     /**
@@ -82,7 +58,10 @@ export class Experiment {
             "[Benchmarking]" // TODO: customize through run options
         );
 
-        this.mergedInputTargets = mergeRequestedTargets(this.bundles, logger);
+        this.mergedRequestedTargets = mergeAndResolveRequestedTargets(
+            this.bundles,
+            logger
+        );
         const resolvedRunOptions = this.resolveAllExperimentRunOptions(
             inputOptionsWithResolvedLoggerOptions
         );
@@ -95,7 +74,7 @@ export class Experiment {
 
         const benchmarkingItems = await buildBenchmarkingItems(
             this.bundles,
-            this.mergedInputTargets,
+            this.mergedRequestedTargets,
             resolvedRunOptions,
             subprocessesScheduler,
             logger
@@ -130,7 +109,7 @@ export class Experiment {
             logsFilePath: string | undefined;
         }
     ): ExperimentRunOptions {
-        if (this.mergedInputTargets === undefined) {
+        if (this.mergedRequestedTargets === undefined) {
             throw Error(
                 "`inputTargets` should be built before input options resolution"
             );
@@ -149,7 +128,7 @@ export class Experiment {
 
             maxActiveSubprocessesNumber: Math.max(
                 inputOptionsWithResolvedLoggerOptions.maxActiveSubprocessesNumber ??
-                    this.mergedInputTargets.size,
+                    this.mergedRequestedTargets.workspacesNumber(),
                 1
             ),
             maxParallelGenerationRequestsToModel:
@@ -173,4 +152,17 @@ export class Experiment {
                 false,
         };
     }
+}
+
+function mergeAndResolveRequestedTargets(
+    inputBundles: InputBenchmarkingBundle[],
+    logger: BenchmarkingLogger
+): DatasetInputTargets {
+    const mergedTargets = mergeInputTargets(
+        inputBundles.map((bundle) => bundle.requestedTargets)
+    ).resolveRequests();
+    logger.debug(
+        `Successfully merged requested targets: {\n${mergedTargets.toString()}\n}`
+    );
+    return mergedTargets;
 }
