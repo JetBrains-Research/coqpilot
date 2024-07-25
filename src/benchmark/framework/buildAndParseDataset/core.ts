@@ -41,6 +41,7 @@ import {
     WorkspaceCacheHolder,
 } from "./cacheHolder";
 import { readRequestedFilesCache } from "./cacheReader";
+import { updateWorkspaceCache } from "./cacheUpdater";
 import { ParsedWorkspaceHolder } from "./parsedWorkspaceHolder";
 
 import Signature = BuildAndParseCoqProjectBySubprocessSignature;
@@ -210,7 +211,8 @@ export function extendCacheWithParsedTargets(
     logger: BenchmarkingLogger
 ) {
     for (const [filePath, parsedFileHolder] of parsedWorkspace.entries()) {
-        workspaceCache.updateWithParsedTargets(
+        updateWorkspaceCache(
+            workspaceCache,
             filePath,
             parsedFileHolder,
             logger
@@ -393,7 +395,7 @@ function constructTasksForTargetsFromTheorem(
     workspaceRoot: WorkspaceRoot
 ): CompletionGenerationTask[] {
     return cachedTheorem
-        .getCachedTargets(fileTarget.requestType)
+        .getCachedTargetsByRequestType(fileTarget.requestType)
         .map((cachedTarget) => {
             const goalToProve = cachedTarget.getGoalToProve();
             const targetType = toTargetType(fileTarget.requestType);

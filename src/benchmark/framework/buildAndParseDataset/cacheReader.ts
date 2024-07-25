@@ -6,6 +6,9 @@ import {
     failedAjvValidatorErrorsAsString,
 } from "../../../utils/ajvErrorsHandling";
 import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
+import { TargetType } from "../structures/completionGenerationTask";
+import { deserializeTheoremData } from "../structures/theoremData";
+import { deserializeCodeElementRange } from "../structures/utilStructures";
 import {
     exists,
     getDatasetDir,
@@ -15,9 +18,10 @@ import {
     relativizeAbsolutePaths,
     resolveAsAbsolutePath,
 } from "../utils/fsUtils";
+import { deserializeGoal } from "../utils/goalParser";
 import { packIntoMap } from "../utils/mapUtils";
 
-import { WorkspaceCacheHolder } from "./cacheHolder";
+import { CacheHolderData, WorkspaceCacheHolder } from "./cacheHolder";
 import { DatasetCacheModels } from "./cacheModels";
 
 export function readRequestedFilesCache(
@@ -34,7 +38,7 @@ export function readRequestedFilesCache(
     const logger = parentLogger.createChildLoggerWithIdentifier(
         `[Dataset Cache Reader, cache path = ${datasetCacheDirectoryPath}]`
     );
-    return new WorkspaceCacheHolder(
+    return BuildCacheHoldersFromModels.buildWorkspaceCacheHolder(
         packIntoMap(
             requestedFilePaths,
             (filePath) => filePath,
@@ -101,5 +105,77 @@ function readCachedCoqFile(
             `Failed to parse a cache file "${cachedFilePath}", bad format: ${e as Error}`
         );
         return undefined;
+    }
+}
+
+export namespace BuildCacheHoldersFromModels {
+    export function buildWorkspaceCacheHolder(
+        filePathToReadCachedFile: Map<string, DatasetCacheModels.CachedCoqFile>,
+        workspacePath: string
+    ): WorkspaceCacheHolder {
+        return new WorkspaceCacheHolder(
+            new Map(
+                Array.from(filePathToReadCachedFile.entries()).map(
+                    ([filePath, readCachedFile]) => [
+                        filePath,
+                        buildCachedCoqFileData(readCachedFile, workspacePath),
+                    ]
+                )
+            ),
+            workspacePath
+        );
+    }
+
+    export function buildCachedCoqFileData(
+        readCachedFile: DatasetCacheModels.CachedCoqFile,
+        workspacePath: string
+    ): CacheHolderData.CachedCoqFileData {
+        const theorems = new Map();
+        for (const theoremName of Object.keys(readCachedFile.allFileTheorems)) {
+            const readCachedTheorem =
+                readCachedFile.allFileTheorems[theoremName];
+            theorems.set(
+                theoremName,
+                buildCachedTheoremData(readCachedTheorem)
+            );
+        }
+        return new CacheHolderData.CachedCoqFileData(
+            theorems,
+            readCachedFile.filePathRelativeToWorkspace,
+            readCachedFile.fileLines,
+            readCachedFile.fileVersion,
+            workspacePath
+        );
+    }
+
+    export function buildCachedTheoremData(
+        readCachedTheorem: DatasetCacheModels.CachedTheorem
+    ): CacheHolderData.CachedTheoremData {
+        return new CacheHolderData.CachedTheoremData(
+            deserializeTheoremData(readCachedTheorem.theorem),
+            new Map<TargetType, CacheHolderData.CachedTargetData[]>([
+                [
+                    TargetType.PROVE_THEOREM,
+                    [buildCachedTargetData(readCachedTheorem.proofTarget)],
+                ],
+                [
+                    TargetType.ADMIT,
+                    readCachedTheorem.admitTargets.map((admitTarget) =>
+                        buildCachedTargetData(admitTarget)
+                    ),
+                ],
+            ])
+        );
+    }
+
+    export function buildCachedTargetData(
+        readCachedTarget: DatasetCacheModels.CachedTarget
+    ): CacheHolderData.CachedTargetData {
+        return new CacheHolderData.CachedTargetData(
+            readCachedTarget.goalToProve === undefined
+                ? undefined
+                : deserializeGoal(readCachedTarget.goalToProve),
+            deserializeCodeElementRange(readCachedTarget.positionRange)
+        );
     }
 }

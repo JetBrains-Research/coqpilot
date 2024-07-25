@@ -1,8 +1,23 @@
-import { stringifyDefinedValue } from "../../../utils/printers";
+import {
+    stringifyAnyValue,
+    stringifyDefinedValue,
+} from "../../../utils/printers";
 import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
-import { joinPaths, writeToFile } from "../utils/fsUtils";
+import { TargetType } from "../structures/completionGenerationTask";
+import { serializeTheoremData } from "../structures/theoremData";
+import { serializeCodeElementRange } from "../structures/utilStructures";
+import {
+    getDatasetDir,
+    joinPaths,
+    relativizeAbsolutePaths,
+    writeToFile,
+} from "../utils/fsUtils";
+import { serializeGoal } from "../utils/goalParser";
+import { packIntoMappedObject } from "../utils/mapUtils";
+import { extractTheoremFisrtProofStep } from "../utils/proofTargetExtractor";
 
-import { DatasetCacheHolder } from "./cacheHolder";
+import { CacheHolderData, DatasetCacheHolder } from "./cacheHolder";
+import { DatasetCacheModels } from "./cacheModels";
 
 /**
  * Since saving the cache does not affect the correctness of the system,
@@ -24,11 +39,18 @@ export function rewriteDatasetCache(
         workspacePath,
         workspaceCache,
     ] of updatedDatasetCache.entries()) {
+        const workspacePathRelativeToDataset = relativizeAbsolutePaths(
+            getDatasetDir(),
+            workspacePath
+        );
         const successfullyCachedFiles = [];
+
         for (const [filePath, cachedFile] of workspaceCache.entries()) {
-            const serializedCachedFile = cachedFile.serializeToCacheModel();
+            const serializedCachedFile =
+                SerializeCacheHolders.serializeCachedCoqFileData(cachedFile);
             const cachedFilePath = joinPaths(
                 datasetCacheDirectoryPath,
+                workspacePathRelativeToDataset,
                 serializedCachedFile.filePathRelativeToWorkspace
             );
             const fileSuccessfullySaved = writeToFile(
@@ -52,6 +74,7 @@ export function rewriteDatasetCache(
                 return false;
             }
         }
+
         logger
             .asOneRecord()
             .debug(`Successfuly saved workspace cache for ${workspacePath}:`)
@@ -62,4 +85,81 @@ export function rewriteDatasetCache(
 
     logger.info(`Successfully saved cache into ${datasetCacheDirectoryPath}.`);
     return true;
+}
+
+export namespace SerializeCacheHolders {
+    export function serializeCachedCoqFileData(
+        cachedCoqFileData: CacheHolderData.CachedCoqFileData
+    ): DatasetCacheModels.CachedCoqFile {
+        return {
+            allFileTheorems: packIntoMappedObject(
+                cachedCoqFileData.getAllCachedTheorems(),
+                (cachedTheoremData: CacheHolderData.CachedTheoremData) =>
+                    cachedTheoremData.theoremData.name,
+                (cachedTheoremData: CacheHolderData.CachedTheoremData) =>
+                    serializeCachedTheoremData(
+                        cachedTheoremData,
+                        joinPaths(
+                            cachedCoqFileData.workspacePath,
+                            cachedCoqFileData.filePathRelativeToWorkspace
+                        )
+                    )
+            ),
+            fileLines: cachedCoqFileData.getFileLines(),
+            fileVersion: cachedCoqFileData.getFileVersion(),
+            filePathRelativeToWorkspace:
+                cachedCoqFileData.filePathRelativeToWorkspace,
+        };
+    }
+
+    export function serializeCachedTheoremData(
+        cachedTheoremData: CacheHolderData.CachedTheoremData,
+        sourceFilePath: string
+    ): DatasetCacheModels.CachedTheorem {
+        const proofTargets = cachedTheoremData.getCachedTargetsByType(
+            TargetType.PROVE_THEOREM
+        );
+        if (proofTargets.length > 1) {
+            const errorMessageLines = [
+                "Cache serialization invariant failed: ",
+                "there are more than 1 proof targets stored for the theorem.",
+                `\n\tCause: proof targets ${stringifyAnyValue(proofTargets)} of theorem "${cachedTheoremData.theoremData.name}" from ${sourceFilePath} file`,
+            ];
+            throw Error(errorMessageLines.join(""));
+        }
+        return {
+            theorem: serializeTheoremData(cachedTheoremData.theoremData),
+            proofTarget:
+                proofTargets.length === 1
+                    ? serializeCachedTargetData(proofTargets[0])
+                    : ({
+                          goalToProve: undefined,
+                          positionRange: serializeCodeElementRange(
+                              extractTheoremFisrtProofStep(
+                                  cachedTheoremData.theoremData
+                              ).range
+                          ),
+                      } as DatasetCacheModels.CachedTarget),
+            admitTargets: cachedTheoremData
+                .getCachedTargetsByType(TargetType.ADMIT)
+                .map((cachedTargetData) =>
+                    serializeCachedTargetData(cachedTargetData)
+                ),
+        };
+    }
+
+    export function serializeCachedTargetData(
+        cachedTargetData: CacheHolderData.CachedTargetData
+    ): DatasetCacheModels.CachedTarget {
+        const goalToProve = cachedTargetData.getGoalToProve();
+        return {
+            goalToProve:
+                goalToProve === undefined
+                    ? undefined
+                    : serializeGoal(goalToProve),
+            positionRange: serializeCodeElementRange(
+                cachedTargetData.positionRange
+            ),
+        };
+    }
 }
