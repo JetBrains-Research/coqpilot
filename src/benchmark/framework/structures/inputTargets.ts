@@ -28,6 +28,20 @@ export class DatasetInputTargets {
         return this.workspacePathToTargets.size;
     }
 
+    entries(): [WorkspaceRoot, WorkspaceInputTargets][] {
+        const entries: [WorkspaceRoot, WorkspaceInputTargets][] = [];
+        for (const [
+            workspacePath,
+            targets,
+        ] of this.workspacePathToTargets.entries()) {
+            entries.push([
+                this.workspacePathToRoots.get(workspacePath)!,
+                targets,
+            ]);
+        }
+        return entries;
+    }
+
     addWorkspaceTargets(
         workspaceRoot: WorkspaceRoot,
         workspaceTargets: WorkspaceInputTargets
@@ -95,6 +109,18 @@ export class WorkspaceInputTargets {
      */
     private readonly filePathToTargets: Map<string, EqualitySet<FileTarget>> =
         new Map();
+
+    entries(): [string, FileTarget[]][] {
+        const entries: [string, FileTarget[]][] = [];
+        for (const [filePath, targets] of this.filePathToTargets.entries()) {
+            entries.push([filePath, targets.elements()]);
+        }
+        return entries;
+    }
+
+    filePaths(): string[] {
+        return Array.from(this.filePathToTargets.keys());
+    }
 
     /**
      * If `theoremNames` is empty, `AllTheoremsTarget` is added.
@@ -167,7 +193,7 @@ export class WorkspaceInputTargets {
         for (const [filePath, targets] of this.filePathToTargets) {
             const targetsString = targets
                 .elements()
-                .map((target) => target.toString("\t\t"))
+                .map((target) => target.toString("\t\t", "-"))
                 .join("\n");
             elements.push(`${linePrefix}- file: ${filePath}\n${targetsString}`);
         }
@@ -178,7 +204,7 @@ export class WorkspaceInputTargets {
 export abstract class FileTarget implements EqualTo<FileTarget> {
     abstract equalTo(other: FileTarget): boolean;
     abstract hash(): number;
-    abstract toString(linePrefix: string): string;
+    abstract toString(linePrefix: string, itemizeString: string): string;
 }
 
 export class SpecificTheoremTarget extends FileTarget {
@@ -205,8 +231,8 @@ export class SpecificTheoremTarget extends FileTarget {
         );
     }
 
-    toString(linePrefix: string): string {
-        return `${linePrefix}- theorem "${this.theoremName}", ${this.requestType}`;
+    toString(linePrefix: string = "", itemizeString: string = "-"): string {
+        return `${linePrefix}${itemizeString} theorem "${this.theoremName}", ${this.requestType}`;
     }
 }
 
@@ -226,8 +252,8 @@ export class AllTheoremsTarget extends FileTarget {
         return HashUtils.hashAsStrings(this.requestType, "AllTheoremsTarget");
     }
 
-    toString(linePrefix: string): string {
-        return `${linePrefix}- all theorems, ${this.requestType}`;
+    toString(linePrefix: string = "", itemizeString: string = "-"): string {
+        return `${linePrefix}${itemizeString} all theorems, ${this.requestType}`;
     }
 }
 

@@ -90,8 +90,14 @@ export function packIntoMappedObject<T, V>(
 export function toMappedObject<V, M extends Map<string, V>>(
     map: M
 ): { [key: string]: V } {
+    return entriesToMappedObject(Array.from(map.entries()));
+}
+
+export function entriesToMappedObject<V>(entries: [string, V][]): {
+    [key: string]: V;
+} {
     const mappedObject: { [key: string]: V } = {};
-    for (const [key, value] of map.entries()) {
+    for (const [key, value] of entries) {
         mappedObject[key] = value;
     }
     return mappedObject;

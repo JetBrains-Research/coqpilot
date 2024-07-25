@@ -17,13 +17,14 @@ import {
 } from "../utils/fsUtils";
 import { packIntoMap } from "../utils/mapUtils";
 
+import { WorkspaceCacheHolder } from "./cacheHolder";
 import { DatasetCacheModels } from "./cacheModels";
 
 export function readRequestedFilesCache(
     requestedFilePaths: string[],
     datasetCacheDirectoryPath: string,
     parentLogger: BenchmarkingLogger
-): Map<string, DatasetCacheModels.CachedCoqFile> {
+): WorkspaceCacheHolder {
     const datasetDir = getDatasetDir();
     const cacheDir = resolveAsAbsolutePath(datasetCacheDirectoryPath);
     const cachedFileValidator = buildAjv(AjvMode.COLLECT_ALL_ERRORS).compile(
@@ -32,33 +33,35 @@ export function readRequestedFilesCache(
     const logger = parentLogger.createChildLoggerWithIdentifier(
         "[Dataset Cache Reader]"
     );
-    return packIntoMap(
-        requestedFilePaths,
-        (filePath) => filePath,
-        (resolvedSourceFilePath) => {
-            const filePathRelativeToDataset = relativizeAbsolutePaths(
-                datasetDir,
-                resolvedSourceFilePath
-            );
-            const resolvedCachedFilePath = joinPaths(
-                cacheDir,
-                filePathRelativeToDataset
-            );
-            if (
-                !(
-                    exists(resolvedCachedFilePath) &&
-                    isFile(resolvedCachedFilePath)
-                )
-            ) {
-                return undefined;
+    return new WorkspaceCacheHolder(
+        packIntoMap(
+            requestedFilePaths,
+            (filePath) => filePath,
+            (resolvedSourceFilePath) => {
+                const filePathRelativeToDataset = relativizeAbsolutePaths(
+                    datasetDir,
+                    resolvedSourceFilePath
+                );
+                const resolvedCachedFilePath = joinPaths(
+                    cacheDir,
+                    filePathRelativeToDataset
+                );
+                if (
+                    !(
+                        exists(resolvedCachedFilePath) &&
+                        isFile(resolvedCachedFilePath)
+                    )
+                ) {
+                    return undefined;
+                }
+                return readCachedCoqFile(
+                    resolvedCachedFilePath,
+                    resolvedSourceFilePath,
+                    cachedFileValidator,
+                    logger
+                );
             }
-            return readCachedCoqFile(
-                resolvedCachedFilePath,
-                resolvedSourceFilePath,
-                cachedFileValidator,
-                logger
-            );
-        }
+        )
     );
 }
 
