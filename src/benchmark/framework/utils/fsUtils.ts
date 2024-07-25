@@ -77,6 +77,10 @@ export function getLastName(inputPath: string): string {
     return path.parse(inputPath).name;
 }
 
+export function directoryName(inputPath: string): string {
+    return path.dirname(inputPath);
+}
+
 /**
  * Both input paths are expected to be resolved and absolute paths.
  */

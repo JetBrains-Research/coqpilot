@@ -6,6 +6,7 @@ import {
 } from "../logging/benchmarkingLogger";
 import { TargetType } from "../structures/completionGenerationTask";
 import { TargetRequestType } from "../structures/inputTargets";
+import { ParsedCoqFileData } from "../structures/parsedCoqFileData";
 import { TheoremData, deserializeTheoremData } from "../structures/theoremData";
 import {
     CodeElementRange,
@@ -19,6 +20,22 @@ import { toTargetType } from "../utils/targetTypeUtils";
 
 import { DatasetCacheModels } from "./cacheModels";
 import { ParsedFileHolder, ParsedFileTarget } from "./parsedWorkspaceHolder";
+
+export class DatasetCacheHolder {
+    private readonly workspacePathToCache: Map<string, WorkspaceCacheHolder> =
+        new Map();
+
+    getWorkspaceCache(workspacePath: string): WorkspaceCacheHolder | undefined {
+        return this.workspacePathToCache.get(workspacePath);
+    }
+
+    addWorkspaceCache(
+        workspacePath: string,
+        workspaceCache: WorkspaceCacheHolder
+    ) {
+        this.workspacePathToCache.set(workspacePath, workspaceCache);
+    }
+}
 
 export class WorkspaceCacheHolder {
     private readonly filePathToFileData: Map<
@@ -35,28 +52,31 @@ export class WorkspaceCacheHolder {
                 ([filePath, readCachedFile]) => [
                     filePath,
                     CacheHolderData.CachedCoqFileData.buildFromReadCache(
-                        readCachedFile
+                        readCachedFile,
+                        this.workspacePath
                     ),
                 ]
             )
         );
     }
 
+    getCachedFile(
+        filePath: string
+    ): CacheHolderData.CachedCoqFileData | undefined {
+        return this.filePathToFileData.get(filePath);
+    }
+
     getCachedTheorem(
         filePath: string,
         theoremName: string
     ): CacheHolderData.CachedTheoremData | undefined {
-        return this.filePathToFileData
-            .get(filePath)
-            ?.getCachedTheorem(theoremName);
+        return this.getCachedFile(filePath)?.getCachedTheorem(theoremName);
     }
 
     getAllCachedTheorems(
         filePath: string
     ): CacheHolderData.CachedTheoremData[] {
-        return (
-            this.filePathToFileData.get(filePath)?.getAllCachedTheorems() ?? []
-        );
+        return this.getCachedFile(filePath)?.getAllCachedTheorems() ?? [];
     }
 
     updateWithParsedTargets(
@@ -82,7 +102,6 @@ export class WorkspaceCacheHolder {
             cachedFileUpdateLogger.debug(`Update cache for ${filePath}:`);
             cachedFile.updateWithParsedTargets(
                 parsedFileHolder,
-                this.workspacePath,
                 cachedFileUpdateLogger
             );
         }
@@ -95,7 +114,8 @@ export namespace CacheHolderData {
             private readonly theorems: Map<string, CachedTheoremData>,
             private readonly filePathRelativeToWorkspace: string,
             private fileLines: string[],
-            private fileVersion: number
+            private fileVersion: number,
+            private readonly workspacePath: string
         ) {}
 
         getCachedTheorem(theoremName: string): CachedTheoremData | undefined {
@@ -106,14 +126,26 @@ export namespace CacheHolderData {
             return Array.from(this.theorems.values());
         }
 
+        restoreParsedCoqFileData(): ParsedCoqFileData {
+            return new ParsedCoqFileData(
+                mapValues(
+                    this.theorems,
+                    (_: string, cachedTheorem: CachedTheoremData) =>
+                        cachedTheorem.theoremData
+                ),
+                this.fileLines,
+                this.fileVersion,
+                joinPaths(this.workspacePath, this.filePathRelativeToWorkspace)
+            );
+        }
+
         updateWithParsedTargets(
             parsedFileHolder: ParsedFileHolder,
-            workspacePath: string,
             cachedFileUpdateLogger: AsOneRecordLogsBuilder
         ) {
             const parsedFile = parsedFileHolder.parsedFile();
             const cachedResolvedPath = joinPaths(
-                workspacePath,
+                this.workspacePath,
                 this.filePathRelativeToWorkspace
             );
             if (cachedResolvedPath !== parsedFile.filePath) {
@@ -125,7 +157,7 @@ export namespace CacheHolderData {
                         `\tCause: cached file path ${cachedResolvedPath} != parsed file path ${parsedFile.filePath}`
                     );
                 throw Error(
-                    `Cache invariant failed: most likely, it has become invalid (${workspacePath} project cache)`
+                    `Cache invariant failed: most likely, it has become invalid (${this.workspacePath} project cache)`
                 );
             }
 
@@ -154,7 +186,7 @@ export namespace CacheHolderData {
                 );
                 cachedTheorem.updateWithParsedTarget(
                     fileTarget,
-                    workspacePath,
+                    this.workspacePath,
                     cachedFileUpdateLogger
                 );
             }
@@ -192,12 +224,14 @@ export namespace CacheHolderData {
                 cachedTheoremsMap,
                 relativizeAbsolutePaths(workspacePath, parsedFile.filePath),
                 parsedFile.fileLines,
-                parsedFile.fileVersion
+                parsedFile.fileVersion,
+                workspacePath
             );
         }
 
         static buildFromReadCache(
-            readCachedFile: DatasetCacheModels.CachedCoqFile
+            readCachedFile: DatasetCacheModels.CachedCoqFile,
+            workspacePath: string
         ): CachedCoqFileData {
             const theorems = new Map();
             for (const theoremName of Object.keys(
@@ -214,7 +248,8 @@ export namespace CacheHolderData {
                 theorems,
                 readCachedFile.filePathRelativeToWorkspace,
                 readCachedFile.fileLines,
-                readCachedFile.fileVersion
+                readCachedFile.fileVersion,
+                workspacePath
             );
         }
     }
@@ -224,7 +259,7 @@ export namespace CacheHolderData {
          * @param targets should always have entries for all `TargetType`-s, at least empty lists.
          */
         constructor(
-            private readonly theorem: TheoremData,
+            readonly theoremData: TheoremData,
             private readonly targets: Map<
                 TargetType,
                 CachedTargetData[]
@@ -233,6 +268,10 @@ export namespace CacheHolderData {
                 [TargetType.PROVE_THEOREM, []],
             ])
         ) {}
+
+        getCachedTargets(requestType: TargetRequestType): CachedTargetData[] {
+            return this.targets.get(toTargetType(requestType))!;
+        }
 
         hasAllCachedGoalsOfType(requestType: TargetRequestType): boolean {
             return all(
@@ -270,7 +309,7 @@ export namespace CacheHolderData {
                             "Cache invariant failed: target was requested, although it was already present in cache"
                         )
                         .debug(
-                            `\tTarget info: ${cachedTargetToUpdate.positionRange.toString()} at "${this.theorem.name}"`
+                            `\tTarget info: ${cachedTargetToUpdate.positionRange.toString()} at "${this.theoremData.name}"`
                         );
                     throw Error(
                         `Cache invariant failed: most likely, it has become invalid (${workspacePath} project cache)`
@@ -315,6 +354,10 @@ export namespace CacheHolderData {
 
         hasCachedGoal(): boolean {
             return this.goalToProve !== undefined;
+        }
+
+        getGoalToProve(): ProofGoal | undefined {
+            return this.goalToProve;
         }
 
         updateWithParsedGoal(goalToProve: ProofGoal) {

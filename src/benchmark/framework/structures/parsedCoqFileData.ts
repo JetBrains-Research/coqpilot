@@ -1,5 +1,6 @@
 import { JSONSchemaType } from "ajv";
 
+import { Theorem } from "../../../coqParser/parsedTypes";
 import { fromMappedObject, mapValues, toMappedObject } from "../utils/mapUtils";
 
 import {
@@ -10,17 +11,27 @@ import {
     serializedTheoremSchema,
 } from "./theoremData";
 
-// TODO: make a class?
-export interface ParsedCoqFileData {
-    /**
-     * All theorems that were successfully parsed from the file.
-     * Ones that don't end with `Qed.` are also included.
-     */
-    theoremsByNames: Map<string, TheoremData>;
+export class ParsedCoqFileData {
+    constructor(
+        /**
+         * All theorems that were successfully parsed from the file.
+         * Ones that don't end with `Qed.` are also included.
+         */
+        readonly theoremsByNames: Map<string, TheoremData>,
+        readonly fileLines: string[],
+        readonly fileVersion: number,
+        readonly filePath: string
+    ) {}
 
-    fileLines: string[];
-    fileVersion: number;
-    filePath: string;
+    getOrderedFileTheorems(): Theorem[] {
+        return Array.from(this.theoremsByNames.values())
+            .sort(
+                (theoremDataA, theoremDataB) =>
+                    theoremDataA.fileTheoremsIndex -
+                    theoremDataB.fileTheoremsIndex
+            )
+            .map((theoremData) => theoremData.sourceTheorem);
+    }
 }
 
 export interface SerializedParsedCoqFile {
@@ -80,16 +91,16 @@ export const serializedParsedCoqFileSchema: JSONSchemaType<SerializedParsedCoqFi
 export function deserializeParsedCoqFile(
     serializedParsedCoqFile: SerializedParsedCoqFile
 ): ParsedCoqFileData {
-    return {
-        theoremsByNames: mapValues(
+    return new ParsedCoqFileData(
+        mapValues(
             fromMappedObject(serializedParsedCoqFile.serializedTheoremsByNames),
             (_: string, serializedTheorem: SerializedTheorem) =>
                 deserializeTheoremData(serializedTheorem)
         ),
-        fileLines: serializedParsedCoqFile.fileLines,
-        fileVersion: serializedParsedCoqFile.fileVersion,
-        filePath: serializedParsedCoqFile.filePath,
-    };
+        serializedParsedCoqFile.fileLines,
+        serializedParsedCoqFile.fileVersion,
+        serializedParsedCoqFile.filePath
+    );
 }
 
 export function serializeParsedCoqFile(

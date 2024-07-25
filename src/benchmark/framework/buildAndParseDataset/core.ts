@@ -1,28 +1,52 @@
+import { ModelParams } from "../../../llm/llmServices/modelParams";
+import { resolveOrThrow } from "../../../llm/llmServices/utils/resolveOrThrow";
+
 import { stringifyAnyValue } from "../../../utils/printers";
+import { InputBenchmarkingModelParams } from "../experiment/inputBenchmarkingModelParams";
 import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
+import { BenchmarkingItem } from "../structures/benchmarkingItem";
+import { BenchmarkingModelParams } from "../structures/benchmarkingModelParams";
 import {
+    CompletionGenerationTask,
     WorkspaceRoot,
     isNoWorkspaceRoot,
 } from "../structures/completionGenerationTask";
 import { ExperimentRunOptions } from "../structures/experimentRunOptions";
+import { InputBenchmarkingBundle } from "../structures/inputBenchmarkingBundle";
 import {
     AllTheoremsTarget,
+    DatasetInputTargets,
     SpecificTheoremTarget,
     WorkspaceInputTargets,
 } from "../structures/inputTargets";
+import { LLMServiceIdentifier } from "../structures/llmServiceIdentifier";
+import { ParsedCoqFileData } from "../structures/parsedCoqFileData";
 import { buildAndParseCoqProjectInSubprocess } from "../subprocessCalls/buildAndParseCoqProject/callChildProcess";
 import { BuildAndParseCoqProjectBySubprocessSignature } from "../subprocessCalls/buildAndParseCoqProject/callSignature";
 import { AsyncScheduler } from "../utils/asyncScheduler";
+import { EqualitySet } from "../utils/equalitySet";
 import { all } from "../utils/listUtils";
-import { entriesToMappedObject } from "../utils/mapUtils";
+import {
+    LLMServicesParamsResolvers,
+    createParamsResolvers,
+    getParamsResolver,
+} from "../utils/llmServicesUtils";
+import { entriesToMappedObject, getOrPut } from "../utils/mapUtils";
+import { resolveTheoremsRanker } from "../utils/resolveTheoremsRanker";
+import { toTargetType } from "../utils/targetTypeUtils";
 
-import { WorkspaceCacheHolder } from "./cacheHolder";
+import {
+    CacheHolderData,
+    DatasetCacheHolder,
+    WorkspaceCacheHolder,
+} from "./cacheHolder";
 import { readRequestedFilesCache } from "./cacheReader";
 import { ParsedWorkspaceHolder } from "./parsedWorkspaceHolder";
 
 import Signature = BuildAndParseCoqProjectBySubprocessSignature;
 
 // TODO: remove export from functions & separate
+// TODO: add constructed benchmarking items logs
 
 // 1: Read files from cache
 // 2: iterate through requested targets & build
@@ -196,4 +220,204 @@ export function extendCacheWithParsedTargets(
         `Successfully updated cache for ${workspaceCache.workspacePath} workspace: ${parsedWorkspace.parsedFilesNumber()} files updated`
     );
     // TODO: debug log full cache?
+}
+
+export function constructBenchmarkingItems(
+    inputBundles: InputBenchmarkingBundle[],
+    datasetCache: DatasetCacheHolder
+): BenchmarkingItem[] {
+    const [modelIdToRequestedTasks, modelIdToResolvedParams] =
+        buildTasksAndResolveParams(inputBundles, datasetCache);
+
+    return buildBenchmarkingItems(
+        modelIdToRequestedTasks,
+        modelIdToResolvedParams
+    );
+}
+
+function buildTasksAndResolveParams(
+    inputBundles: InputBenchmarkingBundle[],
+    datasetCache: DatasetCacheHolder
+): [
+    Map<string, CompletionGenerationTask[]>,
+    Map<string, BenchmarkingModelParams<ModelParams>>,
+] {
+    const modelIdToRequestedTasks: Map<string, CompletionGenerationTask[]> =
+        new Map();
+    const modelIdToResolvedParams: Map<
+        string,
+        BenchmarkingModelParams<ModelParams>
+    > = new Map();
+    const paramsResolvers = createParamsResolvers();
+
+    for (const bundle of inputBundles) {
+        const bundleTasks: CompletionGenerationTask[] =
+            constructTasksForBundleTargets(
+                bundle.requestedTargets,
+                datasetCache
+            );
+
+        // Attach constructed `bundleTasks` to all models requested in the bundle.
+        for (const inputParams of bundle.inputBenchmarkingModelsParams) {
+            const modelId = inputParams.modelId;
+            const requestedTasks = getOrPut(
+                modelIdToRequestedTasks,
+                modelId,
+                () => {
+                    // If this model is met for the first time: resolve its parameters.
+                    modelIdToResolvedParams.set(
+                        modelId,
+                        resolveInputBenchmarkingModelParams(
+                            inputParams,
+                            bundle.llmServiceIdentifier,
+                            paramsResolvers
+                        )
+                    );
+                    return [] as CompletionGenerationTask[];
+                }
+            );
+            requestedTasks.push(...bundleTasks);
+        }
+    }
+    return [modelIdToRequestedTasks, modelIdToResolvedParams];
+}
+
+function buildBenchmarkingItems(
+    modelIdToRequestedTasks: Map<string, CompletionGenerationTask[]>,
+    modelIdToResolvedParams: Map<string, BenchmarkingModelParams<ModelParams>>
+): BenchmarkingItem[] {
+    const benchmarkingItems: BenchmarkingItem[] = [];
+    for (const [modelId, requestedTasks] of modelIdToRequestedTasks.entries()) {
+        const uniqueTasks = new EqualitySet<CompletionGenerationTask>(
+            requestedTasks
+        ).elements();
+
+        for (const task of uniqueTasks) {
+            benchmarkingItems.push({
+                task: task,
+                params: modelIdToResolvedParams.get(modelId)!,
+            });
+        }
+    }
+    return benchmarkingItems;
+}
+
+function resolveInputBenchmarkingModelParams(
+    inputParams: InputBenchmarkingModelParams.Params,
+    llmServiceIdentifier: LLMServiceIdentifier,
+    paramsResolvers: LLMServicesParamsResolvers
+): BenchmarkingModelParams<ModelParams> {
+    const paramsResolver = getParamsResolver(
+        llmServiceIdentifier,
+        paramsResolvers
+    );
+    const { ranker, ...pureInputModelParams } = inputParams;
+    return {
+        theoremRanker: resolveTheoremsRanker(inputParams.ranker),
+        modelParams: resolveOrThrow(paramsResolver, pureInputModelParams),
+        llmServiceIdentifier: llmServiceIdentifier,
+    };
+}
+
+export function constructTasksForBundleTargets(
+    requestedTargets: DatasetInputTargets,
+    datasetCache: DatasetCacheHolder
+): CompletionGenerationTask[] {
+    const bundleTasks: CompletionGenerationTask[] = [];
+
+    for (const [
+        workspaceRoot,
+        workspaceTargets,
+    ] of requestedTargets.entries()) {
+        const workspaceCache = datasetCache.getWorkspaceCache(
+            workspaceRoot.directoryPath
+        );
+        if (workspaceCache === undefined) {
+            throwInsufficientCacheError(
+                `workspace ${workspaceRoot.directoryPath}`
+            );
+        }
+
+        for (const [filePath, fileTargets] of workspaceTargets.entries()) {
+            const cachedFile = workspaceCache.getCachedFile(filePath);
+            if (cachedFile === undefined) {
+                throwInsufficientCacheError(`file ${filePath}`);
+            }
+            const parsedFileData = cachedFile.restoreParsedCoqFileData();
+
+            for (const fileTarget of fileTargets) {
+                if (fileTarget instanceof AllTheoremsTarget) {
+                    for (const cachedTheorem of cachedFile.getAllCachedTheorems()) {
+                        bundleTasks.push(
+                            ...constructTasksForTargetsFromTheorem(
+                                cachedTheorem,
+                                fileTarget,
+                                parsedFileData,
+                                workspaceRoot
+                            )
+                        );
+                    }
+                } else if (fileTarget instanceof SpecificTheoremTarget) {
+                    const cachedTheorem = cachedFile.getCachedTheorem(
+                        fileTarget.theoremName
+                    );
+                    if (cachedTheorem === undefined) {
+                        throwInsufficientCacheError(
+                            `theorem ${fileTarget.theoremName} from ${filePath}`
+                        );
+                    }
+                    bundleTasks.push(
+                        ...constructTasksForTargetsFromTheorem(
+                            cachedTheorem,
+                            fileTarget,
+                            parsedFileData,
+                            workspaceRoot
+                        )
+                    );
+                } else {
+                    throw Error(
+                        `Unknown file target: ${fileTarget.toString("", "")}`
+                    );
+                }
+            }
+        }
+    }
+
+    return bundleTasks;
+}
+
+function constructTasksForTargetsFromTheorem(
+    cachedTheorem: CacheHolderData.CachedTheoremData,
+    fileTarget: AllTheoremsTarget | SpecificTheoremTarget,
+    parsedFileData: ParsedCoqFileData,
+    workspaceRoot: WorkspaceRoot
+): CompletionGenerationTask[] {
+    return cachedTheorem
+        .getCachedTargets(fileTarget.requestType)
+        .map((cachedTarget) => {
+            const goalToProve = cachedTarget.getGoalToProve();
+            const targetType = toTargetType(fileTarget.requestType);
+            if (goalToProve === undefined) {
+                throwInsufficientCacheError(
+                    `"${targetType}" target at ${cachedTarget.positionRange.toString()} of theorem ${cachedTheorem.theoremData.name} from ${parsedFileData.filePath}`
+                );
+            }
+            return new CompletionGenerationTask(
+                goalToProve,
+                cachedTarget.positionRange,
+                targetType,
+                parsedFileData,
+                cachedTheorem.theoremData,
+                workspaceRoot
+            );
+        });
+}
+
+function throwInsufficientCacheError(missingObject: string): never {
+    const errorMessageLines = [
+        "Failed to build benchmarking items: ",
+        "invariant failed, updated cache is not sufficient to process requested targets.",
+        `\n\tCause: ${missingObject} data is missing.`,
+    ];
+    throw Error(errorMessageLines.join(""));
 }

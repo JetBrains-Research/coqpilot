@@ -1,5 +1,3 @@
-import * as path from "path";
-
 import { ProofGoal } from "../../../coqLsp/coqLspTypes";
 
 import {
@@ -7,13 +5,16 @@ import {
     SourceFileEnvironment,
 } from "../../../core/completionGenerationContext";
 
-import { getDatasetDir } from "../utils/fsUtils";
+import { EqualTo, HashUtils } from "../utils/equalitySet";
+import { directoryName, getDatasetDir } from "../utils/fsUtils";
 
 import { ParsedCoqFileData } from "./parsedCoqFileData";
 import { TheoremData } from "./theoremData";
 import { CodeElementRange } from "./utilStructures";
 
-export class CompletionGenerationTask {
+export class CompletionGenerationTask
+    implements EqualTo<CompletionGenerationTask>
+{
     constructor(
         readonly targetGoalToProve: ProofGoal,
         readonly targetPositionRange: CodeElementRange,
@@ -44,22 +45,37 @@ export class CompletionGenerationTask {
         parsedFileData: ParsedCoqFileData
     ): SourceFileEnvironment {
         return {
-            fileTheorems: parsedFileData.allFileTheorems
+            fileTheorems: parsedFileData
+                .getOrderedFileTheorems()
                 .filter(
-                    (theoremData) =>
-                        theoremData.proof && !theoremData.proof.is_incomplete
-                )
-                .map((theoremData) => theoremData.theorem),
+                    (theorem) => theorem.proof && !theorem.proof.is_incomplete
+                ),
             fileLines: parsedFileData.fileLines,
             fileVersion: parsedFileData.fileVersion,
-            dirPath: path.dirname(parsedFileData.filePath),
+            dirPath: directoryName(parsedFileData.filePath),
         };
+    }
+
+    equalTo(other: CompletionGenerationTask): boolean {
+        return (
+            this.sourceFilePath === other.sourceFilePath &&
+            this.targetType === other.targetType &&
+            this.targetPositionRange.equalsTo(other.targetPositionRange)
+        );
+    }
+
+    hash(): number {
+        return HashUtils.hashAsStrings(
+            this.sourceFilePath,
+            this.targetType,
+            this.targetPositionRange.toString()
+        );
     }
 }
 
 export enum TargetType {
-    ADMIT,
-    PROVE_THEOREM,
+    ADMIT = "ADMIT",
+    PROVE_THEOREM = "PROVE_THEOREM",
 }
 
 export interface WorkspaceRoot {
