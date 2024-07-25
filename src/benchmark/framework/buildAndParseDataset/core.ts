@@ -37,6 +37,7 @@ import Signature = BuildAndParseCoqProjectBySubprocessSignature;
 // 6: use these cache RAM structures to build result
 // 7: write cache if needed
 
+// TODO: support caching mode
 export function filterRequestedTargetsMissingInCache(
     requestedTargets: WorkspaceInputTargets,
     workspaceRoot: WorkspaceRoot,
@@ -45,6 +46,7 @@ export function filterRequestedTargetsMissingInCache(
 ): [WorkspaceInputTargets, WorkspaceCacheHolder] {
     const workspaceCache = readRequestedFilesCache(
         requestedTargets.filePaths(),
+        workspaceRoot.directoryPath,
         datasetCacheDirectoryPath,
         logger
     );
@@ -175,4 +177,23 @@ export function packWorspaceTargets(
             ];
         });
     return entriesToMappedObject(mappedEntries);
+}
+
+// TODO: support caching mode
+export function extendCacheWithParsedTargets(
+    workspaceCache: WorkspaceCacheHolder,
+    parsedWorkspace: ParsedWorkspaceHolder,
+    logger: BenchmarkingLogger
+) {
+    for (const [filePath, parsedFileHolder] of parsedWorkspace.entries()) {
+        workspaceCache.updateWithParsedTargets(
+            filePath,
+            parsedFileHolder,
+            logger
+        );
+    }
+    logger.info(
+        `Successfully updated cache for ${workspaceCache.workspacePath} workspace: ${parsedWorkspace.parsedFilesNumber()} files updated`
+    );
+    // TODO: debug log full cache?
 }

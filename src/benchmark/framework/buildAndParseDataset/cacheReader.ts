@@ -22,6 +22,7 @@ import { DatasetCacheModels } from "./cacheModels";
 
 export function readRequestedFilesCache(
     requestedFilePaths: string[],
+    workspacePath: string,
     datasetCacheDirectoryPath: string,
     parentLogger: BenchmarkingLogger
 ): WorkspaceCacheHolder {
@@ -61,7 +62,8 @@ export function readRequestedFilesCache(
                     logger
                 );
             }
-        )
+        ),
+        workspacePath
     );
 }
 

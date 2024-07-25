@@ -1,4 +1,4 @@
-import { Goal, PpString } from "../../../coqLsp/coqLspTypes";
+import { ProofGoal } from "../../../coqLsp/coqLspTypes";
 
 import { TargetType } from "../structures/completionGenerationTask";
 import {
@@ -11,6 +11,7 @@ import {
     deserializeCodeElementRange,
 } from "../structures/utilStructures";
 import { BuildAndParseCoqProjectBySubprocessSignature } from "../subprocessCalls/buildAndParseCoqProject/callSignature";
+import { deserializeGoal } from "../utils/goalParser";
 
 import Signature = BuildAndParseCoqProjectBySubprocessSignature;
 
@@ -31,6 +32,10 @@ export class ParsedWorkspaceHolder {
     parsedFilesNumber(): number {
         return this.filePathToFileHolder.size;
     }
+
+    entries(): [string, ParsedFileHolder][] {
+        return Array.from(this.filePathToFileHolder.entries());
+    }
 }
 
 export class ParsedFileHolder {
@@ -46,13 +51,21 @@ export class ParsedFileHolder {
                 new ParsedFileTarget(rawParsedFileTarget, this.parsedFileData)
         );
     }
+
+    parsedFile(): ParsedCoqFileData {
+        return this.parsedFileData;
+    }
+
+    targets(): ParsedFileTarget[] {
+        return this.fileTargets;
+    }
 }
 
 export class ParsedFileTarget {
-    private readonly sourceTheorem: TheoremData;
-    private readonly targetType: TargetType;
-    private readonly goalToProve: Goal<PpString>;
-    private readonly positionRange: CodeElementRange;
+    readonly sourceTheorem: TheoremData;
+    readonly targetType: TargetType;
+    readonly goalToProve: ProofGoal;
+    readonly positionRange: CodeElementRange;
 
     constructor(
         rawParsedFileTarget: Signature.ResultModels.ParsedFileTarget,
@@ -62,9 +75,7 @@ export class ParsedFileTarget {
             rawParsedFileTarget.theoremName
         )!;
         this.targetType = rawParsedFileTarget.targetType;
-        this.goalToProve = JSON.parse(
-            rawParsedFileTarget.goalToProve
-        ) as Goal<PpString>;
+        this.goalToProve = deserializeGoal(rawParsedFileTarget.goalToProve);
         this.positionRange = deserializeCodeElementRange(
             rawParsedFileTarget.positionRange
         );
