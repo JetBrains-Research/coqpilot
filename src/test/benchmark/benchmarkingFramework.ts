@@ -11,6 +11,7 @@ import { LMStudioService } from "../../llm/llmServices/lmStudio/lmStudioService"
 import { ModelsParams } from "../../llm/llmServices/modelParams";
 import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
 import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
+import { resolveParametersOrThrow } from "../../llm/llmServices/utils/resolveOrThrow";
 
 import { createTestCoqLspClient } from "../../coqLsp/coqLspBuilders";
 import { CoqLspClient } from "../../coqLsp/coqLspClient";
@@ -33,7 +34,6 @@ import { createSourceFileEnvironment } from "../../core/inspectSourceFile";
 import { ProofStep, Theorem } from "../../coqParser/parsedTypes";
 import { EventLogger } from "../../logging/eventLogger";
 import { Uri } from "../../utils/uri";
-import { resolveParametersOrThrow } from "../commonTestFunctions/resolveOrThrow";
 
 import { AdditionalFileImport } from "./additionalImports";
 import { InputModelsParams } from "./inputModelsParams";

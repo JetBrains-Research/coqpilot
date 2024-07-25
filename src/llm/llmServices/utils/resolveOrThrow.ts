@@ -1,11 +1,11 @@
-import { ConfigurationError } from "../../llm/llmServiceErrors";
-import { LLMService } from "../../llm/llmServices/llmService";
-import { ModelParams } from "../../llm/llmServices/modelParams";
-import { ParamsResolutionResult } from "../../llm/llmServices/utils/paramsResolvers/abstractResolvers";
-import { ParamsResolverImpl } from "../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";
-import { UserModelParams } from "../../llm/userModelParams";
+import { stringifyAnyValue } from "../../../utils/printers";
+import { ConfigurationError } from "../../llmServiceErrors";
+import { UserModelParams } from "../../userModelParams";
+import { LLMService } from "../llmService";
+import { ModelParams } from "../modelParams";
 
-import { stringifyAnyValue } from "../../utils/printers";
+import { ParamsResolutionResult } from "./paramsResolvers/abstractResolvers";
+import { ParamsResolverImpl } from "./paramsResolvers/paramsResolverImpl";
 
 export function resolveOrThrow<InputType, ResolveToType>(
     paramsResolver: ParamsResolverImpl<InputType, ResolveToType>,

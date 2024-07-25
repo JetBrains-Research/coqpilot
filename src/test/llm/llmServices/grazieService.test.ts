@@ -5,10 +5,10 @@ import { GrazieService } from "../../../llm/llmServices/grazie/grazieService";
 import { ErrorsHandlingMode } from "../../../llm/llmServices/llmService";
 import { GrazieModelParams } from "../../../llm/llmServices/modelParams";
 import { defaultSystemMessageContent } from "../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";
+import { resolveParametersOrThrow } from "../../../llm/llmServices/utils/resolveOrThrow";
 import { GrazieUserModelParams } from "../../../llm/userModelParams";
 
 import { testIf } from "../../commonTestFunctions/conditionalTest";
-import { resolveParametersOrThrow } from "../../commonTestFunctions/resolveOrThrow";
 import {
     withLLMService,
     withLLMServiceAndParams,

@@ -4,13 +4,13 @@ import { ConfigurationError } from "../../../llm/llmServiceErrors";
 import { ErrorsHandlingMode } from "../../../llm/llmServices/llmService";
 import { PredefinedProofsModelParams } from "../../../llm/llmServices/modelParams";
 import { PredefinedProofsService } from "../../../llm/llmServices/predefinedProofs/predefinedProofsService";
+import { resolveParametersOrThrow } from "../../../llm/llmServices/utils/resolveOrThrow";
 import { timeZero } from "../../../llm/llmServices/utils/time";
 import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { PredefinedProofsUserModelParams } from "../../../llm/userModelParams";
 
 import { EventLogger } from "../../../logging/eventLogger";
 import { delay } from "../../commonTestFunctions/delay";
-import { resolveParametersOrThrow } from "../../commonTestFunctions/resolveOrThrow";
 import { withLLMService } from "../../commonTestFunctions/withLLMService";
 import { testModelId } from "../llmSpecificTestUtils/constants";
 import {

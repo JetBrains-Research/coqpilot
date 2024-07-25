@@ -8,9 +8,8 @@ import {
 import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
 import { PredefinedProofsModelParamsResolver } from "../../llm/llmServices/predefinedProofs/predefinedProofsModelParamsResolver";
 import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
+import { resolveOrThrow } from "../../llm/llmServices/utils/resolveOrThrow";
 import { PredefinedProofsUserModelParams } from "../../llm/userModelParams";
-
-import { resolveOrThrow } from "./resolveOrThrow";
 
 export function createDefaultServices(): LLMServices {
     const predefinedProofsService = new PredefinedProofsService();
