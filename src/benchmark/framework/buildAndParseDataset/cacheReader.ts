@@ -32,7 +32,7 @@ export function readRequestedFilesCache(
         DatasetCacheModels.cachedCoqFileSchema
     );
     const logger = parentLogger.createChildLoggerWithIdentifier(
-        "[Dataset Cache Reader]"
+        `[Dataset Cache Reader, cache path = ${datasetCacheDirectoryPath}]`
     );
     return new WorkspaceCacheHolder(
         packIntoMap(

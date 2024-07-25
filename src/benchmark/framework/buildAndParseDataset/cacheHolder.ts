@@ -1,5 +1,6 @@
 import { ProofGoal } from "../../../coqLsp/coqLspTypes";
 
+import { stringifyAnyValue } from "../../../utils/printers";
 import {
     AsOneRecordLogsBuilder,
     BenchmarkingLogger,
@@ -7,19 +8,28 @@ import {
 import { TargetType } from "../structures/completionGenerationTask";
 import { TargetRequestType } from "../structures/inputTargets";
 import { ParsedCoqFileData } from "../structures/parsedCoqFileData";
-import { TheoremData, deserializeTheoremData } from "../structures/theoremData";
+import {
+    TheoremData,
+    deserializeTheoremData,
+    serializeTheoremData,
+} from "../structures/theoremData";
 import {
     CodeElementRange,
     deserializeCodeElementRange,
+    serializeCodeElementRange,
 } from "../structures/utilStructures";
 import { joinPaths, relativizeAbsolutePaths } from "../utils/fsUtils";
-import { deserializeGoal } from "../utils/goalParser";
+import { deserializeGoal, serializeGoal } from "../utils/goalParser";
 import { all } from "../utils/listUtils";
-import { getOrPut, mapValues } from "../utils/mapUtils";
+import { getOrPut, mapValues, toMappedObject } from "../utils/mapUtils";
+import { extractTheoremFisrtProofStep } from "../utils/proofTargetExtractor";
 import { toTargetType } from "../utils/targetTypeUtils";
 
 import { DatasetCacheModels } from "./cacheModels";
 import { ParsedFileHolder, ParsedFileTarget } from "./parsedWorkspaceHolder";
+
+// TODO: separate into different files
+// TODO: move serializers and builders away
 
 export class DatasetCacheHolder {
     private readonly workspacePathToCache: Map<string, WorkspaceCacheHolder> =
@@ -27,6 +37,10 @@ export class DatasetCacheHolder {
 
     getWorkspaceCache(workspacePath: string): WorkspaceCacheHolder | undefined {
         return this.workspacePathToCache.get(workspacePath);
+    }
+
+    entries(): [string, WorkspaceCacheHolder][] {
+        return Array.from(this.workspacePathToCache.entries());
     }
 
     addWorkspaceCache(
@@ -58,6 +72,10 @@ export class WorkspaceCacheHolder {
                 ]
             )
         );
+    }
+
+    entries(): [string, CacheHolderData.CachedCoqFileData][] {
+        return Array.from(this.filePathToFileData.entries());
     }
 
     getCachedFile(
@@ -117,6 +135,26 @@ export namespace CacheHolderData {
             private fileVersion: number,
             private readonly workspacePath: string
         ) {}
+
+        serializeToCacheModel(): DatasetCacheModels.CachedCoqFile {
+            return {
+                allFileTheorems: toMappedObject(
+                    mapValues(
+                        this.theorems,
+                        (_: string, cachedTheoremData: CachedTheoremData) =>
+                            cachedTheoremData.serializeToCacheModel(
+                                joinPaths(
+                                    this.workspacePath,
+                                    this.filePathRelativeToWorkspace
+                                )
+                            )
+                    )
+                ),
+                fileLines: this.fileLines,
+                fileVersion: this.fileVersion,
+                filePathRelativeToWorkspace: this.filePathRelativeToWorkspace,
+            };
+        }
 
         getCachedTheorem(theoremName: string): CachedTheoremData | undefined {
             return this.theorems.get(theoremName);
@@ -269,6 +307,38 @@ export namespace CacheHolderData {
             ])
         ) {}
 
+        serializeToCacheModel(
+            sourceFilePath: string
+        ): DatasetCacheModels.CachedTheorem {
+            const proofTargets = this.targets.get(TargetType.PROVE_THEOREM)!;
+            if (proofTargets.length > 1) {
+                const errorMessageLines = [
+                    "Cache serialization invariant failed: ",
+                    "there are more than 1 proof targets stored for the theorem.",
+                    `\n\tCause: proof targets ${stringifyAnyValue(proofTargets)} of theorem "${this.theoremData.name}" from ${sourceFilePath} file`,
+                ];
+                throw Error(errorMessageLines.join(""));
+            }
+            return {
+                theorem: serializeTheoremData(this.theoremData),
+                proofTarget:
+                    proofTargets.length === 1
+                        ? proofTargets[0].serializeToCacheModel()
+                        : ({
+                              goalToProve: undefined,
+                              positionRange: serializeCodeElementRange(
+                                  extractTheoremFisrtProofStep(this.theoremData)
+                                      .range
+                              ),
+                          } as DatasetCacheModels.CachedTarget),
+                admitTargets: this.targets
+                    .get(TargetType.ADMIT)!
+                    .map((cachedTargetData) =>
+                        cachedTargetData.serializeToCacheModel()
+                    ),
+            };
+        }
+
         getCachedTargets(requestType: TargetRequestType): CachedTargetData[] {
             return this.targets.get(toTargetType(requestType))!;
         }
@@ -351,6 +421,16 @@ export namespace CacheHolderData {
             private goalToProve: ProofGoal | undefined,
             readonly positionRange: CodeElementRange
         ) {}
+
+        serializeToCacheModel(): DatasetCacheModels.CachedTarget {
+            return {
+                goalToProve:
+                    this.goalToProve === undefined
+                        ? undefined
+                        : serializeGoal(this.goalToProve),
+                positionRange: serializeCodeElementRange(this.positionRange),
+            };
+        }
 
         hasCachedGoal(): boolean {
             return this.goalToProve !== undefined;

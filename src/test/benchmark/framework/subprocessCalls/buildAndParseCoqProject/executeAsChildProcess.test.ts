@@ -18,6 +18,7 @@ import {
     mappedObjectValues,
     packIntoMappedObject,
 } from "../../../../../benchmark/framework/utils/mapUtils";
+import { extractSerializedTheoremFisrtProofStep } from "../../../../../benchmark/framework/utils/proofTargetExtractor";
 import { executeAsFunctionOnParentProcessCall } from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/executeOnParentProcessCall";
 import { LogsIPCSender } from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/logsIpcSender";
 import { subprocessExecutable } from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/subprocessExecutableTestWrapper";
@@ -178,7 +179,8 @@ async function extractTargetsFromTheorem(
             }
             return parsedTargets;
         case TargetRequestType.THEOREM_PROOF:
-            const firstProofStep = theorem.proof!.proof_steps[1];
+            const firstProofStep =
+                extractSerializedTheoremFisrtProofStep(theorem);
             return [
                 await targetBuilder(firstProofStep, TargetType.PROVE_THEOREM),
             ];
