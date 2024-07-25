@@ -1,7 +1,7 @@
 import { expect } from "earl";
 
 import { createTestCoqLspClient } from "../../coqLsp/coqLspBuilders";
-import { Goal, PpString } from "../../coqLsp/coqLspTypes";
+import { ProofGoal } from "../../coqLsp/coqLspTypes";
 
 import { Uri } from "../../utils/uri";
 import { resolveResourcesDir } from "../commonTestFunctions/pathsResolver";
@@ -11,7 +11,7 @@ suite("Retrieve goals from Coq file", () => {
         points: { line: number; character: number }[],
         resourcePath: string[],
         projectRootPath?: string[]
-    ): Promise<(Goal<PpString> | Error)[]> {
+    ): Promise<(ProofGoal | Error)[]> {
         const [filePath, rootDir] = resolveResourcesDir(
             resourcePath,
             projectRootPath
@@ -30,7 +30,7 @@ suite("Retrieve goals from Coq file", () => {
         return goals;
     }
 
-    function unpackGoal(goal: Goal<PpString>): { hyps: string[]; ty: string } {
+    function unpackGoal(goal: ProofGoal): { hyps: string[]; ty: string } {
         return {
             hyps: goal.hyps.map((hyp) => `${hyp.names.join(" ")} : ${hyp.ty}`),
             ty: goal.ty as string,
@@ -49,7 +49,7 @@ suite("Retrieve goals from Coq file", () => {
         };
 
         expect(goals).toHaveLength(1);
-        expect(unpackGoal(goals[0] as Goal<PpString>)).toEqual(expectedGoal);
+        expect(unpackGoal(goals[0] as ProofGoal)).toEqual(expectedGoal);
     });
 
     test("Check correct goals requests", async () => {
@@ -90,9 +90,7 @@ suite("Retrieve goals from Coq file", () => {
         expect(goals).toHaveLength(5);
         for (const [i, goal] of goals.entries()) {
             expect(goals[i]).not.toBeA(Error);
-            expect(unpackGoal(goal as Goal<PpString>)).toEqual(
-                expectedGoals[i]
-            );
+            expect(unpackGoal(goal as ProofGoal)).toEqual(expectedGoals[i]);
         }
     });
 
@@ -143,9 +141,7 @@ suite("Retrieve goals from Coq file", () => {
         expect(goals).toHaveLength(3);
         for (const [i, goal] of goals.entries()) {
             expect(goals[i]).not.toBeA(Error);
-            expect(unpackGoal(goal as Goal<PpString>)).toEqual(
-                expectedGoals[i]
-            );
+            expect(unpackGoal(goal as ProofGoal)).toEqual(expectedGoals[i]);
         }
     });
 });

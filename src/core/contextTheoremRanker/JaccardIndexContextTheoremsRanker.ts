@@ -1,4 +1,4 @@
-import { Goal, Hyp, PpString } from "../../coqLsp/coqLspTypes";
+import { Hyp, PpString, ProofGoal } from "../../coqLsp/coqLspTypes";
 
 import { Theorem } from "../../coqParser/parsedTypes";
 import { CompletionContext } from "../completionGenerationContext";
@@ -19,7 +19,7 @@ export class JaccardIndexContextTheoremsRanker
         return `${hyp.names.join(" ")} : ${hyp.ty}`;
     }
 
-    private goalAsTheorem(proofGoal: Goal<PpString>): string {
+    private goalAsTheorem(proofGoal: ProofGoal): string {
         const auxTheoremConcl = proofGoal?.ty;
         const theoremIndeces = proofGoal?.hyps
             .map((hyp) => `(${this.hypToString(hyp)})`)

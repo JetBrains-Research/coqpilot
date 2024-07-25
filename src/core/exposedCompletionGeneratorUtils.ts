@@ -2,7 +2,7 @@ import { Position } from "vscode-languageclient";
 
 import { ProofGenerationContext } from "../llm/proofGenerationContext";
 
-import { Goal, Hyp, PpString } from "../coqLsp/coqLspTypes";
+import { Hyp, PpString, ProofGoal } from "../coqLsp/coqLspTypes";
 
 import { Theorem } from "../coqParser/parsedTypes";
 
@@ -27,7 +27,7 @@ export function hypToString(hyp: Hyp<PpString>): string {
     return `${hyp.names.join(" ")} : ${hyp.ty}`;
 }
 
-export function goalToTargetLemma(proofGoal: Goal<PpString>): string {
+export function goalToTargetLemma(proofGoal: ProofGoal): string {
     const auxTheoremConcl = proofGoal?.ty;
     const theoremIndeces = proofGoal?.hyps
         .map((hyp) => `(${hypToString(hyp)})`)

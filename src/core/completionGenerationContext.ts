@@ -3,7 +3,7 @@ import { Position } from "vscode-languageclient";
 import { LLMServices } from "../llm/llmServices";
 import { ModelsParams } from "../llm/llmServices/modelParams";
 
-import { Goal, PpString } from "../coqLsp/coqLspTypes";
+import { ProofGoal } from "../coqLsp/coqLspTypes";
 
 import { Theorem } from "../coqParser/parsedTypes";
 
@@ -11,7 +11,7 @@ import { ContextTheoremsRanker } from "./contextTheoremRanker/contextTheoremsRan
 import { CoqProofChecker } from "./coqProofChecker";
 
 export interface CompletionContext {
-    proofGoal: Goal<PpString>;
+    proofGoal: ProofGoal;
     prefixEndPosition: Position;
     admitEndPosition: Position;
 }

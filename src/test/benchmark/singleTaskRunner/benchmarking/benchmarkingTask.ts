@@ -2,8 +2,6 @@ import * as path from "path";
 
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 
-import { Goal, PpString } from "../../../../coqLsp/coqLspTypes";
-
 import {
     CompletionContext,
     SourceFileEnvironment,
@@ -14,6 +12,7 @@ import { BenchmarkingModelParams } from "../../../../benchmark/framework/structu
 import { SerializedParsedCoqFile } from "../../../../benchmark/framework/structures/parsedCoqFileData";
 import { deserializeTheorem } from "../../../../benchmark/framework/structures/theoremData";
 import { SerializedCodeElementRange } from "../../../../benchmark/framework/structures/utilStructures";
+import { deserializeGoal } from "../../../../benchmark/framework/utils/goalParser";
 
 export namespace SingleTaskRunnerStructures {
     export interface InputBenchmarkingTask {
@@ -35,7 +34,7 @@ export namespace SingleTaskRunnerStructures {
     }
 
     export interface CompletionGenerationTarget {
-        goalToProve: any; // JSON.parse(JSON.stringify(...))
+        goalToProve: string;
         positionRange: SerializedCodeElementRange;
         sourceTheoremName: string;
     }
@@ -47,7 +46,7 @@ export namespace SingleTaskRunnerStructures {
         target: CompletionGenerationTarget
     ): CompletionContext {
         return {
-            proofGoal: target.goalToProve as Goal<PpString>,
+            proofGoal: deserializeGoal(target.goalToProve),
             prefixEndPosition: target.positionRange.start,
             admitEndPosition: target.positionRange.end,
         };

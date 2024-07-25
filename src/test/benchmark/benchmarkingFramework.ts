@@ -14,7 +14,7 @@ import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/
 
 import { createTestCoqLspClient } from "../../coqLsp/coqLspBuilders";
 import { CoqLspClient } from "../../coqLsp/coqLspClient";
-import { Goal, PpString } from "../../coqLsp/coqLspTypes";
+import { ProofGoal } from "../../coqLsp/coqLspTypes";
 
 import {
     CompletionContext,
@@ -326,7 +326,7 @@ async function benchmarkCompletionGeneration(
     return success;
 }
 
-function goalToString(proofGoal: Goal<PpString>): string {
+function goalToString(proofGoal: ProofGoal): string {
     return `${proofGoal?.ty}`;
 }
 

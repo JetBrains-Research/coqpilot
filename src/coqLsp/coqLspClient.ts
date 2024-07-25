@@ -25,7 +25,7 @@ import { Uri } from "../utils/uri";
 
 import { CoqLspClientConfig, CoqLspServerConfig } from "./coqLspConfig";
 import { CoqLspConnector } from "./coqLspConnector";
-import { Goal, GoalAnswer, GoalRequest, PpString } from "./coqLspTypes";
+import { GoalAnswer, GoalRequest, PpString, ProofGoal } from "./coqLspTypes";
 import { FlecheDocument, FlecheDocumentParams } from "./coqLspTypes";
 import { CoqLspError } from "./coqLspTypes";
 
@@ -35,7 +35,7 @@ export interface CoqLspClientInterface extends Disposable {
         documentUri: Uri,
         version: number,
         pretac: string
-    ): Promise<Goal<PpString> | Error>;
+    ): Promise<ProofGoal | Error>;
 
     openTextDocument(uri: Uri, version: number): Promise<DiagnosticMessage>;
 
@@ -81,7 +81,7 @@ export class CoqLspClient implements CoqLspClientInterface {
         documentUri: Uri,
         version: number,
         pretac?: string
-    ): Promise<Goal<PpString> | Error> {
+    ): Promise<ProofGoal | Error> {
         return await this.mutex.runExclusive(async () => {
             return this.getFirstGoalAtPointUnsafe(
                 position,
@@ -154,7 +154,7 @@ export class CoqLspClient implements CoqLspClientInterface {
         documentUri: Uri,
         version: number,
         pretac?: string
-    ): Promise<Goal<PpString> | Error> {
+    ): Promise<ProofGoal | Error> {
         let goalRequestParams: GoalRequest = {
             textDocument: VersionedTextDocumentIdentifier.create(
                 documentUri.uri,

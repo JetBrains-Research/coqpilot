@@ -1,6 +1,6 @@
 import * as path from "path";
 
-import { Goal, PpString } from "../../../coqLsp/coqLspTypes";
+import { ProofGoal } from "../../../coqLsp/coqLspTypes";
 
 import {
     CompletionContext,
@@ -15,7 +15,7 @@ import { CodeElementRange } from "./utilStructures";
 
 export class CompletionGenerationTask {
     constructor(
-        readonly targetGoalToProve: Goal<PpString>,
+        readonly targetGoalToProve: ProofGoal,
         readonly targetPositionRange: CodeElementRange,
         readonly targetType: TargetType,
         readonly parsedSourceFileData: ParsedCoqFileData,

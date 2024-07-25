@@ -13,6 +13,7 @@ import {
     serializeTheoremData,
 } from "../../../../../benchmark/framework/structures/theoremData";
 import { BuildAndParseCoqProjectBySubprocessSignature } from "../../../../../benchmark/framework/subprocessCalls/buildAndParseCoqProject/callSignature";
+import { serializeGoal } from "../../../../../benchmark/framework/utils/goalParser";
 import {
     mappedObjectValues,
     packIntoMappedObject,
@@ -211,7 +212,7 @@ async function buildParsedFileTarget(
     return {
         theoremName: theoremName,
         targetType: targetType,
-        goalToProve: JSON.stringify(goal), // TODO: come up with better serialization
+        goalToProve: serializeGoal(goal),
         positionRange: proofStep.range,
     };
 }
