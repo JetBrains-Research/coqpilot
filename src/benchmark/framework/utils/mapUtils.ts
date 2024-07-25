@@ -34,6 +34,17 @@ export function groupBy<T, K>(
     return groupByAndMap(elements, keyExtractor, (element) => element);
 }
 
+export function mapValues<K, V, M extends Map<K, V>, T>(
+    map: M,
+    buildNewValue: (key: K, value: V) => T
+): Map<K, T> {
+    const resultMap = new Map<K, T>();
+    for (const [key, value] of map.entries()) {
+        resultMap.set(key, buildNewValue(key, value));
+    }
+    return resultMap;
+}
+
 export function packIntoMap<T, K, V>(
     elements: T[],
     keyExtractor: (element: T) => K | undefined,
@@ -59,15 +70,21 @@ export function packIntoMap<T, K, V>(
     return resultMap;
 }
 
-export function mapValues<K, V, M extends Map<K, V>, T>(
-    map: M,
-    buildNewValue: (key: K, value: V) => T
-): Map<K, T> {
-    const resultMap = new Map<K, T>();
-    for (const [key, value] of map.entries()) {
-        resultMap.set(key, buildNewValue(key, value));
+export function packIntoMappedObject<T, V>(
+    elements: T[],
+    keyExtractor: (element: T) => string | undefined,
+    valueMapper: (element: T) => V | undefined
+): { [key: string]: V } {
+    const mappedObject: { [key: string]: V } = {};
+    for (const element of elements) {
+        const key = keyExtractor(element);
+        const value = valueMapper(element);
+        if (key === undefined || value === undefined) {
+            continue;
+        }
+        mappedObject[key] = value;
     }
-    return resultMap;
+    return mappedObject;
 }
 
 export function toMappedObject<V, M extends Map<string, V>>(
@@ -94,4 +111,12 @@ export function mappedObjectEntries<V>(mappedObject: {
         entries.push([key, mappedObject[key]]);
     }
     return entries;
+}
+
+export function mappedObjectValues<V>(mappedObject: { [key: string]: V }): V[] {
+    const values: V[] = [];
+    for (const key in mappedObject) {
+        values.push(mappedObject[key]);
+    }
+    return values;
 }

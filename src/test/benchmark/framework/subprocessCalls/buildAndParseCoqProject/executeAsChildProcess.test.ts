@@ -3,13 +3,20 @@ import { CoqLspClient } from "../../../../../coqLsp/coqLspClient";
 
 import { createSourceFileEnvironment } from "../../../../../core/inspectSourceFile";
 
+import { TargetType } from "../../../../../benchmark/framework/structures/completionGenerationTask";
+import { TargetRequestType } from "../../../../../benchmark/framework/structures/inputTargets";
 import { SerializedParsedCoqFile } from "../../../../../benchmark/framework/structures/parsedCoqFileData";
 import {
     SerializedProofStep,
     SerializedTheorem,
-    serializeTheorem,
+    TheoremData,
+    serializeTheoremData,
 } from "../../../../../benchmark/framework/structures/theoremData";
 import { BuildAndParseCoqProjectBySubprocessSignature } from "../../../../../benchmark/framework/subprocessCalls/buildAndParseCoqProject/callSignature";
+import {
+    mappedObjectValues,
+    packIntoMappedObject,
+} from "../../../../../benchmark/framework/utils/mapUtils";
 import { executeAsFunctionOnParentProcessCall } from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/executeOnParentProcessCall";
 import { LogsIPCSender } from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/logsIpcSender";
 import { subprocessExecutable } from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/subprocessExecutableTestWrapper";
@@ -33,30 +40,30 @@ async function buildAndParseCoqProject(
     logger: LogsIPCSender
 ): Promise<Signature.ResultModels.Result> {
     const coqLspClient = createTestCoqLspClient(args.workspaceRootPath);
-    const parsedFileTargets: Signature.ResultModels.Result = {};
-    for (const filePath in args.sourceFilePathToTarget) {
-        const fileTarget = args.sourceFilePathToTarget[filePath];
+    const parsedWorkspace: Signature.ResultModels.Result = {};
+    for (const filePath in args.workspaceTargets) {
+        const fileTargets = args.workspaceTargets[filePath];
         const serializedParsedFile = await openAndParseSourceFile(
             filePath,
             coqLspClient,
             logger
         );
-        const parsedFileTarget: Signature.ResultModels.ParsedFileTarget = {
+        const parsedFileResults: Signature.ResultModels.ParsedFileResults = {
             serializedParsedFile: serializedParsedFile,
-            extractedTaskTargets: await extractTaskTargetsFromFile(
-                fileTarget,
+            parsedFileTargets: await extractFileTargetsFromFile(
+                fileTargets,
                 serializedParsedFile,
                 coqLspClient,
                 logger
             ),
         };
-        parsedFileTargets[filePath] = parsedFileTarget;
+        parsedWorkspace[filePath] = parsedFileResults;
     }
     // TODO: use proper logging
     console.error(
-        `Successfully parsed Coq project: analyzed ${Object.keys(parsedFileTargets).length} files`
+        `Successfully parsed Coq project: analyzed ${Object.keys(parsedWorkspace).length} files`
     );
-    return parsedFileTargets;
+    return parsedWorkspace;
 }
 
 async function openAndParseSourceFile(
@@ -73,138 +80,118 @@ async function openAndParseSourceFile(
         coqLspClient
     );
     const serializedParsedFile: SerializedParsedCoqFile = {
-        allFileTheorems:
-            sourceFileEnvironment.fileTheorems.map(serializeTheorem),
+        serializedTheoremsByNames: packIntoMappedObject(
+            sourceFileEnvironment.fileTheorems.map(
+                (theorem, fileTheoremsIndex) =>
+                    serializeTheoremData(
+                        new TheoremData(theorem, fileTheoremsIndex)
+                    )
+            ),
+            (serializedTheorem) => serializedTheorem.name,
+            (serializedTheorem) => serializedTheorem
+        ),
         fileLines: sourceFileEnvironment.fileLines,
         fileVersion: sourceFileEnvironment.fileVersion,
         filePath: filePath,
     };
     logger.debug(
-        `successfully parsed "${filePath}": found ${serializedParsedFile.allFileTheorems.length} theorems, read ${serializedParsedFile.fileLines.length} lines`
+        `Successfully parsed "${filePath}": found ${serializedParsedFile.serializedTheoremsByNames.length} theorems, read ${serializedParsedFile.fileLines.length} lines`
     );
     return serializedParsedFile;
 }
 
-async function extractTaskTargetsFromFile(
-    fileTarget: Signature.ArgsModels.FileTarget,
+async function extractFileTargetsFromFile(
+    fileTargets: Signature.ArgsModels.FileTarget[],
     serializedParsedFile: SerializedParsedCoqFile,
     coqLspClient: CoqLspClient,
     logger: LogsIPCSender
-): Promise<Signature.ResultModels.TaskTarget[]> {
-    const taskTargets: Signature.ResultModels.TaskTarget[] = [];
+): Promise<Signature.ResultModels.ParsedFileTarget[]> {
+    const parsedTargetsSets: Signature.ResultModels.ParsedFileTarget[][] = [];
+    const theoremsMapping = serializedParsedFile.serializedTheoremsByNames;
 
-    // construct all theorems targets
-    for (const [targetType, bundleIds] of flattenTargetTypesToBundleIds(
-        fileTarget.allTheoremsTargetTypes
-    )) {
-        for (let i = 0; i < serializedParsedFile.allFileTheorems.length; i++) {
-            const theorem = serializedParsedFile.allFileTheorems[i];
-            const theoremTaskTargets = await extractTaskTargetsFromTheorem(
-                theorem,
-                targetType,
-                i,
-                bundleIds,
-                serializedParsedFile,
-                coqLspClient,
-                logger
-            );
-            theoremTaskTargets.forEach((taskTarget) =>
-                taskTargets.push(taskTarget)
-            );
-        }
-    }
-
-    // construct specific theorems targets
-    const theoremNameToTheoremWithIndex: Map<
-        string,
-        [SerializedTheorem, number]
-    > = new Map(
-        serializedParsedFile.allFileTheorems.map((serializedTheorem, i) => [
-            serializedTheorem.name,
-            [serializedTheorem, i],
-        ])
-    );
-    for (const theoremName in fileTarget.specificTheoremTargets) {
-        const theoremTarget = fileTarget.specificTheoremTargets[theoremName];
-        const theoremWithIndex = theoremNameToTheoremWithIndex.get(theoremName);
-        if (theoremWithIndex === undefined) {
-            throw Error(
-                `no parsed theorem data for requested theorem "${theoremName}" of "${serializedParsedFile.filePath}" file`
-            );
-        }
-        const [theorem, theoremIndex] = theoremWithIndex;
-        for (const [targetType, bundleIds] of flattenTargetTypesToBundleIds(
-            theoremTarget
-        )) {
-            const theoremTaskTargets = await extractTaskTargetsFromTheorem(
-                theorem,
-                targetType,
-                theoremIndex,
-                bundleIds,
-                serializedParsedFile,
-                coqLspClient,
-                logger
-            );
-            theoremTaskTargets.forEach((taskTarget) =>
-                taskTargets.push(taskTarget)
-            );
-        }
-    }
-
-    return taskTargets;
-}
-
-async function extractTaskTargetsFromTheorem(
-    theorem: SerializedTheorem,
-    targetType: Signature.CommonModels.TargetType,
-    sourceTheoremIndex: number,
-    bundleIds: number[],
-    serializedParsedFile: SerializedParsedCoqFile,
-    coqLspClient: CoqLspClient,
-    logger: LogsIPCSender
-): Promise<Signature.ResultModels.TaskTarget[]> {
-    switch (targetType) {
-        case "ADMIT":
-            const taskTargets = [];
-            for (const holeProofStep of theorem.proof!.holes) {
-                taskTargets.push(
-                    await buildTaskTarget(
-                        holeProofStep,
-                        targetType,
-                        sourceTheoremIndex,
-                        bundleIds,
+    for (const fileTarget of fileTargets) {
+        if (fileTarget.specificTheoremName === undefined) {
+            // all theorems requests
+            for (const theorem of mappedObjectValues(theoremsMapping)) {
+                const parsedTargetsFromTheorem =
+                    await extractTargetsFromTheorem(
+                        theorem,
+                        fileTarget.requestType,
                         serializedParsedFile,
                         coqLspClient,
                         logger
-                    )
+                    );
+                parsedTargetsSets.push(parsedTargetsFromTheorem);
+            }
+        } else {
+            // specific theorems requests
+            const theoremName = fileTarget.specificTheoremName;
+            if (!(theoremName in theoremsMapping)) {
+                throw Error(
+                    `Requested theorem "${theoremName}" could not be found in ${serializedParsedFile.filePath} file`
                 );
             }
-            return taskTargets;
-        case "PROVE_THEOREM":
+            const parsedTargetsFromTheorem = await extractTargetsFromTheorem(
+                theoremsMapping[theoremName],
+                fileTarget.requestType,
+                serializedParsedFile,
+                coqLspClient,
+                logger
+            );
+            parsedTargetsSets.push(parsedTargetsFromTheorem);
+        }
+    }
+
+    return parsedTargetsSets.flat();
+}
+
+async function extractTargetsFromTheorem(
+    theorem: SerializedTheorem,
+    requestType: TargetRequestType,
+    serializedParsedFile: SerializedParsedCoqFile,
+    coqLspClient: CoqLspClient,
+    logger: LogsIPCSender
+): Promise<Signature.ResultModels.ParsedFileTarget[]> {
+    const targetBuilder: (
+        proofStep: SerializedProofStep,
+        targetType: TargetType
+    ) => Promise<Signature.ResultModels.ParsedFileTarget> = (
+        proofStep,
+        targetType
+    ) =>
+        buildParsedFileTarget(
+            proofStep,
+            targetType,
+            theorem.name,
+            serializedParsedFile,
+            coqLspClient,
+            logger
+        );
+    switch (requestType) {
+        case TargetRequestType.ALL_ADMITS:
+            const parsedTargets = [];
+            for (const holeProofStep of theorem.proof!.holes) {
+                parsedTargets.push(
+                    await targetBuilder(holeProofStep, TargetType.ADMIT)
+                );
+            }
+            return parsedTargets;
+        case TargetRequestType.THEOREM_PROOF:
             const firstProofStep = theorem.proof!.proof_steps[1];
             return [
-                await buildTaskTarget(
-                    firstProofStep,
-                    targetType,
-                    sourceTheoremIndex,
-                    bundleIds,
-                    serializedParsedFile,
-                    coqLspClient,
-                    logger
-                ),
+                await targetBuilder(firstProofStep, TargetType.PROVE_THEOREM),
             ];
     }
 }
 
-async function buildTaskTarget(
+async function buildParsedFileTarget(
     proofStep: SerializedProofStep,
-    targetType: Signature.CommonModels.TargetType,
-    sourceTheoremIndex: number,
-    bundleIds: number[],
+    targetType: TargetType,
+    theoremName: string,
     serializedParsedFile: SerializedParsedCoqFile,
     coqLspClient: CoqLspClient,
     logger: LogsIPCSender
-): Promise<Signature.ResultModels.TaskTarget> {
+): Promise<Signature.ResultModels.ParsedFileTarget> {
     const goal = await coqLspClient.getFirstGoalAtPoint(
         proofStep.range.start,
         Uri.fromPath(serializedParsedFile.filePath),
@@ -213,32 +200,18 @@ async function buildTaskTarget(
     if (goal instanceof Error) {
         const stack = goal.stack === undefined ? "" : `\n${goal.stack}`;
         logger.error(
-            `failed to retrieve target goal at point: "${goal.message}" at ${proofStep.range.start}, "${serializedParsedFile.filePath}"${stack}`
+            `Failed to retrieve target goal at point: "${goal.message}" at ${proofStep.range.start}, "${serializedParsedFile.filePath}"${stack}`
         );
         throw goal;
     } else {
         logger.debug(
-            `successfully retrieved target goal at point: "${goal.ty}" at ${proofStep.range.start}, "${serializedParsedFile.filePath}"`
+            `Successfully retrieved target goal at point: "${goal.ty}" at ${proofStep.range.start}, "${serializedParsedFile.filePath}"`
         );
     }
     return {
-        targetGoalToProve: JSON.stringify(goal), // TODO: come up with better (de)serialization
-        targetPositionRange: proofStep.range,
+        theoremName: theoremName,
         targetType: targetType,
-        sourceTheoremIndex: sourceTheoremIndex,
-        bundleIds: bundleIds,
+        goalToProve: JSON.stringify(goal), // TODO: come up with better serialization
+        positionRange: proofStep.range,
     };
-}
-
-function flattenTargetTypesToBundleIds(
-    targetTypeToBundleIds: Signature.ArgsModels.TargetTypeToBundleIds
-): [Signature.CommonModels.TargetType, number[]][] {
-    const result: [Signature.CommonModels.TargetType, number[]][] = [];
-    if (targetTypeToBundleIds.ADMIT.length !== 0) {
-        result.push(["ADMIT", targetTypeToBundleIds.ADMIT]);
-    }
-    if (targetTypeToBundleIds.PROVE_THEOREM.length !== 0) {
-        result.push(["PROVE_THEOREM", targetTypeToBundleIds.PROVE_THEOREM]);
-    }
-    return result;
 }

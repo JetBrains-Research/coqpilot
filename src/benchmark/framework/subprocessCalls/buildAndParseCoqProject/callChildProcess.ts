@@ -1,14 +1,9 @@
-import { Goal, PpString } from "../../../../coqLsp/coqLspTypes";
-
+import { ParsedWorkspaceHolder } from "../../buildAndParseDataset/parsedWorkspaceHolder";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import {
-    TargetType,
     WorkspaceRoot,
     isNoWorkspaceRoot,
 } from "../../structures/completionGenerationTask";
-import { deserializeParsedCoqFile } from "../../structures/parsedCoqFileData";
-import { TheoremData, deserializeTheorem } from "../../structures/theoremData";
-import { deserializeCodeElementRange } from "../../structures/utilStructures";
 import { AsyncScheduler } from "../../utils/asyncScheduler";
 import { checkIsInsideDirectory } from "../../utils/fsUtils";
 import {
@@ -24,13 +19,13 @@ import Signature = BuildAndParseCoqProjectBySubprocessSignature;
 
 export async function buildAndParseCoqProjectInSubprocess(
     workspaceRoot: WorkspaceRoot,
-    sourceFileTargetsToParse: Signature.ArgsModels.FilePathToFileTarget,
+    workspaceTargets: Signature.ArgsModels.FilePathToFileTargets,
     buildProject: boolean,
     timeoutMillis: number | undefined,
     subprocessesScheduler: AsyncScheduler,
     benchmarkingLogger: BenchmarkingLogger,
     enableProcessLifetimeDebugLogs: boolean = false
-): Promise<ExecutionResult<Signature.UnpackedResultModels.UnpackedResult>> {
+): Promise<ExecutionResult<ParsedWorkspaceHolder>> {
     const enterWorkspaceAndExecuteSubprocessCommand =
         buildCommandToExecuteSubprocessInWorkspace(
             workspaceRoot,
@@ -41,21 +36,21 @@ export async function buildAndParseCoqProjectInSubprocess(
                 ? "nix-build"
                 : undefined // TODO: support building non-nix projects with make
         );
-    validateRequestedFilesAreInsideWorkspace(
-        workspaceRoot,
-        sourceFileTargetsToParse
-    );
+
+    validateRequestedFilesAreInsideWorkspace(workspaceRoot, workspaceTargets);
+
     const args: Signature.ArgsModels.Args = {
         workspaceRootPath: isNoWorkspaceRoot(workspaceRoot)
             ? undefined
             : workspaceRoot.directoryPath,
-        sourceFilePathToTarget: sourceFileTargetsToParse,
+        workspaceTargets: workspaceTargets,
     };
     const options: ChildProcessOptions = {
         workingDirectory:
             enterWorkspaceAndExecuteSubprocessCommand.workingDirectory,
         timeoutMillis: timeoutMillis,
     };
+
     return subprocessesScheduler.scheduleTask(
         () =>
             executeProcessAsFunction(
@@ -63,7 +58,8 @@ export async function buildAndParseCoqProjectInSubprocess(
                 args,
                 Signature.ArgsModels.argsSchema,
                 Signature.ResultModels.resultSchema,
-                unpackParsedFileTargets,
+                (parsedWorkspace: Signature.ResultModels.Result) =>
+                    new ParsedWorkspaceHolder(parsedWorkspace),
                 options,
                 benchmarkingLogger,
                 enableProcessLifetimeDebugLogs
@@ -74,58 +70,15 @@ export async function buildAndParseCoqProjectInSubprocess(
 
 function validateRequestedFilesAreInsideWorkspace(
     workspaceRoot: WorkspaceRoot,
-    sourceFileTargetsToParse: Signature.ArgsModels.FilePathToFileTarget
+    workspaceTargets: Signature.ArgsModels.FilePathToFileTargets
 ) {
     const parentDirPath = workspaceRoot.directoryPath;
-    for (const filePath in sourceFileTargetsToParse) {
-        // note: assume paths are absolute and resolved
+    for (const filePath in workspaceTargets) {
+        // Note: assuming paths are absolute and resolved
         if (!checkIsInsideDirectory(filePath, parentDirPath)) {
             throw Error(
-                `requested file "${filePath}" is expected to be inside "${parentDirPath}" directory`
+                `Requested file ${filePath} is expected to be inside ${parentDirPath} directory`
             );
         }
     }
-}
-
-function unpackParsedFileTargets(
-    parsedFileTargets: Signature.ResultModels.Result
-): Signature.UnpackedResultModels.UnpackedResult {
-    const unpackedParsedFileTargets: Signature.UnpackedResultModels.UnpackedResult =
-        new Map();
-    for (const filePath in parsedFileTargets) {
-        const parsedFileTarget = parsedFileTargets[filePath];
-        const unpackedFileTarget: Signature.UnpackedResultModels.ParsedFileTarget =
-            {
-                parsedFile: deserializeParsedCoqFile(
-                    parsedFileTarget.serializedParsedFile
-                ),
-                extractedTaskTargets: parsedFileTarget.extractedTaskTargets.map(
-                    (taskTarget) => {
-                        return {
-                            targetGoalToProve: JSON.parse(
-                                taskTarget.targetGoalToProve
-                            ) as Goal<PpString>, // TODO: come up with better (de)serialization
-                            targetPositionRange: deserializeCodeElementRange(
-                                taskTarget.targetPositionRange
-                            ),
-                            targetType:
-                                TargetType[
-                                    taskTarget.targetType as keyof typeof TargetType
-                                ],
-                            sourceTheorem: new TheoremData(
-                                deserializeTheorem(
-                                    parsedFileTarget.serializedParsedFile
-                                        .allFileTheorems[
-                                        taskTarget.sourceTheoremIndex
-                                    ]
-                                )
-                            ),
-                            bundleIds: new Set(taskTarget.bundleIds),
-                        };
-                    }
-                ),
-            };
-        unpackedParsedFileTargets.set(filePath, unpackedFileTarget);
-    }
-    return unpackedParsedFileTargets;
 }
