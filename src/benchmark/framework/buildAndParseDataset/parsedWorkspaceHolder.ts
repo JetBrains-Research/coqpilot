@@ -27,6 +27,10 @@ export class ParsedWorkspaceHolder {
             );
         }
     }
+
+    parsedFilesNumber(): number {
+        return this.filePathToFileHolder.size;
+    }
 }
 
 export class ParsedFileHolder {

@@ -7,7 +7,6 @@ import {
 import { ExperimentRunOptions } from "../structures/experimentRunOptions";
 import {
     AllTheoremsTarget,
-    FileTarget,
     SpecificTheoremTarget,
     WorkspaceInputTargets,
 } from "../structures/inputTargets";
@@ -111,4 +110,69 @@ export function filterRequestedTargetsMissingInCache(
     }
 
     return [missingTargets, workspaceCache];
+}
+
+export async function parseCoqProjectForMissingTargets(
+    missingTargets: WorkspaceInputTargets,
+    workspaceRoot: WorkspaceRoot,
+    runOptions: ExperimentRunOptions,
+    subprocessesScheduler: AsyncScheduler,
+    logger: BenchmarkingLogger
+): Promise<ParsedWorkspaceHolder> {
+    const executionResult = await buildAndParseCoqProjectInSubprocess(
+        workspaceRoot,
+        packWorspaceTargets(missingTargets),
+        false, // TODO: support turning projects building on
+        runOptions.buildAndParseCoqProjectSubprocessTimeoutMillis,
+        subprocessesScheduler,
+        logger,
+        runOptions.enableSubprocessLifetimeDebugLogs
+    );
+    const projectId = isNoWorkspaceRoot(workspaceRoot)
+        ? "standalone source files requested"
+        : `"${workspaceRoot.directoryPath}" project with source files requested`;
+    if (executionResult.isFailed()) {
+        logger
+            .asOneRecord()
+            .error(`failed to build and parse ${projectId}`, undefined, "")
+            .debug(`: ${missingTargets.filePaths().join(", ")}`, undefined, "")
+            .error(
+                `\n\tcaused by \`${executionResult.errorTypeName}\`: ${executionResult.errorMessage}`
+            );
+        throw Error("failed to build benchmarking items");
+    }
+    const parsedWorkspaceHolder = executionResult.maybeResult!;
+    logger.info(
+        `Successfully parsed ${projectId}: ${parsedWorkspaceHolder.parsedFilesNumber()} files`
+    );
+    return parsedWorkspaceHolder;
+}
+
+export function packWorspaceTargets(
+    missingTargets: WorkspaceInputTargets
+): Signature.ArgsModels.FilePathToFileTargets {
+    const mappedEntries: [string, Signature.ArgsModels.FileTarget[]][] =
+        missingTargets.entries().map(([filePath, fileTargets]) => {
+            return [
+                filePath,
+                fileTargets.map((fileTarget) => {
+                    if (fileTarget instanceof AllTheoremsTarget) {
+                        return {
+                            requestType: fileTarget.requestType,
+                            specificTheoremName: undefined,
+                        };
+                    } else if (fileTarget instanceof SpecificTheoremTarget) {
+                        return {
+                            requestType: fileTarget.requestType,
+                            specificTheoremName: fileTarget.theoremName,
+                        };
+                    } else {
+                        throw Error(
+                            `Unknown input file target: ${fileTarget.toString("", "")}`
+                        );
+                    }
+                }),
+            ];
+        });
+    return entriesToMappedObject(mappedEntries);
 }
