@@ -16,10 +16,13 @@ import {
 } from "./utilStructures";
 
 export class TheoremData {
-    constructor(readonly theorem: Theorem) {}
+    constructor(
+        readonly sourceTheorem: Theorem,
+        readonly fileTheoremsIndex: number
+    ) {}
 
-    readonly name = this.theorem.name;
-    readonly proof = this.theorem.proof;
+    readonly name = this.sourceTheorem.name;
+    readonly proof = this.sourceTheorem.proof;
 }
 
 export interface SerializedTheorem {
@@ -27,6 +30,7 @@ export interface SerializedTheorem {
     statement_range: SerializedCodeElementRange;
     statement: string;
     proof: SerializedTheoremProof | undefined;
+    fileTheoremsIndex: number;
 }
 
 export interface SerializedTheoremProof {
@@ -93,14 +97,17 @@ export const serializedTheoremSchema: JSONSchemaType<SerializedTheorem> = {
             oneOf: [serializedTheoremProofSchema],
             nullable: true,
         },
+        fileTheoremsIndex: {
+            type: "number",
+        },
     },
-    required: ["name", "statement_range", "statement"],
+    required: ["name", "statement_range", "statement", "fileTheoremsIndex"],
     additionalProperties: false,
 };
 
-export function deserializeTheorem(
+export function deserializeTheoremData(
     serializedTheorem: SerializedTheorem
-): Theorem {
+): TheoremData {
     const serializedTheoremProof = serializedTheorem.proof;
     let theoremProof: TheoremProof | null = null;
     if (serializedTheoremProof !== undefined) {
@@ -111,16 +118,21 @@ export function deserializeTheorem(
             serializedTheoremProof.holes.map(deserializeProofStep)
         );
     }
-    return new Theorem(
-        serializedTheorem.name,
-        deserializeCodeElementRange(serializedTheorem.statement_range),
-        serializedTheorem.statement,
-        theoremProof
+    return new TheoremData(
+        new Theorem(
+            serializedTheorem.name,
+            deserializeCodeElementRange(serializedTheorem.statement_range),
+            serializedTheorem.statement,
+            theoremProof
+        ),
+        serializedTheorem.fileTheoremsIndex
     );
 }
 
-export function serializeTheorem(theorem: Theorem): SerializedTheorem {
-    const theoremProof = theorem.proof;
+export function serializeTheoremData(
+    theoremData: TheoremData
+): SerializedTheorem {
+    const theoremProof = theoremData.proof;
     let serializedTheoremProof: SerializedTheoremProof | undefined = undefined;
     if (theoremProof !== null) {
         serializedTheoremProof = {
@@ -131,10 +143,13 @@ export function serializeTheorem(theorem: Theorem): SerializedTheorem {
         };
     }
     return {
-        name: theorem.name,
-        statement_range: serializeCodeElementRange(theorem.statement_range),
-        statement: theorem.statement,
+        name: theoremData.name,
+        statement_range: serializeCodeElementRange(
+            theoremData.sourceTheorem.statement_range
+        ),
+        statement: theoremData.sourceTheorem.statement,
         proof: serializedTheoremProof,
+        fileTheoremsIndex: theoremData.fileTheoremsIndex,
     };
 }
 
@@ -143,7 +158,7 @@ function deserializeProofStep(
 ): ProofStep {
     return new ProofStep(
         serializedProofStep.text,
-        Vernacexpr[serializedProofStep.vernac_type as keyof typeof Vernacexpr], // note: assume keys and values of `Vernacexpr` are the same
+        Vernacexpr[serializedProofStep.vernac_type as keyof typeof Vernacexpr], // Note: assuming keys and values of `Vernacexpr` are the same
         deserializeCodeElementRange(serializedProofStep.range)
     );
 }

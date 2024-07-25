@@ -69,3 +69,29 @@ export function mapValues<K, V, M extends Map<K, V>, T>(
     }
     return resultMap;
 }
+
+export function toMappedObject<V, M extends Map<string, V>>(
+    map: M
+): { [key: string]: V } {
+    const mappedObject: { [key: string]: V } = {};
+    for (const [key, value] of map.entries()) {
+        mappedObject[key] = value;
+    }
+    return mappedObject;
+}
+
+export function fromMappedObject<V>(mappedObject: {
+    [key: string]: V;
+}): Map<string, V> {
+    return new Map(mappedObjectEntries(mappedObject));
+}
+
+export function mappedObjectEntries<V>(mappedObject: {
+    [key: string]: V;
+}): [string, V][] {
+    const entries: [string, V][] = [];
+    for (const key in mappedObject) {
+        entries.push([key, mappedObject[key]]);
+    }
+    return entries;
+}

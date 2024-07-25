@@ -1,19 +1,22 @@
 import { JSONSchemaType } from "ajv";
 
+import { fromMappedObject, mapValues, toMappedObject } from "../utils/mapUtils";
+
 import {
     SerializedTheorem,
     TheoremData,
-    deserializeTheorem,
-    serializeTheorem,
+    deserializeTheoremData,
+    serializeTheoremData,
     serializedTheoremSchema,
 } from "./theoremData";
 
+// TODO: make a class?
 export interface ParsedCoqFileData {
     /**
      * All theorems that were successfully parsed from the file.
      * Ones that don't end with `Qed.` are also included.
      */
-    allFileTheorems: TheoremData[];
+    theoremsByNames: Map<string, TheoremData>;
 
     fileLines: string[];
     fileVersion: number;
@@ -25,21 +28,33 @@ export interface SerializedParsedCoqFile {
      * All theorems that were successfully parsed from the file.
      * Ones that don't end with `Qed.` are also included.
      */
-    allFileTheorems: SerializedTheorem[];
+    serializedTheoremsByNames: SerializedTheoremsByNames;
 
     fileLines: string[];
     fileVersion: number;
     filePath: string;
 }
 
+export type SerializedTheoremsByNames = {
+    [theoremName: string]: SerializedTheorem;
+};
+
+export const serializedTheoremsByNamesSchema: JSONSchemaType<SerializedTheoremsByNames> =
+    {
+        type: "object",
+        patternProperties: {
+            // eslint-disable-next-line @typescript-eslint/naming-convention
+            "^.*$": serializedTheoremSchema,
+        },
+        required: [],
+        additionalProperties: false,
+    };
+
 export const serializedParsedCoqFileSchema: JSONSchemaType<SerializedParsedCoqFile> =
     {
         type: "object",
         properties: {
-            allFileTheorems: {
-                type: "array",
-                items: serializedTheoremSchema,
-            },
+            serializedTheoremsByNames: serializedTheoremsByNamesSchema,
             fileLines: {
                 type: "array",
                 items: {
@@ -53,7 +68,12 @@ export const serializedParsedCoqFileSchema: JSONSchemaType<SerializedParsedCoqFi
                 type: "string",
             },
         },
-        required: ["allFileTheorems", "fileLines", "fileVersion", "filePath"],
+        required: [
+            "serializedTheoremsByNames",
+            "fileLines",
+            "fileVersion",
+            "filePath",
+        ],
         additionalProperties: false,
     };
 
@@ -61,11 +81,14 @@ export function deserializeParsedCoqFile(
     serializedParsedCoqFile: SerializedParsedCoqFile
 ): ParsedCoqFileData {
     return {
-        ...serializedParsedCoqFile,
-        allFileTheorems: serializedParsedCoqFile.allFileTheorems.map(
-            (serializedTheorem) =>
-                new TheoremData(deserializeTheorem(serializedTheorem))
+        theoremsByNames: mapValues(
+            fromMappedObject(serializedParsedCoqFile.serializedTheoremsByNames),
+            (_: string, serializedTheorem: SerializedTheorem) =>
+                deserializeTheoremData(serializedTheorem)
         ),
+        fileLines: serializedParsedCoqFile.fileLines,
+        fileVersion: serializedParsedCoqFile.fileVersion,
+        filePath: serializedParsedCoqFile.filePath,
     };
 }
 
@@ -73,9 +96,15 @@ export function serializeParsedCoqFile(
     parsedCoqFileData: ParsedCoqFileData
 ): SerializedParsedCoqFile {
     return {
-        ...parsedCoqFileData,
-        allFileTheorems: parsedCoqFileData.allFileTheorems.map((theoremData) =>
-            serializeTheorem(theoremData.theorem)
+        serializedTheoremsByNames: toMappedObject(
+            mapValues(
+                parsedCoqFileData.theoremsByNames,
+                (_: string, theoremData: TheoremData) =>
+                    serializeTheoremData(theoremData)
+            )
         ),
+        fileLines: parsedCoqFileData.fileLines,
+        fileVersion: parsedCoqFileData.fileVersion,
+        filePath: parsedCoqFileData.filePath,
     };
 }
