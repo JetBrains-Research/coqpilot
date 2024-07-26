@@ -8,6 +8,7 @@ import { BenchmarkingItem } from "../structures/benchmarkingItem";
 import { BenchmarkingModelParams } from "../structures/benchmarkingModelParams";
 import {
     CompletionGenerationTask,
+    TargetType,
     WorkspaceRoot,
     isNoWorkspaceRoot,
 } from "../structures/completionGenerationTask";
@@ -30,6 +31,7 @@ import {
     LLMServicesParamsResolvers,
     createParamsResolvers,
     getParamsResolver,
+    getShortName,
 } from "../utils/llmServicesUtils";
 import { entriesToMappedObject, getOrPut } from "../utils/mapUtils";
 import { resolveTheoremsRanker } from "../utils/resolveTheoremsRanker";
@@ -42,6 +44,7 @@ import {
 } from "./cacheHolder";
 import { readRequestedFilesCache } from "./cacheReader";
 import { updateWorkspaceCache } from "./cacheUpdater";
+import { rewriteDatasetCache } from "./cacheWriter";
 import { ParsedWorkspaceHolder } from "./parsedWorkspaceHolder";
 
 import Signature = BuildAndParseCoqProjectBySubprocessSignature;
@@ -61,6 +64,93 @@ import Signature = BuildAndParseCoqProjectBySubprocessSignature;
 // 5: extend cache with these results
 // 6: use these cache RAM structures to build result
 // 7: write cache if needed
+
+/**
+ * TODO: general desc + describe by steps
+ * Builds and parses requested Coq projects via subprocesses, then constructs benchmarking items.
+ */
+export async function parseDatasetForBenchmarkingItems(
+    inputBundles: InputBenchmarkingBundle[],
+    mergedRequestedTargets: DatasetInputTargets,
+    runOptions: ExperimentRunOptions,
+    subprocessesScheduler: AsyncScheduler,
+    logger: BenchmarkingLogger
+): Promise<BenchmarkingItem[]> {
+    const datasetCache = new DatasetCacheHolder();
+    for (const [
+        workspaceRoot,
+        workspaceTargets,
+    ] of mergedRequestedTargets.entries()) {
+        const [missingTargets, workspaceCache] =
+            filterRequestedTargetsMissingInCache(
+                workspaceTargets,
+                workspaceRoot,
+                runOptions.datasetCacheDirectoryPath,
+                logger
+            );
+        const parsedWorkspace = await parseCoqProjectForMissingTargets(
+            missingTargets,
+            workspaceRoot,
+            runOptions,
+            subprocessesScheduler,
+            logger
+        );
+        extendCacheWithParsedTargets(workspaceCache, parsedWorkspace, logger);
+        datasetCache.addWorkspaceCache(
+            workspaceRoot.directoryPath,
+            workspaceCache
+        );
+    }
+
+    const benchmarkingItems = buildBenchmarkingItems(
+        inputBundles,
+        datasetCache
+    );
+    logger
+        .asOneRecord()
+        .info(
+            `Successfully constructed ${benchmarkingItems.length} benchmarking items`,
+            undefined,
+            ""
+        )
+        .debug(`:\n${logBenchmarkingItems(benchmarkingItems)}`);
+
+    rewriteDatasetCache(
+        datasetCache,
+        runOptions.datasetCacheDirectoryPath,
+        logger
+    );
+
+    return benchmarkingItems;
+}
+
+function logBenchmarkingItems(benchmarkingItems: BenchmarkingItem[]): string {
+    const benchmarkingItemsLogs = [];
+    for (let i = 0; i < benchmarkingItems.length; i++) {
+        benchmarkingItemsLogs.push(
+            `benchmarking item ${i}:\n${logBenchmarkingItem(benchmarkingItems[i])}`
+        );
+    }
+    return benchmarkingItemsLogs.join("\n---\n");
+}
+
+function logBenchmarkingItem(benchmarkingItem: BenchmarkingItem): string {
+    const task = benchmarkingItem.task;
+    const targetLog = `* target: ${getTargetTypeName(task.targetType)}, goal \`${task.targetGoalToProveAsString}\``;
+    const sourceLog = `* source: ${task.targetPositionRange} of theorem "${task.sourceTheorem.name}" from "${task.sourceFilePath}"`;
+    const paramsLog = `* model id: "${benchmarkingItem.params.modelParams.modelId}"`; // TODO: support theorem ranker name
+    const llmServiceLog = `* LLM service: ${getShortName(benchmarkingItem.params.llmServiceIdentifier)}`;
+    return `${targetLog}\n${sourceLog}\n${paramsLog}\n${llmServiceLog}`;
+}
+
+function getTargetTypeName(targetType: TargetType): string {
+    switch (targetType) {
+        case TargetType.ADMIT:
+            return "complete hole";
+        case TargetType.PROVE_THEOREM:
+            return "prove theorem";
+    }
+}
 
 // TODO: support caching mode
 export function filterRequestedTargetsMissingInCache(
@@ -148,7 +238,7 @@ export async function parseCoqProjectForMissingTargets(
 ): Promise<ParsedWorkspaceHolder> {
     const executionResult = await buildAndParseCoqProjectInSubprocess(
         workspaceRoot,
-        packWorspaceTargets(missingTargets),
+        packWorkspaceTargets(missingTargets),
         false, // TODO: support turning projects building on
         runOptions.buildAndParseCoqProjectSubprocessTimeoutMillis,
         subprocessesScheduler,
@@ -175,7 +265,7 @@ export async function parseCoqProjectForMissingTargets(
     return parsedWorkspaceHolder;
 }
 
-export function packWorspaceTargets(
+export function packWorkspaceTargets(
     missingTargets: WorkspaceInputTargets
 ): Signature.ArgsModels.FilePathToFileTargets {
     const mappedEntries: [string, Signature.ArgsModels.FileTarget[]][] =
@@ -224,14 +314,14 @@ export function extendCacheWithParsedTargets(
     // TODO: debug log full cache?
 }
 
-export function constructBenchmarkingItems(
+export function buildBenchmarkingItems(
     inputBundles: InputBenchmarkingBundle[],
     datasetCache: DatasetCacheHolder
 ): BenchmarkingItem[] {
     const [modelIdToRequestedTasks, modelIdToResolvedParams] =
         buildTasksAndResolveParams(inputBundles, datasetCache);
 
-    return buildBenchmarkingItems(
+    return constructBenchmarkingItems(
         modelIdToRequestedTasks,
         modelIdToResolvedParams
     );
@@ -284,7 +374,7 @@ function buildTasksAndResolveParams(
     return [modelIdToRequestedTasks, modelIdToResolvedParams];
 }
 
-function buildBenchmarkingItems(
+function constructBenchmarkingItems(
     modelIdToRequestedTasks: Map<string, CompletionGenerationTask[]>,
     modelIdToResolvedParams: Map<string, BenchmarkingModelParams<ModelParams>>
 ): BenchmarkingItem[] {
