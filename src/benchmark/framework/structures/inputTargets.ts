@@ -122,6 +122,15 @@ export class WorkspaceInputTargets {
         return Array.from(this.filePathToTargets.keys());
     }
 
+    isEmpty(): boolean {
+        for (const fileTargets of this.filePathToTargets.values()) {
+            if (!fileTargets.isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * If `theoremNames` is empty, `AllTheoremsTarget` is added.
      * Otherwise, `SpecificTheoremTarget` for each theorem name is added.

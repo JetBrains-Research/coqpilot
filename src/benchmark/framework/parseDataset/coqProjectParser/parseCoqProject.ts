@@ -18,8 +18,8 @@ import { ParsedWorkspaceHolder } from "./parsedWorkspaceHolder";
 
 import Signature = BuildAndParseCoqProjectBySubprocessSignature;
 
-export async function parseCoqProjectForMissingTargets(
-    missingTargets: WorkspaceInputTargets,
+export async function parseCoqProject(
+    targets: WorkspaceInputTargets,
     workspaceRoot: WorkspaceRoot,
     runOptions: ExperimentRunOptions,
     subprocessesScheduler: AsyncScheduler,
@@ -27,7 +27,7 @@ export async function parseCoqProjectForMissingTargets(
 ): Promise<ParsedWorkspaceHolder> {
     const executionResult = await buildAndParseCoqProjectInSubprocess(
         workspaceRoot,
-        packWorkspaceTargets(missingTargets),
+        packWorkspaceTargets(targets),
         false, // TODO: support turning projects building on
         runOptions.buildAndParseCoqProjectSubprocessTimeoutMillis,
         subprocessesScheduler,
@@ -41,7 +41,7 @@ export async function parseCoqProjectForMissingTargets(
         logger
             .asOneRecord()
             .error(`failed to build and parse ${projectId}`, undefined, "")
-            .debug(`: ${missingTargets.filePaths().join(", ")}`, undefined, "")
+            .debug(`: ${targets.filePaths().join(", ")}`, undefined, "")
             .error(
                 `\n\tcaused by \`${executionResult.errorTypeName}\`: ${executionResult.errorMessage}`
             );

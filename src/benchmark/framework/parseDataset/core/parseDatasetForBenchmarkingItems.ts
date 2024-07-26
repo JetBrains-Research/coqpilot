@@ -6,12 +6,11 @@ import { DatasetInputTargets } from "../../structures/inputTargets";
 import { AsyncScheduler } from "../../utils/asyncScheduler";
 import { rewriteDatasetCache } from "../cacheHandlers/cacheWriter";
 import { DatasetCacheHolder } from "../cacheStructures/cacheHolders";
-import { parseCoqProjectForMissingTargets } from "../coqProjectParser/parseCoqProject";
 import { logBenchmarkingItems } from "../utils/logBenchmarkingItems";
 
-import { extendCacheWithParsedTargets } from "./extendCacheWithParsedTargets";
 import { filterRequestedTargetsMissingInCache } from "./filterTargetsMissingInCache";
 import { buildBenchmarkingItems } from "./itemsBuilder/buildBenchmarkingItems";
+import { parseMissingTargetsAndUpdateCache } from "./parseMissingTargets";
 
 /**
  * This is the core dataset parsing function that creates `BenchmarkingItem`-s.
@@ -54,14 +53,25 @@ export async function parseDatasetForBenchmarkingItems(
                 runOptions.datasetCacheDirectoryPath,
                 logger
             );
-        const parsedWorkspace = await parseCoqProjectForMissingTargets(
-            missingTargets,
-            workspaceRoot,
-            runOptions,
-            subprocessesScheduler,
-            logger
-        );
-        extendCacheWithParsedTargets(workspaceCache, parsedWorkspace, logger);
+
+        if (missingTargets.isEmpty()) {
+            logger.debug(
+                "No missing targets to parse from sources: all data can be retrieved from cache"
+            );
+        } else {
+            logger.debug(
+                `Missing targets to parse from sources:\n${missingTargets.toString("\t")}`
+            );
+            await parseMissingTargetsAndUpdateCache(
+                missingTargets,
+                workspaceCache,
+                workspaceRoot,
+                runOptions,
+                subprocessesScheduler,
+                logger
+            );
+        }
+
         datasetCache.addWorkspaceCache(
             workspaceRoot.directoryPath,
             workspaceCache

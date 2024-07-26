@@ -35,9 +35,18 @@ export namespace HashUtils {
 
 export class EqualitySet<T extends EqualTo<T>> {
     private readonly hashToElements: Map<number, T[]> = new Map();
+    private currentSize: number = 0;
 
     constructor(elements: T[] = []) {
         this.addElements(elements);
+    }
+
+    size(): number {
+        return this.currentSize;
+    }
+
+    isEmpty(): boolean {
+        return this.size() === 0;
     }
 
     has(element: T): boolean {
@@ -58,6 +67,7 @@ export class EqualitySet<T extends EqualTo<T>> {
             return false;
         }
         cell.push(element);
+        this.currentSize += 1;
         return true;
     }
 
