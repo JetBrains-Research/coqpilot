@@ -78,6 +78,11 @@ export class Experiment {
             subprocessesScheduler,
             logger
         );
+        if (benchmarkingItems.length === 0) {
+            throw Error(
+                "No items to benchmark: make sure the experiment input is configured correctly."
+            );
+        }
 
         return benchmark(
             benchmarkingItems,

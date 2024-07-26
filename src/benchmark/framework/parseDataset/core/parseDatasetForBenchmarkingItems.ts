@@ -41,6 +41,13 @@ export async function parseDatasetForBenchmarkingItems(
     subprocessesScheduler: AsyncScheduler,
     logger: BenchmarkingLogger
 ): Promise<BenchmarkingItem[]> {
+    if (mergedRequestedTargets.isEmpty()) {
+        logger.info(
+            "No benchmarking targets selected. Configure some and try again."
+        );
+        return [];
+    }
+
     const datasetCache = new DatasetCacheHolder();
     for (const [
         workspaceRoot,

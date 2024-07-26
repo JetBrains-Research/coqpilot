@@ -42,6 +42,15 @@ export class DatasetInputTargets {
         return entries;
     }
 
+    isEmpty(): boolean {
+        for (const workspaceTargets of this.workspacePathToTargets.values()) {
+            if (!workspaceTargets.isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     addWorkspaceTargets(
         workspaceRoot: WorkspaceRoot,
         workspaceTargets: WorkspaceInputTargets
