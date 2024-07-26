@@ -116,6 +116,7 @@ namespace BuildCacheHoldersFromModels {
         workspacePath: string
     ): WorkspaceCacheHolder {
         return new WorkspaceCacheHolder(
+            workspacePath,
             new Map(
                 Array.from(filePathToReadCachedFile.entries()).map(
                     ([filePath, readCachedFile]) => [
@@ -123,8 +124,7 @@ namespace BuildCacheHoldersFromModels {
                         buildCachedCoqFileData(readCachedFile, workspacePath),
                     ]
                 )
-            ),
-            workspacePath
+            )
         );
     }
 

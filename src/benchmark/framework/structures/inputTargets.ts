@@ -184,8 +184,10 @@ export class WorkspaceInputTargets {
     /**
      * Resolves file targets sets for each of the file paths:
      * if `AllTheoremsTarget` is present, all corresponding `SpecificTheoremTarget`-s will be removed.
+     *
+     * @returns this.
      */
-    resolveRequests() {
+    resolveRequests(): WorkspaceInputTargets {
         for (const [filePath, targets] of this.filePathToTargets) {
             const allTheoremsRequests = new Map<
                 TargetRequestType,
@@ -197,13 +199,14 @@ export class WorkspaceInputTargets {
                 }
             }
             if (allTheoremsRequests.size === 0) {
-                return;
+                continue;
             }
             this.filePathToTargets.set(
                 filePath,
                 new EqualitySet(Array.from(allTheoremsRequests.values()))
             );
         }
+        return this;
     }
 
     toString(linePrefix: string = ""): string {

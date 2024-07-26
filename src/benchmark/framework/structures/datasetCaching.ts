@@ -25,37 +25,41 @@ export enum DatasetCacheUsageMode {
      * no parsing actions will be made: cached data will be used instead.
      * However, for the requested targets missing in the cache,
      * parsing will be performed and the cache will be extended with these results.
+     *
+     * *Important:* DO NOT use this mode after modifying the source project,
+     * that can cause undefined results. However, this mode is completely safe
+     * when the source project stays unchanged.
      */
     EXTEND_CACHE_WITH_MISSING_TARGETS,
 
     /**
-     * The requested projects cache will be fully rebuilt.
+     * The requested projects cache will be fully cleared
+     * and the requested targets only will be cached.
      *
-     * First, the requested projects cache will be cleared.
-     * Afterwards, all the requested targets will be parsed from the source projects
-     * and these results will be cached.
-     *
-     * In other words, the old cache is replaced with a newly-built one.
+     * Detailed exaplnation:
+     * - all the requested targets will be parsed from the source projects;
+     * - the requested projects cache will be cleared;
+     * - the requested targets parsing results will be cached.
      */
-    REBUILD_CACHE_FOR_REQUESTED_PROJECTS,
+    REBUILD_CACHE_FOR_REQUESTED_TARGETS,
 
     /**
-     * The requested projects cache will be fully rebuilt.
+     * The requested projects cache will be fully cleared
+     * and the requested files will be cached completely.
      *
-     * This mode is similar to the `REBUILD_CACHE_FOR_REQUESTED_PROJECTS` one;
+     * This mode is similar to the `REBUILD_CACHE_FOR_REQUESTED_TARGETS` one;
      * but instead of parsing only the requested targets,
-     * it parses and caches *all* source Coq files of the requested projects.
+     * it parses and caches **all targets** found in the requested files.
      */
-    BUILD_COMPLETE_CACHE_FOR_REQUESTED_PROJECTS,
+    REBUILD_COMPLETE_CACHE_FOR_REQUESTED_FILES,
 
     /**
-     * Cache will be fully rebuilt.
+     * The requested projects cache will be fully cleared
+     * and the requested projects will be cached completely.
      *
-     * This mode is similar to the `BUILD_COMPLETE_CACHE_FOR_REQUESTED_PROJECTS`,
-     * but makes parsing and caching work for all the dataset projects.
-     *
-     * In other words, the cache directory, first, will be completely cleared,
-     * and then for all the projects in the `dataset` directory complete caches will be built.
+     * This mode is similar to the `REBUILD_CACHE_FOR_REQUESTED_TARGETS` one;
+     * but instead of parsing only the requested targets,
+     * it parses and caches **all source Coq files** of the requested projects.
      */
-    BUILD_COMPLETE_DATASET_CACHE,
+    REBUILD_COMPLETE_CACHE_FOR_REQUESTED_PROJECTS,
 }

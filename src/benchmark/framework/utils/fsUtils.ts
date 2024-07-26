@@ -108,6 +108,15 @@ export function createDirectory(
     return dirPath;
 }
 
+export function deleteDirectory(dirPath: string) {
+    fs.rmSync(dirPath, { recursive: true, force: true });
+}
+
+export function clearDirectory(dirPath: string) {
+    deleteDirectory(dirPath);
+    createDirectory(true, dirPath);
+}
+
 export type FileCreationModeOnExisting = "throw" | "clear" | "return";
 
 export function createFileWithParentDirectories(
@@ -152,20 +161,37 @@ export function isCoqSourceFile(inputPath: string): boolean {
 
 /**
  * @param dirPath resolved absolute directory path.
+ * @param depth determines the recursion depth of subdirectories traverse. `undefined` (the default value) corresponds to the unlimited depth; `0` correpsonds to listing the files located in the `dirPath` only.
  * @returns resolved absolute paths for the files inside `dirPath`.
  */
-export function listCoqSourceFiles(dirPath: string): string[] {
+export function listCoqSourceFiles(
+    dirPath: string,
+    depth: number | undefined = undefined
+): string[] {
+    if (depth !== undefined && depth < 0) {
+        throw Error(`Files listing depth should be non-negative: ${depth}`);
+    }
     let sourceFilePaths: string[] = [];
-    function traverseDirectory(curDirPath: string) {
+
+    function traverseDirectory(
+        curDirPath: string,
+        depthLeft: number | undefined
+    ) {
         fs.readdirSync(curDirPath).forEach((child) => {
             const childPath = path.join(curDirPath, child);
             if (isDirectory(childPath)) {
-                traverseDirectory(childPath);
+                if (depthLeft === undefined || depthLeft > 0) {
+                    traverseDirectory(
+                        childPath,
+                        depthLeft === undefined ? undefined : depthLeft - 1
+                    );
+                }
             } else if (isCoqSourceFile(childPath)) {
                 sourceFilePaths.push(childPath);
             }
         });
     }
-    traverseDirectory(dirPath);
+
+    traverseDirectory(dirPath, depth);
     return sourceFilePaths;
 }

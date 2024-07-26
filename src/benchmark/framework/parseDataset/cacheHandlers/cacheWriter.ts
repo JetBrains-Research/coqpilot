@@ -7,6 +7,7 @@ import { TargetType } from "../../structures/completionGenerationTask";
 import { serializeTheoremData } from "../../structures/theoremData";
 import { serializeCodeElementRange } from "../../structures/utilStructures";
 import {
+    clearDirectory,
     getDatasetDir,
     joinPaths,
     relativizeAbsolutePaths,
@@ -30,9 +31,9 @@ import { DatasetCacheModels } from "../cacheStructures/cacheModels";
 export function rewriteDatasetCache(
     updatedDatasetCache: DatasetCacheHolder,
     datasetCacheDirectoryPath: string,
+    clearWorkspaceCacheDirectories: boolean,
     parentLogger: BenchmarkingLogger
 ): boolean {
-    // TODO: support cache directory cleaning here
     const logger = parentLogger.createChildLoggerWithIdentifier(
         `[Dataset Cache Writer, cache path = ${datasetCacheDirectoryPath}]`
     );
@@ -45,14 +46,20 @@ export function rewriteDatasetCache(
             getDatasetDir(),
             workspacePath
         );
-        const successfullyCachedFiles = [];
+        const workspaceCacheDirectoryPath = joinPaths(
+            datasetCacheDirectoryPath,
+            workspacePathRelativeToDataset
+        );
+        if (clearWorkspaceCacheDirectories) {
+            clearDirectory(workspaceCacheDirectoryPath);
+        }
 
+        const successfullyCachedFiles = [];
         for (const [filePath, cachedFile] of workspaceCache.entries()) {
             const serializedCachedFile =
                 SerializeCacheHolders.serializeCachedCoqFileData(cachedFile);
             const cachedFilePath = joinPaths(
-                datasetCacheDirectoryPath,
-                workspacePathRelativeToDataset,
+                workspaceCacheDirectoryPath,
                 serializedCachedFile.filePathRelativeToWorkspace
             );
             const fileSuccessfullySaved = writeToFile(

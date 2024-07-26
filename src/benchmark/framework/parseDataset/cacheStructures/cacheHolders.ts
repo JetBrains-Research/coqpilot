@@ -32,11 +32,11 @@ export class DatasetCacheHolder {
 
 export class WorkspaceCacheHolder {
     constructor(
+        readonly workspacePath: string,
         private readonly filePathToFileData: Map<
             string,
             CacheHolderData.CachedCoqFileData
-        >,
-        readonly workspacePath: string
+        > = new Map()
     ) {}
 
     entries(): [string, CacheHolderData.CachedCoqFileData][] {

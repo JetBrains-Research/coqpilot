@@ -4,13 +4,13 @@ import { ExperimentRunOptions } from "../../structures/experimentRunOptions";
 import { InputBenchmarkingBundle } from "../../structures/inputBenchmarkingBundle";
 import { DatasetInputTargets } from "../../structures/inputTargets";
 import { AsyncScheduler } from "../../utils/asyncScheduler";
-import { rewriteDatasetCache } from "../cacheHandlers/cacheWriter";
 import { DatasetCacheHolder } from "../cacheStructures/cacheHolders";
 import { logBenchmarkingItems } from "../utils/logBenchmarkingItems";
 
 import { filterRequestedTargetsMissingInCache } from "./filterTargetsMissingInCache";
 import { buildBenchmarkingItems } from "./itemsBuilder/buildBenchmarkingItems";
 import { parseMissingTargetsAndUpdateCache } from "./parseMissingTargets";
+import { saveBuiltCache } from "./saveBuiltCache";
 
 /**
  * This is the core dataset parsing function that creates `BenchmarkingItem`-s.
@@ -57,7 +57,7 @@ export async function parseDatasetForBenchmarkingItems(
             filterRequestedTargetsMissingInCache(
                 workspaceTargets,
                 workspaceRoot,
-                runOptions.datasetCacheDirectoryPath,
+                runOptions,
                 logger
             );
 
@@ -98,11 +98,7 @@ export async function parseDatasetForBenchmarkingItems(
         )
         .debug(`:\n${logBenchmarkingItems(benchmarkingItems)}`);
 
-    rewriteDatasetCache(
-        datasetCache,
-        runOptions.datasetCacheDirectoryPath,
-        logger
-    );
+    saveBuiltCache(datasetCache, runOptions, logger);
 
     return benchmarkingItems;
 }
