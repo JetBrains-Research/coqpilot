@@ -5,6 +5,7 @@ import {
     BenchmarkingLoggerImpl,
     SeverityLevel,
 } from "../logging/benchmarkingLogger";
+import { parseDatasetForBenchmarkingItems } from "../parseDataset/core/parseDatasetForBenchmarkingItems";
 import { DatasetCacheUsageMode } from "../structures/datasetCaching";
 import { ExperimentResults } from "../structures/experimentResults";
 import { ExperimentRunOptions } from "../structures/experimentRunOptions";
@@ -15,8 +16,6 @@ import {
 } from "../structures/inputTargets";
 import { AsyncScheduler } from "../utils/asyncScheduler";
 import { getRootDir, joinPaths, resolveAsAbsolutePath } from "../utils/fsUtils";
-
-import { buildBenchmarkingItems } from "./buildBenchmarkingItems";
 
 namespace CacheDirNames {
     export const defaultDatasetCacheDirectoryPath = "dataset/.parsingCache/";
@@ -72,7 +71,7 @@ export class Experiment {
             "Subprocesses Scheduler"
         );
 
-        const benchmarkingItems = await buildBenchmarkingItems(
+        const benchmarkingItems = await parseDatasetForBenchmarkingItems(
             this.bundles,
             this.mergedRequestedTargets,
             resolvedRunOptions,

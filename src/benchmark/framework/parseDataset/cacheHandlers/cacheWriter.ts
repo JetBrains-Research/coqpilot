@@ -1,23 +1,25 @@
 import {
     stringifyAnyValue,
     stringifyDefinedValue,
-} from "../../../utils/printers";
-import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
-import { TargetType } from "../structures/completionGenerationTask";
-import { serializeTheoremData } from "../structures/theoremData";
-import { serializeCodeElementRange } from "../structures/utilStructures";
+} from "../../../../utils/printers";
+import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
+import { TargetType } from "../../structures/completionGenerationTask";
+import { serializeTheoremData } from "../../structures/theoremData";
+import { serializeCodeElementRange } from "../../structures/utilStructures";
 import {
     getDatasetDir,
     joinPaths,
     relativizeAbsolutePaths,
     writeToFile,
-} from "../utils/fsUtils";
-import { serializeGoal } from "../utils/goalParser";
-import { packIntoMappedObject } from "../utils/mapUtils";
-import { extractTheoremFisrtProofStep } from "../utils/proofTargetExtractor";
-
-import { CacheHolderData, DatasetCacheHolder } from "./cacheHolder";
-import { DatasetCacheModels } from "./cacheModels";
+} from "../../utils/fsUtils";
+import { serializeGoal } from "../../utils/goalParser";
+import { packIntoMappedObject } from "../../utils/mapUtils";
+import { extractTheoremFisrtProofStep } from "../../utils/proofTargetExtractor";
+import {
+    CacheHolderData,
+    DatasetCacheHolder,
+} from "../cacheStructures/cacheHolders";
+import { DatasetCacheModels } from "../cacheStructures/cacheModels";
 
 /**
  * Since saving the cache does not affect the correctness of the system,
@@ -87,7 +89,7 @@ export function rewriteDatasetCache(
     return true;
 }
 
-export namespace SerializeCacheHolders {
+namespace SerializeCacheHolders {
     export function serializeCachedCoqFileData(
         cachedCoqFileData: CacheHolderData.CachedCoqFileData
     ): DatasetCacheModels.CachedCoqFile {

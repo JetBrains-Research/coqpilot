@@ -1,13 +1,18 @@
 import {
     AsOneRecordLogsBuilder,
     BenchmarkingLogger,
-} from "../logging/benchmarkingLogger";
-import { TheoremData } from "../structures/theoremData";
-import { joinPaths, relativizeAbsolutePaths } from "../utils/fsUtils";
-import { mapValues } from "../utils/mapUtils";
-
-import { CacheHolderData, WorkspaceCacheHolder } from "./cacheHolder";
-import { ParsedFileHolder, ParsedFileTarget } from "./parsedWorkspaceHolder";
+} from "../../logging/benchmarkingLogger";
+import { TheoremData } from "../../structures/theoremData";
+import { joinPaths, relativizeAbsolutePaths } from "../../utils/fsUtils";
+import { mapValues } from "../../utils/mapUtils";
+import {
+    CacheHolderData,
+    WorkspaceCacheHolder,
+} from "../cacheStructures/cacheHolders";
+import {
+    ParsedFileHolder,
+    ParsedFileTarget,
+} from "../coqProjectParser/parsedWorkspaceHolder";
 
 export function updateWorkspaceCache(
     workspaceCache: WorkspaceCacheHolder,
@@ -39,7 +44,7 @@ export function updateWorkspaceCache(
     }
 }
 
-export namespace UpdateCacheHolders {
+namespace UpdateCacheHolders {
     export function updateCachedCoqFileData(
         cachedFile: CacheHolderData.CachedCoqFileData,
         parsedFileHolder: ParsedFileHolder,

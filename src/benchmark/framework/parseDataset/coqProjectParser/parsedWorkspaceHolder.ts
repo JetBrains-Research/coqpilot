@@ -1,17 +1,17 @@
-import { ProofGoal } from "../../../coqLsp/coqLspTypes";
+import { ProofGoal } from "../../../../coqLsp/coqLspTypes";
 
-import { TargetType } from "../structures/completionGenerationTask";
+import { TargetType } from "../../structures/completionGenerationTask";
 import {
     ParsedCoqFileData,
     deserializeParsedCoqFile,
-} from "../structures/parsedCoqFileData";
-import { TheoremData } from "../structures/theoremData";
+} from "../../structures/parsedCoqFileData";
+import { TheoremData } from "../../structures/theoremData";
 import {
     CodeElementRange,
     deserializeCodeElementRange,
-} from "../structures/utilStructures";
-import { BuildAndParseCoqProjectBySubprocessSignature } from "../subprocessCalls/buildAndParseCoqProject/callSignature";
-import { deserializeGoal } from "../utils/goalParser";
+} from "../../structures/utilStructures";
+import { BuildAndParseCoqProjectBySubprocessSignature } from "../../subprocessCalls/buildAndParseCoqProject/callSignature";
+import { deserializeGoal } from "../../utils/goalParser";
 
 import Signature = BuildAndParseCoqProjectBySubprocessSignature;
 

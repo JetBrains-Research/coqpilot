@@ -3,11 +3,11 @@ import { JSONSchemaType } from "ajv";
 import {
     SerializedTheorem,
     serializedTheoremSchema,
-} from "../structures/theoremData";
+} from "../../structures/theoremData";
 import {
     SerializedCodeElementRange,
     serializedCodeElementRangeSchema,
-} from "../structures/utilStructures";
+} from "../../structures/utilStructures";
 
 export namespace DatasetCacheModels {
     export interface CachedCoqFile {

@@ -1,5 +1,5 @@
-import { ParsedWorkspaceHolder } from "../../buildAndParseDataset/parsedWorkspaceHolder";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
+import { ParsedWorkspaceHolder } from "../../parseDataset/coqProjectParser/parsedWorkspaceHolder";
 import {
     WorkspaceRoot,
     isNoWorkspaceRoot,

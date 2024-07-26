@@ -4,11 +4,11 @@ import {
     AjvMode,
     buildAjv,
     failedAjvValidatorErrorsAsString,
-} from "../../../utils/ajvErrorsHandling";
-import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
-import { TargetType } from "../structures/completionGenerationTask";
-import { deserializeTheoremData } from "../structures/theoremData";
-import { deserializeCodeElementRange } from "../structures/utilStructures";
+} from "../../../../utils/ajvErrorsHandling";
+import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
+import { TargetType } from "../../structures/completionGenerationTask";
+import { deserializeTheoremData } from "../../structures/theoremData";
+import { deserializeCodeElementRange } from "../../structures/utilStructures";
 import {
     exists,
     getDatasetDir,
@@ -17,12 +17,14 @@ import {
     readFile,
     relativizeAbsolutePaths,
     resolveAsAbsolutePath,
-} from "../utils/fsUtils";
-import { deserializeGoal } from "../utils/goalParser";
-import { packIntoMap } from "../utils/mapUtils";
-
-import { CacheHolderData, WorkspaceCacheHolder } from "./cacheHolder";
-import { DatasetCacheModels } from "./cacheModels";
+} from "../../utils/fsUtils";
+import { deserializeGoal } from "../../utils/goalParser";
+import { packIntoMap } from "../../utils/mapUtils";
+import {
+    CacheHolderData,
+    WorkspaceCacheHolder,
+} from "../cacheStructures/cacheHolders";
+import { DatasetCacheModels } from "../cacheStructures/cacheModels";
 
 export function readRequestedFilesCache(
     requestedFilePaths: string[],
@@ -108,7 +110,7 @@ function readCachedCoqFile(
     }
 }
 
-export namespace BuildCacheHoldersFromModels {
+namespace BuildCacheHoldersFromModels {
     export function buildWorkspaceCacheHolder(
         filePathToReadCachedFile: Map<string, DatasetCacheModels.CachedCoqFile>,
         workspacePath: string
