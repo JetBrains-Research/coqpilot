@@ -62,9 +62,9 @@ async function createCompletionContexts(
             fileUri,
             fileVersion
         );
-        if (!(goal instanceof Error)) {
+        if (goal.ok) {
             completionContexts.push({
-                proofGoal: goal,
+                proofGoal: goal.val,
                 prefixEndPosition: hole.range.start,
                 admitEndPosition: hole.range.end,
             });

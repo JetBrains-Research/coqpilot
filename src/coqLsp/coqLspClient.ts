@@ -1,5 +1,6 @@
 import { Mutex } from "async-mutex";
 import { readFileSync } from "fs";
+import { Err, Ok, Result } from "ts-results";
 import {
     BaseLanguageClient,
     Diagnostic,
@@ -35,7 +36,7 @@ export interface CoqLspClientInterface extends Disposable {
         documentUri: Uri,
         version: number,
         command: string
-    ): Promise<Goal<PpString> | Error>;
+    ): Promise<Result<Goal<PpString>, Error>>;
 
     openTextDocument(uri: Uri, version: number): Promise<DiagnosticMessage>;
 
@@ -89,7 +90,7 @@ export class CoqLspClient implements CoqLspClientInterface {
         documentUri: Uri,
         version: number,
         command?: string
-    ): Promise<Goal<PpString> | Error> {
+    ): Promise<Result<Goal<PpString>, Error>> {
         return await this.mutex.runExclusive(async () => {
             return this.getFirstGoalAtPointUnsafe(
                 position,
@@ -172,7 +173,7 @@ export class CoqLspClient implements CoqLspClientInterface {
         documentUri: Uri,
         version: number,
         command?: string
-    ): Promise<Goal<PpString> | Error> {
+    ): Promise<Result<Goal<PpString>, Error>> {
         let goalRequestParams: GoalRequest = {
             textDocument: VersionedTextDocumentIdentifier.create(
                 documentUri.uri,
@@ -194,10 +195,10 @@ export class CoqLspClient implements CoqLspClientInterface {
         );
         const goal = goals?.goals?.goals?.shift() ?? undefined;
         if (!goal) {
-            return new CoqLspError("no goals at point");
+            return Err(new CoqLspError("no goals at point"));
         }
 
-        return goal;
+        return Ok(goal);
     }
 
     private sleep(ms: number): Promise<ReturnType<typeof setTimeout>> {

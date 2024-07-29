@@ -1,4 +1,5 @@
 import { expect } from "earl";
+import { Result } from "ts-results";
 
 import { Goal, PpString } from "../../coqLsp/coqLspTypes";
 
@@ -10,8 +11,9 @@ suite("Retrieve goals from Coq file", () => {
     async function getGoalsAtPoints(
         points: { line: number; character: number }[],
         resourcePath: string[],
-        projectRootPath?: string[]
-    ): Promise<(Goal<PpString> | Error)[]> {
+        projectRootPath?: string[],
+        command?: string
+    ): Promise<Result<Goal<PpString>, Error>[]> {
         const [filePath, rootDir] = resolveResourcesDir(
             resourcePath,
             projectRootPath
@@ -22,7 +24,12 @@ suite("Retrieve goals from Coq file", () => {
         await client.openTextDocument(fileUri);
         const goals = await Promise.all(
             points.map(async (point) => {
-                return await client.getFirstGoalAtPoint(point, fileUri, 1);
+                return await client.getFirstGoalAtPoint(
+                    point,
+                    fileUri,
+                    1,
+                    command
+                );
             })
         );
         await client.closeTextDocument(fileUri);
@@ -49,7 +56,9 @@ suite("Retrieve goals from Coq file", () => {
         };
 
         expect(goals).toHaveLength(1);
-        expect(unpackGoal(goals[0] as Goal<PpString>)).toEqual(expectedGoal);
+        expect(unpackGoal(goals[0].val as Goal<PpString>)).toEqual(
+            expectedGoal
+        );
     });
 
     test("Check correct goals requests", async () => {
@@ -90,7 +99,7 @@ suite("Retrieve goals from Coq file", () => {
         expect(goals).toHaveLength(5);
         for (const [i, goal] of goals.entries()) {
             expect(goals[i]).not.toBeA(Error);
-            expect(unpackGoal(goal as Goal<PpString>)).toEqual(
+            expect(unpackGoal(goal.val as Goal<PpString>)).toEqual(
                 expectedGoals[i]
             );
         }
@@ -143,7 +152,7 @@ suite("Retrieve goals from Coq file", () => {
         expect(goals).toHaveLength(3);
         for (const [i, goal] of goals.entries()) {
             expect(goals[i]).not.toBeA(Error);
-            expect(unpackGoal(goal as Goal<PpString>)).toEqual(
+            expect(unpackGoal(goal.val as Goal<PpString>)).toEqual(
                 expectedGoals[i]
             );
         }

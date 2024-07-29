@@ -516,9 +516,9 @@ async function resolveProofStepsToCompletionContexts(
             fileUri,
             fileVersion
         );
-        if (!(goal instanceof Error)) {
+        if (goal.ok) {
             completionContexts.push({
-                proofGoal: goal,
+                proofGoal: goal.val,
                 prefixEndPosition: parentedProofStep.proofStep.range.start,
                 admitEndPosition: parentedProofStep.proofStep.range.end,
                 parentTheorem: parentedProofStep.parentTheorem,
