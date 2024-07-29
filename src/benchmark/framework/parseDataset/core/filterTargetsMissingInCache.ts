@@ -71,13 +71,16 @@ function readCacheAndFilterMissingTargets(
     for (const [filePath, fileTargets] of requestedTargets.entries()) {
         asOneRecordLogger.debug(`* file path: ${filePath}`);
         for (const target of fileTargets) {
-            let canBeRestoredFromCache: boolean;
+            let canBeRestoredFromCache: boolean = false;
             if (target instanceof AllTheoremsTarget) {
-                canBeRestoredFromCache = all(
-                    workspaceCache.getAllCachedTheorems(filePath),
-                    (cachedTarget) =>
+                const allCachedTheorems =
+                    workspaceCache.getAllCachedTheorems(filePath);
+                // TODO: design a way to differentiate 2 cases: 0 theorems in file vs empty cache
+                canBeRestoredFromCache =
+                    allCachedTheorems.length > 0 &&
+                    all(allCachedTheorems, (cachedTarget) =>
                         cachedTarget.hasAllCachedGoalsOfType(target.requestType)
-                );
+                    );
                 if (!canBeRestoredFromCache) {
                     missingTargets.addFileTargets(
                         filePath,
@@ -121,7 +124,7 @@ function readCacheAndFilterMissingTargets(
                 );
             }
             asOneRecordLogger.debug(
-                `${target.toString("\t", canBeRestoredFromCache ? "+ (cached)" : "- <missing>")}`
+                `${target.toString("  ", canBeRestoredFromCache ? "+ (cached)" : "- <missing>")}`
             );
         }
     }
