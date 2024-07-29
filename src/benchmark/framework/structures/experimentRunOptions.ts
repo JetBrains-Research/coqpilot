@@ -32,3 +32,16 @@ export interface ExperimentRunOptions {
     enableSubprocessesSchedulingDebugLogs: boolean;
     enableModelsSchedulingDebugLogs: boolean;
 }
+
+export namespace ExperimentRunOptions {
+    export interface ResolveOnStartup {
+        loggerSeverity: SeverityLevel;
+        logsFilePath: string | undefined;
+
+        datasetCacheUsage: DatasetCacheUsageMode;
+        datasetCacheDirectoryPath: string;
+    }
+
+    export type AfterStartupResolution = Partial<ExperimentRunOptions> &
+        ResolveOnStartup;
+}

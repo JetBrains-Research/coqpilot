@@ -39,17 +39,17 @@ export class Experiment {
     ): Promise<ExperimentResults> {
         const totalTime = new TimeMark();
 
-        const inputOptionsWithResolvedLoggerOptions =
-            this.resolveLoggerOptions(inputRunOptions);
+        const optionsAfterStartupResolution =
+            this.resolveOnStartupOptions(inputRunOptions);
         const logger: BenchmarkingLogger = new BenchmarkingLoggerImpl(
-            inputOptionsWithResolvedLoggerOptions.loggerSeverity,
-            inputOptionsWithResolvedLoggerOptions.logsFilePath === undefined
+            optionsAfterStartupResolution.loggerSeverity,
+            optionsAfterStartupResolution.logsFilePath === undefined
                 ? undefined
                 : {
                       resolvedFilePath: resolveAsAbsolutePath(
                           joinPaths(
                               getRootDir(),
-                              inputOptionsWithResolvedLoggerOptions.logsFilePath
+                              optionsAfterStartupResolution.logsFilePath
                           )
                       ),
                       clearOnStart: true,
@@ -62,7 +62,7 @@ export class Experiment {
             logger
         );
         const resolvedRunOptions = this.resolveAllExperimentRunOptions(
-            inputOptionsWithResolvedLoggerOptions
+            optionsAfterStartupResolution
         );
 
         const subprocessesScheduler = new AsyncScheduler(
@@ -94,65 +94,62 @@ export class Experiment {
         );
     }
 
-    private resolveLoggerOptions(
+    private resolveOnStartupOptions(
         inputOptions: Partial<ExperimentRunOptions>
-    ): Partial<ExperimentRunOptions> & {
-        loggerSeverity: SeverityLevel;
-        logsFilePath: string | undefined;
-    } {
+    ): ExperimentRunOptions.AfterStartupResolution {
         return {
             ...inputOptions,
             loggerSeverity: inputOptions.loggerSeverity ?? SeverityLevel.INFO,
             logsFilePath: inputOptions.logsFilePath,
+
+            datasetCacheUsage:
+                inputOptions.datasetCacheUsage ??
+                DatasetCacheUsageMode.NO_CACHE_USAGE,
+            datasetCacheDirectoryPath:
+                inputOptions.datasetCacheDirectoryPath ??
+                CacheDirNames.defaultDatasetCacheDirectoryPath,
         };
     }
 
     private resolveAllExperimentRunOptions(
-        inputOptionsWithResolvedLoggerOptions: Partial<ExperimentRunOptions> & {
-            loggerSeverity: SeverityLevel;
-            logsFilePath: string | undefined;
-        }
+        optionsAfterStartupResolution: ExperimentRunOptions.AfterStartupResolution
     ): ExperimentRunOptions {
         if (this.mergedRequestedTargets === undefined) {
             throw Error(
-                "`inputTargets` should be built before input options resolution"
+                "`mergedRequestedTargets` should be built before input options resolution"
             );
         }
         return {
-            loggerSeverity:
-                inputOptionsWithResolvedLoggerOptions.loggerSeverity,
-            logsFilePath: inputOptionsWithResolvedLoggerOptions.logsFilePath,
+            loggerSeverity: optionsAfterStartupResolution.loggerSeverity,
+            logsFilePath: optionsAfterStartupResolution.logsFilePath,
 
-            datasetCacheUsage:
-                inputOptionsWithResolvedLoggerOptions.datasetCacheUsage ??
-                DatasetCacheUsageMode.NO_CACHE_USAGE,
+            datasetCacheUsage: optionsAfterStartupResolution.datasetCacheUsage,
             datasetCacheDirectoryPath:
-                inputOptionsWithResolvedLoggerOptions.datasetCacheDirectoryPath ??
-                CacheDirNames.defaultDatasetCacheDirectoryPath,
+                optionsAfterStartupResolution.datasetCacheDirectoryPath,
 
             maxActiveSubprocessesNumber: Math.max(
-                inputOptionsWithResolvedLoggerOptions.maxActiveSubprocessesNumber ??
+                optionsAfterStartupResolution.maxActiveSubprocessesNumber ??
                     this.mergedRequestedTargets.workspacesNumber(),
                 1
             ),
             maxParallelGenerationRequestsToModel:
-                inputOptionsWithResolvedLoggerOptions.maxParallelGenerationRequestsToModel ??
+                optionsAfterStartupResolution.maxParallelGenerationRequestsToModel ??
                 1,
 
             buildAndParseCoqProjectSubprocessTimeoutMillis:
-                inputOptionsWithResolvedLoggerOptions.buildAndParseCoqProjectSubprocessTimeoutMillis,
+                optionsAfterStartupResolution.buildAndParseCoqProjectSubprocessTimeoutMillis,
             checkProofsSubprocessTimeoutMillis:
-                inputOptionsWithResolvedLoggerOptions.checkProofsSubprocessTimeoutMillis,
+                optionsAfterStartupResolution.checkProofsSubprocessTimeoutMillis,
 
             enableSubprocessLifetimeDebugLogs:
-                inputOptionsWithResolvedLoggerOptions.enableSubprocessLifetimeDebugLogs ??
+                optionsAfterStartupResolution.enableSubprocessLifetimeDebugLogs ??
                 false,
 
             enableSubprocessesSchedulingDebugLogs:
-                inputOptionsWithResolvedLoggerOptions.enableSubprocessesSchedulingDebugLogs ??
+                optionsAfterStartupResolution.enableSubprocessesSchedulingDebugLogs ??
                 false,
             enableModelsSchedulingDebugLogs:
-                inputOptionsWithResolvedLoggerOptions.enableModelsSchedulingDebugLogs ??
+                optionsAfterStartupResolution.enableModelsSchedulingDebugLogs ??
                 false,
         };
     }
