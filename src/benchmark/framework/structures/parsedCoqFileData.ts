@@ -1,6 +1,9 @@
 import { JSONSchemaType } from "ajv";
 
+import { SourceFileEnvironment } from "../../../core/completionGenerationContext";
+
 import { Theorem } from "../../../coqParser/parsedTypes";
+import { directoryName } from "../utils/fsUtils";
 import { fromMappedObject, mapValues, toMappedObject } from "../utils/mapUtils";
 
 import {
@@ -31,6 +34,17 @@ export class ParsedCoqFileData {
                     theoremDataB.fileTheoremsIndex
             )
             .map((theoremData) => theoremData.sourceTheorem);
+    }
+
+    constructSourceFileEnvironment(): SourceFileEnvironment {
+        return {
+            fileTheorems: this.getOrderedFileTheorems().filter(
+                (theorem) => theorem.proof && !theorem.proof.is_incomplete
+            ),
+            fileLines: this.fileLines,
+            fileVersion: this.fileVersion,
+            dirPath: directoryName(this.filePath),
+        };
     }
 }
 

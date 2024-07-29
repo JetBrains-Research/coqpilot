@@ -1,5 +1,3 @@
-import * as path from "path";
-
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 
 import {
@@ -9,8 +7,10 @@ import {
 
 import { InputBenchmarkingModelParams } from "../../../../benchmark/framework/experiment/inputBenchmarkingModelParams";
 import { BenchmarkingModelParams } from "../../../../benchmark/framework/structures/benchmarkingModelParams";
-import { SerializedParsedCoqFile } from "../../../../benchmark/framework/structures/parsedCoqFileData";
-import { deserializeTheorem } from "../../../../benchmark/framework/structures/theoremData";
+import {
+    SerializedParsedCoqFile,
+    deserializeParsedCoqFile,
+} from "../../../../benchmark/framework/structures/parsedCoqFileData";
 import { SerializedCodeElementRange } from "../../../../benchmark/framework/structures/utilStructures";
 import { deserializeGoal } from "../../../../benchmark/framework/utils/goalParser";
 
@@ -39,7 +39,7 @@ export namespace SingleTaskRunnerStructures {
         sourceTheoremName: string;
     }
 
-    // TODO: create a separate type (with relative file path)
+    // TODO: use new cache structures
     export type ParsedSourceFile = SerializedParsedCoqFile;
 
     export function buildCompletionContext(
@@ -55,19 +55,8 @@ export namespace SingleTaskRunnerStructures {
     export function buildSourceFileEnvironment(
         parsedSourceFile: SerializedParsedCoqFile
     ): SourceFileEnvironment {
-        return {
-            fileTheorems: parsedSourceFile.allFileTheorems
-                .filter(
-                    (serializedTheorem) =>
-                        serializedTheorem.proof &&
-                        !serializedTheorem.proof.is_incomplete
-                )
-                .map((serializedTheorem) =>
-                    deserializeTheorem(serializedTheorem)
-                ),
-            fileLines: parsedSourceFile.fileLines,
-            fileVersion: parsedSourceFile.fileVersion,
-            dirPath: path.dirname(parsedSourceFile.filePath),
-        };
+        return deserializeParsedCoqFile(
+            parsedSourceFile
+        ).constructSourceFileEnvironment();
     }
 }

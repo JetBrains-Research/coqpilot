@@ -1,4 +1,5 @@
 import { ModelParams } from "../../../llm/llmServices/modelParams";
+import { resolveOrThrow } from "../../../llm/llmServices/utils/resolveOrThrow";
 
 import {
     BenchmarkingLogger,
@@ -18,7 +19,6 @@ import {
 } from "../../../benchmark/framework/utils/llmServicesUtils";
 import { resolveTheoremsRanker } from "../../../benchmark/framework/utils/resolveTheoremsRanker";
 import { getRootDir } from "../../commonTestFunctions/pathsResolver";
-import { resolveOrThrow } from "../../commonTestFunctions/resolveOrThrow";
 
 import { SingleTaskRunnerStructures } from "./benchmarking/benchmarkingTask";
 import { SingleTaskRunner } from "./benchmarking/executeSingleBenchmarkingTask";
@@ -31,7 +31,7 @@ const runnerOptionsPath = `${exampleInputDirPath}/runnerOptions.json`;
 const benchmarkingTaskPath = `${exampleInputDirPath}/inputTask.json`;
 const cachedSourceFileDataPath = `${exampleInputDirPath}/cached_auto_benchmark.json`;
 
-suite("[Single Task Benchmark]", () => {
+suite("[Single Task Benchmark: Run Benchmark]", () => {
     test("Execute single task benchmarking", async () => {
         const runnerOptions =
             parseFromFile<SingleTaskRunnerOptions.RunnerOptions>(

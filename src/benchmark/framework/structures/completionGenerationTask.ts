@@ -6,7 +6,7 @@ import {
 } from "../../../core/completionGenerationContext";
 
 import { EqualTo, HashUtils } from "../utils/equalitySet";
-import { directoryName, getDatasetDir } from "../utils/fsUtils";
+import { getDatasetDir } from "../utils/fsUtils";
 
 import { ParsedCoqFileData } from "./parsedCoqFileData";
 import { TheoremData } from "./theoremData";
@@ -36,24 +36,7 @@ export class CompletionGenerationTask
     }
 
     getSourceFileEnvironment(): SourceFileEnvironment {
-        return CompletionGenerationTask.constructSourceFileEnvironment(
-            this.parsedSourceFileData
-        );
-    }
-
-    private static constructSourceFileEnvironment(
-        parsedFileData: ParsedCoqFileData
-    ): SourceFileEnvironment {
-        return {
-            fileTheorems: parsedFileData
-                .getOrderedFileTheorems()
-                .filter(
-                    (theorem) => theorem.proof && !theorem.proof.is_incomplete
-                ),
-            fileLines: parsedFileData.fileLines,
-            fileVersion: parsedFileData.fileVersion,
-            dirPath: directoryName(parsedFileData.filePath),
-        };
+        return this.parsedSourceFileData.constructSourceFileEnvironment();
     }
 
     equalTo(other: CompletionGenerationTask): boolean {
