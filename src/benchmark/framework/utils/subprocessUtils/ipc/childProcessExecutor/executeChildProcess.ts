@@ -3,6 +3,7 @@ import * as child from "child_process";
 import ipc from "node-ipc";
 
 import {
+    millisToString,
     time,
     timeToMillis,
 } from "../../../../../../llm/llmServices/utils/time";
@@ -83,7 +84,7 @@ export async function executeProcessAsFunction<
                     `- commandToExecute: "${[commandToExecute.command, ...commandToExecute.args].join(" ")}"`,
                     `- args: ${stringifyAnyValue(args)}`,
                     `- workindDirectory: ${options.workingDirectory}`,
-                    `- timeout: ${options.timeoutMillis} ms`,
+                    `- timeout: ${options.timeoutMillis === undefined ? millisToString(defaultChildProcessTimeoutMillis) : millisToString(options.timeoutMillis)}`,
                     "]",
                 ].join("\n")
             );

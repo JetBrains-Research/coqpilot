@@ -67,7 +67,7 @@ export async function parseDatasetForBenchmarkingItems(
             );
         } else {
             logger.debug(
-                `Missing targets to parse from sources:\n${missingTargets.toString("\t")}`
+                `Missing targets to parse from sources:\n${missingTargets.toString("  ")}`
             );
             await parseMissingTargetsAndUpdateCache(
                 missingTargets,

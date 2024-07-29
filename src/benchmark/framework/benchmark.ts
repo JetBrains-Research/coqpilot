@@ -173,7 +173,7 @@ namespace ModelsSchedulers {
                         new AsyncScheduler(
                             experimentRunOptions.maxParallelGenerationRequestsToModel,
                             experimentRunOptions.enableModelsSchedulingDebugLogs,
-                            `Models Scheduler for: ${getShortName(sameModelItems[0].params.llmServiceIdentifier)}, "${modelName}"`
+                            `Models Scheduler for: ${getShortName(sameModelItems[0].params.llmServiceIdentifier)}${modelName === "" ? "" : `, "${modelName}"`}`
                         )
                 );
             }

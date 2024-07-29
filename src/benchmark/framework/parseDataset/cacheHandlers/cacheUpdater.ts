@@ -24,7 +24,9 @@ export function updateWorkspaceCache(
 
     const cachedFile = workspaceCache.getCachedFile(filePath);
     if (cachedFile === undefined) {
-        cachedUpdaterLogger.debug(`Cache ${filePath}:`);
+        cachedUpdaterLogger.debug(
+            `Update in-memory cache with ${filePath} parsed targets:`
+        );
         workspaceCache.addCachedFile(
             filePath,
             UpdateCacheHolders.buildCachedCoqFileData(
@@ -153,7 +155,7 @@ namespace UpdateCacheHolders {
         );
         if (cachedTargetToUpdate === undefined) {
             cachedFileUpdateLogger.debug(
-                `** cached new target with goal: at ${[parsedTarget.positionRange]}`
+                `** cached new target with goal: ${[parsedTarget.positionRange]}`
             );
             cachedTargets.push(
                 new CacheHolderData.CachedTargetData(

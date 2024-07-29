@@ -8,7 +8,7 @@ export function logBenchmarkingItems(
     const benchmarkingItemsLogs = [];
     for (let i = 0; i < benchmarkingItems.length; i++) {
         benchmarkingItemsLogs.push(
-            `benchmarking item ${i}:\n${logBenchmarkingItem(benchmarkingItems[i])}`
+            `Benchmarking item ${i}:\n${logBenchmarkingItem(benchmarkingItems[i])}`
         );
     }
     return benchmarkingItemsLogs.join("\n---\n");

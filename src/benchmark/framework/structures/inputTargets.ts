@@ -105,7 +105,7 @@ export class DatasetInputTargets {
         const elements = [];
         for (const [workspacePath, targets] of this.workspacePathToTargets) {
             elements.push(
-                `* workspace: ${workspacePath}\n${targets.toString("\t")}`
+                `* workspace: ${workspacePath}\n${targets.toString("  ")}`
             );
         }
         return elements.join("\n");
@@ -214,7 +214,7 @@ export class WorkspaceInputTargets {
         for (const [filePath, targets] of this.filePathToTargets) {
             const targetsString = targets
                 .elements()
-                .map((target) => target.toString("\t\t", "-"))
+                .map((target) => target.toString("    ", "-"))
                 .join("\n");
             elements.push(`${linePrefix}- file: ${filePath}\n${targetsString}`);
         }

@@ -12,6 +12,7 @@ import {
     TheoremData,
     serializeTheoremData,
 } from "../../../../../benchmark/framework/structures/theoremData";
+import { deserializeCodeElementPosition } from "../../../../../benchmark/framework/structures/utilStructures";
 import { BuildAndParseCoqProjectBySubprocessSignature } from "../../../../../benchmark/framework/subprocessCalls/buildAndParseCoqProject/callSignature";
 import { serializeGoal } from "../../../../../benchmark/framework/utils/goalParser";
 import {
@@ -97,7 +98,7 @@ async function openAndParseSourceFile(
         filePath: filePath,
     };
     logger.debug(
-        `Successfully parsed "${filePath}": found ${serializedParsedFile.serializedTheoremsByNames.length} theorems, read ${serializedParsedFile.fileLines.length} lines`
+        `Successfully parsed "${filePath}": found ${Object.keys(serializedParsedFile.serializedTheoremsByNames).length} theorem(s), read ${serializedParsedFile.fileLines.length} lines`
     );
     return serializedParsedFile;
 }
@@ -200,15 +201,16 @@ async function buildParsedFileTarget(
         Uri.fromPath(serializedParsedFile.filePath),
         serializedParsedFile.fileVersion
     );
+    const startPosition = deserializeCodeElementPosition(proofStep.range.start);
     if (goal instanceof Error) {
         const stack = goal.stack === undefined ? "" : `\n${goal.stack}`;
         logger.error(
-            `Failed to retrieve target goal at point: "${goal.message}" at ${proofStep.range.start}, "${serializedParsedFile.filePath}"${stack}`
+            `Failed to retrieve target goal at point: "${goal.message}" at ${startPosition}, "${serializedParsedFile.filePath}"${stack}`
         );
         throw goal;
     } else {
         logger.debug(
-            `Successfully retrieved target goal at point: "${goal.ty}" at ${proofStep.range.start}, "${serializedParsedFile.filePath}"`
+            `Successfully retrieved target goal at point: "${goal.ty}" at ${startPosition}, "${serializedParsedFile.filePath}"`
         );
     }
     return {
