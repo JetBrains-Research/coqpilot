@@ -8,7 +8,7 @@ export enum DatasetCacheUsageMode {
     /**
      * Cache directory is fully ignored: neither cache will be used, nor updated.
      */
-    NO_CACHE_USAGE,
+    NO_CACHE_USAGE = "NO_CACHE_USAGE",
 
     /**
      * Cache will be treated as read-only one.
@@ -16,7 +16,7 @@ export enum DatasetCacheUsageMode {
      * For the requested targets present in the cache,
      * no parsing actions will be made: cached data will be used instead.
      */
-    READ_CACHE_ONLY,
+    READ_CACHE_ONLY = "READ_CACHE_ONLY",
 
     /**
      * Cache might be both read and extended.
@@ -30,7 +30,7 @@ export enum DatasetCacheUsageMode {
      * that can cause undefined results. However, this mode is completely safe
      * when the source project stays unchanged.
      */
-    EXTEND_CACHE_WITH_MISSING_TARGETS,
+    EXTEND_CACHE_WITH_MISSING_TARGETS = "EXTEND_CACHE_WITH_MISSING_TARGETS",
 
     /**
      * The requested projects cache will be fully cleared
@@ -41,7 +41,7 @@ export enum DatasetCacheUsageMode {
      * - the requested projects cache will be cleared;
      * - the requested targets parsing results will be cached.
      */
-    REBUILD_CACHE_FOR_REQUESTED_TARGETS,
+    REBUILD_CACHE_FOR_REQUESTED_TARGETS = "REBUILD_CACHE_FOR_REQUESTED_TARGETS",
 
     /**
      * The requested projects cache will be fully cleared
@@ -51,7 +51,7 @@ export enum DatasetCacheUsageMode {
      * but instead of parsing only the requested targets,
      * it parses and caches **all targets** found in the requested files.
      */
-    REBUILD_COMPLETE_CACHE_FOR_REQUESTED_FILES,
+    REBUILD_COMPLETE_CACHE_FOR_REQUESTED_FILES = "REBUILD_COMPLETE_CACHE_FOR_REQUESTED_FILES",
 
     /**
      * The requested projects cache will be fully cleared
@@ -61,5 +61,5 @@ export enum DatasetCacheUsageMode {
      * but instead of parsing only the requested targets,
      * it parses and caches **all source Coq files** of the requested projects.
      */
-    REBUILD_COMPLETE_CACHE_FOR_REQUESTED_PROJECTS,
+    REBUILD_COMPLETE_CACHE_FOR_REQUESTED_PROJECTS = "REBUILD_COMPLETE_CACHE_FOR_REQUESTED_PROJECTS",
 }
