@@ -5,7 +5,7 @@
   "icon": "etc/img/logo.ico",
   "repository": {
     "type": "git",
-    "url": "https://github.com/K-dizzled/coqpilot"
+    "url": "https://github.com/JetBrains-Research/coqpilot"
   },
   "publisher": "JetBrains-Research",
   "version": "2.2.5",
