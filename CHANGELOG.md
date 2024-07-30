@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.3.0
+
+### Public changes
+
+- Allow manually modifying the location of the `coq-lsp` executable in the settings. This is useful when the `coq-lsp` executable is not in the PATH. Alongside, correctly handle the case when the `coq-lsp` executable is not found.
+
 ## 2.2.5
 
 - Contribute the new benchmarking report for 300 theorems. 

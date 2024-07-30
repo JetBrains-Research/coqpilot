@@ -125,6 +125,7 @@ This extension contributes the following settings:
 
 * `coqpilot.contextTheoremsRankerType` : The type of theorems ranker that will be used to select theorems for proof generation (when context is smaller than taking all of them). Either randomly, by Jacard index (similarity metric) or by distance from the theorem, with the currently observed admit. 
 * `coqpilot.loggingVerbosity` : Verbosity of the logs. Could be `info`, `debug`.
+* `coqpilot.coqLspServerPath` : Path to the coq-lsp server. By default, it is set to `coq-lsp`.
 
 * `coqpilot.predefinedProofsModelsParameters`, `coqpilot.openAiModelsParameters`, `coqpilot.grazieModelsParameters` and `coqpilot.lmStudioModelsParameters`:
 
