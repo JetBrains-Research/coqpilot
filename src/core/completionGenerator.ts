@@ -158,7 +158,7 @@ export async function generateCompletion(
             );
             return new FailureGenerationResult(
                 FailureGenerationStatus.ERROR_OCCURRED,
-                `please report this crash by opening an issue in the Coqpilot GitHub repository: object was thrown as error, ${stringifyAnyValue(e)}`
+                `please report this crash by opening an issue in the CoqPilot GitHub repository: object was thrown as error, ${stringifyAnyValue(e)}`
             );
         } else {
             console.error(

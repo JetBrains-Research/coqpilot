@@ -49,6 +49,7 @@ import { SettingsValidationError } from "./settingsValidationError";
 import { cleanAuxFiles, hideAuxFiles } from "./tmpFilesCleanup";
 
 export const pluginId = "coqpilot";
+export const pluginName = "CoqPilot";
 
 export class CoqPilot {
     private readonly globalExtensionState: GlobalExtensionState;
@@ -104,7 +105,7 @@ export class CoqPilot {
         await window.withProgress(
             {
                 location: ProgressLocation.Window,
-                title: `${pluginId}: In progress`,
+                title: `${pluginName}: In progress`,
             },
             async () => {
                 try {

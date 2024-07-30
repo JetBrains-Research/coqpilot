@@ -37,15 +37,15 @@
     "commands": [
       {
         "command": "coqpilot.perform_completion_under_cursor",
-        "title": "Coqpilot: Try to generate proof for the goal under the cursor"
+        "title": "CoqPilot: Try to generate proof for the goal under the cursor"
       },
       {
         "command": "coqpilot.perform_completion_for_all_admits",
-        "title": "Coqpilot: Try to prove all holes (admitted goals) in the current file"
+        "title": "CoqPilot: Try to prove all holes (admitted goals) in the current file"
       },
       {
         "command": "coqpilot.perform_completion_in_selection",
-        "title": "Coqpilot: Try to prove holes (admitted goals) in the selection"
+        "title": "CoqPilot: Try to prove holes (admitted goals) in the selection"
       }
     ],
     "menus": {
@@ -107,7 +107,7 @@
                 },
                 "modelName": {
                   "type": "string",
-                  "markdownDescription": "Model to use from the OpenAI platform. List of models known to Coqpilot: \n * gpt-4o \n * gpt-4o-2024-05-13 \n * gpt-4-turbo \n * gpt-4-turbo-2024-04-09 \n * gpt-4-turbo-preview \n * gpt-4-0125-preview \n * gpt-4-1106-preview \n * gpt-4-vision-preview \n * gpt-4-1106-vision-preview \n * gpt-4 \n * gpt-4-0314 \n * gpt-4-0613 \n * gpt-4-32k \n * gpt-4-32k-0314 \n * gpt-4-32k-0613 \n * gpt-3.5-turbo-0125 \n * gpt-3.5-turbo \n * gpt-3.5-turbo-1106 \n * gpt-3.5-turbo-instruct \n * gpt-3.5-turbo-16k \n * gpt-3.5-turbo-16k-0613 \n * gpt-3.5-turbo-0613 \n * gpt-3.5-turbo-0301",
+                  "markdownDescription": "Model to use from the OpenAI platform. List of models known to CoqPilot: \n * gpt-4o \n * gpt-4o-2024-05-13 \n * gpt-4-turbo \n * gpt-4-turbo-2024-04-09 \n * gpt-4-turbo-preview \n * gpt-4-0125-preview \n * gpt-4-1106-preview \n * gpt-4-vision-preview \n * gpt-4-1106-vision-preview \n * gpt-4 \n * gpt-4-0314 \n * gpt-4-0613 \n * gpt-4-32k \n * gpt-4-32k-0314 \n * gpt-4-32k-0613 \n * gpt-3.5-turbo-0125 \n * gpt-3.5-turbo \n * gpt-3.5-turbo-1106 \n * gpt-3.5-turbo-instruct \n * gpt-3.5-turbo-16k \n * gpt-3.5-turbo-16k-0613 \n * gpt-3.5-turbo-0613 \n * gpt-3.5-turbo-0301",
                   "default": "gpt-3.5-turbo-0301"
                 },
                 "temperature": {
@@ -132,12 +132,12 @@
                 },
                 "maxTokensToGenerate": {
                   "type": "number",
-                  "description": "Number of tokens that the model is allowed to generate as a response message (i.e. message with proof). For known models, Coqpilot provides a recommended default value, but it can be customized for more advanced proof generation. The default value is the maximum allowed value for the model if it takes no more than half of `tokensLimit`, otherwise the minimum of half of `tokensLimit` and 4096.",
+                  "description": "Number of tokens that the model is allowed to generate as a response message (i.e. message with proof). For known models, CoqPilot provides a recommended default value, but it can be customized for more advanced proof generation. The default value is the maximum allowed value for the model if it takes no more than half of `tokensLimit`, otherwise the minimum of half of `tokensLimit` and 4096.",
                   "default": 2048
                 },
                 "tokensLimit": {
                   "type": "number",
-                  "description": "Total length of input and generated tokens, it is determined by the model. For known models, Coqpilot provides a recommended default value (the maximum model context length), but it can be customized for more advanced proof generation.",
+                  "description": "Total length of input and generated tokens, it is determined by the model. For known models, CoqPilot provides a recommended default value (the maximum model context length), but it can be customized for more advanced proof generation.",
                   "default": 4096
                 },
                 "multiroundProfile": {
