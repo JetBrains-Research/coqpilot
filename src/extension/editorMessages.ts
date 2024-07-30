@@ -1,10 +1,14 @@
 import { DefinedError } from "ajv";
-import { window } from "vscode";
+import { commands, window } from "vscode";
 
 import { Time } from "../llm/llmServices/utils/time";
 
 import { ajvErrorsAsString } from "../utils/ajvErrorsHandling";
 import { stringifyAnyValue } from "../utils/printers";
+
+import { pluginId } from "./coqPilot";
+
+export const openSettingsItem = "Open settings";
 
 export namespace EditorMessages {
     export const timeoutExceeded =
@@ -15,6 +19,9 @@ export namespace EditorMessages {
 
     export const errorOccurred = (errorMessage: string) =>
         `CoqPilot got an error: ${errorMessage}. Please make sure the environment is properly set and the plugin is configured correctly. For more information, see the README: https://github.com/JetBrains-Research/coqpilot/blob/main/README.md. If the error appears to be a bug, please report it by opening an issue in the CoqPilot GitHub repository.`;
+
+    export const coqLspStartupFailure = (pathToServer: string) =>
+        `CoqPilot failed to start the Coq LSP server at path "${pathToServer}". Please make sure the path is correct and the server is properly installed. If your installation is not in a standard location, please set the path to the server in the settings.`;
 
     export const serviceBecameUnavailable = (
         serviceName: string,
@@ -121,4 +128,19 @@ function formatTimeToUIString(time: Time): string {
 function formatTimeItem(value: number, name: string): string {
     const suffix = value === 1 ? "" : "s";
     return `${value} ${name}${suffix}`;
+}
+
+export function showMessageToUserWithSettingsHint(
+    message: string,
+    severity: UIMessageSeverity,
+    settingToOpenName: string = pluginId
+) {
+    showMessageToUser(message, severity, openSettingsItem).then((value) => {
+        if (value === openSettingsItem) {
+            commands.executeCommand(
+                "workbench.action.openSettings",
+                settingToOpenName
+            );
+        }
+    });
 }

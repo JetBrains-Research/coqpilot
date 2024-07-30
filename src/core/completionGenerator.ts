@@ -242,7 +242,7 @@ async function checkGeneratedProofs(
 
     if (workspaceRootPath) {
         processEnvironment.coqProofChecker.dispose();
-        const client = createCoqLspClient(workspaceRootPath);
+        const client = await createCoqLspClient(workspaceRootPath);
         const coqProofChecker = new CoqProofChecker(client);
         processEnvironment.coqProofChecker = coqProofChecker;
     }

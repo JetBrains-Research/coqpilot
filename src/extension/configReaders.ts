@@ -26,12 +26,23 @@ import { AjvMode, buildAjv } from "../utils/ajvErrorsHandling";
 import { stringifyAnyValue, stringifyDefinedValue } from "../utils/printers";
 
 import { pluginId } from "./coqPilot";
-import { EditorMessages } from "./editorMessages";
+import {
+    EditorMessages,
+    showMessageToUserWithSettingsHint,
+} from "./editorMessages";
 import {
     SettingsValidationError,
-    showMessageToUserWithSettingsHint,
     toSettingName,
 } from "./settingsValidationError";
+
+export function parseCoqLspServerPath(): string {
+    const workspaceConfig = workspace.getConfiguration(pluginId);
+    const coqLspServerPath = workspaceConfig.get("coqLspServerPath");
+    if (typeof coqLspServerPath !== "string") {
+        throw new Error("coqLspServerPath is not properly configured");
+    }
+    return coqLspServerPath;
+}
 
 export function buildTheoremsRankerFromConfig(): ContextTheoremsRanker {
     const workspaceConfig = workspace.getConfiguration(pluginId);

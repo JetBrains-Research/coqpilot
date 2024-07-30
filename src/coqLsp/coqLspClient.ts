@@ -27,7 +27,7 @@ import { CoqLspClientConfig, CoqLspServerConfig } from "./coqLspConfig";
 import { CoqLspConnector } from "./coqLspConnector";
 import { Goal, GoalAnswer, GoalRequest, PpString } from "./coqLspTypes";
 import { FlecheDocument, FlecheDocumentParams } from "./coqLspTypes";
-import { CoqLspError } from "./coqLspTypes";
+import { CoqLspError, CoqLspStartupError } from "./coqLspTypes";
 
 export interface CoqLspClientInterface extends Disposable {
     getFirstGoalAtPoint(
@@ -70,12 +70,22 @@ export class CoqLspClient implements CoqLspClientInterface {
     private subscriptions: Disposable[] = [];
     private mutex = new Mutex();
 
-    constructor(
+    private constructor(coqLspConnector: CoqLspConnector) {
+        this.client = coqLspConnector;
+    }
+
+    static async create(
         serverConfig: CoqLspServerConfig,
         clientConfig: CoqLspClientConfig
-    ) {
-        this.client = new CoqLspConnector(serverConfig, clientConfig);
-        this.client.start();
+    ): Promise<CoqLspClient> {
+        const connector = new CoqLspConnector(serverConfig, clientConfig);
+        await connector.start().catch((error) => {
+            throw new CoqLspStartupError(
+                `failed to start coq-lsp with Error: ${error.message}`,
+                clientConfig.coq_lsp_server_path
+            );
+        });
+        return new CoqLspClient(connector);
     }
 
     async getDocumentSymbols(uri: Uri): Promise<any> {
