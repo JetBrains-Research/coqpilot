@@ -2,7 +2,7 @@ export function stringifyAnyValue(
     value: any,
     space: number | undefined = undefined
 ): string {
-    const valueAsString = JSON.stringify(value, null, space);
+    const valueAsString = toJsonString(value, space);
     if (typeof value === "number") {
         return valueAsString;
     }
@@ -17,4 +17,11 @@ export function stringifyDefinedValue(
         throw Error(`value to stringify is not defined`);
     }
     return stringifyAnyValue(value, space);
+}
+
+export function toJsonString(
+    object: any,
+    space: number | undefined = undefined
+): string {
+    return JSON.stringify(object, null, space);
 }
