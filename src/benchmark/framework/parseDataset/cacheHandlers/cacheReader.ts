@@ -25,6 +25,7 @@ import {
     WorkspaceCacheHolder,
 } from "../cacheStructures/cacheHolders";
 import { DatasetCacheModels } from "../cacheStructures/cacheModels";
+import { joinJsonExtension } from "../utils/fileJsonExtension";
 
 export function readRequestedFilesCache(
     requestedFilePaths: string[],
@@ -52,7 +53,7 @@ export function readRequestedFilesCache(
                     );
                     const resolvedCachedFilePath = joinPaths(
                         cacheDir,
-                        filePathRelativeToDataset
+                        joinJsonExtension(filePathRelativeToDataset)
                     );
                     if (
                         !(

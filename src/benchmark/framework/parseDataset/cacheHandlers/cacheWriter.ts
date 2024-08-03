@@ -21,6 +21,7 @@ import {
     DatasetCacheHolder,
 } from "../cacheStructures/cacheHolders";
 import { DatasetCacheModels } from "../cacheStructures/cacheModels";
+import { joinJsonExtension } from "../utils/fileJsonExtension";
 
 /**
  * Since saving the cache does not affect the correctness of the system,
@@ -60,7 +61,9 @@ export function rewriteDatasetCache(
                 SerializeCacheHolders.serializeCachedCoqFileData(cachedFile);
             const cachedFilePath = joinPaths(
                 workspaceCacheDirectoryPath,
-                serializedCachedFile.filePathRelativeToWorkspace
+                joinJsonExtension(
+                    serializedCachedFile.filePathRelativeToWorkspace
+                )
             );
             const fileSuccessfullySaved = writeToFile(
                 stringifyDefinedValue(serializedCachedFile, 2),
