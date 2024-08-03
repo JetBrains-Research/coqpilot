@@ -25,7 +25,7 @@ export function updateWorkspaceCache(
     const cachedFile = workspaceCache.getCachedFile(filePath);
     if (cachedFile === undefined) {
         cachedUpdaterLogger.debug(
-            `Update in-memory cache with ${filePath} parsed targets:`
+            `Update in-memory cache with parsed ${filePath}:`
         );
         workspaceCache.addCachedFile(
             filePath,
@@ -35,9 +35,8 @@ export function updateWorkspaceCache(
                 cachedUpdaterLogger
             )
         );
-        cachedUpdaterLogger.debug("");
     } else {
-        cachedUpdaterLogger.debug(`Update cache for ${filePath}:`);
+        cachedUpdaterLogger.debug(`Update in-memory cache for ${filePath}:`);
         UpdateCacheHolders.updateCachedCoqFileData(
             cachedFile,
             parsedFileHolder,

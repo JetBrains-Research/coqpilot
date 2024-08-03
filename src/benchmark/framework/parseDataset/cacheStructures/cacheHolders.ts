@@ -43,6 +43,10 @@ export class WorkspaceCacheHolder {
         return Array.from(this.filePathToFileData.entries());
     }
 
+    noCacheFilesRead(): boolean {
+        return this.filePathToFileData.size === 0;
+    }
+
     getCachedFile(
         filePath: string
     ): CacheHolderData.CachedCoqFileData | undefined {

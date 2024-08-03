@@ -40,37 +40,42 @@ export function readRequestedFilesCache(
     const logger = parentLogger.createChildLoggerWithIdentifier(
         `[Dataset Cache Reader, cache path = ${datasetCacheDirectoryPath}]`
     );
-    return BuildCacheHoldersFromModels.buildWorkspaceCacheHolder(
-        packIntoMap(
-            requestedFilePaths,
-            (filePath) => filePath,
-            (resolvedSourceFilePath) => {
-                const filePathRelativeToDataset = relativizeAbsolutePaths(
-                    datasetDir,
-                    resolvedSourceFilePath
-                );
-                const resolvedCachedFilePath = joinPaths(
-                    cacheDir,
-                    filePathRelativeToDataset
-                );
-                if (
-                    !(
-                        exists(resolvedCachedFilePath) &&
-                        isFile(resolvedCachedFilePath)
-                    )
-                ) {
-                    return undefined;
+    const workspaceCache =
+        BuildCacheHoldersFromModels.buildWorkspaceCacheHolder(
+            packIntoMap(
+                requestedFilePaths,
+                (filePath) => filePath,
+                (resolvedSourceFilePath) => {
+                    const filePathRelativeToDataset = relativizeAbsolutePaths(
+                        datasetDir,
+                        resolvedSourceFilePath
+                    );
+                    const resolvedCachedFilePath = joinPaths(
+                        cacheDir,
+                        filePathRelativeToDataset
+                    );
+                    if (
+                        !(
+                            exists(resolvedCachedFilePath) &&
+                            isFile(resolvedCachedFilePath)
+                        )
+                    ) {
+                        return undefined;
+                    }
+                    return readCachedCoqFile(
+                        resolvedCachedFilePath,
+                        resolvedSourceFilePath,
+                        cachedFileValidator,
+                        logger
+                    );
                 }
-                return readCachedCoqFile(
-                    resolvedCachedFilePath,
-                    resolvedSourceFilePath,
-                    cachedFileValidator,
-                    logger
-                );
-            }
-        ),
-        workspacePath
-    );
+            ),
+            workspacePath
+        );
+    if (workspaceCache.noCacheFilesRead()) {
+        logger.info(`No parsing cache was found for ${workspacePath} project.`);
+    }
+    return workspaceCache;
 }
 
 function readCachedCoqFile(

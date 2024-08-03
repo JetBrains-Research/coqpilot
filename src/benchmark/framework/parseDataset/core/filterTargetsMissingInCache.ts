@@ -66,10 +66,12 @@ function readCacheAndFilterMissingTargets(
         logger
     );
     const missingTargets = new WorkspaceInputTargets();
-    const asOneRecordLogger = logger.asOneRecord();
+    const asOneRecordLogger = logger
+        .asOneRecord()
+        .debug("Requested targets found in cache:");
 
     for (const [filePath, fileTargets] of requestedTargets.entries()) {
-        asOneRecordLogger.debug(`* file path: ${filePath}`);
+        asOneRecordLogger.debug(`  * file path: ${filePath}`);
         for (const target of fileTargets) {
             let canBeRestoredFromCache: boolean = false;
             if (target instanceof AllTheoremsTarget) {
@@ -124,7 +126,7 @@ function readCacheAndFilterMissingTargets(
                 );
             }
             asOneRecordLogger.debug(
-                `${target.toString("  ", canBeRestoredFromCache ? "+ (cached)" : "- <missing>")}`
+                `${target.toString("    ", canBeRestoredFromCache ? "+ (cached)" : "? <missing>")}`
             );
         }
     }
