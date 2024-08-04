@@ -34,11 +34,11 @@ subprocessExecutable(Signature.subprocessName, () =>
     >(
         Signature.ArgsModels.argsSchema,
         Signature.ResultModels.resultSchema,
-        buildAndParseCoqProject
+        parseCoqProject
     )
 );
 
-async function buildAndParseCoqProject(
+async function parseCoqProject(
     args: Signature.ArgsModels.Args,
     logger: LogsIPCSender
 ): Promise<Signature.ResultModels.Result> {
@@ -97,8 +97,10 @@ async function openAndParseSourceFile(
         fileVersion: sourceFileEnvironment.fileVersion,
         filePath: filePath,
     };
+    const foundTheoremsLog = `found ${Object.keys(serializedParsedFile.serializedTheoremsByNames).length} theorem(s)`;
+    const readLinesLog = `read ${serializedParsedFile.fileLines.length} lines`;
     logger.debug(
-        `Successfully parsed "${filePath}": found ${Object.keys(serializedParsedFile.serializedTheoremsByNames).length} theorem(s), read ${serializedParsedFile.fileLines.length} lines`
+        `Successfully parsed "${filePath}": ${foundTheoremsLog}, ${readLinesLog}`
     );
     return serializedParsedFile;
 }

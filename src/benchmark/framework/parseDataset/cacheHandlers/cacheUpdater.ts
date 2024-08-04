@@ -1,10 +1,15 @@
+import { ProofStep } from "../../../../coqParser/parsedTypes";
+import { toJsonString } from "../../../../utils/printers";
 import {
     AsOneRecordLogsBuilder,
     BenchmarkingLogger,
 } from "../../logging/benchmarkingLogger";
+import { TargetType } from "../../structures/completionGenerationTask";
 import { TheoremData } from "../../structures/theoremData";
+import { fromRange } from "../../structures/utilStructures";
 import { joinPaths, relativizeAbsolutePaths } from "../../utils/fsUtils";
-import { mapValues } from "../../utils/mapUtils";
+import { groupBy, mapValues } from "../../utils/mapUtils";
+import { extractTheoremFisrtProofStep } from "../../utils/proofTargetExtractor";
 import {
     CacheHolderData,
     WorkspaceCacheHolder,
@@ -25,7 +30,7 @@ export function updateWorkspaceCache(
     const cachedFile = workspaceCache.getCachedFile(filePath);
     if (cachedFile === undefined) {
         cachedUpdaterLogger.debug(
-            `Update in-memory cache with parsed ${filePath}:`
+            `Update in-memory cache with a new file ${filePath}:`
         );
         workspaceCache.addCachedFile(
             filePath,
@@ -82,16 +87,19 @@ namespace UpdateCacheHolders {
                 fileTarget.sourceTheorem.name
             );
             if (cachedTheorem === undefined) {
+                cacheUpdaterLogger.debug(
+                    `+ cached new theorem: "${fileTarget.sourceTheorem.name}"`
+                );
                 cachedTheorem = new CacheHolderData.CachedTheoremData(
                     fileTarget.sourceTheorem
                 );
-                cacheUpdaterLogger.debug(`* cached new`, undefined, "");
+                buildInitialTargets(cachedTheorem, cacheUpdaterLogger);
+                cachedFile.addCachedTheorem(cachedTheorem);
             } else {
-                cacheUpdaterLogger.debug(`* updated`, undefined, "");
+                cacheUpdaterLogger.debug(
+                    `* updated theorem: "${fileTarget.sourceTheorem.name}"`
+                );
             }
-            cacheUpdaterLogger.debug(
-                ` theorem: "${fileTarget.sourceTheorem.name}"`
-            );
 
             updateCachedTheoremData(
                 cachedTheorem,
@@ -108,29 +116,37 @@ namespace UpdateCacheHolders {
         cachedFileUpdateLogger: AsOneRecordLogsBuilder
     ): CacheHolderData.CachedCoqFileData {
         const parsedFile = parsedFileHolder.parsedFile();
+        const parsedFileTargetsByTheorem = groupBy(
+            parsedFileHolder.targets(),
+            (fileTarget) => fileTarget.sourceTheorem.name
+        );
         const cachedTheoremsMap: Map<
             string,
             CacheHolderData.CachedTheoremData
         > = mapValues(
             parsedFile.theoremsByNames,
-            (_, theoremData: TheoremData) =>
-                new CacheHolderData.CachedTheoremData(theoremData)
-        );
-        for (const fileTarget of parsedFileHolder.targets()) {
-            const cachedTheorem = cachedTheoremsMap.get(
-                fileTarget.sourceTheorem.name
-            )!;
-            cachedFileUpdateLogger.debug(
-                `* cached new theorem: "${fileTarget.sourceTheorem.name}"`
-            );
-            updateCachedTheoremData(
-                cachedTheorem,
-                fileTarget,
-                workspacePath,
-                cachedFileUpdateLogger
-            );
-        }
+            (_, theoremData: TheoremData) => {
+                cachedFileUpdateLogger.debug(
+                    `+ cached new theorem: "${theoremData.name}"`
+                );
+                const cachedTheorem = new CacheHolderData.CachedTheoremData(
+                    theoremData
+                );
+                buildInitialTargets(cachedTheorem, cachedFileUpdateLogger);
 
+                for (const fileTarget of parsedFileTargetsByTheorem.get(
+                    theoremData.name
+                ) ?? []) {
+                    updateCachedTheoremData(
+                        cachedTheorem,
+                        fileTarget,
+                        workspacePath,
+                        cachedFileUpdateLogger
+                    );
+                }
+                return cachedTheorem;
+            }
+        );
         return new CacheHolderData.CachedCoqFileData(
             cachedTheoremsMap,
             relativizeAbsolutePaths(workspacePath, parsedFile.filePath),
@@ -138,6 +154,50 @@ namespace UpdateCacheHolders {
             parsedFile.fileVersion,
             workspacePath
         );
+    }
+
+    export function buildInitialTargets(
+        cachedTheorem: CacheHolderData.CachedTheoremData,
+        cachedFileUpdateLogger: AsOneRecordLogsBuilder
+    ) {
+        if (!cachedTheorem.hasNoTargets()) {
+            cachedFileUpdateLogger
+                .error(
+                    "Cache building invariant failed: `CachedTheoremData` should have no targets before their initial build"
+                )
+                .debug(
+                    `\tTheorem "${cachedTheorem.theoremData.name}" had the following cached targets:\n${toJsonString(cachedTheorem.targetEntries(), 2)}`
+                );
+            throw Error(
+                `Cache building invariant failed: \`CachedTheoremData\` is built incorrectly`
+            );
+        }
+        const sourceTheoremData = cachedTheorem.theoremData;
+        const sourceTargets = new Map<TargetType, ProofStep[]>([
+            [
+                TargetType.PROVE_THEOREM,
+
+                [extractTheoremFisrtProofStep(sourceTheoremData)],
+            ],
+            [TargetType.ADMIT, sourceTheoremData.proof?.holes ?? []],
+        ]);
+
+        for (const [targetType, targetsOfType] of sourceTargets) {
+            targetsOfType
+                .map(
+                    (proofStep) =>
+                        new CacheHolderData.CachedTargetData(
+                            undefined,
+                            fromRange(proofStep.range)
+                        )
+                )
+                .forEach((cachedTarget) => {
+                    cachedTheorem.addCachedTarget(targetType, cachedTarget);
+                    cachedFileUpdateLogger.debug(
+                        `  ** initialized ${targetType} target: ${[cachedTarget.positionRange]}`
+                    );
+                });
+        }
     }
 
     export function updateCachedTheoremData(
@@ -153,19 +213,20 @@ namespace UpdateCacheHolders {
             parsedTarget.positionRange.equalsTo(cachedTarget.positionRange)
         );
         if (cachedTargetToUpdate === undefined) {
-            cachedFileUpdateLogger.debug(
-                `** cached new target with goal: ${[parsedTarget.positionRange]}`
-            );
-            cachedTargets.push(
-                new CacheHolderData.CachedTargetData(
-                    parsedTarget.goalToProve,
-                    parsedTarget.positionRange
+            cachedFileUpdateLogger
+                .error(
+                    "Cache building invariant failed: `CachedTheoremData` should have initialized targets before updating them with parsed ones"
                 )
+                .debug(
+                    `\tTheorem "${cachedTheorem.theoremData.name}" had the following cached targets:\n${toJsonString(cachedTheorem.targetEntries(), 2)};`
+                )
+                .debug(
+                    `\t& was going to be updated with ${parsedTarget.targetType} target at ${parsedTarget.positionRange.toString()}`
+                );
+            throw Error(
+                `Cache building invariant failed: \`CachedTheoremData\` is built incorrectly`
             );
         } else {
-            cachedFileUpdateLogger.debug(
-                `** target goal update: at ${parsedTarget.positionRange.toString()}, was ${cachedTargetToUpdate.hasCachedGoal() ? "defined" : "undefined"}`
-            );
             if (cachedTargetToUpdate.hasCachedGoal()) {
                 cachedFileUpdateLogger
                     .error(
@@ -179,6 +240,9 @@ namespace UpdateCacheHolders {
                 );
             }
             cachedTargetToUpdate.updateWithParsedGoal(parsedTarget.goalToProve);
+            cachedFileUpdateLogger.debug(
+                `  ++ cached goal for ${parsedTarget.targetType} target at ${parsedTarget.positionRange.toString()}`
+            );
         }
     }
 }

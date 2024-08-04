@@ -32,6 +32,13 @@ export class CodeElementRange implements CodeElementRangeInterface {
     }
 }
 
+export function fromRange(range: CodeElementRangeInterface): CodeElementRange {
+    return new CodeElementRange(
+        fromPosition(range.start),
+        fromPosition(range.end)
+    );
+}
+
 export interface CodeElementPositionInterface {
     line: number;
     character: number;
@@ -50,6 +57,12 @@ export class CodeElementPosition implements CodeElementPositionInterface {
     equalsTo(other: CodeElementPosition): boolean {
         return this.line === other.line && this.character === other.character;
     }
+}
+
+export function fromPosition(
+    position: CodeElementPositionInterface
+): CodeElementPosition {
+    return new CodeElementPosition(position.line, position.character);
 }
 
 export interface SerializedCodeElementRange {

@@ -95,6 +95,7 @@ function readCacheAndFilterMissingTargets(
                     filePath,
                     target.theoremName
                 );
+                // TODO: design a way to differentiate 2 cases: no such theorem in file vs empty cache
                 if (cachedTheoremData === undefined) {
                     logger
                         .asOneRecord()
@@ -126,7 +127,7 @@ function readCacheAndFilterMissingTargets(
                 );
             }
             asOneRecordLogger.debug(
-                `${target.toString("    ", canBeRestoredFromCache ? "+ (cached)" : "? <missing>")}`
+                `${target.toString("    ", canBeRestoredFromCache ? "** (cached)" : "?? <missing>")}`
             );
         }
     }

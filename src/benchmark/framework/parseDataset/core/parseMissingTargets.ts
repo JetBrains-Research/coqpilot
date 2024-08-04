@@ -44,6 +44,6 @@ function updateCacheWithParsedTargets(
         );
     }
     logger.info(
-        `Successfully updated cache for ${workspaceCache.workspacePath} workspace: ${parsedWorkspace.parsedFilesNumber()} file(s) updated`
+        `Successfully updated in-memory cache for ${workspaceCache.workspacePath} workspace: ${parsedWorkspace.parsedFilesNumber()} file(s) updated`
     );
 }

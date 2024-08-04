@@ -128,6 +128,12 @@ export namespace CacheHolderData {
 
     export class CachedTheoremData {
         /**
+         * **Build invariant:** when `CachedTheoremData` is built from the parsed theorem,
+         * it should be then initialized with `UpdateCacheHolders.buildInitialTargets` function.
+         * This function will fill `this.targets` with initial `ADMIT` and `PROVE_THEOREM` targets
+         * (without cached goals, just their locations). This approach guarantees that
+         * the list of the *present* targets in the cached theorem is up-to-date.
+         *
          * @param targets should always have entries for all `TargetType`-s, at least empty lists.
          */
         constructor(
@@ -140,6 +146,17 @@ export namespace CacheHolderData {
                 [TargetType.PROVE_THEOREM, []],
             ])
         ) {}
+
+        targetEntries(): [TargetType, CacheHolderData.CachedTargetData[]][] {
+            return Array.from(this.targets.entries());
+        }
+
+        hasNoTargets(): boolean {
+            return all(
+                Array.from(this.targets.values()),
+                (cachedTargets) => cachedTargets.length === 0
+            );
+        }
 
         hasAllCachedGoalsOfType(requestType: TargetRequestType): boolean {
             return all(
@@ -156,6 +173,13 @@ export namespace CacheHolderData {
 
         getCachedTargetsByType(targetType: TargetType): CachedTargetData[] {
             return this.targets.get(targetType)!;
+        }
+
+        addCachedTarget(
+            targetType: TargetType,
+            cachedTarget: CachedTargetData
+        ) {
+            this.getCachedTargetsByType(targetType).push(cachedTarget);
         }
     }
 
