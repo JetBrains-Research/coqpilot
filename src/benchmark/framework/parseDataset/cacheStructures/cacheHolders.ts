@@ -74,7 +74,19 @@ export class WorkspaceCacheHolder {
     }
 }
 
+/**
+ * This namespace provides classes to conveniently access the parsing cache.
+ * Once the cache is read, these classes should be used instead of `DatasetCacheModels` ones as soon as possible.
+ */
 export namespace CacheHolderData {
+    /**
+     * This class represent a cached Coq source file, i.e. its parsing data.
+     *
+     * **Important invariant:** once a file is cached, it will always contain *all* the theorems
+     * present in the original file with *all* the targets present in them (but their cached goals are not guaranteed).
+     * In a more practical sense, cached file data can be safely use to determine the presence of the requested theorems and targets
+     * (as long as it stays up-to-date with the original file) regardless of the mode and requests that triggered the file cache to be built.
+     */
     export class CachedCoqFileData {
         constructor(
             private readonly theorems: Map<string, CachedTheoremData>,
@@ -126,6 +138,14 @@ export namespace CacheHolderData {
         }
     }
 
+    /**
+     * This class represent a cached Coq theorem, i.e. its parsing data.
+     *
+     * **Important invariant:** once a theorem is cached, it will always contain *all* the targets
+     * present in its proof (but their goals are not guaranteed to be cached).
+     * However, this guarantee requires `CachedTheoremData` to be initialized properly.
+     * See its constructor for more details.
+     */
     export class CachedTheoremData {
         /**
          * **Build invariant:** when `CachedTheoremData` is built from the parsed theorem,
@@ -183,6 +203,10 @@ export namespace CacheHolderData {
         }
     }
 
+    /**
+     * This class represent a cached target of a Coq theorem,
+     * i.e. parsing data about (potential) target inside a theorem to generate completion for.
+     */
     export class CachedTargetData {
         constructor(
             private goalToProve: ProofGoal | undefined,

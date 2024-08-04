@@ -71,15 +71,22 @@ function readCacheAndFilterMissingTargets(
         .debug("Requested targets found in cache:");
 
     for (const [filePath, fileTargets] of requestedTargets.entries()) {
-        asOneRecordLogger.debug(`  * file path: ${filePath}`);
+        let fileCacheIsPresent =
+            workspaceCache.getCachedFile(filePath) !== undefined;
+        if (fileCacheIsPresent) {
+            asOneRecordLogger.debug(`  * file path: ${filePath}`);
+        } else {
+            asOneRecordLogger.debug(`  ? <missing> file path: ${filePath}`);
+        }
+
         for (const target of fileTargets) {
             let canBeRestoredFromCache: boolean = false;
+
             if (target instanceof AllTheoremsTarget) {
                 const allCachedTheorems =
                     workspaceCache.getAllCachedTheorems(filePath);
-                // TODO: design a way to differentiate 2 cases: 0 theorems in file vs empty cache
                 canBeRestoredFromCache =
-                    allCachedTheorems.length > 0 &&
+                    fileCacheIsPresent &&
                     all(allCachedTheorems, (cachedTarget) =>
                         cachedTarget.hasAllCachedGoalsOfType(target.requestType)
                     );
@@ -95,25 +102,25 @@ function readCacheAndFilterMissingTargets(
                     filePath,
                     target.theoremName
                 );
-                // TODO: design a way to differentiate 2 cases: no such theorem in file vs empty cache
-                if (cachedTheoremData === undefined) {
+                if (fileCacheIsPresent && cachedTheoremData === undefined) {
                     logger
                         .asOneRecord()
                         .info(
                             `Warning! Either dataset cache for the "${workspaceRoot.directoryPath}" is outdated, or the requested theorem does not exist: `,
-                            "yellow"
+                            "yellow",
+                            ""
                         )
                         .info(
                             `theorem "${target.theoremName}" from the ${filePath}`,
                             "yellow"
                         );
-                    canBeRestoredFromCache = false;
-                } else {
-                    canBeRestoredFromCache =
-                        cachedTheoremData.hasAllCachedGoalsOfType(
-                            target.requestType
-                        );
                 }
+                canBeRestoredFromCache =
+                    fileCacheIsPresent &&
+                    cachedTheoremData !== undefined &&
+                    cachedTheoremData.hasAllCachedGoalsOfType(
+                        target.requestType
+                    );
                 if (!canBeRestoredFromCache) {
                     missingTargets.addFileTargets(
                         filePath,
@@ -126,6 +133,7 @@ function readCacheAndFilterMissingTargets(
                     `Unknown file target: ${stringifyAnyValue(target)}`
                 );
             }
+
             asOneRecordLogger.debug(
                 `${target.toString("    ", canBeRestoredFromCache ? "** (cached)" : "?? <missing>")}`
             );

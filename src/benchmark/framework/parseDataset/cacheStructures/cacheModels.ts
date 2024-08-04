@@ -9,6 +9,10 @@ import {
     serializedCodeElementRangeSchema,
 } from "../../structures/utilStructures";
 
+/**
+ * This namespace provides interfaces representing raw parsing cache, i.e. the serialized one.
+ * Once the cache is read, `CacheHolderData` classes should be used instead.
+ */
 export namespace DatasetCacheModels {
     export interface CachedCoqFile {
         /**
