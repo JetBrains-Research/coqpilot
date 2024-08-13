@@ -99,7 +99,6 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
         prefixEndPosition: Position,
         proofs: Proof[]
     ): Promise<ProofCheckResult[]> {
-        console.log("Proofs to check: ", proofs.join(", "));
         // 1. Write the text to the aux file
         const auxFileUri = this.buildAuxFileUri(
             sourceDirPath,
