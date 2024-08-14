@@ -1,7 +1,7 @@
 import { EqualTo, EqualitySet, HashUtils } from "../utils/equalitySet";
 import { getOrPut } from "../utils/mapUtils";
 
-import { WorkspaceRoot } from "./completionGenerationTask";
+import { WorkspaceRoot } from "./workspaceRoot";
 
 /**
  * Merges `DatasetInputTargets`-s into a new `DatasetInputTargets` without modifying themselves.

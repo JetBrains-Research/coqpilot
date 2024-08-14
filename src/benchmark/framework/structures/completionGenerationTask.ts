@@ -6,11 +6,11 @@ import {
 } from "../../../core/completionGenerationContext";
 
 import { EqualTo, HashUtils } from "../utils/equalitySet";
-import { getDatasetDir } from "../utils/fsUtils";
 
 import { ParsedCoqFileData } from "./parsedCoqFileData";
 import { TheoremData } from "./theoremData";
 import { CodeElementRange } from "./utilStructures";
+import { WorkspaceRoot } from "./workspaceRoot";
 
 export class CompletionGenerationTask
     implements EqualTo<CompletionGenerationTask>
@@ -59,30 +59,4 @@ export class CompletionGenerationTask
 export enum TargetType {
     ADMIT = "ADMIT",
     PROVE_THEOREM = "PROVE_THEOREM",
-}
-
-export interface WorkspaceRoot {
-    /**
-     * This path is expected to be an absolute resolved path inside the `dataset` directory.
-     */
-    directoryPath: string;
-    requiresNixEnvironment: boolean;
-}
-
-/**
- * Mock `WorkspaceRoot` for target files that do not have an actual workspace.
- *
- * When working with `WorkspaceRoot` object, it should be checked via `isNoWorkspaceRoot` function.
- * In case it is indeed this mock `noWorkspaceRoot`, it should be handled as a special case.
- *
- * Implementation note: `noWorkspaceRoot` was chosen instead of `undefined` due to
- * its better support as a key of `Map` and general convenience of paths resolving.
- */
-export const noWorkspaceRoot: WorkspaceRoot = {
-    directoryPath: getDatasetDir(),
-    requiresNixEnvironment: false,
-};
-
-export function isNoWorkspaceRoot(workspaceRoot: WorkspaceRoot): boolean {
-    return workspaceRoot === noWorkspaceRoot;
 }

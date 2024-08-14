@@ -2,8 +2,8 @@ import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { ParsedWorkspaceHolder } from "../../parseDataset/coqProjectParser/parsedWorkspaceHolder";
 import {
     WorkspaceRoot,
-    isNoWorkspaceRoot,
-} from "../../structures/completionGenerationTask";
+    isStandaloneFilesRoot,
+} from "../../structures/workspaceRoot";
 import { AsyncScheduler } from "../../utils/asyncScheduler";
 import { checkIsInsideDirectory } from "../../utils/fsUtils";
 import {
@@ -40,7 +40,7 @@ export async function buildAndParseCoqProjectInSubprocess(
     validateRequestedFilesAreInsideWorkspace(workspaceRoot, workspaceTargets);
 
     const args: Signature.ArgsModels.Args = {
-        workspaceRootPath: isNoWorkspaceRoot(workspaceRoot)
+        workspaceRootPath: isStandaloneFilesRoot(workspaceRoot)
             ? undefined
             : workspaceRoot.directoryPath,
         workspaceTargets: workspaceTargets,

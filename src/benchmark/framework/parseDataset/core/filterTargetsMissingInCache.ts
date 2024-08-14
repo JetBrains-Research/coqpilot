@@ -1,9 +1,5 @@
 import { stringifyAnyValue } from "../../../../utils/printers";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import {
-    WorkspaceRoot,
-    isNoWorkspaceRoot,
-} from "../../structures/completionGenerationTask";
 import { DatasetCacheUsageMode } from "../../structures/datasetCaching";
 import { ExperimentRunOptions } from "../../structures/experimentRunOptions";
 import {
@@ -12,6 +8,7 @@ import {
     TargetRequestType,
     WorkspaceInputTargets,
 } from "../../structures/inputTargets";
+import { WorkspaceRoot } from "../../structures/workspaceRoot";
 import { listCoqSourceFiles } from "../../utils/fsUtils";
 import { all } from "../../utils/listUtils";
 import { readRequestedFilesCache } from "../cacheHandlers/cacheReader";
@@ -155,15 +152,8 @@ function completeRequestedFilesWithAllTargets(
 function completeRequestedWorkspaceWithAllTargets(
     workspaceRoot: WorkspaceRoot
 ): WorkspaceInputTargets {
-    let filesToRequestPaths: string[];
-    if (isNoWorkspaceRoot(workspaceRoot)) {
-        filesToRequestPaths = listCoqSourceFiles(
-            workspaceRoot.directoryPath,
-            0
-        );
-    } else {
-        filesToRequestPaths = listCoqSourceFiles(workspaceRoot.directoryPath);
-    }
+    // `isStandaloneFilesRoot` check is not needed: `standaloneFilesRoot` is a separate root
+    let filesToRequestPaths = listCoqSourceFiles(workspaceRoot.directoryPath);
 
     const newTargets = new WorkspaceInputTargets();
     completeWithAllFileTargets(newTargets, filesToRequestPaths);

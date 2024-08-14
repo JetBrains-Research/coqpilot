@@ -1,7 +1,7 @@
 import {
     WorkspaceRoot,
-    isNoWorkspaceRoot,
-} from "../../structures/completionGenerationTask";
+    isStandaloneFilesRoot,
+} from "../../structures/workspaceRoot";
 import { getRootDir } from "../fsUtils";
 
 import { CommandToExecute } from "./ipc/childProcessExecutor/executeChildProcess";
@@ -23,7 +23,7 @@ export function buildCommandToExecuteSubprocessInWorkspace(
         `-g="${getSubprocessExecutableSuiteName(subprocessName)}"`,
     ];
     if (
-        isNoWorkspaceRoot(workspaceRoot) ||
+        isStandaloneFilesRoot(workspaceRoot) ||
         !workspaceRoot.requiresNixEnvironment
     ) {
         // TODO: support workspace preparation if workspaceRoot is set but does not require nix

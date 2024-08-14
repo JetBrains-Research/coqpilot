@@ -1,14 +1,14 @@
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import {
-    WorkspaceRoot,
-    isNoWorkspaceRoot,
-} from "../../structures/completionGenerationTask";
 import { ExperimentRunOptions } from "../../structures/experimentRunOptions";
 import {
     AllTheoremsTarget,
     SpecificTheoremTarget,
     WorkspaceInputTargets,
 } from "../../structures/inputTargets";
+import {
+    WorkspaceRoot,
+    isStandaloneFilesRoot,
+} from "../../structures/workspaceRoot";
 import { buildAndParseCoqProjectInSubprocess } from "../../subprocessCalls/buildAndParseCoqProject/callChildProcess";
 import { BuildAndParseCoqProjectBySubprocessSignature } from "../../subprocessCalls/buildAndParseCoqProject/callSignature";
 import { AsyncScheduler } from "../../utils/asyncScheduler";
@@ -34,7 +34,7 @@ export async function parseCoqProject(
         logger,
         runOptions.enableSubprocessLifetimeDebugLogs
     );
-    const projectId = isNoWorkspaceRoot(workspaceRoot)
+    const projectId = isStandaloneFilesRoot(workspaceRoot)
         ? "standalone source files requested"
         : `"${workspaceRoot.directoryPath}" project with source files requested`;
     if (executionResult.isFailed()) {

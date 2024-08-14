@@ -1,7 +1,7 @@
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import { WorkspaceRoot } from "../../structures/completionGenerationTask";
 import { ExperimentRunOptions } from "../../structures/experimentRunOptions";
 import { WorkspaceInputTargets } from "../../structures/inputTargets";
+import { WorkspaceRoot } from "../../structures/workspaceRoot";
 import { AsyncScheduler } from "../../utils/asyncScheduler";
 import { updateWorkspaceCache } from "../cacheHandlers/cacheUpdater";
 import { WorkspaceCacheHolder } from "../cacheStructures/cacheHolders";

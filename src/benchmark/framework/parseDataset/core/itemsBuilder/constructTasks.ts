@@ -1,13 +1,11 @@
-import {
-    CompletionGenerationTask,
-    WorkspaceRoot,
-} from "../../../structures/completionGenerationTask";
+import { CompletionGenerationTask } from "../../../structures/completionGenerationTask";
 import {
     AllTheoremsTarget,
     DatasetInputTargets,
     SpecificTheoremTarget,
 } from "../../../structures/inputTargets";
 import { ParsedCoqFileData } from "../../../structures/parsedCoqFileData";
+import { WorkspaceRoot } from "../../../structures/workspaceRoot";
 import { toTargetType } from "../../../utils/targetTypeUtils";
 import {
     CacheHolderData,

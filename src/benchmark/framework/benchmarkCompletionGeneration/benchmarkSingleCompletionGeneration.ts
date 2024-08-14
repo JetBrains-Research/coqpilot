@@ -36,8 +36,8 @@ import {
     SuccessfulCompletionGeneration,
 } from "../structures/benchmarkedItem";
 import { BenchmarkingModelParams } from "../structures/benchmarkingModelParams";
-import { WorkspaceRoot } from "../structures/completionGenerationTask";
 import { ExperimentRunOptions } from "../structures/experimentRunOptions";
+import { WorkspaceRoot } from "../structures/workspaceRoot";
 import { checkGeneratedProofsInSubprocess } from "../subprocessCalls/checkGeneratedProofs/callChildProcess";
 import { CheckProofsBySubprocessSignature } from "../subprocessCalls/checkGeneratedProofs/callSignature";
 import { AsyncScheduler } from "../utils/asyncScheduler";

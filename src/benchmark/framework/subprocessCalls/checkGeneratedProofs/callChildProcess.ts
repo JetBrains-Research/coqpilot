@@ -7,8 +7,8 @@ import { getTextBeforePosition } from "../../../../core/exposedCompletionGenerat
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import {
     WorkspaceRoot,
-    isNoWorkspaceRoot,
-} from "../../structures/completionGenerationTask";
+    isStandaloneFilesRoot,
+} from "../../structures/workspaceRoot";
 import { AsyncScheduler } from "../../utils/asyncScheduler";
 import {
     ChildProcessOptions,
@@ -37,7 +37,7 @@ export async function checkGeneratedProofsInSubprocess(
             Signature.subprocessName
         );
     const args: Signature.Args = {
-        workspaceRootPath: isNoWorkspaceRoot(workspaceRoot)
+        workspaceRootPath: isStandaloneFilesRoot(workspaceRoot)
             ? undefined
             : workspaceRoot.directoryPath,
         sourceFileDirPath: sourceFileEnvironment.dirPath,

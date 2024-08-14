@@ -18,13 +18,9 @@ new BenchmarkingBundle()
     )
     .withTargets(
         new TargetsBuilder()
-            .withoutWorkspaceRoot()
-            .withAdmitTargetsFromFile(
-                "auto_benchmark.v",
-                "test_thr",
-                "test2",
-                "test"
-            )
+            .withStandaloneFilesRoot()
+            .withAdmitTargetsFromFile("auto_benchmark.v", "test_thr", "test")
+            .withAdmitTargetsFromFile("mixed_benchmark.v", "add_comm")
             .buildInputTargets()
         // new TargetsBuilder()
         //     .withWorkspaceRoot("imm", "nix")

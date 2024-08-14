@@ -1,12 +1,12 @@
 import {
-    WorkspaceRoot,
-    noWorkspaceRoot,
-} from "../structures/completionGenerationTask";
-import {
     DatasetInputTargets,
     TargetRequestType,
     WorkspaceInputTargets,
 } from "../structures/inputTargets";
+import {
+    WorkspaceRoot,
+    standaloneFilesRoot,
+} from "../structures/workspaceRoot";
 import {
     getDatasetDir,
     isCoqSourceFile,
@@ -41,8 +41,12 @@ export class TargetsBuilder {
         });
     }
 
-    withoutWorkspaceRoot(): TargetsBuilderWithWorkspaceRoot {
-        return new TargetsBuilderWithWorkspaceRoot(noWorkspaceRoot);
+    /**
+     * Standalone dataset source files are expected to be found
+     * in the `dataset/standalone-source-files` directory.
+     */
+    withStandaloneFilesRoot(): TargetsBuilderWithWorkspaceRoot {
+        return new TargetsBuilderWithWorkspaceRoot(standaloneFilesRoot);
     }
 }
 
