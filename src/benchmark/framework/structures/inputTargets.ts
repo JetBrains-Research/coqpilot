@@ -67,22 +67,31 @@ export class DatasetInputTargets {
     }
 
     /**
-     * Merges `other` into `this`.
+     * Merges `other` into `this`. Resulting internal structures of `other` and `this`
+     * are guaranteed to be distinct. In other words, any further modification of `other`
+     * will not affect `this` and vice versa.
+     *
+     * *Implementation note:* the independency of `DatasetInputTargets` is guaranteed by usage of
+     * separate internal structures (`workspacePathToTargets` map and its `WorkspaceInputTargets` values)
+     * and by `WorkspaceInputTargets.merge(...)` invariant. See its docs for more details.
      */
     merge(other: DatasetInputTargets) {
         for (const [
             workspacePath,
-            targets,
+            otherWorkspaceTargets,
         ] of other.workspacePathToTargets.entries()) {
-            if (this.workspacePathToTargets.has(workspacePath)) {
-                this.workspacePathToTargets.get(workspacePath)!.merge(targets);
-            } else {
-                this.workspacePathToTargets.set(workspacePath, targets);
-                this.workspacePathToRoots.set(
-                    workspacePath,
-                    other.workspacePathToRoots.get(workspacePath)!
-                );
-            }
+            const thisWorkspaceTargets = getOrPut(
+                this.workspacePathToTargets,
+                workspacePath,
+                () => {
+                    this.workspacePathToRoots.set(
+                        workspacePath,
+                        other.workspacePathToRoots.get(workspacePath)!
+                    );
+                    return new WorkspaceInputTargets();
+                }
+            );
+            thisWorkspaceTargets.merge(otherWorkspaceTargets);
         }
     }
 
@@ -167,17 +176,22 @@ export class WorkspaceInputTargets {
     }
 
     /**
-     * Merges `other` into `this`.
+     * Merges `other` into `this`. Resulting internal structures of `other` and `this`
+     * are guaranteed to be distinct. In other words, any further modification of `other`
+     * will not affect `this` and vice versa.
+     *
+     * *Implementaiton note:* to guarantee `this` and `other` independency, `filePathToTargets` map
+     * and each of its `EqualitySet<FileTargets>` structures are created separately for both `WorkspaceInputTargets`.
+     * However, `FileTargets` objects used might still be the same: but it does not break the invariant, since they are immutable.
      */
     merge(other: WorkspaceInputTargets) {
-        for (const [filePath, targets] of other.filePathToTargets) {
-            if (this.filePathToTargets.has(filePath)) {
-                this.filePathToTargets
-                    .get(filePath)!
-                    .addElements(targets.elements());
-            } else {
-                this.filePathToTargets.set(filePath, targets);
-            }
+        for (const [filePath, otherFileTargets] of other.filePathToTargets) {
+            const thisFileTargets = getOrPut(
+                this.filePathToTargets,
+                filePath,
+                () => new EqualitySet()
+            );
+            thisFileTargets.addElements(otherFileTargets.elements());
         }
     }
 
