@@ -49,6 +49,9 @@ export function rewriteDatasetCache(
             workspacePathRelativeToDataset
         );
         if (clearWorkspaceCacheDirectories) {
+            logger.debug(
+                `Workspace cache directory will be cleared: ${workspaceCacheDirectoryPath}`
+            );
             clearDirectory(workspaceCacheDirectoryPath);
         }
 
@@ -62,21 +65,22 @@ export function rewriteDatasetCache(
                     serializedCachedFile.filePathRelativeToWorkspace
                 )
             );
-            const fileSuccessfullySaved = writeToFile(
-                toJsonString(serializedCachedFile, 2),
-                cachedFilePath,
-                (error) => {
-                    logger
-                        .asOneRecord()
-                        .error(
-                            `Failed to save cached file ${cachedFilePath}: ${error.message}.`
-                        )
-                        .error(
-                            `(!) Now cache is invalidated. Clear ${datasetCacheDirectoryPath} cache directory and try again.`
-                        );
-                    return false;
-                }
-            );
+            const fileSuccessfullySaved =
+                writeToFile(
+                    toJsonString(serializedCachedFile, 2),
+                    cachedFilePath,
+                    (error) => {
+                        logger
+                            .asOneRecord()
+                            .error(
+                                `Failed to save cached file ${cachedFilePath}: ${error.message}.`
+                            )
+                            .error(
+                                `(!) Now cache is invalidated. Clear ${datasetCacheDirectoryPath} cache directory and try again.`
+                            );
+                        return false;
+                    }
+                ) ?? true;
             if (fileSuccessfullySaved) {
                 successfullyCachedFiles.push(filePath);
             } else {

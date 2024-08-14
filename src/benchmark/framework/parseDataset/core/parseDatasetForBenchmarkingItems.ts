@@ -92,7 +92,7 @@ export async function parseDatasetForBenchmarkingItems(
     logger
         .asOneRecord()
         .info(
-            `Successfully constructed ${benchmarkingItems.length} benchmarking items`,
+            `Successfully constructed ${benchmarkingItems.length} benchmarking item(s)`,
             undefined,
             ""
         )
