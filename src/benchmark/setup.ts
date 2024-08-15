@@ -29,12 +29,16 @@ new BenchmarkingBundle()
     )
     .addTo(experiment);
 
-const experimentResults = experiment.run("benchmarksOutput", {
-    loggerSeverity: SeverityLevel.DEBUG,
+experiment.updateRunOptions({
+    loggerSeverity: SeverityLevel.INFO,
     // logsFilePath: "benchmarkLogs/logs.txt",
     maxActiveSubprocessesNumber: 1,
     datasetCacheDirectoryPath: "benchmarkLogs/.cache/",
     datasetCacheUsage: DatasetCacheUsageMode.EXTEND_CACHE_WITH_MISSING_TARGETS,
+});
+
+const experimentResults = experiment.run("benchmarksOutput", {
+    loggerSeverity: SeverityLevel.DEBUG,
 });
 
 experimentResults.then(

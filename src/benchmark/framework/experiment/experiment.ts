@@ -24,23 +24,43 @@ namespace CacheDirNames {
 export class Experiment {
     private mergedRequestedTargets: DatasetInputTargets | undefined = undefined;
 
-    constructor(private readonly bundles: InputBenchmarkingBundle[] = []) {}
+    constructor(
+        private readonly bundles: InputBenchmarkingBundle[] = [],
+        private sharedRunOptions: Partial<ExperimentRunOptions> = {}
+    ) {}
 
     addBundle(newBundle: InputBenchmarkingBundle) {
         this.bundles.push(newBundle);
     }
 
     /**
+     * Updates experiment run options with ones specified in `runOptions`.
+     * Changes made are applied to **all** further runs.
+     * The properties that are not specified stay unchanged.
+     */
+    updateRunOptions(runOptions: Partial<ExperimentRunOptions>) {
+        this.sharedRunOptions = {
+            ...this.sharedRunOptions,
+            ...runOptions,
+        };
+    }
+
+    /**
      * @param artifactsDirPath empty directory path relative to the root directory.
+     * @param runOptions properties to update the options for **this** run with. To save the updated options for the further runs use `Experiment.updateRunOptions(...)` method instead.
      */
     async run(
         artifactsDirPath: string,
-        inputRunOptions: Partial<ExperimentRunOptions>
+        runOptions: Partial<ExperimentRunOptions> = {}
     ): Promise<ExperimentResults> {
         const totalTime = new TimeMark();
 
+        const thisRunOptions: Partial<ExperimentRunOptions> = {
+            ...this.sharedRunOptions,
+            ...runOptions,
+        };
         const optionsAfterStartupResolution =
-            this.resolveOnStartupOptions(inputRunOptions);
+            this.resolveOnStartupOptions(thisRunOptions);
         const logger: BenchmarkingLogger = new BenchmarkingLoggerImpl(
             optionsAfterStartupResolution.loggerSeverity,
             optionsAfterStartupResolution.logsFilePath === undefined
