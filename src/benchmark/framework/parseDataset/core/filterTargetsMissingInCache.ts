@@ -35,12 +35,16 @@ export function filterRequestedTargetsMissingInCache(
             return [requestedTargets, createEmptyCache(workspaceRoot)];
         case DatasetCacheUsageMode.REBUILD_COMPLETE_CACHE_FOR_REQUESTED_FILES:
             return [
-                completeRequestedFilesWithAllTargets(requestedTargets),
+                CompleteInputTargetsUtils.completeFilesWithAllTargets(
+                    requestedTargets
+                ),
                 createEmptyCache(workspaceRoot),
             ];
         case DatasetCacheUsageMode.REBUILD_COMPLETE_CACHE_FOR_REQUESTED_PROJECTS:
             return [
-                completeRequestedWorkspaceWithAllTargets(workspaceRoot),
+                CompleteInputTargetsUtils.completeWorkspaceWithAllTargets(
+                    workspaceRoot
+                ),
                 createEmptyCache(workspaceRoot),
             ];
     }
@@ -140,36 +144,44 @@ function readCacheAndFilterMissingTargets(
     return [missingTargets, workspaceCache];
 }
 
-function completeRequestedFilesWithAllTargets(
-    requestedTargets: WorkspaceInputTargets
-): WorkspaceInputTargets {
-    const newTargets = new WorkspaceInputTargets();
-    newTargets.merge(requestedTargets);
-    completeWithAllFileTargets(newTargets, requestedTargets.filePaths());
-    return newTargets.resolveRequests();
-}
+export namespace CompleteInputTargetsUtils {
+    export function completeFilesWithAllTargets(
+        requestedTargets: WorkspaceInputTargets
+    ): WorkspaceInputTargets {
+        const newTargets = new WorkspaceInputTargets();
+        newTargets.merge(requestedTargets);
+        completeWithAllFileTargets(newTargets, requestedTargets.filePaths());
+        return newTargets.resolveRequests();
+    }
 
-function completeRequestedWorkspaceWithAllTargets(
-    workspaceRoot: WorkspaceRoot
-): WorkspaceInputTargets {
-    // `isStandaloneFilesRoot` check is not needed: `standaloneFilesRoot` is a separate root
-    let filesToRequestPaths = listCoqSourceFiles(workspaceRoot.directoryPath);
-
-    const newTargets = new WorkspaceInputTargets();
-    completeWithAllFileTargets(newTargets, filesToRequestPaths);
-    return newTargets.resolveRequests();
-}
-
-function completeWithAllFileTargets(
-    inputTargets: WorkspaceInputTargets,
-    requestedFilePaths: string[]
-) {
-    for (const filePath of requestedFilePaths) {
-        inputTargets.addFileTargets(filePath, [], TargetRequestType.ALL_ADMITS);
-        inputTargets.addFileTargets(
-            filePath,
-            [],
-            TargetRequestType.THEOREM_PROOF
+    export function completeWorkspaceWithAllTargets(
+        workspaceRoot: WorkspaceRoot
+    ): WorkspaceInputTargets {
+        // `isStandaloneFilesRoot` check is not needed: `standaloneFilesRoot` is a separate root
+        let filesToRequestPaths = listCoqSourceFiles(
+            workspaceRoot.directoryPath
         );
+
+        const newTargets = new WorkspaceInputTargets();
+        completeWithAllFileTargets(newTargets, filesToRequestPaths);
+        return newTargets.resolveRequests();
+    }
+
+    export function completeWithAllFileTargets(
+        inputTargets: WorkspaceInputTargets,
+        resolvedFilePaths: string[]
+    ) {
+        for (const filePath of resolvedFilePaths) {
+            inputTargets.addFileTargets(
+                filePath,
+                [],
+                TargetRequestType.ALL_ADMITS
+            );
+            inputTargets.addFileTargets(
+                filePath,
+                [],
+                TargetRequestType.THEOREM_PROOF
+            );
+        }
     }
 }

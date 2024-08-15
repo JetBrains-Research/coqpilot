@@ -26,19 +26,9 @@ export class TargetsBuilder {
         directoryPath: string,
         environment: EnvironmentStringType
     ): TargetsBuilderWithWorkspaceRoot {
-        let requiresNixEnvironment: boolean;
-        switch (environment) {
-            case "nix":
-                requiresNixEnvironment = true;
-                break;
-            case "no-special-environment":
-                requiresNixEnvironment = false;
-                break;
-        }
-        return new TargetsBuilderWithWorkspaceRoot({
-            directoryPath: resolveDatasetPath(directoryPath),
-            requiresNixEnvironment: requiresNixEnvironment,
-        });
+        return new TargetsBuilderWithWorkspaceRoot(
+            TargetsBuilderUtils.buildWorkspaceRoot(directoryPath, environment)
+        );
     }
 
     /**
@@ -56,7 +46,7 @@ export class TargetsBuilderWithWorkspaceRoot {
     private readonly workspaceTargets = new WorkspaceInputTargets();
 
     /**
-     * @param filePath Coq source file path relative to the workspace directory (or to the "dataset" directory if the workspace is not specified).
+     * @param filePath Coq source file path relative to the workspace directory (or to the `dataset/standalone-source-files` directory for standalone files).
      * @param theoremNames names of the theorems inside `filePath`. Leave it empty to select all the theorems.
      */
     withAdmitTargetsFromFile(
@@ -72,7 +62,7 @@ export class TargetsBuilderWithWorkspaceRoot {
     }
 
     /**
-     * @param filePath Coq source file path relative to the workspace directory (or to the "dataset" directory if the workspace is not specified).
+     * @param filePath Coq source file path relative to the workspace directory (or to the `dataset/standalone-source-files` directory for standalone files).
      * @param theoremNames names of the theorems inside `filePath`. Leave it empty to select all the theorems.
      */
     withProveTheoremTargetsFromFile(
@@ -88,7 +78,7 @@ export class TargetsBuilderWithWorkspaceRoot {
     }
 
     /**
-     * @param directoryPath directory path relative to the workspace directory (or to the "dataset" directory if the workspace is not specified).
+     * @param directoryPath directory path relative to the workspace directory (or to the `dataset/standalone-source-files` directory for standalone files).
      * @param relativeFilePaths Coq source file paths relative to the `directoryPath`. Leave it empty to select all the source files inside the directory.
      */
     withAdmitTargetsFromDirectory(
@@ -104,7 +94,7 @@ export class TargetsBuilderWithWorkspaceRoot {
     }
 
     /**
-     * @param directoryPath directory path relative to the workspace directory (or to the "dataset" directory if the workspace is not specified).
+     * @param directoryPath directory path relative to the workspace directory (or to the `dataset/standalone-source-files` directory for standalone files).
      * @param relativeFilePaths Coq source file paths relative to the `directoryPath`. Leave it empty to select all the source files inside the directory.
      */
     withProveTheoremTargetsFromDirectory(
@@ -131,7 +121,7 @@ export class TargetsBuilderWithWorkspaceRoot {
         relativeFilePaths: string[],
         requestType: TargetRequestType
     ) {
-        const resolvedDirectoryPath = resolveWorkspacePath(
+        const resolvedDirectoryPath = TargetsBuilderUtils.resolveWorkspacePath(
             this.workspaceRoot,
             directoryPath
         );
@@ -157,7 +147,7 @@ export class TargetsBuilderWithWorkspaceRoot {
             resolvedDirectoryFilesPaths
         );
         for (const relativeFilePath of relativeFilePaths) {
-            const resolvedFilePath = resolveDatasetPath(
+            const resolvedFilePath = TargetsBuilderUtils.resolveDatasetPath(
                 joinPaths(directoryPath, relativeFilePath)
             );
             if (!resolvedDirectoryFilesPathsSet.has(resolvedFilePath)) {
@@ -174,7 +164,7 @@ export class TargetsBuilderWithWorkspaceRoot {
         theoremNames: string[],
         requestType: TargetRequestType
     ) {
-        const resolvedFilePath = resolveWorkspacePath(
+        const resolvedFilePath = TargetsBuilderUtils.resolveWorkspacePath(
             this.workspaceRoot,
             relativeFilePath
         );
@@ -203,15 +193,36 @@ export class TargetsBuilderWithWorkspaceRoot {
     }
 }
 
-function resolveWorkspacePath(
-    workspaceRoot: WorkspaceRoot,
-    inputPath: string
-): string {
-    return resolveAsAbsolutePath(
-        joinPaths(workspaceRoot.directoryPath, inputPath)
-    );
-}
+export namespace TargetsBuilderUtils {
+    export function buildWorkspaceRoot(
+        directoryPath: string,
+        environment: EnvironmentStringType
+    ): WorkspaceRoot {
+        let requiresNixEnvironment: boolean;
+        switch (environment) {
+            case "nix":
+                requiresNixEnvironment = true;
+                break;
+            case "no-special-environment":
+                requiresNixEnvironment = false;
+                break;
+        }
+        return {
+            directoryPath: resolveDatasetPath(directoryPath),
+            requiresNixEnvironment: requiresNixEnvironment,
+        };
+    }
 
-function resolveDatasetPath(inputPath: string): string {
-    return resolveAsAbsolutePath(joinPaths(getDatasetDir(), inputPath));
+    export function resolveWorkspacePath(
+        workspaceRoot: WorkspaceRoot,
+        inputPath: string
+    ): string {
+        return resolveAsAbsolutePath(
+            joinPaths(workspaceRoot.directoryPath, inputPath)
+        );
+    }
+
+    export function resolveDatasetPath(inputPath: string): string {
+        return resolveAsAbsolutePath(joinPaths(getDatasetDir(), inputPath));
+    }
 }

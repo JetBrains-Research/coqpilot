@@ -17,6 +17,8 @@ import {
 import { AsyncScheduler } from "../utils/asyncScheduler";
 import { getRootDir, joinPaths, resolveAsAbsolutePath } from "../utils/fsUtils";
 
+import { CacheTargets, DatasetCacheBuilderImpl } from "./datasetCacheBuilder";
+
 namespace CacheDirNames {
     export const defaultDatasetCacheDirectoryPath = "dataset/.parsingCache/";
 }
@@ -45,6 +47,17 @@ export class Experiment {
         };
     }
 
+    async buildDatasetCache(
+        ...cacheTargetsBuilders: CacheTargets.CacheTargetsBuilder[]
+    ) {
+        const optionsAfterStartupResolution = this.resolveOnStartupOptions(
+            this.sharedRunOptions
+        );
+        const logger = this.initLogger(optionsAfterStartupResolution);
+
+        DatasetCacheBuilderImpl.buildDatasetCache(cacheTargetsBuilders, logger);
+    }
+
     /**
      * @param artifactsDirPath empty directory path relative to the root directory.
      * @param runOptions properties to update the options for **this** run with. To save the updated options for the further runs use `Experiment.updateRunOptions(...)` method instead.
@@ -61,21 +74,7 @@ export class Experiment {
         };
         const optionsAfterStartupResolution =
             this.resolveOnStartupOptions(thisRunOptions);
-        const logger: BenchmarkingLogger = new BenchmarkingLoggerImpl(
-            optionsAfterStartupResolution.loggerSeverity,
-            optionsAfterStartupResolution.logsFilePath === undefined
-                ? undefined
-                : {
-                      resolvedFilePath: resolveAsAbsolutePath(
-                          joinPaths(
-                              getRootDir(),
-                              optionsAfterStartupResolution.logsFilePath
-                          )
-                      ),
-                      clearOnStart: true,
-                  },
-            "[Benchmarking]" // TODO: customize through run options
-        );
+        const logger = this.initLogger(optionsAfterStartupResolution);
 
         this.mergedRequestedTargets = mergeAndResolveRequestedTargets(
             this.bundles,
@@ -111,6 +110,26 @@ export class Experiment {
             subprocessesScheduler,
             logger,
             totalTime
+        );
+    }
+
+    private initLogger(
+        optionsAfterStartupResolution: ExperimentRunOptions.AfterStartupResolution
+    ): BenchmarkingLogger {
+        return new BenchmarkingLoggerImpl(
+            optionsAfterStartupResolution.loggerSeverity,
+            optionsAfterStartupResolution.logsFilePath === undefined
+                ? undefined
+                : {
+                      resolvedFilePath: resolveAsAbsolutePath(
+                          joinPaths(
+                              getRootDir(),
+                              optionsAfterStartupResolution.logsFilePath
+                          )
+                      ),
+                      clearOnStart: true,
+                  },
+            "[Benchmarking]" // TODO: customize through run options
         );
     }
 
