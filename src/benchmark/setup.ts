@@ -1,4 +1,5 @@
 import { BenchmarkingBundle } from "./framework/experiment/benchmarkingBundleBuilder";
+import { CacheTargets } from "./framework/experiment/datasetCacheBuilder";
 import { Experiment } from "./framework/experiment/experiment";
 import { TargetsBuilder } from "./framework/experiment/targetsBuilder";
 import { SeverityLevel } from "./framework/logging/benchmarkingLogger";
@@ -37,15 +38,27 @@ experiment.updateRunOptions({
     datasetCacheUsage: DatasetCacheUsageMode.EXTEND_CACHE_WITH_MISSING_TARGETS,
 });
 
-const experimentResults = experiment.run("benchmarksOutput", {
-    loggerSeverity: SeverityLevel.DEBUG,
-});
-
-experimentResults.then(
-    () =>
-        console.log(
-            colorize("\nExperiment has successfully finished!\n", "green")
-        ),
-    (reason) =>
-        console.error(colorize(`\nExperiment has failed: ${reason}\n`, "red"))
-);
+experiment
+    .buildDatasetCache(
+        CacheTargets.standaloneFiles()
+            .files("auto_benchmark.v")
+            .files("mixed_benchmark.v")
+    )
+    .then(() =>
+        experiment.run("benchmarksOutput", {
+            loggerSeverity: SeverityLevel.DEBUG,
+        })
+    )
+    .then(
+        () =>
+            console.log(
+                colorize(
+                    "\nExperiment pipeline has successfully finished!\n",
+                    "green"
+                )
+            ),
+        (reason) =>
+            console.error(
+                colorize(`\nExperiment pipeline has failed: ${reason}\n`, "red")
+            )
+    );
