@@ -18,7 +18,7 @@ import { saveBuiltCache } from "./saveBuiltCache";
  * optionally updating the cache for the next runs.
  *
  * Pipeline steps in more details. This function:
- * 1. *(optional)* Reads cache of the previously parsed dataset.
+ * 1. *(optional)* Reads cache of the previously parsed dataset for the requested files.
  * 2. Determines, which of the requested targets are not present in the cache.
  * 3. If there are some, parses them (the missing targets) from the source Coq projects via subprocesses.
  * 4. From the data obtained from the cache and dataset parsing, it constructs `BenchmarkingItem`-s.

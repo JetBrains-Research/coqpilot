@@ -20,8 +20,8 @@ new BenchmarkingBundle()
     .withTargets(
         new TargetsBuilder()
             .withStandaloneFilesRoot()
-            .withAdmitTargetsFromFile("auto_benchmark.v", "test_thr", "test")
-            .withAdmitTargetsFromFile("mixed_benchmark.v", "add_comm")
+            .withAdmitTargetsFromFile("auto_benchmark.v", "test", "test_thr")
+            // .withAdmitTargetsFromFile("mixed_benchmark.v", "add_comm")
             .buildInputTargets()
         // new TargetsBuilder()
         //     .withWorkspaceRoot("imm", "nix")
@@ -37,12 +37,7 @@ experiment.updateRunOptions({
 });
 
 experiment
-    .buildDatasetCache(
-        "benchmarkLogs/.cache/",
-        CacheTargets.standaloneFiles()
-            .files("auto_benchmark.v")
-            .files("mixed_benchmark.v")
-    )
+    .buildDatasetCache("benchmarkLogs/.cache/", CacheTargets.standaloneFiles())
     .then(() =>
         experiment.run("benchmarksOutput", {
             datasetCacheDirectoryPath: "benchmarkLogs/.cache/",
