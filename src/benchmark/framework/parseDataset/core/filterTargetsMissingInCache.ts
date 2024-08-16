@@ -13,6 +13,7 @@ import { listCoqSourceFiles } from "../../utils/fsUtils";
 import { all } from "../../utils/listUtils";
 import { readRequestedFilesCache } from "../cacheHandlers/cacheReader";
 import { WorkspaceCacheHolder } from "../cacheStructures/cacheHolders";
+import { createEmptyCache } from "../utils/cacheHoldersUtils";
 
 export function filterRequestedTargetsMissingInCache(
     requestedTargets: WorkspaceInputTargets,
@@ -48,10 +49,6 @@ export function filterRequestedTargetsMissingInCache(
                 createEmptyCache(workspaceRoot),
             ];
     }
-}
-
-function createEmptyCache(workspaceRoot: WorkspaceRoot): WorkspaceCacheHolder {
-    return new WorkspaceCacheHolder(workspaceRoot.directoryPath);
 }
 
 function readCacheAndFilterMissingTargets(
