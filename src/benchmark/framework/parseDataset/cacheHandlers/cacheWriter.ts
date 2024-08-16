@@ -79,7 +79,8 @@ export function rewriteDatasetCache(
                                 `(!) Now cache is invalidated. Clear ${datasetCacheDirectoryPath} cache directory and try again.`
                             );
                         return false;
-                    }
+                    },
+                    true
                 ) ?? true;
             if (fileSuccessfullySaved) {
                 successfullyCachedFiles.push(filePath);

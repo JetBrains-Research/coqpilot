@@ -26,9 +26,13 @@ export function readFile<T>(
 export function writeToFile<T>(
     text: string,
     filePath: string,
-    onError: (error: Error) => T
+    onError: (error: Error) => T,
+    createParentDirectories: boolean = false
 ): T | undefined {
     try {
+        if (createParentDirectories) {
+            createDirectory(false, getDirectoryPath(filePath));
+        }
         fs.writeFileSync(filePath, text, defaultEncoding);
         return undefined;
     } catch (e) {
@@ -77,7 +81,7 @@ export function getLastName(inputPath: string): string {
     return path.parse(inputPath).name;
 }
 
-export function directoryName(inputPath: string): string {
+export function getDirectoryPath(inputPath: string): string {
     return path.dirname(inputPath);
 }
 
