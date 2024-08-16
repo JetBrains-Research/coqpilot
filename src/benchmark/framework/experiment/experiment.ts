@@ -17,15 +17,16 @@ import {
 import { AsyncScheduler } from "../utils/asyncScheduler";
 import { getRootDir, joinPaths, resolveAsAbsolutePath } from "../utils/fsUtils";
 
-import { CacheTargets, DatasetCacheBuilderImpl } from "./datasetCacheBuilder";
+import {
+    CacheTargetsImpl,
+    DatasetCacheBuildingImpl,
+} from "./datasetCacheBuilder";
 
 namespace CacheDirNames {
     export const defaultDatasetCacheDirectoryPath = "dataset/.parsingCache/";
 }
 
 export class Experiment {
-    private mergedRequestedTargets: DatasetInputTargets | undefined = undefined;
-
     constructor(
         private readonly bundles: InputBenchmarkingBundle[] = [],
         private sharedRunOptions: Partial<ExperimentRunOptions> = {}
@@ -47,15 +48,34 @@ export class Experiment {
         };
     }
 
+    /**
+     * Builds dataset cache for the requested targets.
+     * The returning promise resolves successfully if and only if the operation succeeded.
+     *
+     * *Warning:* `datasetCacheDirectoryPath` content will be cleared before saving the built cache.
+     *
+     * @param datasetCacheDirectoryPath a directory to save cache into. Overrides the same-name property of the experiment run options.
+     * @param cacheTargetsBuilders cache-building targets can be specified via `CacheTargets` builders.
+     */
     async buildDatasetCache(
-        ...cacheTargetsBuilders: CacheTargets.CacheTargetsBuilder[]
+        datasetCacheDirectoryPath: string,
+        ...cacheTargetsBuilders: CacheTargetsImpl.CacheTargetsBuilder[]
     ) {
-        const optionsAfterStartupResolution = this.resolveOnStartupOptions(
-            this.sharedRunOptions
+        const executionContext = this.prepareExecutionContext(
+            {
+                ...this.sharedRunOptions,
+                datasetCacheDirectoryPath: datasetCacheDirectoryPath,
+            },
+            "[Dataset Cache Building]",
+            (logger) =>
+                CacheTargetsImpl.buildCacheTargets(cacheTargetsBuilders, logger)
         );
-        const logger = this.initLogger(optionsAfterStartupResolution);
-
-        DatasetCacheBuilderImpl.buildDatasetCache(cacheTargetsBuilders, logger);
+        await DatasetCacheBuildingImpl.buildDatasetCache(
+            executionContext.requestedTargets,
+            executionContext.resolvedRunOptions,
+            executionContext.subprocessesScheduler,
+            executionContext.logger
+        );
     }
 
     /**
@@ -66,36 +86,22 @@ export class Experiment {
         artifactsDirPath: string,
         runOptions: Partial<ExperimentRunOptions> = {}
     ): Promise<ExperimentResults> {
+        const executionContext = this.prepareExecutionContext(
+            {
+                ...this.sharedRunOptions,
+                ...runOptions,
+            },
+            "[Benchmarking]", // TODO: customize through run options
+            (logger) => mergeAndResolveRequestedTargets(this.bundles, logger)
+        );
         const totalTime = new TimeMark();
-
-        const thisRunOptions: Partial<ExperimentRunOptions> = {
-            ...this.sharedRunOptions,
-            ...runOptions,
-        };
-        const optionsAfterStartupResolution =
-            this.resolveOnStartupOptions(thisRunOptions);
-        const logger = this.initLogger(optionsAfterStartupResolution);
-
-        this.mergedRequestedTargets = mergeAndResolveRequestedTargets(
-            this.bundles,
-            logger
-        );
-        const resolvedRunOptions = this.resolveAllExperimentRunOptions(
-            optionsAfterStartupResolution
-        );
-
-        const subprocessesScheduler = new AsyncScheduler(
-            resolvedRunOptions.maxActiveSubprocessesNumber,
-            resolvedRunOptions.enableSubprocessesSchedulingDebugLogs,
-            "Subprocesses Scheduler"
-        );
 
         const benchmarkingItems = await parseDatasetForBenchmarkingItems(
             this.bundles,
-            this.mergedRequestedTargets,
-            resolvedRunOptions,
-            subprocessesScheduler,
-            logger
+            executionContext.requestedTargets,
+            executionContext.resolvedRunOptions,
+            executionContext.subprocessesScheduler,
+            executionContext.logger
         );
         if (benchmarkingItems.length === 0) {
             throw Error(
@@ -106,15 +112,50 @@ export class Experiment {
         return benchmark(
             benchmarkingItems,
             resolveAsAbsolutePath(joinPaths(getRootDir(), artifactsDirPath)),
-            resolvedRunOptions,
-            subprocessesScheduler,
-            logger,
+            executionContext.resolvedRunOptions,
+            executionContext.subprocessesScheduler,
+            executionContext.logger,
             totalTime
         );
     }
 
+    private prepareExecutionContext(
+        runOptions: Partial<ExperimentRunOptions>,
+        loggerIdentifier: string,
+        buildRequestedTargets: (
+            logger: BenchmarkingLogger
+        ) => DatasetInputTargets
+    ): ExecutionContext {
+        const optionsAfterStartupResolution =
+            this.resolveOnStartupOptions(runOptions);
+        const logger = this.initLogger(
+            optionsAfterStartupResolution,
+            loggerIdentifier
+        );
+
+        const requestedTargets = buildRequestedTargets(logger);
+        const resolvedRunOptions = this.resolveAllExperimentRunOptions(
+            optionsAfterStartupResolution,
+            requestedTargets
+        );
+
+        const subprocessesScheduler = new AsyncScheduler(
+            resolvedRunOptions.maxActiveSubprocessesNumber,
+            resolvedRunOptions.enableSubprocessesSchedulingDebugLogs,
+            "Subprocesses Scheduler"
+        );
+
+        return {
+            requestedTargets: requestedTargets,
+            resolvedRunOptions: resolvedRunOptions,
+            subprocessesScheduler: subprocessesScheduler,
+            logger: logger,
+        };
+    }
+
     private initLogger(
-        optionsAfterStartupResolution: ExperimentRunOptions.AfterStartupResolution
+        optionsAfterStartupResolution: ExperimentRunOptions.AfterStartupResolution,
+        recordIdentifier: string
     ): BenchmarkingLogger {
         return new BenchmarkingLoggerImpl(
             optionsAfterStartupResolution.loggerSeverity,
@@ -129,7 +170,7 @@ export class Experiment {
                       ),
                       clearOnStart: true,
                   },
-            "[Benchmarking]" // TODO: customize through run options
+            recordIdentifier
         );
     }
 
@@ -151,13 +192,9 @@ export class Experiment {
     }
 
     private resolveAllExperimentRunOptions(
-        optionsAfterStartupResolution: ExperimentRunOptions.AfterStartupResolution
+        optionsAfterStartupResolution: ExperimentRunOptions.AfterStartupResolution,
+        requestedTargets: DatasetInputTargets
     ): ExperimentRunOptions {
-        if (this.mergedRequestedTargets === undefined) {
-            throw Error(
-                "`mergedRequestedTargets` should be built before input options resolution"
-            );
-        }
         return {
             loggerSeverity: optionsAfterStartupResolution.loggerSeverity,
             logsFilePath: optionsAfterStartupResolution.logsFilePath,
@@ -168,7 +205,7 @@ export class Experiment {
 
             maxActiveSubprocessesNumber: Math.max(
                 optionsAfterStartupResolution.maxActiveSubprocessesNumber ??
-                    this.mergedRequestedTargets.workspacesNumber(),
+                    requestedTargets.workspacesNumber(),
                 1
             ),
             maxParallelGenerationRequestsToModel:
@@ -192,6 +229,13 @@ export class Experiment {
                 false,
         };
     }
+}
+
+interface ExecutionContext {
+    requestedTargets: DatasetInputTargets;
+    resolvedRunOptions: ExperimentRunOptions;
+    subprocessesScheduler: AsyncScheduler;
+    logger: BenchmarkingLogger;
 }
 
 function mergeAndResolveRequestedTargets(

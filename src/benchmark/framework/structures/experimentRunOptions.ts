@@ -13,7 +13,7 @@ export interface ExperimentRunOptions {
     datasetCacheUsage: DatasetCacheUsageMode;
     /**
      * Path relative to the root directory. If it is not set, a `dataset/.parsingCache` will be used.
-     * Inside the cached dataset projects are stored: for a project `dataset/example`,
+     * Inside, the cached dataset projects are stored: for a project `dataset/example`,
      * its cache might be found inside `${datasetCacheDirectoryPath}/example`.
      *
      * Note: the benchmarking framework is allowed to modify `datasetCacheDirectoryPath` content

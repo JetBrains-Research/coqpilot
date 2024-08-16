@@ -31,22 +31,23 @@ new BenchmarkingBundle()
     .addTo(experiment);
 
 experiment.updateRunOptions({
-    loggerSeverity: SeverityLevel.INFO,
+    loggerSeverity: SeverityLevel.DEBUG,
     // logsFilePath: "benchmarkLogs/logs.txt",
     maxActiveSubprocessesNumber: 1,
-    datasetCacheDirectoryPath: "benchmarkLogs/.cache/",
-    datasetCacheUsage: DatasetCacheUsageMode.EXTEND_CACHE_WITH_MISSING_TARGETS,
 });
 
 experiment
     .buildDatasetCache(
+        "benchmarkLogs/.cache/",
         CacheTargets.standaloneFiles()
             .files("auto_benchmark.v")
             .files("mixed_benchmark.v")
     )
     .then(() =>
         experiment.run("benchmarksOutput", {
-            loggerSeverity: SeverityLevel.DEBUG,
+            datasetCacheDirectoryPath: "benchmarkLogs/.cache/",
+            datasetCacheUsage:
+                DatasetCacheUsageMode.EXTEND_CACHE_WITH_MISSING_TARGETS,
         })
     )
     .then(
