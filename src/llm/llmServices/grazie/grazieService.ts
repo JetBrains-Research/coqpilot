@@ -86,14 +86,14 @@ class GrazieServiceInternal extends LLMServiceInternal<
     }
 
     async generateFromChatImpl(
-        chat: ChatHistory,
+        analyzedChat: CompletelyAnalyzedChatHistory,
         params: GrazieModelParams,
         choices: number
     ): Promise<string[]> {
         this.validateChoices(choices);
         let attempts = choices * 2;
         const completions: Promise<string>[] = [];
-        const formattedChat = this.formatChatHistory(chat);
+        const formattedChat = this.formatChatHistory(analyzedChat.chat);
 
         while (completions.length < choices && attempts > 0) {
             completions.push(

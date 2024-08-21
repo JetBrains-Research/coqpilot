@@ -87,18 +87,20 @@ class OpenAiServiceInternal extends LLMServiceInternal<
     }
 
     async generateFromChatImpl(
-        chat: ChatHistory,
+        analyzedChat: CompletelyAnalyzedChatHistory,
         params: OpenAiModelParams,
         choices: number
     ): Promise<string[]> {
         this.validateChoices(choices);
 
         const openai = new OpenAI({ apiKey: params.apiKey });
-        this.debug.logEvent("Completion requested", { history: chat });
+        this.debug.logEvent("Completion requested", {
+            history: analyzedChat.chat,
+        });
 
         try {
             const completion = await openai.chat.completions.create({
-                messages: chat,
+                messages: analyzedChat.chat,
                 model: params.modelName,
                 n: choices,
                 temperature: params.temperature,

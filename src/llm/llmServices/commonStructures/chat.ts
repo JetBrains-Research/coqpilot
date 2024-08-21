@@ -10,6 +10,11 @@ export interface AnalyzedChatHistory {
     estimatedTokens?: EstimatedTokens;
 }
 
+export interface CompletelyAnalyzedChatHistory extends AnalyzedChatHistory {
+    contextTheorems: string[];
+    estimatedTokens: EstimatedTokens;
+}
+
 export interface EstimatedTokens {
     messagesTokens: number;
     maxTokensToGenerate: number;

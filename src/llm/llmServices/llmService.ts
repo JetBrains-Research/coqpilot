@@ -65,7 +65,7 @@ export type LLMService<
 
 /**
  * `LLMServiceImpl` represents a service for proofs generation.
- * Proofs can be generated from both `ProofGenerationContext` and `AnalyzedChatHistory`.
+ * Proofs can be generated from both `ProofGenerationContext` and `CompletelyAnalyzedChatHistory`.
  * Generated proofs are represented by `GeneratedProofImpl` class and
  * can be further regenerated (fixed / shortened / etc), also keeping their previous versions.
  *
@@ -187,7 +187,7 @@ export abstract class LLMServiceImpl<
      * @returns generated proofs as raw strings.
      */
     async generateFromChat(
-        analyzedChat: AnalyzedChatHistory,
+        analyzedChat: CompletelyAnalyzedChatHistory,
         params: ResolvedModelParams,
         choices: number = params.defaultChoices,
         errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS

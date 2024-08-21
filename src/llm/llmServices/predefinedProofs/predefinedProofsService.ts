@@ -148,7 +148,7 @@ class PredefinedProofsServiceInternal extends LLMServiceInternal<
     }
 
     generateFromChatImpl(
-        _chat: ChatHistory,
+        _analyzedChat: CompletelyAnalyzedChatHistory,
         _params: PredefinedProofsModelParams,
         _choices: number
     ): Promise<string[]> {

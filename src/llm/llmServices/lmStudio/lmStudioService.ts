@@ -86,14 +86,16 @@ class LMStudioServiceInternal extends LLMServiceInternal<
     }
 
     async generateFromChatImpl(
-        chat: ChatHistory,
+        analyzedChat: CompletelyAnalyzedChatHistory,
         params: LMStudioModelParams,
         choices: number
     ): Promise<string[]> {
         this.validateChoices(choices);
         let attempts = choices * 2;
         const completions: string[] = [];
-        this.debug.logEvent("Completion requested", { history: chat });
+        this.debug.logEvent("Completion requested", {
+            history: analyzedChat.chat,
+        });
 
         let lastErrorThrown: Error | undefined = undefined;
         while (completions.length < choices && attempts > 0) {
@@ -101,7 +103,7 @@ class LMStudioServiceInternal extends LLMServiceInternal<
                 const responce = await fetch(this.endpoint(params), {
                     method: "POST",
                     headers: this.headers,
-                    body: this.body(chat, params),
+                    body: this.body(analyzedChat.chat, params),
                 });
                 if (responce.ok) {
                     const res = await responce.json();
