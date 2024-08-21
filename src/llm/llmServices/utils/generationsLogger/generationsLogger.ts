@@ -46,10 +46,10 @@ export class GenerationsLogger {
      * About settings.
      *
      * - When `debug` is false, logs only the necessary info:
-     * timestamp, model name, response status and basic request info (choices and number of tokens sent).
+     * timestamp, model name, response status and basic request info (choices and number of tokens used).
      * Logs are being cleaned every time the last request succeeds.
-     * - When `debug` is true, logs chat history, received completions and params of the model additionally.
-     *   Also, the logs are never cleaned automatically.
+     * - When `debug` is true, logs context theorems, chat history, received completions,
+     *   and params of the model additionally. Also, the logs are never cleaned automatically.
      *
      * `paramsPropertiesToCensor` specifies properties of `ModelParams` (or its extension)
      * that will be replaced with the corresponding given values in logs.
@@ -72,14 +72,18 @@ export class GenerationsLogger {
             request.params.modelId,
             "SUCCESS",
             request.choices,
-            request.analyzedChat?.estimatedTokens
+            request.analyzedChat?.estimatedTokens,
+            request.tokensSpentInTotal
         );
         if (this.settings.debug) {
             record = new DebugLoggerRecord(
                 record,
+                request.analyzedChat?.contextTheorems,
                 request.analyzedChat?.chat,
                 this.censorParamsProperties(request.params),
-                request.generatedRawProofs
+                request.generatedRawProofs.map(
+                    (contentItem) => contentItem.content
+                ) // TODO: maybe support per-item generation tokens
             );
         }
 
@@ -98,6 +102,7 @@ export class GenerationsLogger {
             "FAILURE",
             request.choices,
             request.analyzedChat?.estimatedTokens,
+            undefined,
             this.toLoggedError(
                 this.extractAndValidateCause(request.llmServiceError)
             )
@@ -105,6 +110,7 @@ export class GenerationsLogger {
         if (this.settings.debug) {
             record = new DebugLoggerRecord(
                 record,
+                request.analyzedChat?.contextTheorems,
                 request.analyzedChat?.chat,
                 this.censorParamsProperties(request.params)
             );
