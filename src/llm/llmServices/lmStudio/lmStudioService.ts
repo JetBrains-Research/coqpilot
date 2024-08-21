@@ -90,7 +90,7 @@ class LMStudioServiceInternal extends LLMServiceInternal<
         params: LMStudioModelParams,
         choices: number
     ): Promise<string[]> {
-        this.validateChoices(choices);
+        LLMServiceInternal.validateChoices(choices);
         let attempts = choices * 2;
         const completions: string[] = [];
         this.debug.logEvent("Completion requested", {

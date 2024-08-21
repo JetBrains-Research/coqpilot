@@ -90,7 +90,7 @@ class GrazieServiceInternal extends LLMServiceInternal<
         params: GrazieModelParams,
         choices: number
     ): Promise<string[]> {
-        this.validateChoices(choices);
+        LLMServiceInternal.validateChoices(choices);
         let attempts = choices * 2;
         const completions: Promise<string>[] = [];
         const formattedChat = this.formatChatHistory(analyzedChat.chat);

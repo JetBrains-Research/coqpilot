@@ -91,7 +91,7 @@ class OpenAiServiceInternal extends LLMServiceInternal<
         params: OpenAiModelParams,
         choices: number
     ): Promise<string[]> {
-        this.validateChoices(choices);
+        LLMServiceInternal.validateChoices(choices);
 
         const openai = new OpenAI({ apiKey: params.apiKey });
         this.debug.logEvent("Completion requested", {

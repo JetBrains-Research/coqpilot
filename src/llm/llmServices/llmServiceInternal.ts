@@ -254,7 +254,7 @@ export abstract class LLMServiceInternal<
      * might handle negative or zero `choices` in some special way.
      * However, this validation is most likely needed in any normal `LLMServiceInternal` implementation.
      */
-    validateChoices(choices: number) {
+    static validateChoices(choices: number) {
         if (choices <= 0) {
             throw new ConfigurationError("choices number should be positive");
         }

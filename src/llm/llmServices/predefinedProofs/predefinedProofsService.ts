@@ -55,7 +55,7 @@ export class PredefinedProofsService extends LLMServiceImpl<
             choices,
             errorsHandlingMode,
             (_request) => {
-                this.internal.validateChoices(choices);
+                LLMServiceInternal.validateChoices(choices);
                 const tactics = params.tactics;
                 if (choices > tactics.length) {
                     throw new ConfigurationError(
