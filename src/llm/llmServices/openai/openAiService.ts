@@ -90,7 +90,7 @@ class OpenAiServiceInternal extends LLMServiceInternal<
         analyzedChat: AnalyzedChatHistory,
         params: OpenAiModelParams,
         choices: number
-    ): Promise<string[]> {
+    ): Promise<GeneratedRawContent> {
         LLMServiceInternal.validateChoices(choices);
 
         const openai = new OpenAI({ apiKey: params.apiKey });
@@ -107,16 +107,44 @@ class OpenAiServiceInternal extends LLMServiceInternal<
                 // eslint-disable-next-line @typescript-eslint/naming-convention
                 max_tokens: params.maxTokensToGenerate,
             });
-            return completion.choices.map((choice) => {
+            const rawContentItems = completion.choices.map((choice) => {
                 const content = choice.message.content;
                 if (content === null) {
                     throw Error("response message content is null");
                 }
                 return content;
             });
+
+            return this.packContentWithTokensMetrics(
+                rawContentItems,
+                completion.usage,
+                analyzedChat,
+                params
+            );
         } catch (e) {
             throw OpenAiServiceInternal.repackKnownError(e, params);
         }
+    }
+
+    private packContentWithTokensMetrics(
+        rawContentItems: string[],
+        tokensUsage: OpenAI.Completions.CompletionUsage | undefined,
+        analyzedChat: AnalyzedChatHistory,
+        params: OpenAiModelParams
+    ): GeneratedRawContent {
+        const promptTokens =
+            tokensUsage?.prompt_tokens ??
+            analyzedChat.estimatedTokens.messagesTokens;
+        return LLMServiceInternal.aggregateToGeneratedRawContent(
+            rawContentItems,
+            promptTokens,
+            params.modelName,
+            {
+                promptTokens: promptTokens,
+                generatedTokens: tokensUsage?.completion_tokens,
+                tokensSpentInTotal: tokensUsage?.total_tokens,
+            }
+        );
     }
 
     private static repackKnownError(

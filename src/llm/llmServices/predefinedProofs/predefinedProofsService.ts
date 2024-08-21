@@ -64,9 +64,17 @@ export class PredefinedProofsService extends LLMServiceImpl<
                 }
             },
             async (_request) => {
-                return this.formatCoqSentences(
+                return {
+                    items: this.formatCoqSentences(
                     params.tactics.slice(0, choices)
-                ).map((tactic) => `Proof. ${tactic} Qed.`);
+                    ).map((tactic) => {
+                        return {
+                            content: `Proof. ${tactic} Qed.`,
+                            tokensSpent: zeroTokens(),
+                        };
+                    }),
+                    tokensSpentInTotal: zeroTokens(),
+                };
             },
             (proof) =>
                 this.internal.constructGeneratedProof(
@@ -151,7 +159,7 @@ class PredefinedProofsServiceInternal extends LLMServiceInternal<
         _analyzedChat: AnalyzedChatHistory,
         _params: PredefinedProofsModelParams,
         _choices: number
-    ): Promise<string[]> {
+    ): Promise<GeneratedRawContent> {
         throw new ConfigurationError(
             "`PredefinedProofsService` does not support generation from chat"
         );

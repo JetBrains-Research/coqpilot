@@ -89,7 +89,7 @@ class GrazieServiceInternal extends LLMServiceInternal<
         analyzedChat: AnalyzedChatHistory,
         params: GrazieModelParams,
         choices: number
-    ): Promise<string[]> {
+    ): Promise<GeneratedRawContent> {
         LLMServiceInternal.validateChoices(choices);
         let attempts = choices * 2;
         const completions: Promise<string>[] = [];
@@ -101,8 +101,14 @@ class GrazieServiceInternal extends LLMServiceInternal<
             );
             attempts--;
         }
+        const rawContentItems = await Promise.all(completions);
 
-        return Promise.all(completions);
+        // TODO: find a way to get actual tokens spent instead of approximation
+        return LLMServiceInternal.aggregateToGeneratedRawContent(
+            rawContentItems,
+            analyzedChat.estimatedTokens.messagesTokens,
+            params.modelName
+        );
     }
 
     private formatChatHistory(chat: ChatHistory): GrazieFormattedHistory {

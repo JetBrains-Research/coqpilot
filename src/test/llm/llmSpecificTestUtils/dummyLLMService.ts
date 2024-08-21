@@ -117,7 +117,7 @@ class DummyLLMServiceInternal extends LLMServiceInternal<
         _analyzedChat: AnalyzedChatHistory,
         _params: ModelParams,
         _choices: number
-    ): Promise<string[]> {
+    ): Promise<GeneratedRawContent> {
         throw Error("I'm a teapot");
     }
 }

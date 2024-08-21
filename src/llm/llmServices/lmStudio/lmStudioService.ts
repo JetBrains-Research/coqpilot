@@ -89,7 +89,7 @@ class LMStudioServiceInternal extends LLMServiceInternal<
         analyzedChat: AnalyzedChatHistory,
         params: LMStudioModelParams,
         choices: number
-    ): Promise<string[]> {
+    ): Promise<GeneratedRawContent> {
         LLMServiceInternal.validateChoices(choices);
         let attempts = choices * 2;
         const completions: string[] = [];
@@ -124,11 +124,16 @@ class LMStudioServiceInternal extends LLMServiceInternal<
             }
             attempts--;
         }
-
         if (completions.length < choices) {
             throw lastErrorThrown;
         }
-        return completions;
+
+        // TODO: find a way to get actual tokens spent instead of approximation
+        return LLMServiceInternal.aggregateToGeneratedRawContent(
+            completions,
+            analyzedChat.estimatedTokens.messagesTokens,
+            undefined
+        );
     }
 
     private readonly headers = {

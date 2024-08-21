@@ -269,7 +269,8 @@ class MockLLMServiceInternal extends LLMServiceInternal<
         analyzedChat: AnalyzedChatHistory,
         params: MockLLMModelParams,
         choices: number
-    ): Promise<string[]> {
+    ): Promise<GeneratedRawContent> {
+        const chat = analyzedChat.chat;
         this.eventLogger?.logLogicEvent(
             MockLLMService.generationFromChatEvent,
             chat
@@ -293,7 +294,11 @@ class MockLLMServiceInternal extends LLMServiceInternal<
             (message) => message.content === MockLLMService.proofFixPrompt
         );
         if (proofFixPromptInChat !== undefined) {
-            return Array(choices).fill(MockLLMService.fixedProofString);
+            return LLMServiceInternal.aggregateToGeneratedRawContent(
+                Array(choices).fill(MockLLMService.fixedProofString),
+                analyzedChat.estimatedTokens?.messagesTokens,
+                undefined
+            );
         }
 
         const lastChatMessage = chat[chat.length - 1];
@@ -309,9 +314,13 @@ class MockLLMServiceInternal extends LLMServiceInternal<
             );
         }
 
-        return params.proofsToGenerate.slice(
+        return LLMServiceInternal.aggregateToGeneratedRawContent(
+            params.proofsToGenerate.slice(
             skipFirstNProofs,
             skipFirstNProofs + choices
+            ),
+            analyzedChat.estimatedTokens?.messagesTokens,
+            undefined
         );
     }
 
