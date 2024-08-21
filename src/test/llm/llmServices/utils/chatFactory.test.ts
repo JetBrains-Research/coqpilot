@@ -1,8 +1,11 @@
 import { expect } from "earl";
 
 import { ConfigurationError } from "../../../../llm/llmServiceErrors";
-import { ChatHistory, ChatMessage } from "../../../../llm/llmServices/chat";
-import { ProofVersion } from "../../../../llm/llmServices/llmService";
+import {
+    ChatHistory,
+    ChatMessage,
+} from "../../../../llm/llmServices/commonStructures/chat";
+import { ProofVersion } from "../../../../llm/llmServices/commonStructures/proofVersion";
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 import {
     buildChat,

@@ -1,8 +1,14 @@
 import { EventLogger } from "../../../logging/eventLogger";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { GrazieUserModelParams } from "../../userModelParams";
-import { ChatHistory, ChatMessage } from "../chat";
-import { GeneratedProofImpl, ProofVersion } from "../llmService";
+import {
+    AnalyzedChatHistory,
+    ChatHistory,
+    ChatMessage,
+} from "../commonStructures/chat";
+import { GeneratedRawContent } from "../commonStructures/generatedRawContent";
+import { ProofVersion } from "../commonStructures/proofVersion";
+import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
 import { LLMServiceInternal } from "../llmServiceInternal";
 import { GrazieModelParams } from "../modelParams";

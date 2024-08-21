@@ -7,17 +7,27 @@ import {
 import { ProofGenerationContext } from "../proofGenerationContext";
 import { UserModelParams } from "../userModelParams";
 
-import { AnalyzedChatHistory, ChatHistory } from "./chat";
+import { AnalyzedChatHistory } from "./commonStructures/chat";
+import { ErrorsHandlingMode } from "./commonStructures/errorsHandlingMode";
 import {
-    ErrorsHandlingMode,
-    GeneratedProofImpl,
-    LLMServiceImpl,
+    GeneratedRawContent,
+    GeneratedRawContentItem,
+} from "./commonStructures/generatedRawContent";
+import {
+    GenerationTokens,
+    constructGenerationTokens,
+    sumGenerationTokens,
+} from "./commonStructures/generationTokens";
+import {
     LLMServiceRequest,
     LLMServiceRequestFailed,
     LLMServiceRequestSucceeded,
-    ProofVersion,
-} from "./llmService";
+} from "./commonStructures/llmServiceRequest";
+import { ProofVersion } from "./commonStructures/proofVersion";
+import { GeneratedProofImpl } from "./generatedProof";
+import { LLMServiceImpl } from "./llmService";
 import { ModelParams } from "./modelParams";
+import { TokensCounter } from "./utils/chatTokensFitter";
 import { GenerationsLogger } from "./utils/generationsLogger/generationsLogger";
 
 /**

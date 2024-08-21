@@ -1,7 +1,7 @@
 import { expect } from "earl";
 
 import { ConfigurationError } from "../../../../llm/llmServiceErrors";
-import { ErrorsHandlingMode } from "../../../../llm/llmServices/llmService";
+import { ErrorsHandlingMode } from "../../../../llm/llmServices/commonStructures/errorsHandlingMode";
 
 import { EventLogger } from "../../../../logging/eventLogger";
 import {

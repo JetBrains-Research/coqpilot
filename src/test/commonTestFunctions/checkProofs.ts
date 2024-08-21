@@ -1,4 +1,4 @@
-import { GeneratedProof } from "../../llm/llmServices/llmService";
+import { GeneratedProof } from "../../llm/llmServices/generatedProof";
 
 import { CompletionContext } from "../../core/completionGenerationContext";
 import { ProofCheckResult } from "../../core/coqProofChecker";

@@ -1,4 +1,9 @@
-import { ChatHistory, ChatRole, EstimatedTokens } from "../../chat";
+import {
+    ChatHistory,
+    ChatRole,
+    EstimatedTokens,
+} from "../../commonStructures/chat";
+import { GenerationTokens } from "../../commonStructures/generationTokens";
 import { ModelParams } from "../../modelParams";
 
 export type ResponseStatus = "SUCCESS" | "FAILURE";
@@ -134,19 +139,19 @@ export class LoggerRecord {
             afterLoggedErrorRawRecord,
             "requested choices"
         );
-const choices = this.parseIntValue(rawChoices, "requested choices");
+        const choices = this.parseIntValue(rawChoices, "requested choices");
 
         const [requestTokens, afterRequestTokensRawRecord] = this.parseOptional(
             this.requestTokensHeader,
             (text) => this.parseRequestTokens(text),
             afterChoicesRawRecord
-);
+        );
         const [generationTokens, afterGenerationTokensRawRecord] =
             this.parseOptional(
                 this.generationTokensHeader,
                 (text) => this.parseGenerationTokens(text),
                 afterRequestTokensRawRecord
-        );
+            );
 
         return [
             new LoggerRecord(
@@ -154,7 +159,7 @@ const choices = this.parseIntValue(rawChoices, "requested choices");
                 modelId,
                 responseStatus,
                 choices,
-requestTokens,
+                requestTokens,
                 generationTokens,
                 error
             ),
@@ -322,7 +327,7 @@ requestTokens,
 export class DebugLoggerRecord extends LoggerRecord {
     constructor(
         baseRecord: LoggerRecord,
-readonly contextTheorems: string[] | undefined,
+        readonly contextTheorems: string[] | undefined,
         readonly chat: ChatHistory | undefined,
         readonly params: ModelParams,
         readonly generatedProofs: string[] | undefined = undefined
@@ -369,7 +374,7 @@ readonly contextTheorems: string[] | undefined,
     }
 
     private buildExtraInfo(): string {
-const contextTheorems =
+        const contextTheorems =
             this.contextTheorems !== undefined
                 ? `${DebugLoggerRecord.contextTheoremsHeader}\n${this.contextTheoremsToExtraLogs()}\n`
                 : "";
@@ -383,7 +388,7 @@ const contextTheorems =
                 : "";
         const paramsInfo = `${DebugLoggerRecord.paramsHeader}\n${this.paramsToExtraLogs()}\n`;
         return `${contextTheorems}${chatInfo}${generatedProofs}${paramsInfo}`;
-}
+    }
 
     private contextTheoremsToExtraLogs(): string {
         return this.contextTheorems!.length === 0
@@ -426,7 +431,7 @@ const contextTheorems =
         const [baseRecord, afterBaseRawRecord] = super.deserealizeFromString(
             rawRecord
         );
-const [contextTheorems, afterTheoremsRawRecord] = this.parseOptional(
+        const [contextTheorems, afterTheoremsRawRecord] = this.parseOptional(
             this.contextTheoremsHeader,
             (text) => this.parseContextTheorems(text),
             afterBaseRawRecord
@@ -446,12 +451,12 @@ const [contextTheorems, afterTheoremsRawRecord] = this.parseOptional(
 
         return [
             new DebugLoggerRecord(
-baseRecord,
+                baseRecord,
                 contextTheorems,
-chat,
-params,
-generatedProofs
-),
+                chat,
+                params,
+                generatedProofs
+            ),
             unparsedData,
         ];
     }

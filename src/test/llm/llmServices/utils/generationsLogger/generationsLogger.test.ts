@@ -7,14 +7,20 @@ import {
     LLMServiceError,
 } from "../../../../../llm/llmServiceErrors";
 import {
+    AnalyzedChatHistory,
     ChatHistory,
     EstimatedTokens,
-} from "../../../../../llm/llmServices/chat";
+} from "../../../../../llm/llmServices/commonStructures/chat";
+import { GeneratedRawContentItem } from "../../../../../llm/llmServices/commonStructures/generatedRawContent";
+import {
+    GenerationTokens,
+    constructGenerationTokens,
+} from "../../../../../llm/llmServices/commonStructures/generationTokens";
 import {
     LLMServiceRequest,
     LLMServiceRequestFailed,
     LLMServiceRequestSucceeded,
-} from "../../../../../llm/llmServices/llmService";
+} from "../../../../../llm/llmServices/commonStructures/llmServiceRequest";
 import {
     ModelParams,
     OpenAiModelParams,
@@ -68,7 +74,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
     };
     // different from `defaultChoices`, it's a real-life case
     const mockChoices = 2;
-        const mockChat: ChatHistory = [
+    const mockChat: ChatHistory = [
         {
             role: "system",
             content: "hello from system!",
@@ -82,7 +88,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
             content: "hello from assistant!",
         },
     ];
-const mockContextTheorems = ["test_theorm", "another_theorem"];
+    const mockContextTheorems = ["test_theorm", "another_theorem"];
     const mockEstimatedTokens: EstimatedTokens = {
         messagesTokens: 100,
         maxTokensToGenerate: 80,
@@ -95,7 +101,7 @@ const mockContextTheorems = ["test_theorm", "another_theorem"];
     };
 
     const mockProofs = ["auto.\nintro.", "auto."];
-const mockGenerationTokensSpent: GenerationTokens =
+    const mockGenerationTokensSpent: GenerationTokens =
         constructGenerationTokens(
             mockEstimatedTokens.messagesTokens,
             mockEstimatedTokens.maxTokensToGenerate
@@ -370,7 +376,7 @@ const mockGenerationTokensSpent: GenerationTokens =
 
         const debugLoggerRecord = new DebugLoggerRecord(
             loggerRecord,
-mockContextTheorems,
+            mockContextTheorems,
             mockChat,
             mockParams,
             mockProofs
@@ -390,7 +396,7 @@ mockContextTheorems,
             "FAILURE",
             mockChoices,
             mockEstimatedTokens,
-undefined,
+            undefined,
             {
                 typeName: error.name,
                 message: error.message,
@@ -402,7 +408,7 @@ undefined,
 
         const debugLoggerRecord = new DebugLoggerRecord(
             loggerRecord,
-mockContextTheorems,
+            mockContextTheorems,
             mockChat,
             mockParams
         );
@@ -419,7 +425,7 @@ mockContextTheorems,
             mockParams.modelId,
             "SUCCESS",
             mockChoices,
-undefined,
+            undefined,
             undefined,
             undefined
         );
@@ -429,7 +435,7 @@ undefined,
 
         const debugLoggerRecord = new DebugLoggerRecord(
             loggerRecord,
-undefined,
+            undefined,
             undefined,
             mockParams,
             undefined
@@ -448,11 +454,11 @@ undefined,
                 mockParams.modelId,
                 "SUCCESS",
                 mockChoices,
-undefined,
+                undefined,
                 undefined,
                 undefined
             ),
-[], // empty context theorems list
+            [], // empty context theorems list
             [], // empty chat list
             mockParams,
             [] // empty generated proofs list

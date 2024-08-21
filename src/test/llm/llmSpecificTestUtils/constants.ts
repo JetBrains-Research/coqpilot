@@ -1,4 +1,4 @@
-import { AnalyzedChatHistory } from "../../../llm/llmServices/chat";
+import { AnalyzedChatHistory } from "../../../llm/llmServices/commonStructures/chat";
 import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 
 export const proofsToGenerate = [

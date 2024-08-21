@@ -1,12 +1,11 @@
 import { EventLogger } from "../../../logging/eventLogger";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { LMStudioUserModelParams } from "../../userModelParams";
-import { ChatHistory } from "../chat";
-import {
-    GeneratedProofImpl,
-    LLMServiceImpl,
-    ProofVersion,
-} from "../llmService";
+import { AnalyzedChatHistory, ChatHistory } from "../commonStructures/chat";
+import { GeneratedRawContent } from "../commonStructures/generatedRawContent";
+import { ProofVersion } from "../commonStructures/proofVersion";
+import { GeneratedProofImpl } from "../generatedProof";
+import { LLMServiceImpl } from "../llmService";
 import { LLMServiceInternal } from "../llmServiceInternal";
 import { LMStudioModelParams } from "../modelParams";
 

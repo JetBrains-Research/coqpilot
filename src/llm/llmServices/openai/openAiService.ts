@@ -7,12 +7,11 @@ import {
 } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { OpenAiUserModelParams } from "../../userModelParams";
-import { ChatHistory } from "../chat";
-import {
-    GeneratedProofImpl,
-    LLMServiceImpl,
-    ProofVersion,
-} from "../llmService";
+import { AnalyzedChatHistory } from "../commonStructures/chat";
+import { GeneratedRawContent } from "../commonStructures/generatedRawContent";
+import { ProofVersion } from "../commonStructures/proofVersion";
+import { GeneratedProofImpl } from "../generatedProof";
+import { LLMServiceImpl } from "../llmService";
 import { LLMServiceInternal } from "../llmServiceInternal";
 import { OpenAiModelParams } from "../modelParams";
 

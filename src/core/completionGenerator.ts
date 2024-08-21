@@ -1,5 +1,5 @@
 import { LLMSequentialIterator } from "../llm/llmIterator";
-import { GeneratedProof } from "../llm/llmServices/llmService";
+import { GeneratedProof } from "../llm/llmServices/generatedProof";
 
 import { EventLogger } from "../logging/eventLogger";
 import { stringifyAnyValue } from "../utils/printers";

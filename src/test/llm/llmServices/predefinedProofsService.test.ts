@@ -1,7 +1,7 @@
 import { expect } from "earl";
 
 import { ConfigurationError } from "../../../llm/llmServiceErrors";
-import { ErrorsHandlingMode } from "../../../llm/llmServices/llmService";
+import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
 import { PredefinedProofsModelParams } from "../../../llm/llmServices/modelParams";
 import { PredefinedProofsService } from "../../../llm/llmServices/predefinedProofs/predefinedProofsService";
 import { resolveParametersOrThrow } from "../../../llm/llmServices/utils/resolveOrThrow";
@@ -234,6 +234,7 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                 await predefinedProofsService.generateFromChat(
                     {
                         chat: [],
+                        contextTheorems: [],
                         estimatedTokens: {
                             messagesTokens: 0,
                             maxTokensToGenerate: 0,

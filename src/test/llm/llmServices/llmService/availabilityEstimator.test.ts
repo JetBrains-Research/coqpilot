@@ -26,6 +26,7 @@ suite("[LLMService] Test default availability estimator", () => {
             responseStatus,
             5,
             undefined,
+            undefined,
             responseStatus === "FAILURE"
                 ? {
                       typeName: Error.name,

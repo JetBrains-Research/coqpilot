@@ -2,11 +2,9 @@ import * as assert from "assert";
 import * as fs from "fs";
 
 import { LLMServices } from "../../llm/llmServices";
+import { LLMServiceRequest } from "../../llm/llmServices/commonStructures/llmServiceRequest";
 import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
-import {
-    LLMServiceImpl,
-    LLMServiceRequest,
-} from "../../llm/llmServices/llmService";
+import { LLMServiceImpl } from "../../llm/llmServices/llmService";
 import { LMStudioService } from "../../llm/llmServices/lmStudio/lmStudioService";
 import { ModelsParams } from "../../llm/llmServices/modelParams";
 import { OpenAiService } from "../../llm/llmServices/openai/openAiService";

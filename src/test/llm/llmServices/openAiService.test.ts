@@ -1,7 +1,7 @@
 import { expect } from "earl";
 
 import { ConfigurationError } from "../../../llm/llmServiceErrors";
-import { ErrorsHandlingMode } from "../../../llm/llmServices/llmService";
+import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
 import { OpenAiModelParams } from "../../../llm/llmServices/modelParams";
 import { OpenAiService } from "../../../llm/llmServices/openai/openAiService";
 import { defaultSystemMessageContent } from "../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";

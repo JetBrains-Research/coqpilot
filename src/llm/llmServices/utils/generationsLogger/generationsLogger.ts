@@ -5,7 +5,7 @@ import {
 import {
     LLMServiceRequestFailed,
     LLMServiceRequestSucceeded,
-} from "../../llmService";
+} from "../../commonStructures/llmServiceRequest";
 import { ModelParams } from "../../modelParams";
 import { nowTimestampMillis } from "../time";
 

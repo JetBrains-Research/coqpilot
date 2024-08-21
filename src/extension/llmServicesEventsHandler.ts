@@ -5,11 +5,11 @@ import {
 } from "../llm/llmServiceErrors";
 import { LLMServices, asLLMServices } from "../llm/llmServices";
 import {
-    LLMServiceImpl,
     LLMServiceRequest,
     LLMServiceRequestFailed,
     LLMServiceRequestSucceeded,
-} from "../llm/llmServices/llmService";
+} from "../llm/llmServices/commonStructures/llmServiceRequest";
+import { LLMServiceImpl } from "../llm/llmServices/llmService";
 import { ModelParams } from "../llm/llmServices/modelParams";
 
 import { EventLogger } from "../logging/eventLogger";

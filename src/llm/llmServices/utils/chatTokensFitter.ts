@@ -1,7 +1,7 @@
 import { Tiktoken, TiktokenModel, encoding_for_model } from "tiktoken";
 
 import { ConfigurationError } from "../../llmServiceErrors";
-import { ChatMessage, EstimatedTokens } from "../chat";
+import { ChatMessage, EstimatedTokens } from "../commonStructures/chat";
 
 export class ChatTokensFitter {
     readonly tokensLimit: number;
