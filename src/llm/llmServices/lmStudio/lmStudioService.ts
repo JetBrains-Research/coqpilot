@@ -86,7 +86,7 @@ class LMStudioServiceInternal extends LLMServiceInternal<
     }
 
     async generateFromChatImpl(
-        analyzedChat: CompletelyAnalyzedChatHistory,
+        analyzedChat: AnalyzedChatHistory,
         params: LMStudioModelParams,
         choices: number
     ): Promise<string[]> {

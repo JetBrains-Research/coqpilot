@@ -87,7 +87,7 @@ class OpenAiServiceInternal extends LLMServiceInternal<
     }
 
     async generateFromChatImpl(
-        analyzedChat: CompletelyAnalyzedChatHistory,
+        analyzedChat: AnalyzedChatHistory,
         params: OpenAiModelParams,
         choices: number
     ): Promise<string[]> {

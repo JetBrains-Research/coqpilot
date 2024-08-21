@@ -114,7 +114,7 @@ class DummyLLMServiceInternal extends LLMServiceInternal<
     }
 
     async generateFromChatImpl(
-        _chat: ChatHistory,
+        _analyzedChat: AnalyzedChatHistory,
         _params: ModelParams,
         _choices: number
     ): Promise<string[]> {

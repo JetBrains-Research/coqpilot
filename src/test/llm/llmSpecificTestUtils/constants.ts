@@ -20,6 +20,7 @@ export const gptTurboModelName = "gpt-3.5-turbo-0301";
 
 export const mockChat: AnalyzedChatHistory = {
     chat: [{ role: "system", content: "Generate proofs." }],
+    contextTheorems: [],
     estimatedTokens: {
         messagesTokens: 10,
         maxTokensToGenerate: 50,

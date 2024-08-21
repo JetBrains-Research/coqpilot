@@ -40,6 +40,7 @@ suite("[LLMService] Test `GeneratedProof`", () => {
                 analyzedChat.chat,
                 skipFirstNProofs
             ),
+            contextTheorems: analyzedChat.contextTheorems,
             estimatedTokens: analyzedChat.estimatedTokens,
         };
     }

@@ -266,7 +266,7 @@ class MockLLMServiceInternal extends LLMServiceInternal<
      *   then all the generated proofs will be equal to `this.fixedProofString`.
      */
     async generateFromChatImpl(
-        chat: ChatHistory,
+        analyzedChat: AnalyzedChatHistory,
         params: MockLLMModelParams,
         choices: number
     ): Promise<string[]> {

@@ -101,7 +101,7 @@ export abstract class LLMServiceInternal<
      * Since it overrides `choices`-like parameters of already validated `params`, it might have any number value.
      */
     abstract generateFromChatImpl(
-        analyzedChat: CompletelyAnalyzedChatHistory,
+        analyzedChat: AnalyzedChatHistory,
         params: ResolvedModelParams,
         choices: number
     ): Promise<string[]>;
@@ -129,7 +129,7 @@ export abstract class LLMServiceInternal<
         params: ResolvedModelParams,
         choices: number,
         errorsHandlingMode: ErrorsHandlingMode,
-        buildAndValidateChat: () => CompletelyAnalyzedChatHistory,
+        buildAndValidateChat: () => AnalyzedChatHistory,
         wrapRawProofContent: (proof: string) => T
     ): Promise<T[]> => {
         return this.logGenerationAndHandleErrors<T>(
@@ -166,7 +166,7 @@ export abstract class LLMServiceInternal<
      *   in case of success / failure event's `data` is the `LLMServiceRequestSucceeded` / `LLMServiceRequestFailed` object respectively.
      *
      * Invariants, the full version.
-     * - `completeAndValidateRequest` should fill the received request (for example, with `CompletelyAnalyzedChatHistory`) and validate its properties;
+     * - `completeAndValidateRequest` should fill the received request (for example, with `AnalyzedChatHistory`) and validate its properties;
      *   it is allowed to throw any error:
      *     - if it is not `ConfigurationError` already, its message will be wrapped into `ConfigurationError`;
      *     - then, it will be handled according to `errorsHandlingMode` `(*)`;

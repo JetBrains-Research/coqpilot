@@ -86,7 +86,7 @@ class GrazieServiceInternal extends LLMServiceInternal<
     }
 
     async generateFromChatImpl(
-        analyzedChat: CompletelyAnalyzedChatHistory,
+        analyzedChat: AnalyzedChatHistory,
         params: GrazieModelParams,
         choices: number
     ): Promise<string[]> {
