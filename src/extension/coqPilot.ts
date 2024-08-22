@@ -139,6 +139,11 @@ export class CoqPilot {
                 editor.document.uri.fsPath
             );
 
+        if (completionContexts.length === 0) {
+            showMessageToUser(EditorMessages.noAdmitsFound, "warning");
+            return;
+        }
+
         const unsubscribeFromLLMServicesEventsCallback =
             subscribeToHandleLLMServicesEvents(
                 this.globalExtensionState.llmServices,

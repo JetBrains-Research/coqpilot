@@ -48,6 +48,13 @@
         "title": "CoqPilot: Try to prove holes (admitted goals) in the selection"
       }
     ],
+    "keybindings": [
+      {
+        "command": "coqpilot.perform_completion_in_selection",
+        "key": "ctrl+shift+[BracketRight]",
+        "mac": "shift+cmd+[BracketRight]"
+      }
+    ],
     "menus": {
       "editor/context": [
         {

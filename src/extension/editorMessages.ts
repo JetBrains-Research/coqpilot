@@ -13,6 +13,9 @@ export namespace EditorMessages {
     export const noProofsForAdmit = (lineWithAdmitNumber: number) =>
         `CoqPilot failed to find a proof for the admit at line ${lineWithAdmitNumber}.`;
 
+    export const noAdmitsFound =
+        "No admits were found in this selection/file. Make sure your coq-lsp is running correctly.";
+
     export const errorOccurred = (errorMessage: string) =>
         `CoqPilot got an error: ${errorMessage}. Please make sure the environment is properly set and the plugin is configured correctly. For more information, see the README: https://github.com/JetBrains-Research/coqpilot/blob/main/README.md. If the error appears to be a bug, please report it by opening an issue in the CoqPilot GitHub repository.`;
 
