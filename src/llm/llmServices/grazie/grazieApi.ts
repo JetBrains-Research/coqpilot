@@ -32,7 +32,7 @@ export class GrazieApi {
     }
 
     async checkQuota(apiToken: string): Promise<any> {
-        const headers = this.createHeaders(apiToken);
+        const headers = await this.createHeaders(apiToken);
         const response = await axios.get(this.config.quotaUrl, {
             headers: headers,
         });
@@ -57,7 +57,7 @@ export class GrazieApi {
         body: string,
         apiToken: string
     ): Promise<string> {
-        const headers = this.createHeaders(apiToken);
+        const headers = await this.createHeaders(apiToken);
 
         this.debug.logEvent("Completion requested", {
             url: url,
@@ -74,12 +74,32 @@ export class GrazieApi {
         return response;
     }
 
-    private createHeaders(token: string): any {
+    async getAgentVersion(): Promise<string> {
+        try {
+            const packageJson = await import("../../../../package.json");
+            const versionData = packageJson.default || packageJson;
+
+            if (!versionData || !versionData.version) {
+                throw new Error(
+                    "Not able to retrieve app version from package.json"
+                );
+            }
+            return versionData.version;
+        } catch (error) {
+            throw new Error("Error loading package.json: " + error);
+        }
+    }
+
+    private async createHeaders(token: string): Promise<any> {
         /* eslint-disable @typescript-eslint/naming-convention */
         return {
             Accept: "*/*",
             "Content-Type": "application/json",
             "Grazie-Authenticate-Jwt": token,
+            "Grazie-Agent": JSON.stringify({
+                name: "coq-pilot",
+                version: await this.getAgentVersion(),
+            }),
         };
         /* eslint-enable @typescript-eslint/naming-convention */
     }
