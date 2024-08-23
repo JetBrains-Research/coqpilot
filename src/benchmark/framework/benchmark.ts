@@ -16,8 +16,9 @@ import {
     checkDirectoryIsEmpty,
     createDirectory,
     exists,
-    getLastName,
+    getDatasetDir,
     joinPaths,
+    relativizeAbsolutePaths,
     writeToFile,
 } from "./utils/fsUtils";
 import { getShortName } from "./utils/llmServicesUtils";
@@ -188,17 +189,17 @@ function buildUniqueItemReportFileName(
 ): string {
     const augmentedIndex = prependWithZeros(itemIndex, maxIndex);
     const modelId = item.params.modelParams.modelId;
-    const fileIdentifierPath =
-        item.task.workspaceRoot !== undefined
-            ? item.task.workspaceRoot.directoryPath
-            : item.task.sourceFilePath;
-    return translateToSafeFileName(
+    const fileIdentifier = relativizeAbsolutePaths(
+        getDatasetDir(),
+        item.task.sourceFilePath
+    );
+    const safeFileName = translateToSafeFileName(
         [
             `${augmentedIndex}-${getShortName(item.params.llmServiceIdentifier)}-${modelId}`,
-            `-${getLastName(fileIdentifierPath)}-${item.task.sourceTheorem.name}`,
-            ".json",
+            `-${fileIdentifier}-${item.task.sourceTheorem.name}`,
         ].join("")
     );
+    return `${safeFileName}.json`;
 }
 
 function prependWithZeros(n: number, maxN: number): string {
