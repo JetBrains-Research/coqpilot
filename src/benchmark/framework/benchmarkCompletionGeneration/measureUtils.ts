@@ -1,3 +1,5 @@
+import { GenerationTokens } from "../../../llm/llmServices/commonStructures/generationTokens";
+
 import {
     CompletionGenerationTime,
     MeasuredProof,
@@ -36,7 +38,10 @@ export class CompletionGenerationTimeImpl implements CompletionGenerationTime {
 }
 
 export class MeasuredProofImpl implements MeasuredProof {
-    constructor(readonly asString: string) {}
+    constructor(
+        readonly asString: string,
+        readonly tokensSpent: GenerationTokens
+    ) {}
 
     readonly length = measureLength(this.asString);
 }

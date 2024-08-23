@@ -1,6 +1,8 @@
+import { GenerationTokens } from "../../../llm/llmServices/commonStructures/generationTokens";
+
 import { BenchmarkingItem } from "./benchmarkingItem";
 import { TheoremData } from "./theoremData";
-import { EstimatedChatTokens, LengthMetrics } from "./utilStructures";
+import { LengthMetrics } from "./utilStructures";
 
 export interface BenchmarkedItem {
     item: BenchmarkingItem;
@@ -9,14 +11,29 @@ export interface BenchmarkedItem {
 
 export interface BenchmarkedCompletionGeneration {
     allGeneratedProofs: MeasuredProof[];
+    contextTheorems: TheoremData[];
+    /**
+     * Tokens spent to generate `allGeneratedProofs` in total.
+     * To access per-proof tokens metrics, use `MeasuredProof.chatTokens` property.
+     *
+     * However, these metrics might be just an approximate estimation of the real ones.
+     * Check `GeneratedRawContent.tokensSpentInTotal` for more details.
+     */
+    tokensSpentInTotal: GenerationTokens;
     elapsedTime: CompletionGenerationTime;
-    contextTheorems: TheoremData[] | undefined;
-    chatTokens: EstimatedChatTokens | undefined;
 }
 
 export interface MeasuredProof {
     asString: string;
     length: LengthMetrics;
+    /**
+     * Tokens spent to generate this specific proof.
+     *
+     * **Warning:** most likely, these metrics might be just an approximate estimation of the real ones.
+     * To get probably more accurate (but aggregated) data,
+     * use `BenchmarkedCompletionGeneration.tokensSpentInTotal` instead (check its docs for more details).
+     */
+    tokensSpent: GenerationTokens;
 }
 
 export interface CompletionGenerationTime {
@@ -41,11 +58,12 @@ export interface FailedCompletionGeneration
     failureType: CompletionGenerationFailureType;
     causeMessage: string;
     // configuration or unexpected => (not a result, report)
+    // TODO: document better
 }
 
 export enum CompletionGenerationFailureType {
     SEARCH_FAILED,
-    TIMEOUT, // coq proof checker / coq lsp timeout?
+    TIMEOUT, // TODO: coq proof checker / coq lsp timeout?
     COQ_PROOF_CHECKER_ERROR,
 }
 

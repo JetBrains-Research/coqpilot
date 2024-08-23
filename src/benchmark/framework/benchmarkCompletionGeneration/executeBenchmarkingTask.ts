@@ -30,16 +30,22 @@ export async function executeBenchmarkingTask(
 ): Promise<BenchmarkedItem | undefined> {
     const task = benchmarkingItem.task;
     const params = benchmarkingItem.params;
-    const llmService = selectLLMServiceBuilder(
+    const [llmService, llmServiceEventLogger] = selectLLMServiceBuilder(
         benchmarkingItem.params.llmServiceIdentifier
     )();
+    task.parsedSourceFileData;
     try {
+        const generationArgs = {
+            completionContext: task.getCompletionContext(),
+            sourceFileEnvironment: task.getSourceFileEnvironment(),
+            benchmarkingModelParams: params,
+            llmService: llmService,
+            llmServiceEventLogger: llmServiceEventLogger,
+            parsedSourceFileData: task.parsedSourceFileData,
+            workspaceRoot: task.workspaceRoot,
+        };
         const result = await benchmarkSingleCompletionGeneration(
-            task.getCompletionContext(),
-            task.getSourceFileEnvironment(),
-            params,
-            llmService,
-            task.workspaceRoot,
+            generationArgs,
             modelsScheduler,
             subprocessesScheduler,
             experimentRunOptions,

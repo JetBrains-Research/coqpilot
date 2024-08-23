@@ -27,22 +27,31 @@ export function getShortName(identifier: LLMServiceIdentifier): string {
     }
 }
 
-export type LLMServiceBuilder = () => LLMService<any, any>;
+export type LLMServiceBuilder = () => [LLMService<any, any>, EventLogger];
 
 export function selectLLMServiceBuilder(
     identifier: LLMServiceIdentifier
 ): LLMServiceBuilder {
-    const eventLogger = new EventLogger();
+    let createService: (eventLogger: EventLogger) => LLMService<any, any>;
     switch (identifier) {
         case LLMServiceIdentifier.PREDEFINED_PROOFS:
-            return () => new PredefinedProofsService(eventLogger);
+            createService = (eventLogger) =>
+                new PredefinedProofsService(eventLogger);
+            break;
         case LLMServiceIdentifier.OPENAI:
-            return () => new OpenAiService(eventLogger);
+            createService = (eventLogger) => new OpenAiService(eventLogger);
+            break;
         case LLMServiceIdentifier.GRAZIE:
-            return () => new GrazieService(eventLogger);
+            createService = (eventLogger) => new GrazieService(eventLogger);
+            break;
         case LLMServiceIdentifier.LMSTUDIO:
-            return () => new LMStudioService(eventLogger);
+            createService = (eventLogger) => new LMStudioService(eventLogger);
+            break;
     }
+    return () => {
+        const eventLogger = new EventLogger();
+        return [createService(eventLogger), eventLogger];
+    };
 }
 
 export interface LLMServicesParamsResolvers {

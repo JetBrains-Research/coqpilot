@@ -45,10 +45,11 @@ export function mapValues<K, V, M extends Map<K, V>, T>(
     return resultMap;
 }
 
-export function packIntoMap<T, K, V>(
+function reduceToMapImpl<T, K, V>(
     elements: T[],
     keyExtractor: (element: T) => K | undefined,
-    valueMapper: (element: T) => V | undefined
+    valueMapper: (element: T) => V | undefined,
+    onRepeatedKey: (key: K) => void
 ): Map<K, V> {
     const resultMap = new Map<K, V>();
     for (const element of elements) {
@@ -57,9 +58,8 @@ export function packIntoMap<T, K, V>(
             continue;
         }
         if (resultMap.has(key)) {
-            throw Error(
-                `Cannot pack elements into a map since keys are not unique: ${stringifyAnyValue(key)}`
-            );
+            onRepeatedKey(key);
+            continue;
         }
         const value = valueMapper(element);
         if (value === undefined) {
@@ -68,6 +68,26 @@ export function packIntoMap<T, K, V>(
         resultMap.set(key, value);
     }
     return resultMap;
+}
+
+export function reduceToMap<T, K, V>(
+    elements: T[],
+    keyExtractor: (element: T) => K | undefined,
+    valueMapper: (element: T) => V | undefined
+): Map<K, V> {
+    return reduceToMapImpl(elements, keyExtractor, valueMapper, () => {});
+}
+
+export function packIntoMap<T, K, V>(
+    elements: T[],
+    keyExtractor: (element: T) => K | undefined,
+    valueMapper: (element: T) => V | undefined
+): Map<K, V> {
+    return reduceToMapImpl(elements, keyExtractor, valueMapper, (key) => {
+        throw Error(
+            `Cannot pack elements into a map since keys are not unique: ${stringifyAnyValue(key)}`
+        );
+    });
 }
 
 export function packIntoMappedObject<T, V>(
