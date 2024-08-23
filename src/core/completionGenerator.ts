@@ -7,6 +7,7 @@ import { ModelsParams } from "../llm/llmServices/modelParams";
 import { ProofGenerationContext } from "../llm/proofGenerationContext";
 
 import { Goal, Hyp, PpString } from "../coqLsp/coqLspTypes";
+import { CoqLspTimeoutError } from "../coqLsp/coqLspTypes";
 
 import { Theorem } from "../coqParser/parsedTypes";
 import { EventLogger } from "../logging/eventLogger";
@@ -14,11 +15,7 @@ import { createCoqLspClient } from "../test/commonTestFunctions/coqLspBuilder";
 import { stringifyAnyValue } from "../utils/printers";
 
 import { ContextTheoremsRanker } from "./contextTheoremRanker/contextTheoremsRanker";
-import {
-    CoqLspTimeoutError,
-    CoqProofChecker,
-    ProofCheckResult,
-} from "./coqProofChecker";
+import { CoqProofChecker, ProofCheckResult } from "./coqProofChecker";
 
 export interface CompletionContext {
     proofGoal: Goal<PpString>;

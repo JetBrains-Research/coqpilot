@@ -2,7 +2,11 @@ import { readFileSync } from "fs";
 import { Position, Range } from "vscode-languageclient";
 
 import { CoqLspClient } from "../coqLsp/coqLspClient";
-import { FlecheDocument, RangedSpan } from "../coqLsp/coqLspTypes";
+import {
+    CoqParsingError,
+    FlecheDocument,
+    RangedSpan,
+} from "../coqLsp/coqLspTypes";
 
 import { Uri } from "../utils/uri";
 
@@ -25,15 +29,6 @@ export async function parseCoqFile(
                 `failed to parse file with Error: ${error.message}`
             );
         });
-}
-
-export class CoqParsingError extends Error {
-    constructor(
-        public message: string,
-        public data?: any
-    ) {
-        super(message);
-    }
 }
 
 function parseFlecheDocument(
