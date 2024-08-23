@@ -1,12 +1,11 @@
-import { commands } from "vscode";
-
 import { switchByLLMServiceType } from "../llm/llmServices";
 import { LLMService } from "../llm/llmServices/llmService";
 
 import { pluginId } from "./coqPilot";
-import { UIMessageSeverity, showMessageToUser } from "./editorMessages";
-
-export const openSettingsItem = "Open settings";
+import {
+    UIMessageSeverity,
+    showMessageToUserWithSettingsHint,
+} from "./editorMessages";
 
 export class SettingsValidationError extends Error {
     constructor(
@@ -25,21 +24,6 @@ export class SettingsValidationError extends Error {
             this.settingToOpenName
         );
     }
-}
-
-export function showMessageToUserWithSettingsHint(
-    message: string,
-    severity: UIMessageSeverity,
-    settingToOpenName: string = pluginId
-) {
-    showMessageToUser(message, severity, openSettingsItem).then((value) => {
-        if (value === openSettingsItem) {
-            commands.executeCommand(
-                "workbench.action.openSettings",
-                settingToOpenName
-            );
-        }
-    });
 }
 
 export function toSettingName(llmService: LLMService<any, any>): string {

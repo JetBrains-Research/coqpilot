@@ -365,6 +365,12 @@
             "description": "The verbosity of the logs.",
             "default": "info",
             "order": 5
+          },
+          "coqpilot.coqLspServerPath": {
+            "type": "string",
+            "description": "Path to the Coq LSP server. If not specified, CoqPilot will try to find the server automatically at the default location: coq-lsp at PATH.",
+            "default": "coq-lsp",
+            "order": 6
           }
         }
       }

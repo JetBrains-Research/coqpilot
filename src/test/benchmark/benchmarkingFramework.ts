@@ -383,7 +383,7 @@ async function prepareForBenchmarkCompletions(
 
     const [fileUri, isNew] = getFileUriWithImports(filePath, additionalImports);
 
-    const client = createCoqLspClient(workspaceRootPath);
+    const client = await createCoqLspClient(workspaceRootPath);
     await client.openTextDocument(fileUri);
 
     const coqProofChecker = new CoqProofChecker(client);
@@ -417,13 +417,15 @@ async function prepareForBenchmarkCompletions(
     return [completionTargets, sourceFileEnvironment, processEnvironment];
 }
 
-function createCoqLspClient(workspaceRootPath?: string): CoqLspClient {
+async function createCoqLspClient(
+    workspaceRootPath?: string
+): Promise<CoqLspClient> {
     const coqLspServerConfig = CoqLspConfig.createServerConfig();
     const coqLspClientConfig = CoqLspConfig.createClientConfig(
         process.env.COQ_LSP_PATH || "coq-lsp",
         workspaceRootPath
     );
-    return new CoqLspClient(coqLspServerConfig, coqLspClientConfig);
+    return await CoqLspClient.create(coqLspServerConfig, coqLspClientConfig);
 }
 
 async function extractCompletionTargets(

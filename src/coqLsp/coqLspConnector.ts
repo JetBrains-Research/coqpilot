@@ -67,6 +67,7 @@ export class CoqLspConnector extends LanguageClient {
                 let emsg = error.toString();
                 this.eventLogger?.log("coq-lsp-start-error", emsg);
                 this.logStatusUpdate("stopped");
+                throw error;
             });
     }
 

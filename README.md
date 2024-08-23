@@ -11,7 +11,7 @@
 - 🔍 [Brief Technical Overview](#brief-technical-overview)
 - 💡 [Example Usage](#example-usage)
 - 🛠 [Installation](#installation)
-  - ▶️ [Coq-lsp Installation](#coq-lsp-installation)
+  - ▶️ [Coq-LSP Installation](#coq-lsp-installation)
   - 🤖 [Building Locally](#building-locally)
 - ⚠️ [Important Information](#important)
 - ⚙️ [Extension Settings](#extension-settings)
@@ -62,16 +62,18 @@ As soon as at least one valid proof is found, it is substituted in the editor an
 
 ## Installation
 
-### Coq-lsp installation
+### Coq-LSP installation
 
-To make the extension running you will have to install `coq-lsp` server. You can install it using opam: 
+To run the extension, you must install a `coq-lsp` server. Depending on the system used in your project, you should install it using `opam` or `nix`. A well-configured `nix` project should have the `coq-lsp` server installed as a dependency. To install `coq-lsp` using `opam`, you can use the following commands: 
 ```bash
 opam pin add coq-lsp 0.1.8+8.19.0
 opam install coq-lsp
 ```
 For more information on how to install `coq-lsp` please refer to [coq-lsp](https://github.com/ejgallego/coq-lsp). 
 
-With coq-lsp, extension should have everything it needs to run.
+Either way around, if the [coq-lsp](https://github.com/ejgallego/coq-lsp) extension works well and you can see the goals and theorems in the VSCode, then `CoqPilot` should work as well. However, using [coq-lsp](https://github.com/ejgallego/coq-lsp) as a plugin for Coq support is not mandatory for `CoqPilot` to work.
+
+If your installation of `coq-lsp` is not in the default path, you can specify the path to the `coq-lsp` server in the settings using the `coqpilot.coqLspServerPath` setting. Default value should work well for most of the cases.
 
 ### Building locally
 
@@ -93,7 +95,7 @@ npm install
 npm run compile
 ```
 
-To run the extension from the vscode, you can press `F5` or click on `Run extension` in the `Run and Debug` section. It will open a new window with the extension running.
+To run the extension from the VSCode, you can press `F5` or click on `Run extension` in the `Run and Debug` section. It will open a new window with the extension running.
 
 To run all tests properly (i.e. with rebuilding the resources and the code first), execute the following task:
 ```bash
@@ -117,7 +119,7 @@ chmod +x set_gitignore.sh
 ./set_gitignore.sh
 ```
 It will add the format of CoqPilot aux files to your global gitignore file on the system, so that even if CoqPilot forgets to clean files up, they will not be marked as new files in git.
-Comment: Such files are not visible in the vscode explorer, because plugin adds them to the `files.exclude` setting on startup.
+Comment: Such files are not visible in the VSCode explorer, because plugin adds them to the `files.exclude` setting on startup.
 
 ## Extension Settings
 
@@ -125,6 +127,7 @@ This extension contributes the following settings:
 
 * `coqpilot.contextTheoremsRankerType` : The type of theorems ranker that will be used to select theorems for proof generation (when context is smaller than taking all of them). Either randomly, by Jacard index (similarity metric) or by distance from the theorem, with the currently observed admit. 
 * `coqpilot.loggingVerbosity` : Verbosity of the logs. Could be `info`, `debug`.
+* `coqpilot.coqLspServerPath` : Path to the coq-lsp server. By default, it is set to `coq-lsp`.
 
 * `coqpilot.predefinedProofsModelsParameters`, `coqpilot.openAiModelsParameters`, `coqpilot.grazieModelsParameters` and `coqpilot.lmStudioModelsParameters`:
 
@@ -227,7 +230,7 @@ First things first, the process of running the benchmark is not perfectly automa
     cachix use weakmemory
     ```
 
-3. Go to the `imm` subdirectory, apply the nix environment (without it the project will NOT build) and build the project: 
+3. Go to the `imm` subdirectory, apply the nix environment (without it the project will **NOT** build) and build the project: 
     ```bash
     cd dataset/imm 
     nix-build

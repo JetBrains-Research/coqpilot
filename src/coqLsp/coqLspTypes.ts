@@ -156,3 +156,30 @@ export class CoqLspError extends Error {
         this.name = "CoqLspError";
     }
 }
+
+export class CoqParsingError extends CoqLspError {
+    constructor(
+        message: string,
+        public data?: any
+    ) {
+        super(message);
+        this.name = "CoqParsingError";
+    }
+}
+
+export class CoqLspTimeoutError extends CoqLspError {
+    constructor(message: string) {
+        super(message);
+        this.name = "CoqLspTimeoutError";
+    }
+}
+
+export class CoqLspStartupError extends CoqLspError {
+    constructor(
+        message: string,
+        readonly path: string
+    ) {
+        super(message);
+        this.name = "CoqLspStartupError";
+    }
+}
