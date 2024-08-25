@@ -1,26 +1,21 @@
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import { ExperimentRunOptions } from "../../structures/experimentRunOptions";
 import { WorkspaceInputTargets } from "../../structures/inputTargets";
 import { WorkspaceRoot } from "../../structures/workspaceRoot";
-import { AsyncScheduler } from "../../utils/asyncScheduler";
 import { updateWorkspaceCache } from "../cacheHandlers/cacheUpdater";
 import { WorkspaceCacheHolder } from "../cacheStructures/cacheHolders";
-import { parseCoqProject } from "../coqProjectParser/parseCoqProject";
+import { AbstractCoqProjectParser } from "../coqProjectParser/abstractCoqProjectParser";
 import { ParsedWorkspaceHolder } from "../coqProjectParser/parsedWorkspaceHolder";
 
 export async function parseMissingTargetsAndUpdateCache(
     missingTargets: WorkspaceInputTargets,
     workspaceCacheToUpdate: WorkspaceCacheHolder,
     workspaceRoot: WorkspaceRoot,
-    runOptions: ExperimentRunOptions,
-    subprocessesScheduler: AsyncScheduler,
-    logger: BenchmarkingLogger
+    logger: BenchmarkingLogger,
+    parser: AbstractCoqProjectParser
 ) {
-    const parsedWorkspace = await parseCoqProject(
+    const parsedWorkspace = await parser.parseCoqProject(
         missingTargets,
         workspaceRoot,
-        runOptions,
-        subprocessesScheduler,
         logger
     );
     updateCacheWithParsedTargets(

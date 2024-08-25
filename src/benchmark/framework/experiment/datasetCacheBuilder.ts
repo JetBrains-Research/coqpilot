@@ -1,6 +1,7 @@
 import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
 import { rewriteDatasetCache } from "../parseDataset/cacheHandlers/cacheWriter";
 import { DatasetCacheHolder } from "../parseDataset/cacheStructures/cacheHolders";
+import { AbstractCoqProjectParser } from "../parseDataset/coqProjectParser/abstractCoqProjectParser";
 import { CompleteInputTargetsUtils } from "../parseDataset/core/filterTargetsMissingInCache";
 import { parseMissingTargetsAndUpdateCache } from "../parseDataset/core/parseMissingTargets";
 import { createEmptyCache } from "../parseDataset/utils/cacheHoldersUtils";
@@ -14,7 +15,6 @@ import {
     WorkspaceRoot,
     standaloneFilesRoot,
 } from "../structures/workspaceRoot";
-import { AsyncScheduler } from "../utils/asyncScheduler";
 import {
     clearDirectory,
     isDirectory,
@@ -24,18 +24,16 @@ import {
 import { EnvironmentStringType, TargetsBuilderUtils } from "./targetsBuilder";
 
 export namespace DatasetCacheBuildingImpl {
-    // TODO: make dataset parsing code abstract
     export async function buildDatasetCache(
         cacheTargets: DatasetInputTargets,
         runOptions: ExperimentRunOptions,
-        subprocessesScheduler: AsyncScheduler,
-        logger: BenchmarkingLogger
+        logger: BenchmarkingLogger,
+        coqProjectParser: AbstractCoqProjectParser
     ): Promise<DatasetCacheHolder> {
         const datasetCache = await parseDataset(
             cacheTargets,
-            runOptions,
-            subprocessesScheduler,
-            logger
+            logger,
+            coqProjectParser
         );
         logger
             .asOneRecord()
@@ -50,9 +48,8 @@ export namespace DatasetCacheBuildingImpl {
 
     async function parseDataset(
         cacheTargets: DatasetInputTargets,
-        runOptions: ExperimentRunOptions,
-        subprocessesScheduler: AsyncScheduler,
-        logger: BenchmarkingLogger
+        logger: BenchmarkingLogger,
+        coqProjectParser: AbstractCoqProjectParser
     ): Promise<DatasetCacheHolder> {
         const datasetCache = new DatasetCacheHolder();
         for (const [
@@ -64,9 +61,8 @@ export namespace DatasetCacheBuildingImpl {
                 workspaceTargets,
                 workspaceCache,
                 workspaceRoot,
-                runOptions,
-                subprocessesScheduler,
-                logger
+                logger,
+                coqProjectParser
             );
             datasetCache.addWorkspaceCache(
                 workspaceRoot.directoryPath,

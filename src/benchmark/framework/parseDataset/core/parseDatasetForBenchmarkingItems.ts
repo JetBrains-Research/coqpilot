@@ -3,8 +3,8 @@ import { BenchmarkingItem } from "../../structures/benchmarkingItem";
 import { ExperimentRunOptions } from "../../structures/experimentRunOptions";
 import { InputBenchmarkingBundle } from "../../structures/inputBenchmarkingBundle";
 import { DatasetInputTargets } from "../../structures/inputTargets";
-import { AsyncScheduler } from "../../utils/asyncScheduler";
 import { DatasetCacheHolder } from "../cacheStructures/cacheHolders";
+import { AbstractCoqProjectParser } from "../coqProjectParser/abstractCoqProjectParser";
 import { logBenchmarkingItems } from "../utils/logBenchmarkingItems";
 
 import { filterRequestedTargetsMissingInCache } from "./filterTargetsMissingInCache";
@@ -38,8 +38,8 @@ export async function parseDatasetForBenchmarkingItems(
     inputBundles: InputBenchmarkingBundle[],
     mergedRequestedTargets: DatasetInputTargets,
     runOptions: ExperimentRunOptions,
-    subprocessesScheduler: AsyncScheduler,
-    logger: BenchmarkingLogger
+    logger: BenchmarkingLogger,
+    coqProjectParser: AbstractCoqProjectParser
 ): Promise<BenchmarkingItem[]> {
     if (mergedRequestedTargets.isEmpty()) {
         logger.info(
@@ -73,9 +73,8 @@ export async function parseDatasetForBenchmarkingItems(
                 missingTargets,
                 workspaceCache,
                 workspaceRoot,
-                runOptions,
-                subprocessesScheduler,
-                logger
+                logger,
+                coqProjectParser
             );
         }
 
