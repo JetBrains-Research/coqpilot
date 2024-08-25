@@ -1,10 +1,12 @@
 import { benchmark } from "../benchmark";
 import { TimeMark } from "../benchmarkCompletionGeneration/measureUtils";
+import { AbstractProofsChecker } from "../benchmarkCompletionGeneration/proofsCheckers/abstractProofsChecker";
 import {
     BenchmarkingLogger,
     BenchmarkingLoggerImpl,
     SeverityLevel,
 } from "../logging/benchmarkingLogger";
+import { AbstractCoqProjectParser } from "../parseDataset/coqProjectParser/abstractCoqProjectParser";
 import { parseDatasetForBenchmarkingItems } from "../parseDataset/core/parseDatasetForBenchmarkingItems";
 import { DatasetCacheUsageMode } from "../structures/datasetCaching";
 import { ExperimentResults } from "../structures/experimentResults";
@@ -22,15 +24,30 @@ import {
     DatasetCacheBuildingImpl,
 } from "./datasetCacheBuilder";
 
+export interface ExecutionContext {
+    requestedTargets: DatasetInputTargets;
+    resolvedRunOptions: ExperimentRunOptions;
+    subprocessesScheduler: AsyncScheduler;
+    logger: BenchmarkingLogger;
+}
+
 namespace CacheDirNames {
     export const defaultDatasetCacheDirectoryPath = "dataset/.parsingCache/";
 }
 
-export class Experiment {
+export abstract class AbstractExperiment {
     constructor(
         private readonly bundles: InputBenchmarkingBundle[] = [],
         private sharedRunOptions: Partial<ExperimentRunOptions> = {}
     ) {}
+
+    protected abstract setupCoqProjectParser: (
+        executionContext: ExecutionContext
+    ) => AbstractCoqProjectParser;
+
+    protected abstract setupProofsChecker: (
+        executionContext: ExecutionContext
+    ) => AbstractProofsChecker;
 
     addBundle(newBundle: InputBenchmarkingBundle) {
         this.bundles.push(newBundle);
@@ -73,8 +90,8 @@ export class Experiment {
         await DatasetCacheBuildingImpl.buildDatasetCache(
             executionContext.requestedTargets,
             executionContext.resolvedRunOptions,
-            executionContext.subprocessesScheduler,
-            executionContext.logger
+            executionContext.logger,
+            this.setupCoqProjectParser(executionContext)
         );
     }
 
@@ -100,8 +117,8 @@ export class Experiment {
             this.bundles,
             executionContext.requestedTargets,
             executionContext.resolvedRunOptions,
-            executionContext.subprocessesScheduler,
-            executionContext.logger
+            executionContext.logger,
+            this.setupCoqProjectParser(executionContext)
         );
         if (benchmarkingItems.length === 0) {
             throw Error(
@@ -113,9 +130,9 @@ export class Experiment {
             benchmarkingItems,
             resolveAsAbsolutePath(joinPaths(getRootDir(), artifactsDirPath)),
             executionContext.resolvedRunOptions,
-            executionContext.subprocessesScheduler,
             executionContext.logger,
-            totalTime
+            totalTime,
+            this.setupProofsChecker(executionContext)
         );
     }
 
@@ -229,13 +246,6 @@ export class Experiment {
                 false,
         };
     }
-}
-
-interface ExecutionContext {
-    requestedTargets: DatasetInputTargets;
-    resolvedRunOptions: ExperimentRunOptions;
-    subprocessesScheduler: AsyncScheduler;
-    logger: BenchmarkingLogger;
 }
 
 function mergeAndResolveRequestedTargets(

@@ -4,7 +4,7 @@ import {
 } from "../structures/inputTargets";
 import { LLMServiceIdentifier } from "../structures/llmServiceIdentifier";
 
-import { Experiment } from "./experiment";
+import { AbstractExperiment } from "./abstractExperiment";
 import { InputBenchmarkingModelParams } from "./inputBenchmarkingModelParams";
 
 export type LLMServiceStringIdentifier =
@@ -132,7 +132,7 @@ export class BenchmarkingBundleWithTargets<
         private readonly targets: DatasetInputTargets[]
     ) {}
 
-    addTo(experiment: Experiment) {
+    addTo(experiment: AbstractExperiment) {
         experiment.addBundle({
             llmServiceIdentifier: this.llmServiceIdentifier,
             inputBenchmarkingModelsParams: this.inputBenchmarkingModelsParams,
