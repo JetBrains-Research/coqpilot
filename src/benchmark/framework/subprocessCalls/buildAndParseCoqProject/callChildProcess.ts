@@ -1,5 +1,6 @@
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import { ParsedWorkspaceHolder } from "../../parseDataset/coqProjectParser/parsedWorkspaceHolder";
+import { ParseCoqProjectInternalSignature } from "../../parseDataset/coqProjectParser/implementation/internalSignature";
+import { ParsedWorkspaceHolder } from "../../parseDataset/coqProjectParser/implementation/parsedWorkspaceHolder";
 import {
     WorkspaceRoot,
     isStandaloneFilesRoot,
@@ -13,9 +14,7 @@ import {
 import { ExecutionResult } from "../../utils/subprocessUtils/ipc/childProcessExecutor/executionResult";
 import { buildCommandToExecuteSubprocessInWorkspace } from "../../utils/subprocessUtils/subprocessExecutionCommandBuilder";
 
-import { BuildAndParseCoqProjectBySubprocessSignature } from "./callSignature";
-
-import Signature = BuildAndParseCoqProjectBySubprocessSignature;
+import Signature = ParseCoqProjectInternalSignature;
 
 export async function buildAndParseCoqProjectInSubprocess(
     workspaceRoot: WorkspaceRoot,

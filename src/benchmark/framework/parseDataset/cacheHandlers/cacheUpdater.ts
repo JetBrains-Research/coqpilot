@@ -17,7 +17,7 @@ import {
 import {
     ParsedFileHolder,
     ParsedFileTarget,
-} from "../coqProjectParser/parsedWorkspaceHolder";
+} from "../coqProjectParser/implementation/parsedWorkspaceHolder";
 
 export function updateWorkspaceCache(
     workspaceCache: WorkspaceCacheHolder,

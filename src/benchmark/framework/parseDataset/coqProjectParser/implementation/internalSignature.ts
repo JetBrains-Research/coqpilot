@@ -1,17 +1,17 @@
 import { JSONSchemaType } from "ajv";
 
-import { TargetType } from "../../structures/completionGenerationTask";
-import { TargetRequestType } from "../../structures/inputTargets";
+import { TargetType } from "../../../structures/completionGenerationTask";
+import { TargetRequestType } from "../../../structures/inputTargets";
 import {
     SerializedParsedCoqFile,
     serializedParsedCoqFileSchema,
-} from "../../structures/parsedCoqFileData";
+} from "../../../structures/parsedCoqFileData";
 import {
     SerializedCodeElementRange,
     serializedCodeElementRangeSchema,
-} from "../../structures/utilStructures";
+} from "../../../structures/utilStructures";
 
-export namespace BuildAndParseCoqProjectBySubprocessSignature {
+export namespace ParseCoqProjectInternalSignature {
     export const subprocessName = "Build and parse Coq project";
 
     export namespace ArgsModels {

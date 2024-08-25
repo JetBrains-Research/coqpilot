@@ -1,24 +1,25 @@
-import { ProofGoal } from "../../../../coqLsp/coqLspTypes";
+import { ProofGoal } from "../../../../../coqLsp/coqLspTypes";
 
-import { TargetType } from "../../structures/completionGenerationTask";
+import { TargetType } from "../../../structures/completionGenerationTask";
 import {
     ParsedCoqFileData,
     deserializeParsedCoqFile,
-} from "../../structures/parsedCoqFileData";
-import { TheoremData } from "../../structures/theoremData";
+} from "../../../structures/parsedCoqFileData";
+import { TheoremData } from "../../../structures/theoremData";
 import {
     CodeElementRange,
     deserializeCodeElementRange,
-} from "../../structures/utilStructures";
-import { BuildAndParseCoqProjectBySubprocessSignature } from "../../subprocessCalls/buildAndParseCoqProject/callSignature";
-import { deserializeGoal } from "../../utils/goalParser";
+} from "../../../structures/utilStructures";
+import { deserializeGoal } from "../../../utils/goalParser";
 
-import Signature = BuildAndParseCoqProjectBySubprocessSignature;
+import { ParseCoqProjectInternalSignature } from "./internalSignature";
+
+import InternalSignature = ParseCoqProjectInternalSignature;
 
 export class ParsedWorkspaceHolder {
     private readonly filePathToFileHolder: Map<string, ParsedFileHolder>;
 
-    constructor(parsedWorkspace: Signature.ResultModels.Result) {
+    constructor(parsedWorkspace: InternalSignature.ResultModels.Result) {
         this.filePathToFileHolder = new Map();
         for (const filePath in parsedWorkspace) {
             const parsedFileResults = parsedWorkspace[filePath];
@@ -42,7 +43,9 @@ export class ParsedFileHolder {
     private readonly parsedFileData: ParsedCoqFileData;
     private readonly fileTargets: ParsedFileTarget[];
 
-    constructor(parsedFileResults: Signature.ResultModels.ParsedFileResults) {
+    constructor(
+        parsedFileResults: InternalSignature.ResultModels.ParsedFileResults
+    ) {
         this.parsedFileData = deserializeParsedCoqFile(
             parsedFileResults.serializedParsedFile
         );
@@ -68,7 +71,7 @@ export class ParsedFileTarget {
     readonly positionRange: CodeElementRange;
 
     constructor(
-        rawParsedFileTarget: Signature.ResultModels.ParsedFileTarget,
+        rawParsedFileTarget: InternalSignature.ResultModels.ParsedFileTarget,
         parsedFileData: ParsedCoqFileData
     ) {
         this.sourceTheorem = parsedFileData.theoremsByNames.get(
