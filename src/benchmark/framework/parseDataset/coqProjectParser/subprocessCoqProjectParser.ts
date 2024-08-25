@@ -21,7 +21,9 @@ import Signature = BuildAndParseCoqProjectBySubprocessSignature;
 export class SubprocessCoqProjectParser extends AbstractCoqProjectParser {
     constructor(
         private readonly subprocessesScheduler: AsyncScheduler,
-        private readonly buildAndParseCoqProjectSubprocessTimeoutMillis: number,
+        private readonly buildAndParseCoqProjectSubprocessTimeoutMillis:
+            | number
+            | undefined,
         private readonly enableSubprocessLifetimeDebugLogs: boolean
     ) {
         super();

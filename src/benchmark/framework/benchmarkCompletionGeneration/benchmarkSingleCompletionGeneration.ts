@@ -40,11 +40,8 @@ import {
     SuccessfulCompletionGeneration,
 } from "../structures/benchmarkedItem";
 import { BenchmarkingModelParams } from "../structures/benchmarkingModelParams";
-import { ExperimentRunOptions } from "../structures/experimentRunOptions";
 import { ParsedCoqFileData } from "../structures/parsedCoqFileData";
 import { WorkspaceRoot } from "../structures/workspaceRoot";
-import { checkGeneratedProofsInSubprocess } from "../subprocessCalls/checkGeneratedProofs/callChildProcess";
-import { CheckProofsBySubprocessSignature } from "../subprocessCalls/checkGeneratedProofs/callSignature";
 import { AsyncScheduler } from "../utils/asyncScheduler";
 import { reduceToMap } from "../utils/mapUtils";
 import { hasAllPropertiesDefined } from "../utils/structsUtils";
@@ -54,6 +51,11 @@ import {
     MeasuredProofImpl,
     TimeMark,
 } from "./measureUtils";
+import {
+    AbstractProofsChecker,
+    ProofsCheckFailedError,
+    ProofsCheckResult,
+} from "./proofsCheckers/abstractProofsChecker";
 
 export interface CompletionGenerationBenchmarkArgs<
     ResolvedModelParams extends ModelParams,
@@ -91,9 +93,8 @@ export async function benchmarkSingleCompletionGeneration<
         LLMServiceType
     >,
     modelsScheduler: AsyncScheduler,
-    subprocessesScheduler: AsyncScheduler,
-    experimentRunOptions: ExperimentRunOptions,
-    logger: BenchmarkingLogger
+    logger: BenchmarkingLogger,
+    proofsChecker: AbstractProofsChecker
 ): Promise<BenchmarkedCompletionGeneration> {
     const proofGenerationResult = await generateProofWithRetriesExclusively(
         generationArgs,
@@ -145,44 +146,42 @@ export async function benchmarkSingleCompletionGeneration<
         elapsedTime: measuredTime,
     };
 
-    const proofsValidationExecutionResult =
-        await checkGeneratedProofsInSubprocess(
+    let proofsCheckResult: ProofsCheckResult;
+    try {
+        proofsCheckResult = await proofsChecker.checkProofs(
             preparedProofsWithTokens.map(([proof, _]) => proof),
             generationArgs.completionContext,
             generationArgs.sourceFileEnvironment,
             generationArgs.workspaceRoot,
-            experimentRunOptions.checkProofsSubprocessTimeoutMillis,
-            subprocessesScheduler,
-            logger,
-            experimentRunOptions.enableSubprocessLifetimeDebugLogs
+            logger
         );
-    if (proofsValidationExecutionResult.isFailed()) {
-        // proofs check throws only `Error`-s
-        throw Error(proofsValidationExecutionResult.errorMessage);
+    } catch (error) {
+        if (error instanceof ProofsCheckFailedError) {
+            logger.info(`Failed to validate proofs: ${error.causeMessage}`);
+            return buildFailedCompletionGeneration(
+                resultMetrics,
+                CompletionGenerationFailureType[error.failureType],
+                error.causeMessage
+            );
+        } else {
+            throw error;
+        }
     }
-    const proofsValidationResult = proofsValidationExecutionResult.maybeResult!;
-    if (CheckProofsBySubprocessSignature.isFailure(proofsValidationResult)) {
-        const failureCauseMessage = proofsValidationResult.causeMessage;
-        logger.info(`Failed to validate proofs: ${failureCauseMessage}`);
-        return buildFailedCompletionGeneration(
-            resultMetrics,
-            CompletionGenerationFailureType[proofsValidationResult.failureType],
-            failureCauseMessage
-        );
-    }
-
-    const { proofCheckResults, proofsValidationMillis } =
-        proofsValidationResult as CheckProofsBySubprocessSignature.SuccessResult;
-    const validProofs = proofCheckResults
-        .filter((checkResult) => checkResult.isValid)
-        .map((checkResult) => allGeneratedProofsMap.get(checkResult.proof)!);
-    measuredTime.addProofsValidationMillis(proofsValidationMillis);
+    const validProofs = proofsCheckResult.checkedProofs
+        .filter((checkedProof) => checkedProof.isValid)
+        .map((checkedProof) => allGeneratedProofsMap.get(checkedProof.proof)!);
+    measuredTime.addProofsValidationMillis(
+        proofsCheckResult.effectiveElapsedMillis
+    );
     logger
         .asOneRecord()
         .info(
             `Successfully verified proofs: ${validProofs.length} / ${preparedProofsWithTokens.length} are valid`
         )
-        .debug(`Effective elapsed time: ${proofsValidationMillis} ms`, "gray");
+        .debug(
+            `Effective elapsed time: ${proofsCheckResult.effectiveElapsedMillis} ms`,
+            "gray"
+        );
 
     if (validProofs.length > 0) {
         const successfulGeneration: SuccessfulCompletionGeneration = {

@@ -13,20 +13,19 @@ import {
     isSuccessfulGeneration,
 } from "../structures/benchmarkedItem";
 import { BenchmarkingItem } from "../structures/benchmarkingItem";
-import { ExperimentRunOptions } from "../structures/experimentRunOptions";
 import { AsyncScheduler } from "../utils/asyncScheduler";
 import { writeToFile } from "../utils/fsUtils";
 import { selectLLMServiceBuilder } from "../utils/llmServicesUtils";
 
 import { benchmarkSingleCompletionGeneration } from "./benchmarkSingleCompletionGeneration";
+import { AbstractProofsChecker } from "./proofsCheckers/abstractProofsChecker";
 
 export async function executeBenchmarkingTask(
     benchmarkingItem: BenchmarkingItem,
     saveToFilePath: string,
     itemLogger: BenchmarkingLogger,
     modelsScheduler: AsyncScheduler,
-    subprocessesScheduler: AsyncScheduler,
-    experimentRunOptions: ExperimentRunOptions
+    proofsChecker: AbstractProofsChecker
 ): Promise<BenchmarkedItem | undefined> {
     const task = benchmarkingItem.task;
     const params = benchmarkingItem.params;
@@ -47,9 +46,8 @@ export async function executeBenchmarkingTask(
         const result = await benchmarkSingleCompletionGeneration(
             generationArgs,
             modelsScheduler,
-            subprocessesScheduler,
-            experimentRunOptions,
-            itemLogger
+            itemLogger,
+            proofsChecker
         );
         logResult(result, itemLogger);
 

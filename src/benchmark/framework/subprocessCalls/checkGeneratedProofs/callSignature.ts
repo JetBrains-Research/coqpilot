@@ -22,7 +22,7 @@ export namespace CheckProofsBySubprocessSignature {
 
     export interface SuccessResult {
         proofCheckResults: ProofCheckResult[];
-        proofsValidationMillis: number;
+        effectiveElapsedMillis: number;
     }
 
     export type FailureType = "TIMEOUT" | "COQ_PROOF_CHECKER_ERROR";
@@ -112,11 +112,11 @@ export namespace CheckProofsBySubprocessSignature {
                 type: "array",
                 items: proofCheckResultSchema,
             },
-            proofsValidationMillis: {
+            effectiveElapsedMillis: {
                 type: "number",
             },
         },
-        required: ["proofCheckResults", "proofsValidationMillis"],
+        required: ["proofCheckResults", "effectiveElapsedMillis"],
         additionalProperties: false,
     };
 

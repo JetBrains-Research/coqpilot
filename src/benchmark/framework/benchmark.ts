@@ -5,6 +5,7 @@ import { stringifyAnyValue } from "../../utils/printers";
 
 import { executeBenchmarkingTask } from "./benchmarkCompletionGeneration/executeBenchmarkingTask";
 import { TimeMark } from "./benchmarkCompletionGeneration/measureUtils";
+import { AbstractProofsChecker } from "./benchmarkCompletionGeneration/proofsCheckers/abstractProofsChecker";
 import { BenchmarkingLogger } from "./logging/benchmarkingLogger";
 import { BenchmarkedItem } from "./structures/benchmarkedItem";
 import { BenchmarkingItem } from "./structures/benchmarkingItem";
@@ -33,9 +34,9 @@ export async function benchmark(
     benchmarkingItems: BenchmarkingItem[],
     resolvedArtifactsDirPath: string,
     experimentRunOptions: ExperimentRunOptions,
-    subprocessesScheduler: AsyncScheduler,
     parentLogger: BenchmarkingLogger,
-    totalTime: TimeMark
+    totalTime: TimeMark,
+    proofsChecker: AbstractProofsChecker
 ): Promise<ExperimentResults> {
     if (exists(resolvedArtifactsDirPath)) {
         if (!checkDirectoryIsEmpty(resolvedArtifactsDirPath)) {
@@ -76,8 +77,7 @@ export async function benchmark(
                 itemReportPath,
                 itemLogger,
                 modelsScheduler,
-                subprocessesScheduler,
-                experimentRunOptions
+                proofsChecker
             )
         );
     }
