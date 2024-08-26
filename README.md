@@ -233,8 +233,8 @@ First things first, the process of running the benchmark is not perfectly automa
 3. Go to the `imm` subdirectory, apply the nix environment (without it the project will **NOT** build) and build the project: 
     ```bash
     cd dataset/imm 
-    nix-build
     nix-shell 
+    make
     ```
 4. Make sure the `_CoqProject` was successfully generated in the root of your project. Return to the project root not exiting the nix-shell. Run the benchmark: 
     ```bash
