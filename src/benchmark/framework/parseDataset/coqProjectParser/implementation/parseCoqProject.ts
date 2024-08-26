@@ -32,7 +32,7 @@ import { ParseCoqProjectInternalSignature } from "./internalSignature";
 export namespace ParseCoqProjectImpl {
     import Signature = ParseCoqProjectInternalSignature;
 
-    type Logger = LogsIPCSender | BenchmarkingLogger;
+    export type Logger = LogsIPCSender | BenchmarkingLogger;
 
     export async function parseCoqProject(
         args: Signature.ArgsModels.Args,

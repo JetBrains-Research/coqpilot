@@ -3,6 +3,10 @@ import {
     SpecificTheoremTarget,
     WorkspaceInputTargets,
 } from "../../../structures/inputTargets";
+import {
+    WorkspaceRoot,
+    isStandaloneFilesRoot,
+} from "../../../structures/workspaceRoot";
 import { entriesToMappedObject } from "../../../utils/mapUtils";
 
 import { ParseCoqProjectInternalSignature } from "./internalSignature";
@@ -39,5 +43,17 @@ export namespace CoqProjectParserUtils {
                 ];
             });
         return entriesToMappedObject(mappedEntries);
+    }
+
+    export function buildArgs(
+        workspaceTargets: Signature.ArgsModels.FilePathToFileTargets,
+        workspaceRoot: WorkspaceRoot
+    ): Signature.ArgsModels.Args {
+        return {
+            workspaceRootPath: isStandaloneFilesRoot(workspaceRoot)
+                ? undefined
+                : workspaceRoot.directoryPath,
+            workspaceTargets: workspaceTargets,
+        };
     }
 }

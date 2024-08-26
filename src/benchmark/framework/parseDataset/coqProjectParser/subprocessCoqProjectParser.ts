@@ -8,7 +8,7 @@ import {
     AbstractCoqProjectParser,
     CoqProjectParsingFailedError,
 } from "./abstractCoqProjectParser";
-import { CoqProjectParserUtils } from "./implementation/packWorkspaceTargets";
+import { CoqProjectParserUtils } from "./implementation/coqProjectParserUtils";
 import { ParsedWorkspaceHolder } from "./implementation/parsedWorkspaceHolder";
 
 export class SubprocessCoqProjectParser extends AbstractCoqProjectParser {

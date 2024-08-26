@@ -1,16 +1,13 @@
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { WorkspaceInputTargets } from "../../structures/inputTargets";
-import {
-    WorkspaceRoot,
-    isStandaloneFilesRoot,
-} from "../../structures/workspaceRoot";
+import { WorkspaceRoot } from "../../structures/workspaceRoot";
 
 import {
     AbstractCoqProjectParser,
     CoqProjectParsingFailedError,
 } from "./abstractCoqProjectParser";
+import { CoqProjectParserUtils } from "./implementation/coqProjectParserUtils";
 import { ParseCoqProjectInternalSignature } from "./implementation/internalSignature";
-import { CoqProjectParserUtils } from "./implementation/packWorkspaceTargets";
 import { ParseCoqProjectImpl } from "./implementation/parseCoqProject";
 import { ParsedWorkspaceHolder } from "./implementation/parsedWorkspaceHolder";
 
@@ -26,12 +23,10 @@ export class LocalCoqProjectParser extends AbstractCoqProjectParser {
     ): Promise<ParsedWorkspaceHolder> {
         const workspaceTargets =
             CoqProjectParserUtils.packWorkspaceTargets(targets);
-        const args: ParseCoqProjectInternalSignature.ArgsModels.Args = {
-            workspaceRootPath: isStandaloneFilesRoot(workspaceRoot)
-                ? undefined
-                : workspaceRoot.directoryPath,
-            workspaceTargets: workspaceTargets,
-        };
+        const args = CoqProjectParserUtils.buildArgs(
+            workspaceTargets,
+            workspaceRoot
+        );
         const parsedWorkspace = await this.parseCoqProjectAndWrapError(
             args,
             logger

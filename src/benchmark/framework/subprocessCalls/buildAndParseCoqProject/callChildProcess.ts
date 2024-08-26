@@ -1,10 +1,8 @@
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
+import { CoqProjectParserUtils } from "../../parseDataset/coqProjectParser/implementation/coqProjectParserUtils";
 import { ParseCoqProjectInternalSignature } from "../../parseDataset/coqProjectParser/implementation/internalSignature";
 import { ParsedWorkspaceHolder } from "../../parseDataset/coqProjectParser/implementation/parsedWorkspaceHolder";
-import {
-    WorkspaceRoot,
-    isStandaloneFilesRoot,
-} from "../../structures/workspaceRoot";
+import { WorkspaceRoot } from "../../structures/workspaceRoot";
 import { AsyncScheduler } from "../../utils/asyncScheduler";
 import { checkIsInsideDirectory } from "../../utils/fsUtils";
 import {
@@ -38,12 +36,10 @@ export async function buildAndParseCoqProjectInSubprocess(
 
     validateRequestedFilesAreInsideWorkspace(workspaceRoot, workspaceTargets);
 
-    const args: Signature.ArgsModels.Args = {
-        workspaceRootPath: isStandaloneFilesRoot(workspaceRoot)
-            ? undefined
-            : workspaceRoot.directoryPath,
-        workspaceTargets: workspaceTargets,
-    };
+    const args = CoqProjectParserUtils.buildArgs(
+        workspaceTargets,
+        workspaceRoot
+    );
     const options: ChildProcessOptions = {
         workingDirectory:
             enterWorkspaceAndExecuteSubprocessCommand.workingDirectory,
