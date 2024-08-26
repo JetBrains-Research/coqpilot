@@ -2,13 +2,11 @@ import {
     CompletionContext,
     SourceFileEnvironment,
 } from "../../../../core/completionGenerationContext";
-import { getTextBeforePosition } from "../../../../core/exposedCompletionGeneratorUtils";
 
+import { CheckProofsInternalSignature } from "../../benchmarkCompletionGeneration/proofsCheckers/implementation/internalSignature";
+import { ProofsCheckerUtils } from "../../benchmarkCompletionGeneration/proofsCheckers/implementation/proofsCheckerUtils";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import {
-    WorkspaceRoot,
-    isStandaloneFilesRoot,
-} from "../../structures/workspaceRoot";
+import { WorkspaceRoot } from "../../structures/workspaceRoot";
 import { AsyncScheduler } from "../../utils/asyncScheduler";
 import {
     ChildProcessOptions,
@@ -17,9 +15,7 @@ import {
 import { ExecutionResult } from "../../utils/subprocessUtils/ipc/childProcessExecutor/executionResult";
 import { buildCommandToExecuteSubprocessInWorkspace } from "../../utils/subprocessUtils/subprocessExecutionCommandBuilder";
 
-import { CheckProofsBySubprocessSignature } from "./callSignature";
-
-import Signature = CheckProofsBySubprocessSignature;
+import Signature = CheckProofsInternalSignature;
 
 export async function checkGeneratedProofsInSubprocess(
     preparedProofs: string[],
@@ -36,18 +32,12 @@ export async function checkGeneratedProofsInSubprocess(
             workspaceRoot,
             Signature.subprocessName
         );
-    const args: Signature.Args = {
-        workspaceRootPath: isStandaloneFilesRoot(workspaceRoot)
-            ? undefined
-            : workspaceRoot.directoryPath,
-        sourceFileDirPath: sourceFileEnvironment.dirPath,
-        sourceFileContentPrefix: getTextBeforePosition(
-            sourceFileEnvironment.fileLines,
-            completionContext.prefixEndPosition
-        ),
-        prefixEndPosition: completionContext.prefixEndPosition,
-        preparedProofs: preparedProofs,
-    };
+    const args = ProofsCheckerUtils.buildArgs(
+        preparedProofs,
+        completionContext,
+        sourceFileEnvironment,
+        workspaceRoot
+    );
     const options: ChildProcessOptions = {
         workingDirectory:
             enterWorkspaceAndExecuteSubprocessCommand.workingDirectory,

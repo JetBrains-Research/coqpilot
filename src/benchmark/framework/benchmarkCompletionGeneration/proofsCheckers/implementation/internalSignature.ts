@@ -1,8 +1,8 @@
 import { JSONSchemaType } from "ajv";
 
-import { ProofCheckResult } from "../../../../core/coqProofChecker";
+import { ProofCheckResult } from "../../../../../core/coqProofChecker";
 
-export namespace CheckProofsBySubprocessSignature {
+export namespace CheckProofsInternalSignature {
     export const subprocessName = "Check generated proofs";
 
     export interface Args {
@@ -21,7 +21,7 @@ export namespace CheckProofsBySubprocessSignature {
     export type Result = SuccessResult | FailureResult;
 
     export interface SuccessResult {
-        proofCheckResults: ProofCheckResult[];
+        checkedProofs: ProofCheckResult[];
         effectiveElapsedMillis: number;
     }
 
@@ -108,7 +108,7 @@ export namespace CheckProofsBySubprocessSignature {
     export const successResultSchema: JSONSchemaType<SuccessResult> = {
         type: "object",
         properties: {
-            proofCheckResults: {
+            checkedProofs: {
                 type: "array",
                 items: proofCheckResultSchema,
             },
@@ -116,7 +116,7 @@ export namespace CheckProofsBySubprocessSignature {
                 type: "number",
             },
         },
-        required: ["proofCheckResults", "effectiveElapsedMillis"],
+        required: ["checkedProofs", "effectiveElapsedMillis"],
         additionalProperties: false,
     };
 
