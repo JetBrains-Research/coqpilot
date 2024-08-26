@@ -14,8 +14,8 @@ import { CheckProofsImpl } from "./implementation/checkProofs";
 import { ProofsCheckerUtils } from "./implementation/proofsCheckerUtils";
 
 /**
- * **Warning:** this part of implementation requires `vscode` module imported to work.
- * Thus, do not use it in the code that is called outside the `test-electron` environment.
+ * **Warning:** This implementation requires the `vscode` module to function.
+ * It should not be used in code executed outside the `test-electron` environment.
  */
 export class LocalProofsChecker extends AbstractProofsChecker {
     async checkProofs(
