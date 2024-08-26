@@ -378,9 +378,11 @@
     "preclean-test": "npm run clean && npm run rebuild-test-resources && npm run compile && npm run lint",
     "clean-test": "npm run test-only",
     "prebenchmark": "npm run preclean-test",
-    "benchmark": "node ./out/benchmark/setup.js",
+    "benchmark": "node ./out/benchmark/multiWorkspacesSetup.js",
     "presingle-task-benchmark": "npm run preclean-test",
-    "single-task-benchmark": "npm run test-executables-unsafe -- -g=\"[Single Task Benchmark]\""
+    "single-task-benchmark": "npm run test-executables-unsafe -- -g=\"[Single Task Benchmark: Run Benchmark]\"",
+    "presingle-workspace-benchmark": "npm run prebenchmark",
+    "single-workspace-benchmark": "npm run test-executables-unsafe -- -g=\"Single workspace benchmark\""
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",

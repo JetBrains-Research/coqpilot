@@ -1,6 +1,6 @@
 import { BenchmarkingBundle } from "./framework/experiment/benchmarkingBundleBuilder";
 import { CacheTargets } from "./framework/experiment/datasetCacheBuilder";
-import { MultiWorkspacesExperiment } from "./framework/experiment/multiWorkspaces/multiWorkspacesExperiment";
+import { MultiWorkspacesExperiment } from "./framework/experiment/multiWorkspacesExperiment";
 import { TargetsBuilder } from "./framework/experiment/targetsBuilder";
 import { SeverityLevel } from "./framework/logging/benchmarkingLogger";
 import { colorize } from "./framework/logging/colorLogging";

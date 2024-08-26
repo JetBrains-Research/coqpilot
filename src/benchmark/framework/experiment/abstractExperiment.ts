@@ -41,6 +41,10 @@ export abstract class AbstractExperiment {
         private sharedRunOptions: Partial<ExperimentRunOptions> = {}
     ) {}
 
+    protected abstract validateExecutionContextOrThrow(
+        executionContext: ExecutionContext
+    ): void;
+
     protected abstract setupCoqProjectParser: (
         executionContext: ExecutionContext
     ) => AbstractCoqProjectParser;
@@ -162,12 +166,15 @@ export abstract class AbstractExperiment {
             "Subprocesses Scheduler"
         );
 
-        return {
+        const executionContext: ExecutionContext = {
             requestedTargets: requestedTargets,
             resolvedRunOptions: resolvedRunOptions,
             subprocessesScheduler: subprocessesScheduler,
             logger: logger,
         };
+        this.validateExecutionContextOrThrow(executionContext);
+
+        return executionContext;
     }
 
     private initLogger(
