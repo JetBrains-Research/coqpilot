@@ -460,13 +460,35 @@ export abstract class GeneratedProofImpl<
         );
     }
 
-    private readonly coqProofBlockPattern = /Proof\.\s*(.*?)\s*Qed\./s;
+    private readonly coqProofBlockPattern =
+        /(Proof(?:\s+using(?:\s+\w+)*)?)\.\s*(.*?)\s*(Qed|Defined|Admitted|Abort)\./s;
+    private readonly coqProofBlockStartPattern = ["Proof.", "Proof using."];
+    private readonly coqProofBlockEndPattern = [
+        "Qed.",
+        "Admitted.",
+        "Defined.",
+        "Abort.",
+    ];
 
-    private removeProofQedIfNeeded(message: string): string {
+    removeProofQedIfNeeded(message: string): string {
         const match = this.coqProofBlockPattern.exec(message);
         if (match) {
-            return match[1];
+            return match[2];
         } else {
+            if (
+                this.coqProofBlockStartPattern.some((pattern) =>
+                    message.includes(pattern)
+                )
+            ) {
+                return message.split(this.coqProofBlockStartPattern[0])[1];
+            } else if (
+                this.coqProofBlockEndPattern.some((pattern) =>
+                    message.includes(pattern)
+                )
+            ) {
+                return message.split(this.coqProofBlockEndPattern[0])[0];
+            }
+
             return message;
         }
     }

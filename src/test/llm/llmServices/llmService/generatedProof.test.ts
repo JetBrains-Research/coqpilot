@@ -113,8 +113,8 @@ suite("[LLMService] Test `GeneratedProof`", () => {
 
     test("Correctly extracts proof from dirty input (when created)", async () => {
         await testExtractsProof("auto.", "auto.");
-        await testExtractsProof("Proof. auto.", "Proof. auto.");
-        await testExtractsProof("auto. Qed.", "auto. Qed.");
+        await testExtractsProof("Proof. auto.", " auto.");
+        await testExtractsProof("auto. Qed.", "auto. ");
         await testExtractsProof("some text", "some text");
 
         await testExtractsProof("Proof.auto.Qed.", "auto.");
@@ -132,6 +132,45 @@ suite("[LLMService] Test `GeneratedProof`", () => {
         );
 
         await testExtractsProof("Proof.auto.Qed. Proof.intros.Qed.", "auto.");
+    });
+
+    test("Correctly extracts proof from LLaMA with 'Proof using' and similar inputs", async () => {
+        await testExtractsProof(
+            "Proof. intros.\nreflexivity. Qed.",
+            "intros.\nreflexivity."
+        );
+        await testExtractsProof(
+            "Proof using. intros.\nreflexivity. Qed.",
+            "intros.\nreflexivity."
+        );
+        await testExtractsProof(
+            "Proof using HW. intros.\nreflexivity. Qed.",
+            "intros.\nreflexivity."
+        );
+        await testExtractsProof(
+            "Proof using HW.intros.\nreflexivity. Qed.",
+            "intros.\nreflexivity."
+        );
+        await testExtractsProof(
+            "Proof using HW WB HH CH. intros.\nreflexivity. Qed.",
+            "intros.\nreflexivity."
+        );
+        await testExtractsProof(
+            "Proof using HW WB HH CH. intros.\nreflexivity. Abort.",
+            "intros.\nreflexivity."
+        );
+        await testExtractsProof(
+            "Proof using. intros.\nreflexivity. Admitted.",
+            "intros.\nreflexivity."
+        );
+        await testExtractsProof(
+            "Proof using. intros.\nreflexivity. Defined.",
+            "intros.\nreflexivity."
+        );
+        await testExtractsProof(
+            "Proof using. intros.\nreflexivity. Qed. # I wanted to add a comment here\nQed.",
+            "intros.\nreflexivity."
+        );
     });
 
     test("Mock multiround: generate next version, happy path", async () => {

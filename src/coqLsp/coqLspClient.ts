@@ -27,17 +27,19 @@ import { CoqLspClientConfig, CoqLspServerConfig } from "./coqLspConfig";
 import { CoqLspConnector } from "./coqLspConnector";
 import { Goal, GoalAnswer, GoalRequest, PpString } from "./coqLspTypes";
 import { FlecheDocument, FlecheDocumentParams } from "./coqLspTypes";
-import { CoqLspError } from "./coqLspTypes";
+import { CoqLspError, CoqLspStartupError } from "./coqLspTypes";
 
 export interface CoqLspClientInterface extends Disposable {
     getFirstGoalAtPoint(
         position: Position,
         documentUri: Uri,
         version: number,
-        pretac: string
+        command: string
     ): Promise<Goal<PpString> | Error>;
 
     openTextDocument(uri: Uri, version: number): Promise<DiagnosticMessage>;
+
+    getDocumentSymbols(uri: Uri): Promise<any>;
 
     updateTextDocument(
         oldDocumentText: string[],
@@ -68,26 +70,42 @@ export class CoqLspClient implements CoqLspClientInterface {
     private subscriptions: Disposable[] = [];
     private mutex = new Mutex();
 
-    constructor(
+    private constructor(coqLspConnector: CoqLspConnector) {
+        this.client = coqLspConnector;
+    }
+
+    static async create(
         serverConfig: CoqLspServerConfig,
         clientConfig: CoqLspClientConfig
-    ) {
-        this.client = new CoqLspConnector(serverConfig, clientConfig);
-        this.client.start();
+    ): Promise<CoqLspClient> {
+        const connector = new CoqLspConnector(serverConfig, clientConfig);
+        await connector.start().catch((error) => {
+            throw new CoqLspStartupError(
+                `failed to start coq-lsp with Error: ${error.message}`,
+                clientConfig.coq_lsp_server_path
+            );
+        });
+        return new CoqLspClient(connector);
+    }
+
+    async getDocumentSymbols(uri: Uri): Promise<any> {
+        return await this.mutex.runExclusive(async () => {
+            return this.getDocumentSymbolsUnsafe(uri);
+        });
     }
 
     async getFirstGoalAtPoint(
         position: Position,
         documentUri: Uri,
         version: number,
-        pretac?: string
+        command?: string
     ): Promise<Goal<PpString> | Error> {
         return await this.mutex.runExclusive(async () => {
             return this.getFirstGoalAtPointUnsafe(
                 position,
                 documentUri,
                 version,
-                pretac
+                command
             );
         });
     }
@@ -149,11 +167,21 @@ export class CoqLspClient implements CoqLspClientInterface {
             .trim();
     }
 
+    private async getDocumentSymbolsUnsafe(uri: Uri): Promise<any> {
+        let textDocument = TextDocumentIdentifier.create(uri.uri);
+        let params: any = { textDocument };
+
+        return await this.client.sendRequest(
+            "textDocument/documentSymbol",
+            params
+        );
+    }
+
     private async getFirstGoalAtPointUnsafe(
         position: Position,
         documentUri: Uri,
         version: number,
-        pretac?: string
+        command?: string
     ): Promise<Goal<PpString> | Error> {
         let goalRequestParams: GoalRequest = {
             textDocument: VersionedTextDocumentIdentifier.create(
@@ -165,8 +193,9 @@ export class CoqLspClient implements CoqLspClientInterface {
             pp_format: "Str",
         };
 
-        if (pretac) {
-            goalRequestParams.pretac = pretac;
+        if (command) {
+            goalRequestParams.command = command;
+            // goalRequestParams.mode = "After";
         }
 
         const goals = await this.client.sendRequest(

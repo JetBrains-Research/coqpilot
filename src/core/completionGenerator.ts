@@ -7,6 +7,7 @@ import { ModelsParams } from "../llm/llmServices/modelParams";
 import { ProofGenerationContext } from "../llm/proofGenerationContext";
 
 import { Goal, Hyp, PpString } from "../coqLsp/coqLspTypes";
+import { CoqLspTimeoutError } from "../coqLsp/coqLspTypes";
 
 import { Theorem } from "../coqParser/parsedTypes";
 import { EventLogger } from "../logging/eventLogger";
@@ -14,11 +15,7 @@ import { createCoqLspClient } from "../test/commonTestFunctions/coqLspBuilder";
 import { stringifyAnyValue } from "../utils/printers";
 
 import { ContextTheoremsRanker } from "./contextTheoremRanker/contextTheoremsRanker";
-import {
-    CoqLspTimeoutError,
-    CoqProofChecker,
-    ProofCheckResult,
-} from "./coqProofChecker";
+import { CoqProofChecker, ProofCheckResult } from "./coqProofChecker";
 
 export interface CompletionContext {
     proofGoal: Goal<PpString>;
@@ -158,7 +155,7 @@ export async function generateCompletion(
             );
             return new FailureGenerationResult(
                 FailureGenerationStatus.ERROR_OCCURRED,
-                `please report this crash by opening an issue in the Coqpilot GitHub repository: object was thrown as error, ${stringifyAnyValue(e)}`
+                `please report this crash by opening an issue in the CoqPilot GitHub repository: object was thrown as error, ${stringifyAnyValue(e)}`
             );
         } else {
             console.error(
@@ -242,7 +239,7 @@ async function checkGeneratedProofs(
 
     if (workspaceRootPath) {
         processEnvironment.coqProofChecker.dispose();
-        const client = createCoqLspClient(workspaceRootPath);
+        const client = await createCoqLspClient(workspaceRootPath);
         const coqProofChecker = new CoqProofChecker(client);
         processEnvironment.coqProofChecker = coqProofChecker;
     }
