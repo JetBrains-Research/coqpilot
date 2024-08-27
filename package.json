@@ -1,7 +1,7 @@
 {
   "name": "coqpilot",
   "displayName": "СoqPilot",
-  "description": "An ai based completion extension for Coq interactive prover.",
+  "description": "An AI-based completion extension for Coq interactive prover.",
   "icon": "etc/img/logo.ico",
   "repository": {
     "type": "git",
