@@ -144,12 +144,20 @@ export class CoqPilot {
         shouldCompleteHole: (hole: ProofStep) => boolean,
         editor: TextEditor
     ) {
+        this.globalExtensionState.eventLogger.log(
+            "completion-started",
+            "CoqPilot has started the completion process"
+        );
         const [completionContexts, sourceFileEnvironment, processEnvironment] =
             await this.prepareForCompletions(
                 shouldCompleteHole,
                 editor.document.version,
                 editor.document.uri.fsPath
             );
+        this.globalExtensionState.eventLogger.log(
+            "completion-preparation-finished",
+            `CoqPilot has successfully parsed the file with ${sourceFileEnvironment.fileTheorems.length} theorems and has found ${completionContexts.length} admits inside chosen selection`
+        );
 
         if (completionContexts.length === 0) {
             showMessageToUser(EditorMessages.noAdmitsFound, "warning");
