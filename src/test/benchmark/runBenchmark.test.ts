@@ -62,7 +62,7 @@ const reportPath = path.join(
 
 const benchmarks: Benchmark[] = [];
 
-suite("Benchmark", () => {
+suite("[SourceExecutable] Legacy Benchmark", () => {
     const reportHolder = new BenchmarkReportHolder(reportPath);
 
     const datasetDir = getDatasetDir();

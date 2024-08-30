@@ -30,5 +30,5 @@ export function subprocessExecutable(
 export function getSubprocessExecutableSuiteName(
     subprocessName: string
 ): string {
-    return `[SubprocessExecutable] ${subprocessName}`;
+    return `[SourceExecutable] ${subprocessName}`;
 }

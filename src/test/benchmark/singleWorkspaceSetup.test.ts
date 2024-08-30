@@ -8,7 +8,7 @@ import { SeverityLevel } from "../../benchmark/framework/logging/benchmarkingLog
 import { colorize } from "../../benchmark/framework/logging/colorLogging";
 import { DatasetCacheUsageMode } from "../../benchmark/framework/structures/datasetCaching";
 
-suite("Single workspace benchmark", () => {
+suite("[SourceExecutable] Single Workspace Benchmark", () => {
     test("Run single workspace benchmark", async () => {
         const experiment = new SingleWorkspaceExperiment();
 
