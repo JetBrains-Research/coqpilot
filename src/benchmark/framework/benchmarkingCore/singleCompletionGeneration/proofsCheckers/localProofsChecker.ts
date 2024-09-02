@@ -33,7 +33,10 @@ export class LocalProofsChecker extends AbstractProofsChecker {
         );
         const proofsCheckResult = await CheckProofsImpl.checkProofsMeasured(
             args,
-            logger
+            {
+                logger: logger,
+                logSuccess: false,
+            }
         );
         return ProofsCheckerUtils.unpackSuccessResultOrThrow(proofsCheckResult);
     }

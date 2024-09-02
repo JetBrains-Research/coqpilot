@@ -20,11 +20,14 @@ import { CheckProofsInternalSignature } from "./internalSignature";
 export namespace CheckProofsImpl {
     import Signature = CheckProofsInternalSignature;
 
-    export type Logger = LogsIPCSender | BenchmarkingLogger;
+    export interface ProvidedLogger {
+        logger: LogsIPCSender | BenchmarkingLogger;
+        logSuccess: boolean;
+    }
 
     export async function checkProofsMeasured(
         args: Signature.Args,
-        logger: Logger
+        providedLogger: ProvidedLogger
     ): Promise<Signature.Result> {
         const coqLspClient = createTestCoqLspClient(args.workspaceRootPath);
         const coqProofChecker = new CoqProofChecker(coqLspClient);
@@ -42,7 +45,7 @@ export namespace CheckProofsImpl {
             return buildSuccessResult(
                 proofCheckResults,
                 proofsValidationMillis,
-                logger
+                providedLogger
             );
         } catch (e) {
             const error = e as Error;
@@ -52,6 +55,7 @@ export namespace CheckProofsImpl {
                 );
             }
             // TODO: maybe it will be more efficient just to rethrow error here
+            const logger = providedLogger.logger;
             if (error instanceof CoqLspTimeoutError) {
                 logger.error(
                     `coq-lsp timeout error: ${stringifyAnyValue(error.message)}`
@@ -72,11 +76,13 @@ export namespace CheckProofsImpl {
     function buildSuccessResult(
         proofCheckResults: ProofCheckResult[],
         proofsValidationMillis: number,
-        logger: Logger
+        providedLogger: ProvidedLogger
     ): Signature.SuccessResult {
-        logger.info(
-            `Proofs were successfully checked in ${proofsValidationMillis} ms`
-        );
+        if (providedLogger.logSuccess) {
+            providedLogger.logger.debug(
+                `Proofs were successfully checked in ${proofsValidationMillis} ms`
+            );
+        }
         return {
             checkedProofs: proofCheckResults,
             effectiveElapsedMillis: proofsValidationMillis,
