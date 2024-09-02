@@ -5,10 +5,10 @@ import { CodeElementRange } from "../../structures/common/codeElementPositions";
 import { TargetRequestType } from "../../structures/common/inputTargets";
 import { ParsedCoqFileData } from "../../structures/parsedCoqFile/parsedCoqFileData";
 import { TheoremData } from "../../structures/parsedCoqFile/theoremData";
+import { all } from "../../utils/collectionUtils/listUtils";
+import { mapValues } from "../../utils/collectionUtils/mapUtils";
+import { toTargetType } from "../../utils/commonStructuresUtils/targetTypeUtils";
 import { joinPaths } from "../../utils/fsUtils";
-import { all } from "../../utils/listUtils";
-import { mapValues } from "../../utils/mapUtils";
-import { toTargetType } from "../../utils/targetTypeUtils";
 
 export class DatasetCacheHolder {
     private readonly workspacePathToCache: Map<string, WorkspaceCacheHolder> =

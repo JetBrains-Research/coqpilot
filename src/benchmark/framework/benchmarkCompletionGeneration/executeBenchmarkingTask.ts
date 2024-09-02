@@ -13,9 +13,9 @@ import {
     isFailedGeneration,
     isSuccessfulGeneration,
 } from "../structures/benchmarkingResults/benchmarkedItem";
-import { AsyncScheduler } from "../utils/asyncScheduler";
+import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
+import { selectLLMServiceBuilder } from "../utils/commonStructuresUtils/llmServicesUtils";
 import { writeToFile } from "../utils/fsUtils";
-import { selectLLMServiceBuilder } from "../utils/llmServicesUtils";
 
 import { benchmarkSingleCompletionGeneration } from "./benchmarkSingleCompletionGeneration";
 import { AbstractProofsChecker } from "./proofsCheckers/abstractProofsChecker";

@@ -1,18 +1,18 @@
-import { GrazieModelParamsResolver } from "../../../llm/llmServices/grazie/grazieModelParamsResolver";
-import { GrazieService } from "../../../llm/llmServices/grazie/grazieService";
-import { LLMService } from "../../../llm/llmServices/llmService";
-import { LMStudioModelParamsResolver } from "../../../llm/llmServices/lmStudio/lmStudioModelParamsResolver";
-import { LMStudioService } from "../../../llm/llmServices/lmStudio/lmStudioService";
-import { ModelParams } from "../../../llm/llmServices/modelParams";
-import { OpenAiModelParamsResolver } from "../../../llm/llmServices/openai/openAiModelParamsResolver";
-import { OpenAiService } from "../../../llm/llmServices/openai/openAiService";
-import { PredefinedProofsModelParamsResolver } from "../../../llm/llmServices/predefinedProofs/predefinedProofsModelParamsResolver";
-import { PredefinedProofsService } from "../../../llm/llmServices/predefinedProofs/predefinedProofsService";
-import { ParamsResolverImpl } from "../../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";
-import { UserModelParams } from "../../../llm/userModelParams";
+import { GrazieModelParamsResolver } from "../../../../llm/llmServices/grazie/grazieModelParamsResolver";
+import { GrazieService } from "../../../../llm/llmServices/grazie/grazieService";
+import { LLMService } from "../../../../llm/llmServices/llmService";
+import { LMStudioModelParamsResolver } from "../../../../llm/llmServices/lmStudio/lmStudioModelParamsResolver";
+import { LMStudioService } from "../../../../llm/llmServices/lmStudio/lmStudioService";
+import { ModelParams } from "../../../../llm/llmServices/modelParams";
+import { OpenAiModelParamsResolver } from "../../../../llm/llmServices/openai/openAiModelParamsResolver";
+import { OpenAiService } from "../../../../llm/llmServices/openai/openAiService";
+import { PredefinedProofsModelParamsResolver } from "../../../../llm/llmServices/predefinedProofs/predefinedProofsModelParamsResolver";
+import { PredefinedProofsService } from "../../../../llm/llmServices/predefinedProofs/predefinedProofsService";
+import { ParamsResolverImpl } from "../../../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";
+import { UserModelParams } from "../../../../llm/userModelParams";
 
-import { EventLogger } from "../../../logging/eventLogger";
-import { LLMServiceIdentifier } from "../structures/common/llmServiceIdentifier";
+import { EventLogger } from "../../../../logging/eventLogger";
+import { LLMServiceIdentifier } from "../../structures/common/llmServiceIdentifier";
 
 export function getShortName(identifier: LLMServiceIdentifier): string {
     switch (identifier) {

@@ -5,7 +5,7 @@ import {
     SourceFileEnvironment,
 } from "../../../../core/completionGenerationContext";
 
-import { EqualTo, HashUtils } from "../../utils/equalitySet";
+import { EqualTo, HashUtils } from "../../utils/collectionUtils/equalitySet";
 import { CodeElementRange } from "../common/codeElementPositions";
 import { WorkspaceRoot } from "../common/workspaceRoot";
 import { ParsedCoqFileData } from "../parsedCoqFile/parsedCoqFileData";

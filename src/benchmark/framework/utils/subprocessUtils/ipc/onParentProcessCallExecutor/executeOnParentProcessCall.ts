@@ -2,7 +2,7 @@ import { JSONSchemaType } from "ajv";
 import ipc from "node-ipc";
 
 import { stringifyAnyValue } from "../../../../../../utils/printers";
-import { PromiseExecutor } from "../../../promiseUtils";
+import { PromiseExecutor } from "../../../asyncUtils/promiseUtils";
 import {
     ArgsIPCMessage,
     IPCMessage,

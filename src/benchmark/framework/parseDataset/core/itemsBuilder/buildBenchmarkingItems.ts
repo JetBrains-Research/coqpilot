@@ -7,14 +7,14 @@ import { CompletionGenerationTask } from "../../../structures/benchmarkingCore/c
 import { LLMServiceIdentifier } from "../../../structures/common/llmServiceIdentifier";
 import { InputBenchmarkingBundle } from "../../../structures/inputParameters/inputBenchmarkingBundle";
 import { InputBenchmarkingModelParams } from "../../../structures/inputParameters/inputBenchmarkingModelParams";
-import { EqualitySet } from "../../../utils/equalitySet";
+import { EqualitySet } from "../../../utils/collectionUtils/equalitySet";
+import { getOrPut } from "../../../utils/collectionUtils/mapUtils";
 import {
     LLMServicesParamsResolvers,
     createParamsResolvers,
     getParamsResolver,
-} from "../../../utils/llmServicesUtils";
-import { getOrPut } from "../../../utils/mapUtils";
-import { resolveTheoremsRanker } from "../../../utils/resolveTheoremsRanker";
+} from "../../../utils/commonStructuresUtils/llmServicesUtils";
+import { resolveTheoremsRanker } from "../../../utils/inputResolutionUtils/resolveTheoremsRanker";
 import { DatasetCacheHolder } from "../../cacheStructures/cacheHolders";
 
 import { constructTasksForBundleTargets } from "./constructTasks";

@@ -1,6 +1,6 @@
 import { BenchmarkingItem } from "../../structures/benchmarkingCore/benchmarkingItem";
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
-import { getShortName } from "../../utils/llmServicesUtils";
+import { getShortName } from "../../utils/commonStructuresUtils/llmServicesUtils";
 
 export function logBenchmarkingItems(
     benchmarkingItems: BenchmarkingItem[]

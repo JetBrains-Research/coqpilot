@@ -1,4 +1,4 @@
-import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
+import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 
 import { ResolveType } from "./promiseUtils";
 

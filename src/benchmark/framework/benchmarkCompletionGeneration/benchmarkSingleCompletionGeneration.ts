@@ -42,9 +42,9 @@ import {
 } from "../structures/benchmarkingResults/benchmarkedItem";
 import { WorkspaceRoot } from "../structures/common/workspaceRoot";
 import { ParsedCoqFileData } from "../structures/parsedCoqFile/parsedCoqFileData";
-import { AsyncScheduler } from "../utils/asyncScheduler";
-import { reduceToMap } from "../utils/mapUtils";
-import { hasAllPropertiesDefined } from "../utils/structsUtils";
+import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
+import { reduceToMap } from "../utils/collectionUtils/mapUtils";
+import { hasAllPropertiesDefined } from "../utils/objectUtils";
 
 import {
     CompletionGenerationTimeImpl,

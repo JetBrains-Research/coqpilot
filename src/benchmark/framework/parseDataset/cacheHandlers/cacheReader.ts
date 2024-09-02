@@ -9,6 +9,8 @@ import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
 import { deserializeCodeElementRange } from "../../structures/common/codeElementPositions";
 import { deserializeTheoremData } from "../../structures/parsedCoqFile/theoremData";
+import { packIntoMap } from "../../utils/collectionUtils/mapUtils";
+import { deserializeGoal } from "../../utils/coqUtils/goalParser";
 import {
     exists,
     getDatasetDir,
@@ -18,8 +20,6 @@ import {
     relativizeAbsolutePaths,
     resolveAsAbsolutePath,
 } from "../../utils/fsUtils";
-import { deserializeGoal } from "../../utils/goalParser";
-import { packIntoMap } from "../../utils/mapUtils";
 import {
     CacheHolderData,
     WorkspaceCacheHolder,

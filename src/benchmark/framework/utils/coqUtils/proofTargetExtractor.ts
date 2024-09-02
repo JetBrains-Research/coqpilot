@@ -1,9 +1,9 @@
-import { ProofStep, Theorem } from "../../../coqParser/parsedTypes";
+import { ProofStep, Theorem } from "../../../../coqParser/parsedTypes";
 import {
     SerializedProofStep,
     SerializedTheorem,
     TheoremData,
-} from "../structures/parsedCoqFile/theoremData";
+} from "../../structures/parsedCoqFile/theoremData";
 
 export function extractTheoremFisrtProofStep(
     theorem: TheoremData | Theorem

@@ -15,12 +15,12 @@ import {
     TheoremData,
     serializeTheoremData,
 } from "../../../structures/parsedCoqFile/theoremData";
-import { serializeGoal } from "../../../utils/goalParser";
 import {
     mappedObjectValues,
     packIntoMappedObject,
-} from "../../../utils/mapUtils";
-import { extractSerializedTheoremFisrtProofStep } from "../../../utils/proofTargetExtractor";
+} from "../../../utils/collectionUtils/mapUtils";
+import { serializeGoal } from "../../../utils/coqUtils/goalParser";
+import { extractSerializedTheoremFisrtProofStep } from "../../../utils/coqUtils/proofTargetExtractor";
 import { LogsIPCSender } from "../../../utils/subprocessUtils/ipc/onParentProcessCallExecutor/logsIpcSender";
 
 import { ParseCoqProjectInternalSignature } from "./internalSignature";

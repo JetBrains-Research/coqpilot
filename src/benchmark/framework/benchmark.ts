@@ -12,7 +12,9 @@ import { BenchmarkedItem } from "./structures/benchmarkingResults/benchmarkedIte
 import { ExperimentResults } from "./structures/benchmarkingResults/experimentResults";
 import { LLMServiceIdentifier } from "./structures/common/llmServiceIdentifier";
 import { ExperimentRunOptions } from "./structures/inputParameters/experimentRunOptions";
-import { AsyncScheduler } from "./utils/asyncScheduler";
+import { AsyncScheduler } from "./utils/asyncUtils/asyncScheduler";
+import { groupBy, mapValues } from "./utils/collectionUtils/mapUtils";
+import { getShortName } from "./utils/commonStructuresUtils/llmServicesUtils";
 import {
     checkDirectoryIsEmpty,
     createDirectory,
@@ -22,8 +24,6 @@ import {
     relativizeAbsolutePaths,
     writeToFile,
 } from "./utils/fsUtils";
-import { getShortName } from "./utils/llmServicesUtils";
-import { groupBy, mapValues } from "./utils/mapUtils";
 
 namespace ArtifactsDirNames {
     export const itemsReportsDir = "items";

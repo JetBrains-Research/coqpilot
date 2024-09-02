@@ -7,9 +7,9 @@ import {
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
 import { fromRange } from "../../structures/common/codeElementPositions";
 import { TheoremData } from "../../structures/parsedCoqFile/theoremData";
+import { groupBy, mapValues } from "../../utils/collectionUtils/mapUtils";
+import { extractTheoremFisrtProofStep } from "../../utils/coqUtils/proofTargetExtractor";
 import { joinPaths, relativizeAbsolutePaths } from "../../utils/fsUtils";
-import { groupBy, mapValues } from "../../utils/mapUtils";
-import { extractTheoremFisrtProofStep } from "../../utils/proofTargetExtractor";
 import {
     CacheHolderData,
     WorkspaceCacheHolder,

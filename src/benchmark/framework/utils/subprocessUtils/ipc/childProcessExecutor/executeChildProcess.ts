@@ -13,7 +13,7 @@ import {
     BenchmarkingLogger,
     SeverityLevel,
 } from "../../../../logging/benchmarkingLogger";
-import { PromiseExecutor } from "../../../promiseUtils";
+import { PromiseExecutor } from "../../../asyncUtils/promiseUtils";
 import {
     ExecutionErrorIPCMessage,
     IPCErrorIPCMessage,

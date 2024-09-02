@@ -3,7 +3,7 @@ import { CoqProjectParserUtils } from "../../parseDataset/coqProjectParser/imple
 import { ParseCoqProjectInternalSignature } from "../../parseDataset/coqProjectParser/implementation/internalSignature";
 import { ParsedWorkspaceHolder } from "../../parseDataset/coqProjectParser/implementation/parsedWorkspaceHolder";
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
-import { AsyncScheduler } from "../../utils/asyncScheduler";
+import { AsyncScheduler } from "../../utils/asyncUtils/asyncScheduler";
 import { checkIsInsideDirectory } from "../../utils/fsUtils";
 import {
     ChildProcessOptions,

@@ -10,7 +10,7 @@ import {
     deserializeParsedCoqFile,
 } from "../../../structures/parsedCoqFile/parsedCoqFileData";
 import { TheoremData } from "../../../structures/parsedCoqFile/theoremData";
-import { deserializeGoal } from "../../../utils/goalParser";
+import { deserializeGoal } from "../../../utils/coqUtils/goalParser";
 
 import { ParseCoqProjectInternalSignature } from "./internalSignature";
 

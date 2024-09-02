@@ -6,7 +6,7 @@ import {
 } from "../../../structures/common/inputTargets";
 import { WorkspaceRoot } from "../../../structures/common/workspaceRoot";
 import { ParsedCoqFileData } from "../../../structures/parsedCoqFile/parsedCoqFileData";
-import { toTargetType } from "../../../utils/targetTypeUtils";
+import { toTargetType } from "../../../utils/commonStructuresUtils/targetTypeUtils";
 import {
     CacheHolderData,
     DatasetCacheHolder,

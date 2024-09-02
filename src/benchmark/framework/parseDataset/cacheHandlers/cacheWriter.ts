@@ -3,6 +3,9 @@ import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
 import { serializeCodeElementRange } from "../../structures/common/codeElementPositions";
 import { serializeTheoremData } from "../../structures/parsedCoqFile/theoremData";
+import { packIntoMappedObject } from "../../utils/collectionUtils/mapUtils";
+import { serializeGoal } from "../../utils/coqUtils/goalParser";
+import { extractTheoremFisrtProofStep } from "../../utils/coqUtils/proofTargetExtractor";
 import {
     clearDirectory,
     getDatasetDir,
@@ -10,9 +13,6 @@ import {
     relativizeAbsolutePaths,
     writeToFile,
 } from "../../utils/fsUtils";
-import { serializeGoal } from "../../utils/goalParser";
-import { packIntoMappedObject } from "../../utils/mapUtils";
-import { extractTheoremFisrtProofStep } from "../../utils/proofTargetExtractor";
 import {
     CacheHolderData,
     DatasetCacheHolder,

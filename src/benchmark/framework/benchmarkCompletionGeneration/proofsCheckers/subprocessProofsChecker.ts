@@ -6,7 +6,7 @@ import {
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { checkGeneratedProofsInSubprocess } from "../../subprocessCalls/checkGeneratedProofs/callChildProcess";
-import { AsyncScheduler } from "../../utils/asyncScheduler";
+import { AsyncScheduler } from "../../utils/asyncUtils/asyncScheduler";
 
 import {
     AbstractProofsChecker,

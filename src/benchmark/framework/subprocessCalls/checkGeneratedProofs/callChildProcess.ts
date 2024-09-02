@@ -7,7 +7,7 @@ import { CheckProofsInternalSignature } from "../../benchmarkCompletionGeneratio
 import { ProofsCheckerUtils } from "../../benchmarkCompletionGeneration/proofsCheckers/implementation/proofsCheckerUtils";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
-import { AsyncScheduler } from "../../utils/asyncScheduler";
+import { AsyncScheduler } from "../../utils/asyncUtils/asyncScheduler";
 import {
     ChildProcessOptions,
     executeProcessAsFunction,

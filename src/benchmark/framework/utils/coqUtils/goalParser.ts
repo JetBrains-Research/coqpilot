@@ -1,4 +1,4 @@
-import { ProofGoal } from "../../../coqLsp/coqLspTypes";
+import { ProofGoal } from "../../../../coqLsp/coqLspTypes";
 
 export function serializeGoal(goal: ProofGoal): string {
     return JSON.stringify(goal);
