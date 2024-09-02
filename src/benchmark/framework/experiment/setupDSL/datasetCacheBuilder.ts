@@ -1,25 +1,25 @@
-import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
-import { rewriteDatasetCache } from "../parseDataset/cacheHandlers/cacheWriter";
-import { DatasetCacheHolder } from "../parseDataset/cacheStructures/cacheHolders";
-import { AbstractCoqProjectParser } from "../parseDataset/coqProjectParser/abstractCoqProjectParser";
-import { CompleteInputTargetsUtils } from "../parseDataset/core/filterTargetsMissingInCache";
-import { parseMissingTargetsAndUpdateCache } from "../parseDataset/core/parseMissingTargets";
-import { createEmptyCache } from "../parseDataset/utils/cacheHoldersUtils";
-import { ExperimentRunOptions } from "../structures/experimentRunOptions";
+import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
+import { rewriteDatasetCache } from "../../parseDataset/cacheHandlers/cacheWriter";
+import { DatasetCacheHolder } from "../../parseDataset/cacheStructures/cacheHolders";
+import { AbstractCoqProjectParser } from "../../parseDataset/coqProjectParser/abstractCoqProjectParser";
+import { CompleteInputTargetsUtils } from "../../parseDataset/core/filterTargetsMissingInCache";
+import { parseMissingTargetsAndUpdateCache } from "../../parseDataset/core/parseMissingTargets";
+import { createEmptyCache } from "../../parseDataset/utils/cacheHoldersUtils";
+import { ExperimentRunOptions } from "../../structures/experimentRunOptions";
 import {
     DatasetInputTargets,
     WorkspaceInputTargets,
     mergeInputTargets,
-} from "../structures/inputTargets";
+} from "../../structures/inputTargets";
 import {
     WorkspaceRoot,
     standaloneFilesRoot,
-} from "../structures/workspaceRoot";
+} from "../../structures/workspaceRoot";
 import {
     clearDirectory,
     isDirectory,
     listCoqSourceFiles,
-} from "../utils/fsUtils";
+} from "../../utils/fsUtils";
 
 import { EnvironmentStringType, TargetsBuilderUtils } from "./targetsBuilder";
 

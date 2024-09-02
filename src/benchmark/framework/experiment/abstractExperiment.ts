@@ -22,7 +22,7 @@ import { getRootDir, joinPaths, resolveAsAbsolutePath } from "../utils/fsUtils";
 import {
     CacheTargetsImpl,
     DatasetCacheBuildingImpl,
-} from "./datasetCacheBuilder";
+} from "./setupDSL/datasetCacheBuilder";
 
 export interface ExecutionContext {
     requestedTargets: DatasetInputTargets;

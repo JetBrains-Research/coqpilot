@@ -3,7 +3,7 @@ import { ContextTheoremsRanker } from "../../../core/contextTheoremRanker/contex
 import { DistanceContextTheoremsRanker } from "../../../core/contextTheoremRanker/distanceContextTheoremsRanker";
 import { RandomContextTheoremsRanker } from "../../../core/contextTheoremRanker/randomContextTheoremsRanker";
 
-import { RankerType } from "../experiment/inputBenchmarkingModelParams";
+import { RankerType } from "../structures/inputBenchmarkingModelParams";
 
 export function resolveTheoremsRanker(
     rankerType: RankerType

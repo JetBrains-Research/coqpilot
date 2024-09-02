@@ -1,11 +1,11 @@
 import { ModelParams } from "../../../../../llm/llmServices/modelParams";
 import { resolveOrThrow } from "../../../../../llm/llmServices/utils/resolveOrThrow";
 
-import { InputBenchmarkingModelParams } from "../../../experiment/inputBenchmarkingModelParams";
 import { BenchmarkingItem } from "../../../structures/benchmarkingItem";
 import { BenchmarkingModelParams } from "../../../structures/benchmarkingModelParams";
 import { CompletionGenerationTask } from "../../../structures/completionGenerationTask";
 import { InputBenchmarkingBundle } from "../../../structures/inputBenchmarkingBundle";
+import { InputBenchmarkingModelParams } from "../../../structures/inputBenchmarkingModelParams";
 import { LLMServiceIdentifier } from "../../../structures/llmServiceIdentifier";
 import { EqualitySet } from "../../../utils/equalitySet";
 import {

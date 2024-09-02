@@ -1,7 +1,7 @@
-import { BenchmarkingBundle } from "./framework/experiment/benchmarkingBundleBuilder";
-import { CacheTargets } from "./framework/experiment/datasetCacheBuilder";
 import { MultiWorkspacesExperiment } from "./framework/experiment/multiWorkspacesExperiment";
-import { TargetsBuilder } from "./framework/experiment/targetsBuilder";
+import { BenchmarkingBundle } from "./framework/experiment/setupDSL/benchmarkingBundleBuilder";
+import { CacheTargets } from "./framework/experiment/setupDSL/datasetCacheBuilder";
+import { TargetsBuilder } from "./framework/experiment/setupDSL/targetsBuilder";
 import { SeverityLevel } from "./framework/logging/benchmarkingLogger";
 import { colorize } from "./framework/logging/colorLogging";
 import { DatasetCacheUsageMode } from "./framework/structures/datasetCaching";

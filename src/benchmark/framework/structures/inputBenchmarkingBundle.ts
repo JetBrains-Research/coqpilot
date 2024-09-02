@@ -1,5 +1,4 @@
-import { InputBenchmarkingModelParams } from "../experiment/inputBenchmarkingModelParams";
-
+import { InputBenchmarkingModelParams } from "./inputBenchmarkingModelParams";
 import { DatasetInputTargets } from "./inputTargets";
 import { LLMServiceIdentifier } from "./llmServiceIdentifier";
 

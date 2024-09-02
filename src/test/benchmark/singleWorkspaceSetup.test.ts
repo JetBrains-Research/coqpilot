@@ -1,9 +1,9 @@
 import { time, timeToMillis } from "../../llm/llmServices/utils/time";
 
-import { BenchmarkingBundle } from "../../benchmark/framework/experiment/benchmarkingBundleBuilder";
-import { CacheTargets } from "../../benchmark/framework/experiment/datasetCacheBuilder";
+import { BenchmarkingBundle } from "../../benchmark/framework/experiment/setupDSL/benchmarkingBundleBuilder";
+import { CacheTargets } from "../../benchmark/framework/experiment/setupDSL/datasetCacheBuilder";
+import { TargetsBuilder } from "../../benchmark/framework/experiment/setupDSL/targetsBuilder";
 import { SingleWorkspaceExperiment } from "../../benchmark/framework/experiment/singleWorkspaceExperiment";
-import { TargetsBuilder } from "../../benchmark/framework/experiment/targetsBuilder";
 import { SeverityLevel } from "../../benchmark/framework/logging/benchmarkingLogger";
 import { colorize } from "../../benchmark/framework/logging/colorLogging";
 import { DatasetCacheUsageMode } from "../../benchmark/framework/structures/datasetCaching";

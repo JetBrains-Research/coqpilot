@@ -2,11 +2,11 @@ import {
     DatasetInputTargets,
     TargetRequestType,
     WorkspaceInputTargets,
-} from "../structures/inputTargets";
+} from "../../structures/inputTargets";
 import {
     WorkspaceRoot,
     standaloneFilesRoot,
-} from "../structures/workspaceRoot";
+} from "../../structures/workspaceRoot";
 import {
     getDatasetDir,
     isCoqSourceFile,
@@ -14,7 +14,7 @@ import {
     joinPaths,
     listCoqSourceFiles,
     resolveAsAbsolutePath,
-} from "../utils/fsUtils";
+} from "../../utils/fsUtils";
 
 export type EnvironmentStringType = "nix" | "no-special-environment";
 
