@@ -7,9 +7,9 @@ import {
     timeToMillis,
     timeToString,
     timeZero,
-} from "../../../../llm/llmServices/utils/time";
+} from "../../utils/time";
 
-suite("[LLMService-s utils] Time utils test", () => {
+suite("Time utils test", () => {
     const zero: Time = {
         millis: 0,
         seconds: 0,

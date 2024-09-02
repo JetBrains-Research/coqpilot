@@ -1,3 +1,4 @@
+import { nowTimestampMillis } from "../../../../utils/time";
 import {
     GenerationFailedError,
     LLMServiceError,
@@ -7,7 +8,6 @@ import {
     LLMServiceRequestSucceeded,
 } from "../../commonStructures/llmServiceRequest";
 import { ModelParams } from "../../modelParams";
-import { nowTimestampMillis } from "../time";
 
 import { DebugLoggerRecord, LoggedError, LoggerRecord } from "./loggerRecord";
 import { SyncFile } from "./syncFile";

@@ -1,7 +1,7 @@
 import { modelName } from "../../llm/llmServices/utils/modelParamsAccessors";
-import { millisToString } from "../../llm/llmServices/utils/time";
 
 import { stringifyAnyValue } from "../../utils/printers";
+import { millisToString } from "../../utils/time";
 
 import { executeBenchmarkingTask } from "./benchmarkingCore/executeBenchmarkingTask";
 import { TimeMark } from "./benchmarkingCore/singleCompletionGeneration/measureUtils";

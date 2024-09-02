@@ -1,7 +1,4 @@
-import {
-    time,
-    timeToMillis,
-} from "../../../../../../llm/llmServices/utils/time";
+import { time, timeToMillis } from "../../../../../../utils/time";
 
 export const defaultSubprocessTestExecutableTimeoutMillis = timeToMillis(
     time(5, "minute")

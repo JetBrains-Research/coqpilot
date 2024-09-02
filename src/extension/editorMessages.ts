@@ -1,10 +1,9 @@
 import { DefinedError } from "ajv";
 import { window } from "vscode";
 
-import { Time } from "../llm/llmServices/utils/time";
-
 import { ajvErrorsAsString } from "../utils/ajvErrorsHandling";
 import { stringifyAnyValue } from "../utils/printers";
+import { Time } from "../utils/time";
 
 export namespace EditorMessages {
     export const timeoutExceeded =

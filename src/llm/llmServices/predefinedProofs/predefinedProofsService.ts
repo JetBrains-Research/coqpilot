@@ -1,4 +1,5 @@
 import { EventLogger } from "../../../logging/eventLogger";
+import { Time, timeZero } from "../../../utils/time";
 import { ConfigurationError } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { PredefinedProofsUserModelParams } from "../../userModelParams";
@@ -11,7 +12,6 @@ import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
 import { LLMServiceInternal } from "../llmServiceInternal";
 import { PredefinedProofsModelParams } from "../modelParams";
-import { Time, timeZero } from "../utils/time";
 
 import { PredefinedProofsModelParamsResolver } from "./predefinedProofsModelParamsResolver";
 

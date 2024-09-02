@@ -13,11 +13,6 @@ import {
     LLMServiceImpl,
 } from "../../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
-import {
-    millisToString,
-    timeToMillis,
-    timeToString,
-} from "../../../../llm/llmServices/utils/time";
 import { ProofGenerationContext } from "../../../../llm/proofGenerationContext";
 
 import {
@@ -32,6 +27,11 @@ import { Theorem } from "../../../../coqParser/parsedTypes";
 import { EventLogger } from "../../../../logging/eventLogger";
 import { delay } from "../../../../test/commonTestFunctions/delay";
 import { stringifyAnyValue } from "../../../../utils/printers";
+import {
+    millisToString,
+    timeToMillis,
+    timeToString,
+} from "../../../../utils/time";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { BenchmarkingModelParams } from "../../structures/benchmarkingCore/benchmarkingModelParams";
 import {

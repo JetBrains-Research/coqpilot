@@ -35,8 +35,8 @@ import {
     LoggerRecord,
 } from "../../../../../llm/llmServices/utils/generationsLogger/loggerRecord";
 import { SyncFile } from "../../../../../llm/llmServices/utils/generationsLogger/syncFile";
-import { nowTimestampMillis } from "../../../../../llm/llmServices/utils/time";
 
+import { nowTimestampMillis } from "../../../../../utils/time";
 import {
     gptTurboModelName,
     testModelId,

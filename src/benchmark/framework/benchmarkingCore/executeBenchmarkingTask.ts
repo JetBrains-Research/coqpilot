@@ -1,7 +1,7 @@
 import { ConfigurationError } from "../../../llm/llmServiceErrors";
-import { millisToString } from "../../../llm/llmServices/utils/time";
 
 import { stringifyAnyValue } from "../../../utils/printers";
+import { millisToString } from "../../../utils/time";
 import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
 import { heavyCheckMark, heavyCrossMark } from "../logging/specialSymbols";
 import { benchmarkedItemToJson } from "../reportBuilders/toJson";

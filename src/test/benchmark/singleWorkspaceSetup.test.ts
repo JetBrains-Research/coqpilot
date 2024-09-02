@@ -1,5 +1,3 @@
-import { time, timeToMillis } from "../../llm/llmServices/utils/time";
-
 import { BenchmarkingBundle } from "../../benchmark/framework/experiment/setupDSL/benchmarkingBundleBuilder";
 import { CacheTargets } from "../../benchmark/framework/experiment/setupDSL/datasetCacheBuilder";
 import { TargetsBuilder } from "../../benchmark/framework/experiment/setupDSL/targetsBuilder";
@@ -7,6 +5,7 @@ import { SingleWorkspaceExperiment } from "../../benchmark/framework/experiment/
 import { SeverityLevel } from "../../benchmark/framework/logging/benchmarkingLogger";
 import { colorize } from "../../benchmark/framework/logging/colorLogging";
 import { DatasetCacheUsageMode } from "../../benchmark/framework/structures/inputParameters/datasetCaching";
+import { time, timeToMillis } from "../../utils/time";
 
 suite("[SourceExecutable] Single Workspace Benchmark", () => {
     test("Run single workspace benchmark", async () => {

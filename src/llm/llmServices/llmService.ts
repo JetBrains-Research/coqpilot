@@ -1,6 +1,7 @@
 import * as tmp from "tmp";
 
 import { EventLogger } from "../../logging/eventLogger";
+import { Time } from "../../utils/time";
 import { ProofGenerationContext } from "../proofGenerationContext";
 import { UserModelParams } from "../userModelParams";
 
@@ -17,7 +18,6 @@ import {
     ParamsResolutionResult,
     ParamsResolver,
 } from "./utils/paramsResolvers/abstractResolvers";
-import { Time } from "./utils/time";
 
 /**
  * Facade type for the `LLMServiceImpl<InputModelParams, ResolvedModelParams, LLMServiceType, GeneratedProofType, LLMServiceInternalType>` type.

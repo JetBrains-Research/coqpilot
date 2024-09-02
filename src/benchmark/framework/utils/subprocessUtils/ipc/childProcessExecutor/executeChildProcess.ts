@@ -2,13 +2,12 @@ import { JSONSchemaType } from "ajv";
 import * as child from "child_process";
 import ipc from "node-ipc";
 
+import { stringifyAnyValue } from "../../../../../../utils/printers";
 import {
     millisToString,
     time,
     timeToMillis,
-} from "../../../../../../llm/llmServices/utils/time";
-
-import { stringifyAnyValue } from "../../../../../../utils/printers";
+} from "../../../../../../utils/time";
 import {
     BenchmarkingLogger,
     SeverityLevel,
