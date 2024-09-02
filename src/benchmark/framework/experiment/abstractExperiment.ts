@@ -1,6 +1,6 @@
-import { benchmark } from "../benchmark";
-import { TimeMark } from "../benchmarkCompletionGeneration/measureUtils";
-import { AbstractProofsChecker } from "../benchmarkCompletionGeneration/proofsCheckers/abstractProofsChecker";
+import { benchmark } from "../benchmarkingCore/benchmark";
+import { TimeMark } from "../benchmarkingCore/singleCompletionGeneration/measureUtils";
+import { AbstractProofsChecker } from "../benchmarkingCore/singleCompletionGeneration/proofsCheckers/abstractProofsChecker";
 import {
     BenchmarkingLogger,
     BenchmarkingLoggerImpl,

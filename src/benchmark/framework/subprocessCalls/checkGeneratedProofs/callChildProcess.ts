@@ -3,8 +3,8 @@ import {
     SourceFileEnvironment,
 } from "../../../../core/completionGenerationContext";
 
-import { CheckProofsInternalSignature } from "../../benchmarkCompletionGeneration/proofsCheckers/implementation/internalSignature";
-import { ProofsCheckerUtils } from "../../benchmarkCompletionGeneration/proofsCheckers/implementation/proofsCheckerUtils";
+import { CheckProofsInternalSignature } from "../../benchmarkingCore/singleCompletionGeneration/proofsCheckers/implementation/internalSignature";
+import { ProofsCheckerUtils } from "../../benchmarkingCore/singleCompletionGeneration/proofsCheckers/implementation/proofsCheckerUtils";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { AsyncScheduler } from "../../utils/asyncUtils/asyncScheduler";

@@ -1,20 +1,16 @@
-import { modelName } from "../../llm/llmServices/utils/modelParamsAccessors";
-import { millisToString } from "../../llm/llmServices/utils/time";
+import { modelName } from "../../../llm/llmServices/utils/modelParamsAccessors";
+import { millisToString } from "../../../llm/llmServices/utils/time";
 
-import { stringifyAnyValue } from "../../utils/printers";
-
-import { executeBenchmarkingTask } from "./benchmarkingCore/executeBenchmarkingTask";
-import { TimeMark } from "./benchmarkingCore/singleCompletionGeneration/measureUtils";
-import { AbstractProofsChecker } from "./benchmarkingCore/singleCompletionGeneration/proofsCheckers/abstractProofsChecker";
-import { BenchmarkingLogger } from "./logging/benchmarkingLogger";
-import { BenchmarkingItem } from "./structures/benchmarkingCore/benchmarkingItem";
-import { BenchmarkedItem } from "./structures/benchmarkingResults/benchmarkedItem";
-import { ExperimentResults } from "./structures/benchmarkingResults/experimentResults";
-import { LLMServiceIdentifier } from "./structures/common/llmServiceIdentifier";
-import { ExperimentRunOptions } from "./structures/inputParameters/experimentRunOptions";
-import { AsyncScheduler } from "./utils/asyncUtils/asyncScheduler";
-import { groupBy, mapValues } from "./utils/collectionUtils/mapUtils";
-import { getShortName } from "./utils/commonStructuresUtils/llmServicesUtils";
+import { stringifyAnyValue } from "../../../utils/printers";
+import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
+import { BenchmarkingItem } from "../structures/benchmarkingCore/benchmarkingItem";
+import { BenchmarkedItem } from "../structures/benchmarkingResults/benchmarkedItem";
+import { ExperimentResults } from "../structures/benchmarkingResults/experimentResults";
+import { LLMServiceIdentifier } from "../structures/common/llmServiceIdentifier";
+import { ExperimentRunOptions } from "../structures/inputParameters/experimentRunOptions";
+import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
+import { groupBy, mapValues } from "../utils/collectionUtils/mapUtils";
+import { getShortName } from "../utils/commonStructuresUtils/llmServicesUtils";
 import {
     checkDirectoryIsEmpty,
     createDirectory,
@@ -23,7 +19,11 @@ import {
     joinPaths,
     relativizeAbsolutePaths,
     writeToFile,
-} from "./utils/fsUtils";
+} from "../utils/fsUtils";
+
+import { executeBenchmarkingTask } from "./executeBenchmarkingTask";
+import { TimeMark } from "./singleCompletionGeneration/measureUtils";
+import { AbstractProofsChecker } from "./singleCompletionGeneration/proofsCheckers/abstractProofsChecker";
 
 namespace ArtifactsDirNames {
     export const itemsReportsDir = "items";

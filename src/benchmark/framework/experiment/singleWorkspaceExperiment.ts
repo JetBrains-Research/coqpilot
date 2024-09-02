@@ -1,4 +1,4 @@
-import { LocalProofsChecker } from "../benchmarkCompletionGeneration/proofsCheckers/localProofsChecker";
+import { LocalProofsChecker } from "../benchmarkingCore/singleCompletionGeneration/proofsCheckers/localProofsChecker";
 import { LocalCoqProjectParser } from "../parseDataset/coqProjectParser/localCoqProjectParser";
 import { ExperimentRunOptions } from "../structures/inputParameters/experimentRunOptions";
 import { InputBenchmarkingBundle } from "../structures/inputParameters/inputBenchmarkingBundle";

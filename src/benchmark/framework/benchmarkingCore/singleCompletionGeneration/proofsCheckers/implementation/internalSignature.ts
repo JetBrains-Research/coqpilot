@@ -1,6 +1,6 @@
 import { JSONSchemaType } from "ajv";
 
-import { ProofCheckResult } from "../../../../../core/coqProofChecker";
+import { ProofCheckResult } from "../../../../../../core/coqProofChecker";
 
 export namespace CheckProofsInternalSignature {
     export const subprocessName = "Check generated proofs";

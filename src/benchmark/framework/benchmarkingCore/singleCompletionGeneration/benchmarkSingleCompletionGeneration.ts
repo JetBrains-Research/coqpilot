@@ -3,48 +3,48 @@ import {
     GenerationFailedError,
     LLMServiceError,
     RemoteConnectionError,
-} from "../../../llm/llmServiceErrors";
-import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
-import { GeneratedRawContentItem } from "../../../llm/llmServices/commonStructures/generatedRawContent";
-import { GenerationTokens } from "../../../llm/llmServices/commonStructures/generationTokens";
-import { LLMServiceRequestSucceeded } from "../../../llm/llmServices/commonStructures/llmServiceRequest";
+} from "../../../../llm/llmServiceErrors";
+import { ErrorsHandlingMode } from "../../../../llm/llmServices/commonStructures/errorsHandlingMode";
+import { GeneratedRawContentItem } from "../../../../llm/llmServices/commonStructures/generatedRawContent";
+import { GenerationTokens } from "../../../../llm/llmServices/commonStructures/generationTokens";
+import { LLMServiceRequestSucceeded } from "../../../../llm/llmServices/commonStructures/llmServiceRequest";
 import {
     LLMService,
     LLMServiceImpl,
-} from "../../../llm/llmServices/llmService";
-import { ModelParams } from "../../../llm/llmServices/modelParams";
+} from "../../../../llm/llmServices/llmService";
+import { ModelParams } from "../../../../llm/llmServices/modelParams";
 import {
     millisToString,
     timeToMillis,
     timeToString,
-} from "../../../llm/llmServices/utils/time";
-import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
+} from "../../../../llm/llmServices/utils/time";
+import { ProofGenerationContext } from "../../../../llm/proofGenerationContext";
 
 import {
     CompletionContext,
     SourceFileEnvironment,
-} from "../../../core/completionGenerationContext";
-import { ContextTheoremsRanker } from "../../../core/contextTheoremRanker/contextTheoremsRanker";
-import { prepareProofToCheck } from "../../../core/exposedCompletionGeneratorUtils";
-import { goalToTargetLemma } from "../../../core/exposedCompletionGeneratorUtils";
+} from "../../../../core/completionGenerationContext";
+import { ContextTheoremsRanker } from "../../../../core/contextTheoremRanker/contextTheoremsRanker";
+import { prepareProofToCheck } from "../../../../core/exposedCompletionGeneratorUtils";
+import { goalToTargetLemma } from "../../../../core/exposedCompletionGeneratorUtils";
 
-import { Theorem } from "../../../coqParser/parsedTypes";
-import { EventLogger } from "../../../logging/eventLogger";
-import { delay } from "../../../test/commonTestFunctions/delay";
-import { stringifyAnyValue } from "../../../utils/printers";
-import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
-import { BenchmarkingModelParams } from "../structures/benchmarkingCore/benchmarkingModelParams";
+import { Theorem } from "../../../../coqParser/parsedTypes";
+import { EventLogger } from "../../../../logging/eventLogger";
+import { delay } from "../../../../test/commonTestFunctions/delay";
+import { stringifyAnyValue } from "../../../../utils/printers";
+import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
+import { BenchmarkingModelParams } from "../../structures/benchmarkingCore/benchmarkingModelParams";
 import {
     BenchmarkedCompletionGeneration,
     CompletionGenerationFailureType,
     FailedCompletionGeneration,
     SuccessfulCompletionGeneration,
-} from "../structures/benchmarkingResults/benchmarkedItem";
-import { WorkspaceRoot } from "../structures/common/workspaceRoot";
-import { ParsedCoqFileData } from "../structures/parsedCoqFile/parsedCoqFileData";
-import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
-import { reduceToMap } from "../utils/collectionUtils/mapUtils";
-import { hasAllPropertiesDefined } from "../utils/objectUtils";
+} from "../../structures/benchmarkingResults/benchmarkedItem";
+import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
+import { ParsedCoqFileData } from "../../structures/parsedCoqFile/parsedCoqFileData";
+import { AsyncScheduler } from "../../utils/asyncUtils/asyncScheduler";
+import { reduceToMap } from "../../utils/collectionUtils/mapUtils";
+import { hasAllPropertiesDefined } from "../../utils/objectUtils";
 
 import {
     CompletionGenerationTimeImpl,

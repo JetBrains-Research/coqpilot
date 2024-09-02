@@ -1,4 +1,4 @@
-import { SubprocessProofsChecker } from "../benchmarkCompletionGeneration/proofsCheckers/subprocessProofsChecker";
+import { SubprocessProofsChecker } from "../benchmarkingCore/singleCompletionGeneration/proofsCheckers/subprocessProofsChecker";
 import { SubprocessCoqProjectParser } from "../parseDataset/coqProjectParser/subprocessCoqProjectParser";
 import { ExperimentRunOptions } from "../structures/inputParameters/experimentRunOptions";
 import { InputBenchmarkingBundle } from "../structures/inputParameters/inputBenchmarkingBundle";

@@ -1,13 +1,13 @@
 import {
     CompletionContext,
     SourceFileEnvironment,
-} from "../../../../../core/completionGenerationContext";
-import { getTextBeforePosition } from "../../../../../core/exposedCompletionGeneratorUtils";
+} from "../../../../../../core/completionGenerationContext";
+import { getTextBeforePosition } from "../../../../../../core/exposedCompletionGeneratorUtils";
 
 import {
     WorkspaceRoot,
     isStandaloneFilesRoot,
-} from "../../../structures/common/workspaceRoot";
+} from "../../../../structures/common/workspaceRoot";
 import {
     ProofsCheckFailedError,
     ProofsCheckResult,

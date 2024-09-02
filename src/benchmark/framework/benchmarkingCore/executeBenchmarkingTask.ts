@@ -17,8 +17,8 @@ import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
 import { selectLLMServiceBuilder } from "../utils/commonStructuresUtils/llmServicesUtils";
 import { writeToFile } from "../utils/fsUtils";
 
-import { benchmarkSingleCompletionGeneration } from "./benchmarkSingleCompletionGeneration";
-import { AbstractProofsChecker } from "./proofsCheckers/abstractProofsChecker";
+import { benchmarkSingleCompletionGeneration } from "./singleCompletionGeneration/benchmarkSingleCompletionGeneration";
+import { AbstractProofsChecker } from "./singleCompletionGeneration/proofsCheckers/abstractProofsChecker";
 
 export async function executeBenchmarkingTask(
     benchmarkingItem: BenchmarkingItem,

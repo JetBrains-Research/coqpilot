@@ -1,12 +1,12 @@
 import {
     CompletionContext,
     SourceFileEnvironment,
-} from "../../../../core/completionGenerationContext";
+} from "../../../../../core/completionGenerationContext";
 
-import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
-import { checkGeneratedProofsInSubprocess } from "../../subprocessCalls/checkGeneratedProofs/callChildProcess";
-import { AsyncScheduler } from "../../utils/asyncUtils/asyncScheduler";
+import { BenchmarkingLogger } from "../../../logging/benchmarkingLogger";
+import { WorkspaceRoot } from "../../../structures/common/workspaceRoot";
+import { checkGeneratedProofsInSubprocess } from "../../../subprocessCalls/checkGeneratedProofs/callChildProcess";
+import { AsyncScheduler } from "../../../utils/asyncUtils/asyncScheduler";
 
 import {
     AbstractProofsChecker,

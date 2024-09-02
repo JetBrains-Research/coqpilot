@@ -1,14 +1,14 @@
-import { createTestCoqLspClient } from "../../../../../coqLsp/coqLspBuilders";
+import { createTestCoqLspClient } from "../../../../../../coqLsp/coqLspBuilders";
 
 import {
     CoqLspTimeoutError,
     CoqProofChecker,
     ProofCheckResult,
-} from "../../../../../core/coqProofChecker";
+} from "../../../../../../core/coqProofChecker";
 
-import { stringifyAnyValue } from "../../../../../utils/printers";
-import { BenchmarkingLogger } from "../../../logging/benchmarkingLogger";
-import { LogsIPCSender } from "../../../utils/subprocessUtils/ipc/onParentProcessCallExecutor/logsIpcSender";
+import { stringifyAnyValue } from "../../../../../../utils/printers";
+import { BenchmarkingLogger } from "../../../../logging/benchmarkingLogger";
+import { LogsIPCSender } from "../../../../utils/subprocessUtils/ipc/onParentProcessCallExecutor/logsIpcSender";
 import { TimeMark } from "../../measureUtils";
 
 import { CheckProofsInternalSignature } from "./internalSignature";

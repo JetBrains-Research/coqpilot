@@ -1,11 +1,11 @@
 import {
     CompletionContext,
     SourceFileEnvironment,
-} from "../../../../core/completionGenerationContext";
-import { ProofCheckResult } from "../../../../core/coqProofChecker";
+} from "../../../../../core/completionGenerationContext";
+import { ProofCheckResult } from "../../../../../core/coqProofChecker";
 
-import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
+import { BenchmarkingLogger } from "../../../logging/benchmarkingLogger";
+import { WorkspaceRoot } from "../../../structures/common/workspaceRoot";
 
 export interface ProofsCheckResult {
     checkedProofs: ProofCheckResult[];

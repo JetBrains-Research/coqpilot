@@ -1,5 +1,5 @@
-import { CheckProofsImpl } from "../../../../../benchmark/framework/benchmarkCompletionGeneration/proofsCheckers/implementation/checkProofs";
-import { CheckProofsInternalSignature } from "../../../../../benchmark/framework/benchmarkCompletionGeneration/proofsCheckers/implementation/internalSignature";
+import { CheckProofsImpl } from "../../../../../benchmark/framework/benchmarkingCore/singleCompletionGeneration/proofsCheckers/implementation/checkProofs";
+import { CheckProofsInternalSignature } from "../../../../../benchmark/framework/benchmarkingCore/singleCompletionGeneration/proofsCheckers/implementation/internalSignature";
 import { executeAsFunctionOnParentProcessCall } from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/executeOnParentProcessCall";
 import { subprocessExecutable } from "../../../../../benchmark/framework/utils/subprocessUtils/ipc/onParentProcessCallExecutor/subprocessExecutableTestWrapper";
 

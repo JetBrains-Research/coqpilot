@@ -1,10 +1,10 @@
 import {
     CompletionContext,
     SourceFileEnvironment,
-} from "../../../../core/completionGenerationContext";
+} from "../../../../../core/completionGenerationContext";
 
-import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
+import { BenchmarkingLogger } from "../../../logging/benchmarkingLogger";
+import { WorkspaceRoot } from "../../../structures/common/workspaceRoot";
 
 import {
     AbstractProofsChecker,
