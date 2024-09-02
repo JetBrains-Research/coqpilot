@@ -1,8 +1,8 @@
-import { GenerationTokens } from "../../../llm/llmServices/commonStructures/generationTokens";
+import { GenerationTokens } from "../../../../llm/llmServices/commonStructures/generationTokens";
 
-import { BenchmarkingItem } from "./benchmarkingItem";
-import { TheoremData } from "./theoremData";
-import { LengthMetrics } from "./utilStructures";
+import { BenchmarkingItem } from "../benchmarkingCore/benchmarkingItem";
+import { LengthMetrics } from "../common/measureStructures";
+import { TheoremData } from "../parsedCoqFile/theoremData";
 
 export interface BenchmarkedItem {
     item: BenchmarkingItem;

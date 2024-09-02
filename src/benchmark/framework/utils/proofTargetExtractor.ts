@@ -3,7 +3,7 @@ import {
     SerializedProofStep,
     SerializedTheorem,
     TheoremData,
-} from "../structures/theoremData";
+} from "../structures/parsedCoqFile/theoremData";
 
 export function extractTheoremFisrtProofStep(
     theorem: TheoremData | Theorem

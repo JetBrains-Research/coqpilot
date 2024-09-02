@@ -1,12 +1,12 @@
 import { ModelParams } from "../../../../../llm/llmServices/modelParams";
 import { resolveOrThrow } from "../../../../../llm/llmServices/utils/resolveOrThrow";
 
-import { BenchmarkingItem } from "../../../structures/benchmarkingItem";
-import { BenchmarkingModelParams } from "../../../structures/benchmarkingModelParams";
-import { CompletionGenerationTask } from "../../../structures/completionGenerationTask";
-import { InputBenchmarkingBundle } from "../../../structures/inputBenchmarkingBundle";
-import { InputBenchmarkingModelParams } from "../../../structures/inputBenchmarkingModelParams";
-import { LLMServiceIdentifier } from "../../../structures/llmServiceIdentifier";
+import { BenchmarkingItem } from "../../../structures/benchmarkingCore/benchmarkingItem";
+import { BenchmarkingModelParams } from "../../../structures/benchmarkingCore/benchmarkingModelParams";
+import { CompletionGenerationTask } from "../../../structures/benchmarkingCore/completionGenerationTask";
+import { LLMServiceIdentifier } from "../../../structures/common/llmServiceIdentifier";
+import { InputBenchmarkingBundle } from "../../../structures/inputParameters/inputBenchmarkingBundle";
+import { InputBenchmarkingModelParams } from "../../../structures/inputParameters/inputBenchmarkingModelParams";
 import { EqualitySet } from "../../../utils/equalitySet";
 import {
     LLMServicesParamsResolvers,

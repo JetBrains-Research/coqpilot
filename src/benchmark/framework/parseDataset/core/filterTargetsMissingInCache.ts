@@ -1,14 +1,14 @@
 import { stringifyAnyValue } from "../../../../utils/printers";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import { DatasetCacheUsageMode } from "../../structures/datasetCaching";
-import { ExperimentRunOptions } from "../../structures/experimentRunOptions";
 import {
     AllTheoremsTarget,
     SpecificTheoremTarget,
     TargetRequestType,
     WorkspaceInputTargets,
-} from "../../structures/inputTargets";
-import { WorkspaceRoot } from "../../structures/workspaceRoot";
+} from "../../structures/common/inputTargets";
+import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
+import { DatasetCacheUsageMode } from "../../structures/inputParameters/datasetCaching";
+import { ExperimentRunOptions } from "../../structures/inputParameters/experimentRunOptions";
 import { listCoqSourceFiles } from "../../utils/fsUtils";
 import { all } from "../../utils/listUtils";
 import { readRequestedFilesCache } from "../cacheHandlers/cacheReader";

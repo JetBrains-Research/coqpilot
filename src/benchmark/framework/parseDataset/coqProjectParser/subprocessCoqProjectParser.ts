@@ -1,6 +1,6 @@
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import { WorkspaceInputTargets } from "../../structures/inputTargets";
-import { WorkspaceRoot } from "../../structures/workspaceRoot";
+import { WorkspaceInputTargets } from "../../structures/common/inputTargets";
+import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { buildAndParseCoqProjectInSubprocess } from "../../subprocessCalls/buildAndParseCoqProject/callChildProcess";
 import { AsyncScheduler } from "../../utils/asyncScheduler";
 

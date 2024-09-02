@@ -3,8 +3,8 @@ import { GenerationTokens } from "../../../llm/llmServices/commonStructures/gene
 import {
     CompletionGenerationTime,
     MeasuredProof,
-} from "../structures/benchmarkedItem";
-import { LengthMetrics } from "../structures/utilStructures";
+} from "../structures/benchmarkingResults/benchmarkedItem";
+import { LengthMetrics } from "../structures/common/measureStructures";
 
 export async function measureElapsedMillis<T>(
     block: () => Promise<T>

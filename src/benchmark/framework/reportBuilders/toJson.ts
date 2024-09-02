@@ -1,4 +1,4 @@
-import { BenchmarkedItem } from "../structures/benchmarkedItem";
+import { BenchmarkedItem } from "../structures/benchmarkingResults/benchmarkedItem";
 
 // TODO: serialize properly
 export function benchmarkedItemToJson(

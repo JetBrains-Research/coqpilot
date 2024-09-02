@@ -1,10 +1,10 @@
 import { ProofGoal } from "../../../../coqLsp/coqLspTypes";
 
-import { TargetType } from "../../structures/completionGenerationTask";
-import { TargetRequestType } from "../../structures/inputTargets";
-import { ParsedCoqFileData } from "../../structures/parsedCoqFileData";
-import { TheoremData } from "../../structures/theoremData";
-import { CodeElementRange } from "../../structures/utilStructures";
+import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
+import { CodeElementRange } from "../../structures/common/codeElementPositions";
+import { TargetRequestType } from "../../structures/common/inputTargets";
+import { ParsedCoqFileData } from "../../structures/parsedCoqFile/parsedCoqFileData";
+import { TheoremData } from "../../structures/parsedCoqFile/theoremData";
 import { joinPaths } from "../../utils/fsUtils";
 import { all } from "../../utils/listUtils";
 import { mapValues } from "../../utils/mapUtils";

@@ -1,13 +1,13 @@
 import { JSONSchemaType } from "ajv";
 
 import {
-    SerializedTheorem,
-    serializedTheoremSchema,
-} from "../../structures/theoremData";
-import {
     SerializedCodeElementRange,
     serializedCodeElementRangeSchema,
-} from "../../structures/utilStructures";
+} from "../../structures/common/codeElementPositions";
+import {
+    SerializedTheorem,
+    serializedTheoremSchema,
+} from "../../structures/parsedCoqFile/theoremData";
 
 /**
  * This namespace provides interfaces representing raw parsing cache, i.e. the serialized one.

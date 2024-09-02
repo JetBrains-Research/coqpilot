@@ -1,4 +1,4 @@
-import { WorkspaceRoot } from "../../structures/workspaceRoot";
+import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { WorkspaceCacheHolder } from "../cacheStructures/cacheHolders";
 
 export function createEmptyCache(

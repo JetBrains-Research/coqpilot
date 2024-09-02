@@ -1,5 +1,5 @@
-import { TargetType } from "../structures/completionGenerationTask";
-import { TargetRequestType } from "../structures/inputTargets";
+import { TargetType } from "../structures/benchmarkingCore/completionGenerationTask";
+import { TargetRequestType } from "../structures/common/inputTargets";
 
 export function toTargetType(requestType: TargetRequestType): TargetType {
     switch (requestType) {

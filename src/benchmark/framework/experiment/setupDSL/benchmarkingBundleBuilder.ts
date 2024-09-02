@@ -1,9 +1,9 @@
-import { InputBenchmarkingModelParams } from "../../structures/inputBenchmarkingModelParams";
 import {
     DatasetInputTargets,
     mergeInputTargets,
-} from "../../structures/inputTargets";
-import { LLMServiceIdentifier } from "../../structures/llmServiceIdentifier";
+} from "../../structures/common/inputTargets";
+import { LLMServiceIdentifier } from "../../structures/common/llmServiceIdentifier";
+import { InputBenchmarkingModelParams } from "../../structures/inputParameters/inputBenchmarkingModelParams";
 import { AbstractExperiment } from "../abstractExperiment";
 
 export type LLMServiceStringIdentifier =

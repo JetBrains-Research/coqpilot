@@ -2,11 +2,11 @@ import {
     DatasetInputTargets,
     TargetRequestType,
     WorkspaceInputTargets,
-} from "../../structures/inputTargets";
+} from "../../structures/common/inputTargets";
 import {
     WorkspaceRoot,
     standaloneFilesRoot,
-} from "../../structures/workspaceRoot";
+} from "../../structures/common/workspaceRoot";
 import {
     getDatasetDir,
     isCoqSourceFile,

@@ -5,16 +5,16 @@ import { AbstractCoqProjectParser } from "../../parseDataset/coqProjectParser/ab
 import { CompleteInputTargetsUtils } from "../../parseDataset/core/filterTargetsMissingInCache";
 import { parseMissingTargetsAndUpdateCache } from "../../parseDataset/core/parseMissingTargets";
 import { createEmptyCache } from "../../parseDataset/utils/cacheHoldersUtils";
-import { ExperimentRunOptions } from "../../structures/experimentRunOptions";
 import {
     DatasetInputTargets,
     WorkspaceInputTargets,
     mergeInputTargets,
-} from "../../structures/inputTargets";
+} from "../../structures/common/inputTargets";
 import {
     WorkspaceRoot,
     standaloneFilesRoot,
-} from "../../structures/workspaceRoot";
+} from "../../structures/common/workspaceRoot";
+import { ExperimentRunOptions } from "../../structures/inputParameters/experimentRunOptions";
 import {
     clearDirectory,
     isDirectory,

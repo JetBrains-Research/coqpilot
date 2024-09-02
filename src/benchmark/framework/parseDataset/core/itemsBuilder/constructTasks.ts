@@ -1,11 +1,11 @@
-import { CompletionGenerationTask } from "../../../structures/completionGenerationTask";
+import { CompletionGenerationTask } from "../../../structures/benchmarkingCore/completionGenerationTask";
 import {
     AllTheoremsTarget,
     DatasetInputTargets,
     SpecificTheoremTarget,
-} from "../../../structures/inputTargets";
-import { ParsedCoqFileData } from "../../../structures/parsedCoqFileData";
-import { WorkspaceRoot } from "../../../structures/workspaceRoot";
+} from "../../../structures/common/inputTargets";
+import { WorkspaceRoot } from "../../../structures/common/workspaceRoot";
+import { ParsedCoqFileData } from "../../../structures/parsedCoqFile/parsedCoqFileData";
 import { toTargetType } from "../../../utils/targetTypeUtils";
 import {
     CacheHolderData,

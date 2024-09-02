@@ -4,7 +4,7 @@ import {
 } from "../../../../core/completionGenerationContext";
 
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import { WorkspaceRoot } from "../../structures/workspaceRoot";
+import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 
 import {
     AbstractProofsChecker,

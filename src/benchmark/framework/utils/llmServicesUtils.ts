@@ -12,7 +12,7 @@ import { ParamsResolverImpl } from "../../../llm/llmServices/utils/paramsResolve
 import { UserModelParams } from "../../../llm/userModelParams";
 
 import { EventLogger } from "../../../logging/eventLogger";
-import { LLMServiceIdentifier } from "../structures/llmServiceIdentifier";
+import { LLMServiceIdentifier } from "../structures/common/llmServiceIdentifier";
 
 export function getShortName(identifier: LLMServiceIdentifier): string {
     switch (identifier) {

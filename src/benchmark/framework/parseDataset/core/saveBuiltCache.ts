@@ -1,6 +1,6 @@
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import { DatasetCacheUsageMode } from "../../structures/datasetCaching";
-import { ExperimentRunOptions } from "../../structures/experimentRunOptions";
+import { DatasetCacheUsageMode } from "../../structures/inputParameters/datasetCaching";
+import { ExperimentRunOptions } from "../../structures/inputParameters/experimentRunOptions";
 import { rewriteDatasetCache } from "../cacheHandlers/cacheWriter";
 import { DatasetCacheHolder } from "../cacheStructures/cacheHolders";
 

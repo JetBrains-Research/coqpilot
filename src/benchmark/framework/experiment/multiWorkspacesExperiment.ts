@@ -1,7 +1,7 @@
 import { SubprocessProofsChecker } from "../benchmarkCompletionGeneration/proofsCheckers/subprocessProofsChecker";
 import { SubprocessCoqProjectParser } from "../parseDataset/coqProjectParser/subprocessCoqProjectParser";
-import { ExperimentRunOptions } from "../structures/experimentRunOptions";
-import { InputBenchmarkingBundle } from "../structures/inputBenchmarkingBundle";
+import { ExperimentRunOptions } from "../structures/inputParameters/experimentRunOptions";
+import { InputBenchmarkingBundle } from "../structures/inputParameters/inputBenchmarkingBundle";
 
 import { AbstractExperiment, ExecutionContext } from "./abstractExperiment";
 

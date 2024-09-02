@@ -4,7 +4,7 @@ import {
     OpenAiUserModelParams,
     PredefinedProofsUserModelParams,
     UserModelParams,
-} from "../../../llm/userModelParams";
+} from "../../../../llm/userModelParams";
 
 export type RankerType = "distance" | "random" | "jaccardIndex";
 

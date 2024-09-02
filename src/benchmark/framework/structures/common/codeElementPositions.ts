@@ -1,17 +1,5 @@
 import { JSONSchemaType } from "ajv";
 
-export interface LengthMetrics {
-    inSteps?: number;
-    inSymbols?: number;
-    inTokens?: number;
-}
-
-export interface EstimatedChatTokens {
-    requestChatTokens: number;
-    responseMessageTokens: number;
-    tokensInTotal: number;
-}
-
 export interface CodeElementRangeInterface {
     start: CodeElementPositionInterface;
     end: CodeElementPositionInterface;

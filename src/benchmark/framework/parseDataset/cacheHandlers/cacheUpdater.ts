@@ -4,9 +4,9 @@ import {
     AsOneRecordLogsBuilder,
     BenchmarkingLogger,
 } from "../../logging/benchmarkingLogger";
-import { TargetType } from "../../structures/completionGenerationTask";
-import { TheoremData } from "../../structures/theoremData";
-import { fromRange } from "../../structures/utilStructures";
+import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
+import { fromRange } from "../../structures/common/codeElementPositions";
+import { TheoremData } from "../../structures/parsedCoqFile/theoremData";
 import { joinPaths, relativizeAbsolutePaths } from "../../utils/fsUtils";
 import { groupBy, mapValues } from "../../utils/mapUtils";
 import { extractTheoremFisrtProofStep } from "../../utils/proofTargetExtractor";

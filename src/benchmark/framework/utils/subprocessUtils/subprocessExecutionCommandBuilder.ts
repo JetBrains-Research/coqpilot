@@ -1,7 +1,7 @@
 import {
     WorkspaceRoot,
     isStandaloneFilesRoot,
-} from "../../structures/workspaceRoot";
+} from "../../structures/common/workspaceRoot";
 import { getRootDir } from "../fsUtils";
 
 import { CommandToExecute } from "./ipc/childProcessExecutor/executeChildProcess";

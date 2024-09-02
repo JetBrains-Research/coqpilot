@@ -1,5 +1,5 @@
-import { EqualTo, EqualitySet, HashUtils } from "../utils/equalitySet";
-import { getOrPut } from "../utils/mapUtils";
+import { EqualTo, EqualitySet, HashUtils } from "../../utils/equalitySet";
+import { getOrPut } from "../../utils/mapUtils";
 
 import { WorkspaceRoot } from "./workspaceRoot";
 

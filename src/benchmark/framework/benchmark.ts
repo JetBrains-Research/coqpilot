@@ -7,11 +7,11 @@ import { executeBenchmarkingTask } from "./benchmarkCompletionGeneration/execute
 import { TimeMark } from "./benchmarkCompletionGeneration/measureUtils";
 import { AbstractProofsChecker } from "./benchmarkCompletionGeneration/proofsCheckers/abstractProofsChecker";
 import { BenchmarkingLogger } from "./logging/benchmarkingLogger";
-import { BenchmarkedItem } from "./structures/benchmarkedItem";
-import { BenchmarkingItem } from "./structures/benchmarkingItem";
-import { ExperimentResults } from "./structures/experimentResults";
-import { ExperimentRunOptions } from "./structures/experimentRunOptions";
-import { LLMServiceIdentifier } from "./structures/llmServiceIdentifier";
+import { BenchmarkingItem } from "./structures/benchmarkingCore/benchmarkingItem";
+import { BenchmarkedItem } from "./structures/benchmarkingResults/benchmarkedItem";
+import { ExperimentResults } from "./structures/benchmarkingResults/experimentResults";
+import { LLMServiceIdentifier } from "./structures/common/llmServiceIdentifier";
+import { ExperimentRunOptions } from "./structures/inputParameters/experimentRunOptions";
 import { AsyncScheduler } from "./utils/asyncScheduler";
 import {
     checkDirectoryIsEmpty,

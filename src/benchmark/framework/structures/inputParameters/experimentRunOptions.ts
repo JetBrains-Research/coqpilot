@@ -1,4 +1,4 @@
-import { SeverityLevel } from "../logging/benchmarkingLogger";
+import { SeverityLevel } from "../../logging/benchmarkingLogger";
 
 import { DatasetCacheUsageMode } from "./datasetCaching";
 

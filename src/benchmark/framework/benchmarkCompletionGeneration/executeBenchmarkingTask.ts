@@ -5,14 +5,14 @@ import { stringifyAnyValue } from "../../../utils/printers";
 import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
 import { heavyCheckMark, heavyCrossMark } from "../logging/specialSymbols";
 import { benchmarkedItemToJson } from "../reportBuilders/toJson";
+import { BenchmarkingItem } from "../structures/benchmarkingCore/benchmarkingItem";
 import {
     BenchmarkedCompletionGeneration,
     BenchmarkedItem,
     CompletionGenerationFailureType,
     isFailedGeneration,
     isSuccessfulGeneration,
-} from "../structures/benchmarkedItem";
-import { BenchmarkingItem } from "../structures/benchmarkingItem";
+} from "../structures/benchmarkingResults/benchmarkedItem";
 import { AsyncScheduler } from "../utils/asyncScheduler";
 import { writeToFile } from "../utils/fsUtils";
 import { selectLLMServiceBuilder } from "../utils/llmServicesUtils";

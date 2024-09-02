@@ -7,7 +7,7 @@ import { getTextBeforePosition } from "../../../../../core/exposedCompletionGene
 import {
     WorkspaceRoot,
     isStandaloneFilesRoot,
-} from "../../../structures/workspaceRoot";
+} from "../../../structures/common/workspaceRoot";
 import {
     ProofsCheckFailedError,
     ProofsCheckResult,

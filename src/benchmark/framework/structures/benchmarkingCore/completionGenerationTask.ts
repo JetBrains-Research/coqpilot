@@ -1,16 +1,15 @@
-import { ProofGoal } from "../../../coqLsp/coqLspTypes";
+import { ProofGoal } from "../../../../coqLsp/coqLspTypes";
 
 import {
     CompletionContext,
     SourceFileEnvironment,
-} from "../../../core/completionGenerationContext";
+} from "../../../../core/completionGenerationContext";
 
-import { EqualTo, HashUtils } from "../utils/equalitySet";
-
-import { ParsedCoqFileData } from "./parsedCoqFileData";
-import { TheoremData } from "./theoremData";
-import { CodeElementRange } from "./utilStructures";
-import { WorkspaceRoot } from "./workspaceRoot";
+import { EqualTo, HashUtils } from "../../utils/equalitySet";
+import { CodeElementRange } from "../common/codeElementPositions";
+import { WorkspaceRoot } from "../common/workspaceRoot";
+import { ParsedCoqFileData } from "../parsedCoqFile/parsedCoqFileData";
+import { TheoremData } from "../parsedCoqFile/theoremData";
 
 export class CompletionGenerationTask
     implements EqualTo<CompletionGenerationTask>

@@ -6,9 +6,9 @@ import {
     failedAjvValidatorErrorsAsString,
 } from "../../../../utils/ajvErrorsHandling";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import { TargetType } from "../../structures/completionGenerationTask";
-import { deserializeTheoremData } from "../../structures/theoremData";
-import { deserializeCodeElementRange } from "../../structures/utilStructures";
+import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
+import { deserializeCodeElementRange } from "../../structures/common/codeElementPositions";
+import { deserializeTheoremData } from "../../structures/parsedCoqFile/theoremData";
 import {
     exists,
     getDatasetDir,

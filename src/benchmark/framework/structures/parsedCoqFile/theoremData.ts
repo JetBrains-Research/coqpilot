@@ -6,14 +6,13 @@ import {
     Theorem,
     TheoremProof,
     Vernacexpr,
-} from "../../../coqParser/parsedTypes";
-
+} from "../../../../coqParser/parsedTypes";
 import {
     SerializedCodeElementRange,
     deserializeCodeElementRange,
     serializeCodeElementRange,
     serializedCodeElementRangeSchema,
-} from "./utilStructures";
+} from "../common/codeElementPositions";
 
 export class TheoremData {
     constructor(

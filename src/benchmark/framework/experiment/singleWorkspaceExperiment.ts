@@ -1,7 +1,7 @@
 import { LocalProofsChecker } from "../benchmarkCompletionGeneration/proofsCheckers/localProofsChecker";
 import { LocalCoqProjectParser } from "../parseDataset/coqProjectParser/localCoqProjectParser";
-import { ExperimentRunOptions } from "../structures/experimentRunOptions";
-import { InputBenchmarkingBundle } from "../structures/inputBenchmarkingBundle";
+import { ExperimentRunOptions } from "../structures/inputParameters/experimentRunOptions";
+import { InputBenchmarkingBundle } from "../structures/inputParameters/inputBenchmarkingBundle";
 
 import { AbstractExperiment, ExecutionContext } from "./abstractExperiment";
 

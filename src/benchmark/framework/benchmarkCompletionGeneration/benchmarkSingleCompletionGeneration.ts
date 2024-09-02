@@ -33,15 +33,15 @@ import { EventLogger } from "../../../logging/eventLogger";
 import { delay } from "../../../test/commonTestFunctions/delay";
 import { stringifyAnyValue } from "../../../utils/printers";
 import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
+import { BenchmarkingModelParams } from "../structures/benchmarkingCore/benchmarkingModelParams";
 import {
     BenchmarkedCompletionGeneration,
     CompletionGenerationFailureType,
     FailedCompletionGeneration,
     SuccessfulCompletionGeneration,
-} from "../structures/benchmarkedItem";
-import { BenchmarkingModelParams } from "../structures/benchmarkingModelParams";
-import { ParsedCoqFileData } from "../structures/parsedCoqFileData";
-import { WorkspaceRoot } from "../structures/workspaceRoot";
+} from "../structures/benchmarkingResults/benchmarkedItem";
+import { WorkspaceRoot } from "../structures/common/workspaceRoot";
+import { ParsedCoqFileData } from "../structures/parsedCoqFile/parsedCoqFileData";
 import { AsyncScheduler } from "../utils/asyncScheduler";
 import { reduceToMap } from "../utils/mapUtils";
 import { hasAllPropertiesDefined } from "../utils/structsUtils";

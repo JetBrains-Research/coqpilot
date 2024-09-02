@@ -2,11 +2,11 @@ import {
     AllTheoremsTarget,
     SpecificTheoremTarget,
     WorkspaceInputTargets,
-} from "../../../structures/inputTargets";
+} from "../../../structures/common/inputTargets";
 import {
     WorkspaceRoot,
     isStandaloneFilesRoot,
-} from "../../../structures/workspaceRoot";
+} from "../../../structures/common/workspaceRoot";
 import { entriesToMappedObject } from "../../../utils/mapUtils";
 
 import { ParseCoqProjectInternalSignature } from "./internalSignature";

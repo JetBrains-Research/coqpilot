@@ -8,14 +8,14 @@ import {
 } from "../logging/benchmarkingLogger";
 import { AbstractCoqProjectParser } from "../parseDataset/coqProjectParser/abstractCoqProjectParser";
 import { parseDatasetForBenchmarkingItems } from "../parseDataset/core/parseDatasetForBenchmarkingItems";
-import { DatasetCacheUsageMode } from "../structures/datasetCaching";
-import { ExperimentResults } from "../structures/experimentResults";
-import { ExperimentRunOptions } from "../structures/experimentRunOptions";
-import { InputBenchmarkingBundle } from "../structures/inputBenchmarkingBundle";
+import { ExperimentResults } from "../structures/benchmarkingResults/experimentResults";
 import {
     DatasetInputTargets,
     mergeInputTargets,
-} from "../structures/inputTargets";
+} from "../structures/common/inputTargets";
+import { DatasetCacheUsageMode } from "../structures/inputParameters/datasetCaching";
+import { ExperimentRunOptions } from "../structures/inputParameters/experimentRunOptions";
+import { InputBenchmarkingBundle } from "../structures/inputParameters/inputBenchmarkingBundle";
 import { AsyncScheduler } from "../utils/asyncScheduler";
 import { getRootDir, joinPaths, resolveAsAbsolutePath } from "../utils/fsUtils";
 

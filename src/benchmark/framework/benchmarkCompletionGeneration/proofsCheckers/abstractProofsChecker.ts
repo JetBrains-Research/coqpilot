@@ -5,7 +5,7 @@ import {
 import { ProofCheckResult } from "../../../../core/coqProofChecker";
 
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import { WorkspaceRoot } from "../../structures/workspaceRoot";
+import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 
 export interface ProofsCheckResult {
     checkedProofs: ProofCheckResult[];

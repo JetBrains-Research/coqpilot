@@ -1,15 +1,15 @@
 import { ProofGoal } from "../../../../../coqLsp/coqLspTypes";
 
-import { TargetType } from "../../../structures/completionGenerationTask";
-import {
-    ParsedCoqFileData,
-    deserializeParsedCoqFile,
-} from "../../../structures/parsedCoqFileData";
-import { TheoremData } from "../../../structures/theoremData";
+import { TargetType } from "../../../structures/benchmarkingCore/completionGenerationTask";
 import {
     CodeElementRange,
     deserializeCodeElementRange,
-} from "../../../structures/utilStructures";
+} from "../../../structures/common/codeElementPositions";
+import {
+    ParsedCoqFileData,
+    deserializeParsedCoqFile,
+} from "../../../structures/parsedCoqFile/parsedCoqFileData";
+import { TheoremData } from "../../../structures/parsedCoqFile/theoremData";
 import { deserializeGoal } from "../../../utils/goalParser";
 
 import { ParseCoqProjectInternalSignature } from "./internalSignature";

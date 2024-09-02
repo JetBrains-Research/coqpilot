@@ -1,10 +1,14 @@
 import { JSONSchemaType } from "ajv";
 
-import { SourceFileEnvironment } from "../../../core/completionGenerationContext";
+import { SourceFileEnvironment } from "../../../../core/completionGenerationContext";
 
-import { Theorem } from "../../../coqParser/parsedTypes";
-import { getDirectoryPath } from "../utils/fsUtils";
-import { fromMappedObject, mapValues, toMappedObject } from "../utils/mapUtils";
+import { Theorem } from "../../../../coqParser/parsedTypes";
+import { getDirectoryPath } from "../../utils/fsUtils";
+import {
+    fromMappedObject,
+    mapValues,
+    toMappedObject,
+} from "../../utils/mapUtils";
 
 import {
     SerializedTheorem,

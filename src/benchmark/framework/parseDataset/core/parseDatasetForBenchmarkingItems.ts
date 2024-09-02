@@ -1,8 +1,8 @@
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import { BenchmarkingItem } from "../../structures/benchmarkingItem";
-import { ExperimentRunOptions } from "../../structures/experimentRunOptions";
-import { InputBenchmarkingBundle } from "../../structures/inputBenchmarkingBundle";
-import { DatasetInputTargets } from "../../structures/inputTargets";
+import { BenchmarkingItem } from "../../structures/benchmarkingCore/benchmarkingItem";
+import { DatasetInputTargets } from "../../structures/common/inputTargets";
+import { ExperimentRunOptions } from "../../structures/inputParameters/experimentRunOptions";
+import { InputBenchmarkingBundle } from "../../structures/inputParameters/inputBenchmarkingBundle";
 import { DatasetCacheHolder } from "../cacheStructures/cacheHolders";
 import { AbstractCoqProjectParser } from "../coqProjectParser/abstractCoqProjectParser";
 import { logBenchmarkingItems } from "../utils/logBenchmarkingItems";

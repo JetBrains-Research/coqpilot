@@ -1,15 +1,15 @@
 import { JSONSchemaType } from "ajv";
 
-import { TargetType } from "../../../structures/completionGenerationTask";
-import { TargetRequestType } from "../../../structures/inputTargets";
-import {
-    SerializedParsedCoqFile,
-    serializedParsedCoqFileSchema,
-} from "../../../structures/parsedCoqFileData";
+import { TargetType } from "../../../structures/benchmarkingCore/completionGenerationTask";
 import {
     SerializedCodeElementRange,
     serializedCodeElementRangeSchema,
-} from "../../../structures/utilStructures";
+} from "../../../structures/common/codeElementPositions";
+import { TargetRequestType } from "../../../structures/common/inputTargets";
+import {
+    SerializedParsedCoqFile,
+    serializedParsedCoqFileSchema,
+} from "../../../structures/parsedCoqFile/parsedCoqFileData";
 
 export namespace ParseCoqProjectInternalSignature {
     export const subprocessName = "Build and parse Coq project";

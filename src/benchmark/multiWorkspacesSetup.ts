@@ -4,7 +4,7 @@ import { CacheTargets } from "./framework/experiment/setupDSL/datasetCacheBuilde
 import { TargetsBuilder } from "./framework/experiment/setupDSL/targetsBuilder";
 import { SeverityLevel } from "./framework/logging/benchmarkingLogger";
 import { colorize } from "./framework/logging/colorLogging";
-import { DatasetCacheUsageMode } from "./framework/structures/datasetCaching";
+import { DatasetCacheUsageMode } from "./framework/structures/inputParameters/datasetCaching";
 
 const experiment = new MultiWorkspacesExperiment();
 

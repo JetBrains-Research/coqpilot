@@ -1,8 +1,8 @@
 import { stringifyAnyValue, toJsonString } from "../../../../utils/printers";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import { TargetType } from "../../structures/completionGenerationTask";
-import { serializeTheoremData } from "../../structures/theoremData";
-import { serializeCodeElementRange } from "../../structures/utilStructures";
+import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
+import { serializeCodeElementRange } from "../../structures/common/codeElementPositions";
+import { serializeTheoremData } from "../../structures/parsedCoqFile/theoremData";
 import {
     clearDirectory,
     getDatasetDir,

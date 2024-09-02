@@ -5,16 +5,16 @@ import { createSourceFileEnvironment } from "../../../../../core/inspectSourceFi
 
 import { Uri } from "../../../../../utils/uri";
 import { BenchmarkingLogger } from "../../../logging/benchmarkingLogger";
-import { TargetType } from "../../../structures/completionGenerationTask";
-import { TargetRequestType } from "../../../structures/inputTargets";
-import { SerializedParsedCoqFile } from "../../../structures/parsedCoqFileData";
+import { TargetType } from "../../../structures/benchmarkingCore/completionGenerationTask";
+import { deserializeCodeElementPosition } from "../../../structures/common/codeElementPositions";
+import { TargetRequestType } from "../../../structures/common/inputTargets";
+import { SerializedParsedCoqFile } from "../../../structures/parsedCoqFile/parsedCoqFileData";
 import {
     SerializedProofStep,
     SerializedTheorem,
     TheoremData,
     serializeTheoremData,
-} from "../../../structures/theoremData";
-import { deserializeCodeElementPosition } from "../../../structures/utilStructures";
+} from "../../../structures/parsedCoqFile/theoremData";
 import { serializeGoal } from "../../../utils/goalParser";
 import {
     mappedObjectValues,

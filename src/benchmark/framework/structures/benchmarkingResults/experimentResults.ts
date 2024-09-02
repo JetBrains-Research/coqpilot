@@ -1,4 +1,4 @@
-import { benchmarkedItemsToJson } from "../reportBuilders/toJson";
+import { benchmarkedItemsToJson } from "../../reportBuilders/toJson";
 
 import { BenchmarkedItem } from "./benchmarkedItem";
 

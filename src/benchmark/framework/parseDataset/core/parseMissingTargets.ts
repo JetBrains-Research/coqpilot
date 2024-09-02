@@ -1,10 +1,10 @@
 import { stringifyAnyValue } from "../../../../utils/printers";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import { WorkspaceInputTargets } from "../../structures/inputTargets";
+import { WorkspaceInputTargets } from "../../structures/common/inputTargets";
 import {
     WorkspaceRoot,
     isStandaloneFilesRoot,
-} from "../../structures/workspaceRoot";
+} from "../../structures/common/workspaceRoot";
 import { updateWorkspaceCache } from "../cacheHandlers/cacheUpdater";
 import { WorkspaceCacheHolder } from "../cacheStructures/cacheHolders";
 import {

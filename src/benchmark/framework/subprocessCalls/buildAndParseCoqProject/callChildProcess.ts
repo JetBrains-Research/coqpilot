@@ -2,7 +2,7 @@ import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { CoqProjectParserUtils } from "../../parseDataset/coqProjectParser/implementation/coqProjectParserUtils";
 import { ParseCoqProjectInternalSignature } from "../../parseDataset/coqProjectParser/implementation/internalSignature";
 import { ParsedWorkspaceHolder } from "../../parseDataset/coqProjectParser/implementation/parsedWorkspaceHolder";
-import { WorkspaceRoot } from "../../structures/workspaceRoot";
+import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { AsyncScheduler } from "../../utils/asyncScheduler";
 import { checkIsInsideDirectory } from "../../utils/fsUtils";
 import {

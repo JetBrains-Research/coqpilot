@@ -6,7 +6,7 @@ import { TargetsBuilder } from "../../benchmark/framework/experiment/setupDSL/ta
 import { SingleWorkspaceExperiment } from "../../benchmark/framework/experiment/singleWorkspaceExperiment";
 import { SeverityLevel } from "../../benchmark/framework/logging/benchmarkingLogger";
 import { colorize } from "../../benchmark/framework/logging/colorLogging";
-import { DatasetCacheUsageMode } from "../../benchmark/framework/structures/datasetCaching";
+import { DatasetCacheUsageMode } from "../../benchmark/framework/structures/inputParameters/datasetCaching";
 
 suite("[SourceExecutable] Single Workspace Benchmark", () => {
     test("Run single workspace benchmark", async () => {
