@@ -97,7 +97,7 @@ export function rewriteDatasetCache(
             );
     }
 
-    logger.info(`Successfully saved cache into ${datasetCacheDirectoryPath}.`);
+    logger.info(`Successfully saved cache into ${datasetCacheDirectoryPath}`);
     return true;
 }
 

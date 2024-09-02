@@ -11,12 +11,12 @@ export function saveBuiltCache(
 ) {
     const prepareToSaveCacheRecord = logger
         .asOneRecord()
-        .info(`Selected cache usage mode: ${runOptions.datasetCacheUsage}.`);
+        .info(`Selected cache usage mode: ${runOptions.datasetCacheUsage}`);
 
     const cacheMode = runOptions.datasetCacheUsage;
     if (shouldWriteBuiltCache(cacheMode)) {
         prepareToSaveCacheRecord.info(
-            `Built data will be saved into ${runOptions.datasetCacheDirectoryPath}.`
+            `Built data will be saved into ${runOptions.datasetCacheDirectoryPath}`
         );
         /**
          * Explanation note for the `EXTEND_CACHE_WITH_MISSING_TARGETS` mode: why does it actually work.
@@ -36,7 +36,7 @@ export function saveBuiltCache(
             logger
         );
     } else {
-        prepareToSaveCacheRecord.info("Built data will not be saved.");
+        prepareToSaveCacheRecord.info("Built data will not be saved");
     }
 }
 

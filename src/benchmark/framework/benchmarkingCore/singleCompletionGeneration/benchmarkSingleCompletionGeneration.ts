@@ -104,7 +104,7 @@ export async function benchmarkSingleCompletionGeneration<
     logger
         .asOneRecord()
         .info(
-            `Successfully generated ${proofGenerationResult.generatedRawProofs.length} proofs`
+            `Successfully generated ${proofGenerationResult.generatedRawProofs.length} proof(s)`
         )
         .debug(
             `Effective elapsed time: ${proofGenerationResult.effectiveElapsedTimeMillis} ms`,
@@ -301,7 +301,7 @@ async function generateProofWithRetriesMeasured<
                     `Attempt #${attemptIndex}, successfully generated proofs`
                 )
                 .debug(
-                    `Total elapsed time (all ${attemptIndex + 1} attempts): ${millisToString(totalTime.measureElapsedMillis())}`
+                    `Total elapsed time of all ${attemptIndex + 1} attempt(s): ${millisToString(totalTime.measureElapsedMillis())}`
                 );
             llmServiceEventLogger.unsubscribe(
                 LLMServiceImpl.requestSucceededEvent,

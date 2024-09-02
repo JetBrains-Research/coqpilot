@@ -95,7 +95,8 @@ export async function parseDatasetForBenchmarkingItems(
             undefined,
             ""
         )
-        .debug(`:\n${logBenchmarkingItems(benchmarkingItems)}`);
+        .debug(`:\n${logBenchmarkingItems(benchmarkingItems)}`, undefined, "")
+        .info("");
 
     saveBuiltCache(datasetCache, runOptions, logger);
 

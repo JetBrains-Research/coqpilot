@@ -37,9 +37,9 @@ export namespace DatasetCacheBuildingImpl {
         );
         logger
             .asOneRecord()
-            .info("All requested dataset targets were successfully parsed.")
+            .info("All requested dataset targets were successfully parsed")
             .info(
-                `Built cache will be saved into ${runOptions.datasetCacheDirectoryPath}.`
+                `Built cache will be saved into ${runOptions.datasetCacheDirectoryPath}`
             );
 
         saveCacheOrThrow(datasetCache, runOptions, logger);
