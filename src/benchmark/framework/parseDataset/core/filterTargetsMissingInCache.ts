@@ -2,6 +2,7 @@ import { stringifyAnyValue } from "../../../../utils/printers";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import {
     AllTheoremsTarget,
+    FileTarget,
     SpecificTheoremTarget,
     TargetRequestType,
     WorkspaceInputTargets,
@@ -78,67 +79,86 @@ function readCacheAndFilterMissingTargets(
         }
 
         for (const target of fileTargets) {
-            let canBeRestoredFromCache: boolean = false;
-
-            if (target instanceof AllTheoremsTarget) {
-                const allCachedTheorems =
-                    workspaceCache.getAllCachedTheorems(filePath);
-                canBeRestoredFromCache =
-                    fileCacheIsPresent &&
-                    all(allCachedTheorems, (cachedTarget) =>
-                        cachedTarget.hasAllCachedGoalsOfType(target.requestType)
-                    );
-                if (!canBeRestoredFromCache) {
-                    missingTargets.addFileTargets(
-                        filePath,
-                        [],
-                        target.requestType
-                    );
-                }
-            } else if (target instanceof SpecificTheoremTarget) {
-                const cachedTheoremData = workspaceCache.getCachedTheorem(
-                    filePath,
-                    target.theoremName
-                );
-                if (fileCacheIsPresent && cachedTheoremData === undefined) {
-                    logger
-                        .asOneRecord()
-                        .info(
-                            `Warning! Either dataset cache for the "${workspaceRoot.directoryPath}" is outdated, or the requested theorem does not exist: `,
-                            "yellow",
-                            ""
-                        )
-                        .info(
-                            `theorem "${target.theoremName}" from the ${filePath}`,
-                            "yellow"
-                        );
-                }
-                canBeRestoredFromCache =
-                    fileCacheIsPresent &&
-                    cachedTheoremData !== undefined &&
-                    cachedTheoremData.hasAllCachedGoalsOfType(
-                        target.requestType
-                    );
-                if (!canBeRestoredFromCache) {
-                    missingTargets.addFileTargets(
-                        filePath,
-                        [target.theoremName],
-                        target.requestType
-                    );
-                }
-            } else {
-                throw Error(
-                    `Unknown file target: ${stringifyAnyValue(target)}`
-                );
-            }
-
+            let canBeRestoredFromCache = checkTargetCanBeRestored(
+                target,
+                filePath,
+                fileCacheIsPresent,
+                workspaceCache,
+                workspaceRoot,
+                logger
+            );
             asOneRecordLogger.debug(
                 `${target.toString("    ", canBeRestoredFromCache ? "** (cached)" : "?? <missing>")}`
             );
+            if (!canBeRestoredFromCache) {
+                addTargetToMissingTargets(target, filePath, missingTargets);
+            }
         }
     }
 
     return [missingTargets, workspaceCache];
+}
+
+function checkTargetCanBeRestored(
+    target: FileTarget,
+    filePath: string,
+    fileCacheIsPresent: boolean,
+    workspaceCache: WorkspaceCacheHolder,
+    workspaceRoot: WorkspaceRoot,
+    logger: BenchmarkingLogger
+): boolean {
+    if (target instanceof AllTheoremsTarget) {
+        const allCachedTheorems = workspaceCache.getAllCachedTheorems(filePath);
+        return (
+            fileCacheIsPresent &&
+            all(allCachedTheorems, (cachedTarget) =>
+                cachedTarget.hasAllCachedGoalsOfType(target.requestType)
+            )
+        );
+    } else if (target instanceof SpecificTheoremTarget) {
+        const cachedTheoremData = workspaceCache.getCachedTheorem(
+            filePath,
+            target.theoremName
+        );
+        if (fileCacheIsPresent && cachedTheoremData === undefined) {
+            logger
+                .asOneRecord()
+                .info(
+                    `Warning! Either dataset cache for the "${workspaceRoot.directoryPath}" is outdated, or the requested theorem does not exist: `,
+                    "yellow",
+                    ""
+                )
+                .info(
+                    `theorem "${target.theoremName}" from the ${filePath}`,
+                    "yellow"
+                );
+        }
+        return (
+            fileCacheIsPresent &&
+            cachedTheoremData !== undefined &&
+            cachedTheoremData.hasAllCachedGoalsOfType(target.requestType)
+        );
+    } else {
+        throw Error(`Unknown file target: ${stringifyAnyValue(target)}`);
+    }
+}
+
+function addTargetToMissingTargets(
+    target: FileTarget,
+    filePath: string,
+    missingTargets: WorkspaceInputTargets
+) {
+    if (target instanceof AllTheoremsTarget) {
+        missingTargets.addFileTargets(filePath, [], target.requestType);
+    } else if (target instanceof SpecificTheoremTarget) {
+        missingTargets.addFileTargets(
+            filePath,
+            [target.theoremName],
+            target.requestType
+        );
+    } else {
+        throw Error(`Unknown file target: ${stringifyAnyValue(target)}`);
+    }
 }
 
 export namespace CompleteInputTargetsUtils {

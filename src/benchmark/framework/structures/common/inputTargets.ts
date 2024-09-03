@@ -1,9 +1,12 @@
+import { stringifyAnyValue } from "../../../../utils/printers";
 import {
     EqualTo,
     EqualitySet,
     HashUtils,
 } from "../../utils/collectionUtils/equalitySet";
 import { getOrPut } from "../../utils/collectionUtils/mapUtils";
+import { toTargetType } from "../../utils/commonStructuresUtils/targetTypeUtils";
+import { TargetType } from "../benchmarkingCore/completionGenerationTask";
 
 import { WorkspaceRoot } from "./workspaceRoot";
 
@@ -207,21 +210,36 @@ export class WorkspaceInputTargets {
      */
     resolveRequests(): WorkspaceInputTargets {
         for (const [filePath, targets] of this.filePathToTargets) {
-            const allTheoremsRequests = new Map<
-                TargetRequestType,
-                AllTheoremsTarget
-            >();
+            const resolvedRequest = new Map<TargetType, FileTarget[]>();
+
             for (const target of targets.elements()) {
                 if (target instanceof AllTheoremsTarget) {
-                    allTheoremsRequests.set(target.requestType, target);
+                    resolvedRequest.set(toTargetType(target.requestType), [
+                        target,
+                    ]);
+                } else if (target instanceof SpecificTheoremTarget) {
+                    const requestsOfSameTargetType = getOrPut(
+                        resolvedRequest,
+                        toTargetType(target.requestType),
+                        () => [] as FileTarget[]
+                    );
+                    const allTheoremsTargetIsPresent =
+                        requestsOfSameTargetType.length === 1 &&
+                        requestsOfSameTargetType[0] instanceof
+                            AllTheoremsTarget;
+                    if (!allTheoremsTargetIsPresent) {
+                        requestsOfSameTargetType.push(target);
+                    }
+                } else {
+                    throw Error(
+                        `unknown \`FileTarget\` type: ${stringifyAnyValue(target)}`
+                    );
                 }
             }
-            if (allTheoremsRequests.size === 0) {
-                continue;
-            }
+
             this.filePathToTargets.set(
                 filePath,
-                new EqualitySet(Array.from(allTheoremsRequests.values()))
+                new EqualitySet(Array.from(resolvedRequest.values()).flat())
             );
         }
         return this;
