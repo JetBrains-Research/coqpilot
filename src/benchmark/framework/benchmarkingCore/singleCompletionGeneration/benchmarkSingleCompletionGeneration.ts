@@ -33,7 +33,9 @@ import {
     timeToString,
 } from "../../../../utils/time";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
+import { writeTeamCityStatisticsValue } from "../../logging/consoleWriteUtils";
 import { BenchmarkingModelParams } from "../../structures/benchmarkingCore/benchmarkingModelParams";
+import { BenchmarkingOptions } from "../../structures/benchmarkingCore/benchmarkingOptions";
 import {
     BenchmarkedCompletionGeneration,
     CompletionGenerationFailureType,
@@ -92,12 +94,14 @@ export async function benchmarkSingleCompletionGeneration<
         ResolvedModelParams,
         LLMServiceType
     >,
+    options: BenchmarkingOptions,
     modelsScheduler: AsyncScheduler,
     logger: BenchmarkingLogger,
     proofsChecker: AbstractProofsChecker
 ): Promise<BenchmarkedCompletionGeneration> {
     const proofGenerationResult = await generateProofWithRetriesExclusively(
         generationArgs,
+        options,
         modelsScheduler,
         logger
     );
@@ -223,6 +227,7 @@ async function generateProofWithRetriesExclusively<
     ResolvedModelParams extends ModelParams,
 >(
     generationArgs: CompletionGenerationBenchmarkArgs<ResolvedModelParams, any>,
+    options: BenchmarkingOptions,
     modelsScheduler: AsyncScheduler,
     logger: BenchmarkingLogger
 ): Promise<ProofGenerationResult> {
@@ -234,7 +239,8 @@ async function generateProofWithRetriesExclusively<
                 generationArgs.benchmarkingModelParams,
                 generationArgs.llmService,
                 generationArgs.llmServiceEventLogger,
-                logger
+                logger,
+                options.logTeamCityStatistics
             ),
         logger
     );
@@ -248,7 +254,8 @@ async function generateProofWithRetriesMeasured<
     benchmarkingModelParams: BenchmarkingModelParams<ResolvedModelParams>,
     llmService: LLMService<any, any>,
     llmServiceEventLogger: EventLogger,
-    logger: BenchmarkingLogger
+    logger: BenchmarkingLogger,
+    logTeamCityStatistics: boolean
 ): Promise<ProofGenerationResult> {
     const result: Partial<ProofGenerationResult> = {};
     const succeededSubscriptionId = llmServiceEventLogger.subscribeToLogicEvent(
@@ -295,14 +302,25 @@ async function generateProofWithRetriesMeasured<
                 );
             }
 
+            const tokens = result.tokensSpentInTotal;
             logger
                 .asOneRecord()
                 .debug(
                     `Attempt #${attemptIndex}, successfully generated proofs`
                 )
                 .debug(
+                    `Tokens spent: ${tokens.tokensSpentInTotal} = ${tokens.promptTokens} (prompt) + ${tokens.generatedTokens} (generated answer)`
+                )
+                .debug(
                     `Total elapsed time of all ${attemptIndex + 1} attempt(s): ${millisToString(totalTime.measureElapsedMillis())}`
                 );
+            if (logTeamCityStatistics) {
+                writeTeamCityStatisticsValue(
+                    "spentTokens",
+                    tokens.tokensSpentInTotal
+                );
+            }
+
             llmServiceEventLogger.unsubscribe(
                 LLMServiceImpl.requestSucceededEvent,
                 succeededSubscriptionId

@@ -31,6 +31,8 @@ export interface ExperimentRunOptions {
 
     enableSubprocessesSchedulingDebugLogs: boolean;
     enableModelsSchedulingDebugLogs: boolean;
+
+    logTeamCityStatistics: boolean;
 }
 
 export namespace ExperimentRunOptions {

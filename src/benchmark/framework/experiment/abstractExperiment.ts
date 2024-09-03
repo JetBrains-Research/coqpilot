@@ -251,6 +251,9 @@ export abstract class AbstractExperiment {
             enableModelsSchedulingDebugLogs:
                 optionsAfterStartupResolution.enableModelsSchedulingDebugLogs ??
                 false,
+
+            logTeamCityStatistics:
+                optionsAfterStartupResolution.logTeamCityStatistics ?? false,
         };
     }
 }

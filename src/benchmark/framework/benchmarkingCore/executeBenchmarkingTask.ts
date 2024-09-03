@@ -6,6 +6,7 @@ import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
 import { heavyCheckMark, heavyCrossMark } from "../logging/specialSymbols";
 import { benchmarkedItemToJson } from "../reportBuilders/toJson";
 import { BenchmarkingItem } from "../structures/benchmarkingCore/benchmarkingItem";
+import { BenchmarkingOptions } from "../structures/benchmarkingCore/benchmarkingOptions";
 import {
     BenchmarkedCompletionGeneration,
     BenchmarkedItem,
@@ -23,6 +24,7 @@ import { AbstractProofsChecker } from "./singleCompletionGeneration/proofsChecke
 export async function executeBenchmarkingTask(
     benchmarkingItem: BenchmarkingItem,
     saveToFilePath: string,
+    options: BenchmarkingOptions,
     itemLogger: BenchmarkingLogger,
     modelsScheduler: AsyncScheduler,
     proofsChecker: AbstractProofsChecker
@@ -45,6 +47,7 @@ export async function executeBenchmarkingTask(
         };
         const result = await benchmarkSingleCompletionGeneration(
             generationArgs,
+            options,
             modelsScheduler,
             itemLogger,
             proofsChecker

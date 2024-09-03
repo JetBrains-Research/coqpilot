@@ -5,6 +5,7 @@ import {
 } from "../utils/fsUtils";
 
 import { LogColor, colorize } from "./colorLogging";
+import { writeToConsoleErr } from "./consoleWriteUtils";
 
 export enum SeverityLevel {
     ERROR = 0,
@@ -226,7 +227,7 @@ export class BenchmarkingLoggerImpl extends BenchmarkingLogger {
     private print(message: string, lineEnd: string) {
         const messageWithLineEnd = `${message}${lineEnd}`;
         if (this.logsFile === undefined) {
-            process.stderr.write(messageWithLineEnd);
+            writeToConsoleErr(messageWithLineEnd);
         } else {
             appendToFile(
                 messageWithLineEnd,

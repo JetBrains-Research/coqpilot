@@ -4,6 +4,7 @@ import { stringifyAnyValue } from "../../../utils/printers";
 import { millisToString } from "../../../utils/time";
 import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
 import { BenchmarkingItem } from "../structures/benchmarkingCore/benchmarkingItem";
+import { BenchmarkingOptions } from "../structures/benchmarkingCore/benchmarkingOptions";
 import { BenchmarkedItem } from "../structures/benchmarkingResults/benchmarkedItem";
 import { ExperimentResults } from "../structures/benchmarkingResults/experimentResults";
 import { LLMServiceIdentifier } from "../structures/common/llmServiceIdentifier";
@@ -57,6 +58,9 @@ export async function benchmark(
         benchmarkingItems,
         experimentRunOptions
     );
+    const options: BenchmarkingOptions = {
+        logTeamCityStatistics: experimentRunOptions.logTeamCityStatistics,
+    };
 
     const itemsPromises: Promise<BenchmarkedItem | undefined>[] = [];
     for (let i = 0; i < benchmarkingItems.length; i++) {
@@ -75,6 +79,7 @@ export async function benchmark(
             executeBenchmarkingTask(
                 item,
                 itemReportPath,
+                options,
                 itemLogger,
                 modelsScheduler,
                 proofsChecker
@@ -94,7 +99,7 @@ export async function benchmark(
         );
     parentLogger
         .asOneRecord()
-        .info("Finish experiment benchmarking: ", "magenta")
+        .info("Finish experiment benchmarking: ", "blue")
         .info(
             `${benchmarkedItems.length} completed / ${benchmarkingItems.length} total items`
         )
