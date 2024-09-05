@@ -23,6 +23,13 @@ export class GrazieModelParamsResolver
         .requiredToBeConfigured()
         .validateAtRuntimeOnly();
 
+    readonly authType = this.resolveParam<"stgn" | "prod">("authType")
+        .requiredToBeConfigured()
+        .validate([
+            (value) => value === "stgn" || value === "prod",
+            "be either 'stgn' or 'prod'",
+        ]);
+
     readonly maxTokensToGenerate = this.resolveParam<number>(
         "maxTokensToGenerate"
     )

@@ -8,7 +8,8 @@ export type GrazieChatRole = "User" | "System" | "Assistant";
 export type GrazieFormattedHistory = { role: GrazieChatRole; text: string }[];
 
 interface GrazieConfig {
-    gateawayUrl: string;
+    gateawayUrlStgn: string;
+    gateawayUrlProd: string;
     chatUrl: string;
     quotaUrl: string;
 }
@@ -17,8 +18,10 @@ export class GrazieApi {
     private readonly config: GrazieConfig = {
         chatUrl: "v5/llm/chat/stream/v3",
         quotaUrl: "v5/quota/get",
-        gateawayUrl:
+        gateawayUrlStgn:
             "https://api.app.stgn.grazie.aws.intellij.net/application/",
+        gateawayUrlProd:
+            "https://api.app.prod.grazie.aws.intellij.net/application/",
     };
 
     constructor(private readonly debug: DebugWrappers) {}
@@ -28,7 +31,12 @@ export class GrazieApi {
         history: GrazieFormattedHistory
     ): Promise<string> {
         const body = this.createRequestBody(history, params);
-        return this.post(this.config.chatUrl, body, params.apiKey);
+        return this.post(
+            this.config.chatUrl,
+            body,
+            params.apiKey,
+            params.authType
+        );
     }
 
     async checkQuota(apiToken: string): Promise<any> {
@@ -55,7 +63,8 @@ export class GrazieApi {
     private async post(
         url: string,
         body: string,
-        apiToken: string
+        apiToken: string,
+        authType: "stgn" | "prod"
     ): Promise<string> {
         const headers = await this.createHeaders(apiToken);
 
@@ -65,8 +74,13 @@ export class GrazieApi {
             headers: headers,
         });
 
+        const baseUrl =
+            authType === "stgn"
+                ? this.config.gateawayUrlStgn
+                : this.config.gateawayUrlProd;
+
         const response = await this.fetchAndProcessEvents(
-            this.config.gateawayUrl + url,
+            baseUrl + url,
             body,
             headers
         );
