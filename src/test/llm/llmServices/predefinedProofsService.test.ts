@@ -9,8 +9,8 @@ import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { PredefinedProofsUserModelParams } from "../../../llm/userModelParams";
 
 import { EventLogger } from "../../../logging/eventLogger";
+import { delay } from "../../../utils/delay";
 import { timeZero } from "../../../utils/time";
-import { delay } from "../../commonTestFunctions/delay";
 import { withLLMService } from "../../commonTestFunctions/withLLMService";
 import { testModelId } from "../llmSpecificTestUtils/constants";
 import {

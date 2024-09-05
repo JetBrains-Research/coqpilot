@@ -25,7 +25,7 @@ import { goalToTargetLemma } from "../../../../core/exposedCompletionGeneratorUt
 
 import { Theorem } from "../../../../coqParser/parsedTypes";
 import { EventLogger } from "../../../../logging/eventLogger";
-import { delay } from "../../../../test/commonTestFunctions/delay";
+import { delay } from "../../../../utils/delay";
 import { stringifyAnyValue } from "../../../../utils/printers";
 import {
     millisToString,
