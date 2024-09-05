@@ -2,6 +2,7 @@ import { JSONSchemaType } from "ajv";
 import * as child from "child_process";
 import ipc from "node-ipc";
 
+import { getErrorMessage } from "../../../../../../utils/errorsUtils";
 import { stringifyAnyValue } from "../../../../../../utils/printers";
 import {
     millisToString,
@@ -115,9 +116,8 @@ export async function executeProcessAsFunction<
                 createSpawnOptions(options)
             );
         } catch (e) {
-            const error = e as Error;
             return Utils.rejectOnIPCError(
-                `failed to spawn a child process (${error !== null ? error.message : stringifyAnyValue(error)})`,
+                `failed to spawn a child process (${getErrorMessage(e)})`,
                 undefined,
                 lifetime
             );
@@ -178,12 +178,8 @@ function registerIPCServer<ArgsType, ResultType, T>(
                     lifetime.send(socket, createArgsIPCMessage(args));
                     lifetime.debug("Sent args to the child process");
                 } catch (e) {
-                    // TODO: move to utils
-                    const error = e as Error;
-                    const errorMessage =
-                        error !== null ? error.message : stringifyAnyValue(e);
                     return Utils.rejectOnIPCError(
-                        `failed to send arguments to the child process: ${errorMessage}`,
+                        `failed to send arguments to the child process: ${getErrorMessage(e)}`,
                         socket,
                         lifetime
                     );

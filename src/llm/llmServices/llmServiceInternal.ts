@@ -1,4 +1,5 @@
 import { EventLogger, Severity } from "../../logging/eventLogger";
+import { asErrorOrRethrow } from "../../utils/errorsUtils";
 import {
     ConfigurationError,
     GenerationFailedError,
@@ -215,7 +216,7 @@ export abstract class LLMServiceInternal<
         try {
             completeAndValidateRequest(request);
         } catch (e) {
-            const error = LLMServiceInternal.asErrorOrRethrow(e);
+            const error = asErrorOrRethrow(e);
             const configurationError =
                 error instanceof ConfigurationError
                     ? error
@@ -234,7 +235,7 @@ export abstract class LLMServiceInternal<
                 wrapRawProofContent(rawProof.content)
             );
         } catch (e) {
-            const error = LLMServiceInternal.asErrorOrRethrow(e);
+            const error = asErrorOrRethrow(e);
             this.logAndHandleError(error, errorsHandlingMode, request);
             return [];
         }
@@ -329,14 +330,6 @@ export abstract class LLMServiceInternal<
             LLMServiceImpl.requestSucceededEvent,
             requestSucceeded
         );
-    }
-
-    private static asErrorOrRethrow(e: any): Error {
-        const error = e as Error;
-        if (error === null) {
-            throw e;
-        }
-        return error;
     }
 
     private logAndHandleError(

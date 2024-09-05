@@ -1,6 +1,10 @@
 import { JSONSchemaType } from "ajv";
 import ipc from "node-ipc";
 
+import {
+    asErrorOrUndefined,
+    getErrorMessage,
+} from "../../../../../../utils/errorsUtils";
 import { stringifyAnyValue } from "../../../../../../utils/printers";
 import { PromiseExecutor } from "../../../asyncUtils/promiseUtils";
 import {
@@ -138,11 +142,11 @@ async function executeBodyAndSendResult<ArgsType, ResultType>(
     try {
         result = await body(args, logger);
     } catch (e) {
-        const error = e as Error;
+        const error = asErrorOrUndefined(e);
         lifetime.send(
             createExecutionErrorIPCMessage(
-                error !== null ? error.message : stringifyAnyValue(e),
-                error !== null ? error.name : undefined
+                error?.message ?? stringifyAnyValue(e),
+                error?.name
             )
         );
         return lifetime.promiseExecutor.resolve();
@@ -151,12 +155,8 @@ async function executeBodyAndSendResult<ArgsType, ResultType>(
     try {
         lifetime.send(createResultIPCMessage(result));
     } catch (e) {
-        // TODO: move to utils
-        const error = e as Error;
-        const errorMessage =
-            error !== null ? error.message : stringifyAnyValue(e);
         return Utils.tryToReportIPCErrorToParentAndThrow(
-            `failed to send execution result to the parent process: ${errorMessage}`,
+            `failed to send execution result to the parent process: ${getErrorMessage(e)}`,
             lifetime
         );
     }

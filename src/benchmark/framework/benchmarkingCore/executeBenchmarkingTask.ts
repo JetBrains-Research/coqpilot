@@ -1,6 +1,7 @@
 import { ConfigurationError } from "../../../llm/llmServiceErrors";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
 
+import { buildErrorCompleteLog } from "../../../utils/errorsUtils";
 import { stringifyAnyValue } from "../../../utils/printers";
 import { millisToString } from "../../../utils/time";
 import {
@@ -148,17 +149,11 @@ function logCommonError(
                 )
         );
     } else {
-        const loggedErrorMessage =
-            e instanceof Error
-                ? e.stack !== undefined
-                    ? e.stack
-                    : `${e.name}: ${e.message}`
-                : stringifyAnyValue(e);
         logConclusion(
             itemLogger
                 .asOneRecord()
                 .error(`Error occurred:`)
-                .error(loggedErrorMessage, "gray")
+                .error(buildErrorCompleteLog(e), "gray")
         );
     }
 }

@@ -24,6 +24,7 @@ import { CoqProofChecker } from "../core/coqProofChecker";
 import { inspectSourceFile } from "../core/inspectSourceFile";
 
 import { ProofStep } from "../coqParser/parsedTypes";
+import { buildErrorCompleteLog } from "../utils/errorsUtils";
 import { Uri } from "../utils/uri";
 
 import {
@@ -111,15 +112,17 @@ export class CoqPilot {
                         shouldCompleteHole,
                         editor
                     );
-                } catch (error) {
-                    if (error instanceof SettingsValidationError) {
-                        error.showAsMessageToUser();
-                    } else if (error instanceof Error) {
+                } catch (e) {
+                    if (e instanceof SettingsValidationError) {
+                        e.showAsMessageToUser();
+                    } else {
                         showMessageToUser(
-                            EditorMessages.errorOccurred(error.message),
+                            e instanceof Error
+                                ? EditorMessages.errorOccurred(e.message)
+                                : EditorMessages.objectWasThrownAsError(e),
                             "error"
                         );
-                        console.error(`${error.stack ?? error}`);
+                        console.error(buildErrorCompleteLog(e));
                     }
                 }
             }

@@ -2,6 +2,7 @@ import { LLMSequentialIterator } from "../llm/llmIterator";
 import { GeneratedProof } from "../llm/llmServices/generatedProof";
 
 import { EventLogger } from "../logging/eventLogger";
+import { asErrorOrRethrow, buildErrorCompleteLog } from "../utils/errorsUtils";
 import { stringifyAnyValue } from "../utils/printers";
 
 import {
@@ -127,29 +128,19 @@ export async function generateCompletion(
             "No valid completions found"
         );
     } catch (e: any) {
-        const error = e as Error;
-        if (error === null) {
-            console.error(
-                `Object was thrown during completion generation: ${e}`
-            );
-            return new FailureGenerationResult(
-                FailureGenerationStatus.ERROR_OCCURRED,
-                `please report this crash by opening an issue in the Coqpilot GitHub repository: object was thrown as error, ${stringifyAnyValue(e)}`
-            );
-        } else {
-            console.error(
-                `Error occurred during completion generation:\n${error.stack ?? error}`
-            );
-        }
-        if (e instanceof CoqLspTimeoutError) {
+        const error = asErrorOrRethrow(e);
+        console.error(
+            `Error occurred during completion generation:\n${buildErrorCompleteLog(error)}`
+        );
+        if (error instanceof CoqLspTimeoutError) {
             return new FailureGenerationResult(
                 FailureGenerationStatus.TIMEOUT_EXCEEDED,
-                e.message
+                error.message
             );
         } else {
             return new FailureGenerationResult(
                 FailureGenerationStatus.ERROR_OCCURRED,
-                e.message
+                error.message
             );
         }
     }

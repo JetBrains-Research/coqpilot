@@ -15,6 +15,14 @@ export namespace EditorMessages {
     export const errorOccurred = (errorMessage: string) =>
         `Coqpilot got an error: ${errorMessage}. Please make sure the environment is properly set and the plugin is configured correctly. For more information, see the README: https://github.com/JetBrains-Research/coqpilot/blob/main/README.md. If the error appears to be a bug, please report it by opening an issue in the Coqpilot GitHub repository.`;
 
+    export const reportUnexpectedError = (errorDescription: string) =>
+        `Coqpilot got an unexpected error: ${errorDescription}. Please report this crash by opening an issue in the Coqpilot GitHub repository.`;
+
+    export const objectWasThrownAsError = (e: any) =>
+        reportUnexpectedError(
+            `object was thrown as error, ${stringifyAnyValue(e)}`
+        );
+
     export const serviceBecameUnavailable = (
         serviceName: string,
         errorMessage: string,
