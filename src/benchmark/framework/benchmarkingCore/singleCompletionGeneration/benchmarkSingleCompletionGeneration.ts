@@ -44,6 +44,7 @@ import {
 } from "../../structures/benchmarkingResults/benchmarkedItem";
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { ParsedCoqFileData } from "../../structures/parsedCoqFile/parsedCoqFileData";
+import { throwOnAbort } from "../../utils/asyncUtils/abortUtils";
 import { AsyncScheduler } from "../../utils/asyncUtils/asyncScheduler";
 import { reduceToMap } from "../../utils/collectionUtils/mapUtils";
 import { hasAllPropertiesDefined } from "../../utils/objectUtils";
@@ -97,13 +98,15 @@ export async function benchmarkSingleCompletionGeneration<
     options: BenchmarkingOptions,
     modelsScheduler: AsyncScheduler,
     logger: BenchmarkingLogger,
-    proofsChecker: AbstractProofsChecker
+    proofsChecker: AbstractProofsChecker,
+    abortSignal: AbortSignal
 ): Promise<BenchmarkedCompletionGeneration> {
     const proofGenerationResult = await generateProofWithRetriesExclusively(
         generationArgs,
         options,
         modelsScheduler,
-        logger
+        logger,
+        abortSignal
     );
     logger
         .asOneRecord()
@@ -150,6 +153,7 @@ export async function benchmarkSingleCompletionGeneration<
         elapsedTime: measuredTime,
     };
 
+    throwOnAbort(abortSignal);
     let proofsCheckResult: ProofsCheckResult;
     try {
         proofsCheckResult = await proofsChecker.checkProofs(
@@ -229,7 +233,8 @@ async function generateProofWithRetriesExclusively<
     generationArgs: CompletionGenerationBenchmarkArgs<ResolvedModelParams, any>,
     options: BenchmarkingOptions,
     modelsScheduler: AsyncScheduler,
-    logger: BenchmarkingLogger
+    logger: BenchmarkingLogger,
+    abortSignal: AbortSignal
 ): Promise<ProofGenerationResult> {
     return modelsScheduler.scheduleTask(
         () =>
@@ -241,7 +246,7 @@ async function generateProofWithRetriesExclusively<
                 generationArgs.llmServiceEventLogger,
                 options,
                 logger,
-                options.logTeamCityStatistics
+                abortSignal
             ),
         logger
     );
@@ -257,7 +262,7 @@ async function generateProofWithRetriesMeasured<
     llmServiceEventLogger: EventLogger,
     options: BenchmarkingOptions,
     logger: BenchmarkingLogger,
-    logTeamCityStatistics: boolean
+    abortSignal: AbortSignal
 ): Promise<ProofGenerationResult> {
     const result: Partial<ProofGenerationResult> = {};
     const succeededSubscriptionId = llmServiceEventLogger.subscribeToLogicEvent(
@@ -294,6 +299,7 @@ async function generateProofWithRetriesMeasured<
                 `Proof generation failed: max retries (${options.proofGenerationRetries}) has been reached`
             );
         }
+        throwOnAbort(abortSignal);
         try {
             const attemptTime = new TimeMark();
             await llmService.generateProof(
@@ -381,7 +387,7 @@ async function generateProofWithRetriesMeasured<
                 );
             }
             // wait and try again
-            await delay(delayMillis);
+            await delay(delayMillis, abortSignal);
             attemptIndex += 1;
         }
     }

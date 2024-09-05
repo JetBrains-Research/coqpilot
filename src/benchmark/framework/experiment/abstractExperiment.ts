@@ -130,7 +130,9 @@ export abstract class AbstractExperiment {
             );
         }
 
-        return benchmark(
+        // Since `Experiment.run` is not always called with `await`,
+        // this one might help triggering the expected behaviour
+        return await benchmark(
             benchmarkingItems,
             resolveAsAbsolutePath(joinPaths(getRootDir(), artifactsDirPath)),
             executionContext.resolvedRunOptions,
@@ -252,6 +254,9 @@ export abstract class AbstractExperiment {
                 optionsAfterStartupResolution.enableModelsSchedulingDebugLogs ??
                 false,
 
+            failFast: optionsAfterStartupResolution.failFast ?? false,
+            logFailFastTasksAborting:
+                optionsAfterStartupResolution.logFailFastTasksAborting ?? false,
             proofGenerationRetries:
                 optionsAfterStartupResolution.proofGenerationRetries,
             logTeamCityStatistics:

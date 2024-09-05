@@ -1,11 +1,16 @@
 import { ConfigurationError } from "../../../llm/llmServiceErrors";
+import { ModelParams } from "../../../llm/llmServices/modelParams";
 
 import { stringifyAnyValue } from "../../../utils/printers";
 import { millisToString } from "../../../utils/time";
-import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
+import {
+    AsOneRecordLogsBuilder,
+    BenchmarkingLogger,
+} from "../logging/benchmarkingLogger";
 import { heavyCheckMark, heavyCrossMark } from "../logging/specialSymbols";
 import { benchmarkedItemToJson } from "../reportBuilders/toJson";
 import { BenchmarkingItem } from "../structures/benchmarkingCore/benchmarkingItem";
+import { BenchmarkingModelParams } from "../structures/benchmarkingCore/benchmarkingModelParams";
 import { BenchmarkingOptions } from "../structures/benchmarkingCore/benchmarkingOptions";
 import {
     BenchmarkedCompletionGeneration,
@@ -14,6 +19,10 @@ import {
     isFailedGeneration,
     isSuccessfulGeneration,
 } from "../structures/benchmarkingResults/benchmarkedItem";
+import {
+    FailFastAbortError,
+    throwOnAbort,
+} from "../utils/asyncUtils/abortUtils";
 import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
 import { selectLLMServiceBuilder } from "../utils/commonStructuresUtils/llmServicesUtils";
 import { writeToFile } from "../utils/fsUtils";
@@ -27,14 +36,17 @@ export async function executeBenchmarkingTask(
     options: BenchmarkingOptions,
     itemLogger: BenchmarkingLogger,
     modelsScheduler: AsyncScheduler,
-    proofsChecker: AbstractProofsChecker
+    proofsChecker: AbstractProofsChecker,
+    abortSignal: AbortSignal
 ): Promise<BenchmarkedItem | undefined> {
     const task = benchmarkingItem.task;
     const params = benchmarkingItem.params;
     const [llmService, llmServiceEventLogger] = selectLLMServiceBuilder(
         benchmarkingItem.params.llmServiceIdentifier
     )();
-    task.parsedSourceFileData;
+    const logError = (e: any) =>
+        logCommonError(e, itemLogger, params, options, abortSignal);
+
     try {
         const generationArgs = {
             completionContext: task.getCompletionContext(),
@@ -45,12 +57,14 @@ export async function executeBenchmarkingTask(
             parsedSourceFileData: task.parsedSourceFileData,
             workspaceRoot: task.workspaceRoot,
         };
+        throwOnAbort(abortSignal);
         const result = await benchmarkSingleCompletionGeneration(
             generationArgs,
             options,
             modelsScheduler,
             itemLogger,
-            proofsChecker
+            proofsChecker,
+            abortSignal
         );
         logResult(result, itemLogger);
 
@@ -62,29 +76,90 @@ export async function executeBenchmarkingTask(
 
         return benchmarkedItem;
     } catch (e) {
-        if (e instanceof ConfigurationError) {
+        if (options.failFast) {
+            /*
+             * Try to pollute logs less with the latecomers-errors:
+             * if the first error has already occurred, just finish faster.
+             * *Note:* Without synchronization, this code does not guarantee
+             * that only the first error will be logged. However, it definitely
+             * reduces the number of unnecessary error messages.
+             */
+
+            // Handle "abort error" separately: report it only if requested
+            if (e instanceof FailFastAbortError) {
+                if (options.logFailFastTasksAborting) {
+                    itemLogger.debug(e.message);
+                }
+                throw e;
+            }
+            if (abortSignal.aborted) {
+                // If benchmarks are already aborted, further errors should not be reported,
+                // unless it was asked by a user
+                if (options.logFailFastTasksAborting) {
+                    logError(e);
+                }
+            } else {
+                // This task is one of the first tasks failing; they will cause fail-fast abort soon
+                logError(e);
+            }
+            // In the fail-fast mode the errors of the tasks are always rethrown,
+            // so to reject their `Promise`-s
+            throw e;
+        } else {
+            logError(e);
+            return undefined;
+        }
+    } finally {
+        llmService.dispose();
+    }
+}
+
+function logCommonError(
+    e: any,
+    itemLogger: BenchmarkingLogger,
+    params: BenchmarkingModelParams<ModelParams>,
+    options: BenchmarkingOptions,
+    abortSignal: AbortSignal
+) {
+    const logConclusion = (errorRecordLogger: AsOneRecordLogsBuilder) => {
+        if (options.failFast) {
+            if (abortSignal.aborted) {
+                errorRecordLogger.info(
+                    "Benchmarking pipeline has been already aborted (`failFast` strategy is enabled)"
+                );
+            } else {
+                errorRecordLogger.error(
+                    "Therefore, the benchmarking pipeline will be aborted (`failFast` strategy is enabled)"
+                );
+            }
+        } else {
+            errorRecordLogger.error(
+                "Therefore, this benchmarking item will be skipped"
+            );
+        }
+    };
+
+    if (e instanceof ConfigurationError) {
+        logConclusion(
             itemLogger
                 .asOneRecord()
                 .error(
                     `"${params.modelParams.modelId}" is configured incorrectly: ${e.message}`
                 )
-                .error("therefore, this benchmarking item will be skipped");
-        } else {
-            const loggedErrorMessage =
-                e instanceof Error
-                    ? e.stack !== undefined
-                        ? e.stack
-                        : `${e.name}: ${e.message}`
-                    : stringifyAnyValue(e);
+        );
+    } else {
+        const loggedErrorMessage =
+            e instanceof Error
+                ? e.stack !== undefined
+                    ? e.stack
+                    : `${e.name}: ${e.message}`
+                : stringifyAnyValue(e);
+        logConclusion(
             itemLogger
                 .asOneRecord()
-                .error(`Unexpected error occurred:`)
+                .error(`Error occurred:`)
                 .error(loggedErrorMessage, "gray")
-                .error("Therefore, this benchmarking item will be skipped");
-        }
-        return undefined;
-    } finally {
-        llmService.dispose();
+        );
     }
 }
 

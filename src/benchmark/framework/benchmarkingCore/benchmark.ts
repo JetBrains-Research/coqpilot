@@ -9,6 +9,7 @@ import { BenchmarkedItem } from "../structures/benchmarkingResults/benchmarkedIt
 import { ExperimentResults } from "../structures/benchmarkingResults/experimentResults";
 import { LLMServiceIdentifier } from "../structures/common/llmServiceIdentifier";
 import { ExperimentRunOptions } from "../structures/inputParameters/experimentRunOptions";
+import { abortAsFailFast } from "../utils/asyncUtils/abortUtils";
 import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
 import { groupBy, mapValues } from "../utils/collectionUtils/mapUtils";
 import { getShortName } from "../utils/commonStructuresUtils/llmServicesUtils";
@@ -58,9 +59,9 @@ export async function benchmark(
         benchmarkingItems,
         experimentRunOptions
     );
-    const options: BenchmarkingOptions = {
-        logTeamCityStatistics: experimentRunOptions.logTeamCityStatistics,
-    };
+    const options = extractBenchmarkingOptions(experimentRunOptions);
+    const abortController = new AbortController();
+    const abortSignal = abortController.signal;
 
     const itemsPromises: Promise<BenchmarkedItem | undefined>[] = [];
     for (let i = 0; i < benchmarkingItems.length; i++) {
@@ -82,21 +83,17 @@ export async function benchmark(
                 options,
                 itemLogger,
                 modelsScheduler,
-                proofsChecker
+                proofsChecker,
+                abortSignal
             )
         );
     }
 
-    const benchmarkingResults = await Promise.allSettled(itemsPromises);
-    const benchmarkedItems = benchmarkingResults
-        .filter(
-            (result) =>
-                result.status === "fulfilled" && result.value !== undefined
-        )
-        .map(
-            (result) =>
-                (result as PromiseFulfilledResult<BenchmarkedItem>).value
-        );
+    const benchmarkedItems = await runBenchmarkingItems(
+        itemsPromises,
+        options,
+        abortController
+    );
     parentLogger
         .asOneRecord()
         .info("Finish experiment benchmarking: ", "blue")
@@ -123,6 +120,44 @@ export async function benchmark(
     );
 
     return experimentResult;
+}
+
+/**
+ * @returns `BenchmarkedItem`-s of the completed benchmarking items (failed once, returning `undefined`, are not included).
+ */
+async function runBenchmarkingItems(
+    itemsPromises: Promise<BenchmarkedItem | undefined>[],
+    options: BenchmarkingOptions,
+    abortController: AbortController
+): Promise<BenchmarkedItem[]> {
+    if (options.failFast) {
+        try {
+            const results = await Promise.all(itemsPromises);
+            return results.filter(
+                (result) => result !== undefined
+            ) as BenchmarkedItem[];
+        } catch (e) {
+            abortAsFailFast(abortController);
+            throw e;
+        }
+    } else {
+        /*
+         * Even though `itemsPromises` should not be rejected if the `options.failFast === false`
+         * (`executeBenchmarkingTask` catches all errors and returns `undefined` in such failure cases),
+         * using `Promise.allSettled` guarantees the expected behaviour of waiting for all promises to resolve
+         * that could become necessary in the future if `executeBenchmarkingTask` behaviour changes.
+         */
+        const settledResults = await Promise.allSettled(itemsPromises);
+        return settledResults
+            .filter(
+                (result) =>
+                    result.status === "fulfilled" && result.value !== undefined
+            )
+            .map(
+                (result) =>
+                    (result as PromiseFulfilledResult<BenchmarkedItem>).value
+            );
+    }
 }
 
 namespace ModelsSchedulers {
@@ -185,6 +220,23 @@ namespace ModelsSchedulers {
             }
         );
     }
+}
+
+function extractBenchmarkingOptions(
+    experimentRunOptions: ExperimentRunOptions
+): BenchmarkingOptions {
+    const {
+        failFast,
+        logFailFastTasksAborting,
+        proofGenerationRetries,
+        logTeamCityStatistics,
+    } = experimentRunOptions;
+    return {
+        failFast: failFast,
+        logFailFastTasksAborting: logFailFastTasksAborting,
+        proofGenerationRetries: proofGenerationRetries,
+        logTeamCityStatistics: logTeamCityStatistics,
+    };
 }
 
 function buildUniqueItemReportFileName(
