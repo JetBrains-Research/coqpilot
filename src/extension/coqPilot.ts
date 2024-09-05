@@ -148,6 +148,15 @@ export class CoqPilot {
             "completion-started",
             "CoqPilot has started the completion process"
         );
+
+        if (editor.document.isDirty) {
+            showMessageToUser(
+                EditorMessages.saveFileBeforeCompletion,
+                "warning"
+            );
+            return;
+        }
+
         const [completionContexts, sourceFileEnvironment, processEnvironment] =
             await this.prepareForCompletions(
                 shouldCompleteHole,

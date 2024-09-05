@@ -17,6 +17,9 @@ export namespace EditorMessages {
     export const noProofsForAdmit = (lineWithAdmitNumber: number) =>
         `CoqPilot failed to find a proof for the admit at line ${lineWithAdmitNumber}.`;
 
+    export const saveFileBeforeCompletion =
+        "Please note that this file has not been saved after the updates. Currently CoqPilot requires the file to be saved before the completion.";
+
     export const noAdmitsFound =
         "No admits were found in this selection/file. Make sure your coq-lsp is running correctly.";
 

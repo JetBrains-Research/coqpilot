@@ -1,14 +1,14 @@
 {
   "name": "coqpilot",
   "displayName": "СoqPilot",
-  "description": "An ai based completion extension for Coq interactive prover.",
+  "description": "An AI-based completion extension for Coq interactive prover.",
   "icon": "etc/img/logo.ico",
   "repository": {
     "type": "git",
     "url": "https://github.com/JetBrains-Research/coqpilot"
   },
   "publisher": "JetBrains-Research",
-  "version": "2.2.6",
+  "version": "2.2.7",
   "engines": {
     "vscode": "^1.82.0"
   },
@@ -213,6 +213,11 @@
                   "type": "string",
                   "description": "Api key to communicate with the Grazie api. Now available for JetBrains employees only.",
                   "default": "None"
+                },
+                "authType": {
+                  "type": "string",
+                  "description": "Use stgn if you are an internal JetBrains AI user and use prod otherwise.",
+                  "default": "stgn"
                 },
                 "choices": {
                   "type": "number",

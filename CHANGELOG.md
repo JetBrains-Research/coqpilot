@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.7
+
+### Internal changes: 
+- Allow prod/stgn auth-type for JetBrains AI service.
+
 ## 2.2.6
 
 ### Public changes
