@@ -239,6 +239,7 @@ async function generateProofWithRetriesExclusively<
                 generationArgs.benchmarkingModelParams,
                 generationArgs.llmService,
                 generationArgs.llmServiceEventLogger,
+                options,
                 logger,
                 options.logTeamCityStatistics
             ),
@@ -254,6 +255,7 @@ async function generateProofWithRetriesMeasured<
     benchmarkingModelParams: BenchmarkingModelParams<ResolvedModelParams>,
     llmService: LLMService<any, any>,
     llmServiceEventLogger: EventLogger,
+    options: BenchmarkingOptions,
     logger: BenchmarkingLogger,
     logTeamCityStatistics: boolean
 ): Promise<ProofGenerationResult> {
@@ -286,6 +288,12 @@ async function generateProofWithRetriesMeasured<
 
     let totalTime = new TimeMark();
     while (true) {
+        // `options.proofGenerationRetries` might be undefined meaning the unlimited retries case
+        if (attemptIndex === options.proofGenerationRetries) {
+            throw Error(
+                `Proof generation failed: max retries (${options.proofGenerationRetries}) has been reached`
+            );
+        }
         try {
             const attemptTime = new TimeMark();
             await llmService.generateProof(
@@ -314,7 +322,7 @@ async function generateProofWithRetriesMeasured<
                 .debug(
                     `Total elapsed time of all ${attemptIndex + 1} attempt(s): ${millisToString(totalTime.measureElapsedMillis())}`
                 );
-            if (logTeamCityStatistics) {
+            if (options.logTeamCityStatistics) {
                 writeTeamCityStatisticsValue(
                     "spentTokens",
                     tokens.tokensSpentInTotal

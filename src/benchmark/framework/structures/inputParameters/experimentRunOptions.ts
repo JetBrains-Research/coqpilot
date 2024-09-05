@@ -1,8 +1,9 @@
 import { SeverityLevel } from "../../logging/benchmarkingLogger";
+import { BenchmarkingOptions } from "../benchmarkingCore/benchmarkingOptions";
 
 import { DatasetCacheUsageMode } from "./datasetCaching";
 
-export interface ExperimentRunOptions {
+export interface ExperimentRunOptions extends BenchmarkingOptions {
     loggerSeverity: SeverityLevel;
     /**
      * Path relative to the root directory. If it set, logs will be written to this file.
@@ -31,8 +32,6 @@ export interface ExperimentRunOptions {
 
     enableSubprocessesSchedulingDebugLogs: boolean;
     enableModelsSchedulingDebugLogs: boolean;
-
-    logTeamCityStatistics: boolean;
 }
 
 export namespace ExperimentRunOptions {

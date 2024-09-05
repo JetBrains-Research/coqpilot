@@ -252,6 +252,8 @@ export abstract class AbstractExperiment {
                 optionsAfterStartupResolution.enableModelsSchedulingDebugLogs ??
                 false,
 
+            proofGenerationRetries:
+                optionsAfterStartupResolution.proofGenerationRetries,
             logTeamCityStatistics:
                 optionsAfterStartupResolution.logTeamCityStatistics ?? false,
         };
