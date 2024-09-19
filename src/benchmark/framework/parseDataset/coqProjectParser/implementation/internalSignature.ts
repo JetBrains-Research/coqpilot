@@ -10,6 +10,7 @@ import {
     SerializedParsedCoqFile,
     serializedParsedCoqFileSchema,
 } from "../../../structures/parsedCoqFile/parsedCoqFileData";
+import { SerializedGoal } from "../../../utils/coqUtils/goalParser";
 
 export namespace ParseCoqProjectInternalSignature {
     export const subprocessName = "Build and parse Coq project";
@@ -103,11 +104,9 @@ export namespace ParseCoqProjectInternalSignature {
         export interface ParsedFileTarget {
             theoremName: string;
             targetType: TargetType;
-            goalToProve: ParsedGoal;
+            goalToProve: SerializedGoal;
             positionRange: SerializedCodeElementRange;
         }
-
-        export type ParsedGoal = string; // TODO: maybe develop proper serialized typing
 
         export const parsedFileTargetSchema: JSONSchemaType<ParsedFileTarget> =
             {

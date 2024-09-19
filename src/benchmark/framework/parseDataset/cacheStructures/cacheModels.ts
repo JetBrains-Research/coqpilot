@@ -8,6 +8,7 @@ import {
     SerializedTheorem,
     serializedTheoremSchema,
 } from "../../structures/parsedCoqFile/theoremData";
+import { SerializedGoal } from "../../utils/coqUtils/goalParser";
 
 /**
  * This namespace provides interfaces representing raw parsing cache, i.e. the serialized one.
@@ -46,7 +47,7 @@ export namespace DatasetCacheModels {
         /**
          * `undefined` value means that this goal is not present in the cache.
          */
-        goalToProve: ParsedGoal | undefined;
+        goalToProve: SerializedGoal | undefined;
         positionRange: SerializedCodeElementRange;
     }
 
