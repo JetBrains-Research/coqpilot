@@ -1,4 +1,4 @@
-import { Uri } from "vscode";
+import { OutputChannel, Uri } from "vscode";
 import {
     LanguageClientOptions,
     RevealOutputChannelOn,
@@ -14,6 +14,7 @@ export class CoqLspConnector extends LanguageClient {
     constructor(
         serverConfig: CoqLspServerConfig,
         clientConfig: CoqLspClientConfig,
+        public logOutputChannel: OutputChannel,
         private eventLogger?: EventLogger
     ) {
         let clientOptions: LanguageClientOptions = {
@@ -21,7 +22,8 @@ export class CoqLspConnector extends LanguageClient {
                 { scheme: "file", language: "coq" },
                 { scheme: "file", language: "markdown", pattern: "**/*.mv" },
             ],
-            outputChannelName: "CoqPilot: coq-lsp events",
+            outputChannel: logOutputChannel,
+            // outputChannelName: "CoqPilot: coq-lsp events",
             revealOutputChannelOn: RevealOutputChannelOn.Info,
             initializationOptions: serverConfig,
             markdown: { isTrusted: true, supportHtml: true },

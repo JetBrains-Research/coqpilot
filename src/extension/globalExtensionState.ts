@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as tmp from "tmp";
-import { WorkspaceConfiguration, workspace } from "vscode";
+import { WorkspaceConfiguration, window, workspace } from "vscode";
 
 import { LLMServices, disposeServices } from "../llm/llmServices";
 import { GrazieService } from "../llm/llmServices/grazie/grazieService";
@@ -19,6 +19,9 @@ export class GlobalExtensionState {
     public readonly logWriter: VSCodeLogWriter = new VSCodeLogWriter(
         this.eventLogger,
         this.parseLoggingVerbosity(workspace.getConfiguration(pluginId))
+    );
+    public readonly logOutputChannel = window.createOutputChannel(
+        "CoqPilot: coq-lsp events"
     );
 
     public readonly llmServicesLogsDir = path.join(
@@ -65,5 +68,6 @@ export class GlobalExtensionState {
         disposeServices(this.llmServices);
         this.logWriter.dispose();
         fs.rmSync(this.llmServicesLogsDir, { recursive: true, force: true });
+        this.logOutputChannel.dispose();
     }
 }

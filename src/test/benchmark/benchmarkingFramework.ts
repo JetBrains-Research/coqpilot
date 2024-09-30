@@ -1,5 +1,6 @@
 import * as assert from "assert";
 import * as fs from "fs";
+import { window } from "vscode";
 
 import { LLMServices } from "../../llm/llmServices";
 import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
@@ -425,7 +426,15 @@ async function createCoqLspClient(
         process.env.COQ_LSP_PATH || "coq-lsp",
         workspaceRootPath
     );
-    return await CoqLspClient.create(coqLspServerConfig, coqLspClientConfig);
+    const logOutputChannel = window.createOutputChannel(
+        "CoqPilot: coq-lsp events"
+    );
+
+    return await CoqLspClient.create(
+        coqLspServerConfig,
+        coqLspClientConfig,
+        logOutputChannel
+    );
 }
 
 async function extractCompletionTargets(

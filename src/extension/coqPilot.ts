@@ -278,7 +278,8 @@ export class CoqPilot {
             CoqLspConfig.createClientConfig(coqLspServerPath);
         const client = await CoqLspClient.create(
             coqLspServerConfig,
-            coqLspClientConfig
+            coqLspClientConfig,
+            this.globalExtensionState.logOutputChannel
         );
         const contextTheoremsRanker = buildTheoremsRankerFromConfig();
 

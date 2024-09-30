@@ -1,5 +1,6 @@
 import { Mutex } from "async-mutex";
 import { readFileSync } from "fs";
+import { OutputChannel } from "vscode";
 import {
     BaseLanguageClient,
     Diagnostic,
@@ -76,9 +77,14 @@ export class CoqLspClient implements CoqLspClientInterface {
 
     static async create(
         serverConfig: CoqLspServerConfig,
-        clientConfig: CoqLspClientConfig
+        clientConfig: CoqLspClientConfig,
+        logOutputChannel: OutputChannel
     ): Promise<CoqLspClient> {
-        const connector = new CoqLspConnector(serverConfig, clientConfig);
+        const connector = new CoqLspConnector(
+            serverConfig,
+            clientConfig,
+            logOutputChannel
+        );
         await connector.start().catch((error) => {
             throw new CoqLspStartupError(
                 `failed to start coq-lsp with Error: ${error.message}`,
