@@ -10,9 +10,9 @@ import { ContextTheoremsRanker } from "./contextTheoremsRanker";
  * the current goal context. Metric is calculated on the
  * concatenated hypothesis and conclusion.
  *
- * ```J(A, B) = |A ∩ B| / |A ∪ B|```
+ * ```cosine(A, B) = |A ∩ B| / sqrt(|A| * |B|)```
  */
-export class JaccardIndexContextTheoremsRanker
+export class CosineContextTheoremsRanker
     implements ContextTheoremsRanker
 {    
     private hypToString(hyp: Hyp<PpString>): string {
@@ -30,12 +30,14 @@ export class JaccardIndexContextTheoremsRanker
 
     rankContextTheorems(
         theorems: Theorem[],
-        completionContext: CompletionContext,
+        completionContext: CompletionContext
     ): Theorem[] {
+        console.log("COSINE IS USED");
         const goal = completionContext.proofGoal;
         const goalTheorem = this.goalAsTheorem(goal);
 
-        const jaccardIndex = (theorem: Theorem): number => {
+
+        const cosine = (theorem: Theorem): number => {
             const completionTokens = goalTheorem.split(" ")
                 .filter((token) => token !== "#" && token !== ":" && token !== "")
                 .map((token) => token.replace(/[\(\).\n]/g, ""));
@@ -43,15 +45,16 @@ export class JaccardIndexContextTheoremsRanker
                 .filter((token) => token !== "#" && token !== ":" && token !== "")
                 .map((token) => token.replace(/[\(\).\n]/g, ""))
 
+            console.log("COMPLETION TOKENS", completionTokens);
+            console.log("THEOREM TOKENS", theoremTokens);
+
             const intersection = completionTokens.filter((token) =>
                 theoremTokens.includes(token)
             );
 
-            const union = new Set([...completionTokens, ...theoremTokens]);
-
-            return intersection.length / union.size;
+            return intersection.length / Math.sqrt(completionTokens.length * theoremTokens.length);
         };
 
-        return theorems.sort((a, b) => jaccardIndex(b) - jaccardIndex(a));
+        return theorems.sort((a, b) => cosine(b) - cosine(a));
     }
 }

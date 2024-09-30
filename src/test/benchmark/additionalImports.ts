@@ -5,6 +5,10 @@ export class AdditionalFileImport {
         return this.importString;
     }
 
+    static unwrapper(): AdditionalFileImport {
+        return new AdditionalFileImport(`Set Printing All.`);
+    }
+
     static tactician(): AdditionalFileImport {
         return new AdditionalFileImport(`From Tactician Require Import Ltac1.`);
     }

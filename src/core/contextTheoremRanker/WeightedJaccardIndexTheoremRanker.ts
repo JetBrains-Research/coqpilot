@@ -10,9 +10,8 @@ import { ContextTheoremsRanker } from "./contextTheoremsRanker";
  * the current goal context. Metric is calculated on the
  * concatenated hypothesis and conclusion.
  *
- * ```J(A, B) = |A ∩ B| / |A ∪ B|```
  */
-export class JaccardIndexContextTheoremsRanker
+export class WeightedJaccardIndexContextTheoremsRanker
     implements ContextTheoremsRanker
 {    
     private hypToString(hyp: Hyp<PpString>): string {
@@ -27,15 +26,29 @@ export class JaccardIndexContextTheoremsRanker
         return `${theoremIndeces} # ${auxTheoremConcl}.`;
     }
 
+    private tfidf(allTokens: string[], token: string): number {
+        const count = allTokens.filter((t) => t === token).length;
+        return count / allTokens.length;
+    }
+
 
     rankContextTheorems(
         theorems: Theorem[],
-        completionContext: CompletionContext,
+        completionContext: CompletionContext
     ): Theorem[] {
+        console.log("WEIGHTED JACCARD IS USED");
         const goal = completionContext.proofGoal;
         const goalTheorem = this.goalAsTheorem(goal);
 
-        const jaccardIndex = (theorem: Theorem): number => {
+        const allTokens = theorems.map((theorem) => {
+            return this.goalAsTheorem(theorem.initial_goal!!).split(" ")
+                .filter((token) => token !== "#" && token !== ":" && token !== "")
+                .map((token) => token.replace(/[\(\).\n]/g, ""));
+        }
+        ).flat();
+
+
+        const weightedJaccardIndex = (theorem: Theorem): number => {
             const completionTokens = goalTheorem.split(" ")
                 .filter((token) => token !== "#" && token !== ":" && token !== "")
                 .map((token) => token.replace(/[\(\).\n]/g, ""));
@@ -49,9 +62,12 @@ export class JaccardIndexContextTheoremsRanker
 
             const union = new Set([...completionTokens, ...theoremTokens]);
 
-            return intersection.length / union.size;
+            const tfidfIntersection = intersection.map((token) => this.tfidf(allTokens, token)).reduce((a, b) => a + b, 0);
+            const tfidfUnion = Array.from(union.values()).map((token) => this.tfidf(allTokens, token)).reduce((a, b) => a + b, 0);
+
+            return tfidfIntersection / tfidfUnion;
         };
 
-        return theorems.sort((a, b) => jaccardIndex(b) - jaccardIndex(a));
+        return theorems.sort((a, b) => weightedJaccardIndex(b) - weightedJaccardIndex(a));
     }
 }

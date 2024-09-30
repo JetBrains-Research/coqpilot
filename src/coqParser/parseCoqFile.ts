@@ -22,7 +22,7 @@ export async function parseCoqFile(
             const documentText = readFileSync(uri.fsPath)
                 .toString()
                 .split("\n");
-            return parseFlecheDocument(doc, documentText);
+            return parseFlecheDocument(doc, documentText, client, uri);
         })
         .catch((error) => {
             throw new CoqParsingError(
@@ -33,8 +33,10 @@ export async function parseCoqFile(
 
 function parseFlecheDocument(
     doc: FlecheDocument,
-    textLines: string[]
-): Theorem[] {
+    textLines: string[],
+    client: CoqLspClient,
+    uri: Uri
+): Promise<Theorem[]> {
     if (doc === null) {
         throw Error("could not parse file");
     }
@@ -66,6 +68,7 @@ function parseFlecheDocument(
                             thrName,
                             doc.spans[i].range,
                             thrStatement,
+                            null,
                             null
                         )
                     );
@@ -83,17 +86,31 @@ function parseFlecheDocument(
                             thrName,
                             doc.spans[i].range,
                             thrStatement,
+                            null, 
                             null
                         )
                     );
                 } else {
+                    const initialGoal = await client.getFirstGoalAtPoint(
+                        doc.spans[i + 1].range.start,
+                        uri,
+                        1
+                    );
+
+                    if (initialGoal instanceof Error) {
+                        throw new CoqParsingError(
+                            `unable to get initial goal for theorem: ${thrName}`
+                        );
+                    }
+
                     const proof = parseProof(i + 1, doc.spans, textLines);
                     theorems.push(
                         new Theorem(
                             thrName,
                             doc.spans[i].range,
                             thrStatement,
-                            proof
+                            proof, 
+                            initialGoal
                         )
                     );
                 }

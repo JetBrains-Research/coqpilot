@@ -10,9 +10,8 @@ import { ContextTheoremsRanker } from "./contextTheoremsRanker";
  * the current goal context. Metric is calculated on the
  * concatenated hypothesis and conclusion.
  *
- * ```J(A, B) = |A ∩ B| / |A ∪ B|```
  */
-export class JaccardIndexContextTheoremsRanker
+export class EuclidContextTheoremsRanker
     implements ContextTheoremsRanker
 {    
     private hypToString(hyp: Hyp<PpString>): string {
@@ -30,12 +29,14 @@ export class JaccardIndexContextTheoremsRanker
 
     rankContextTheorems(
         theorems: Theorem[],
-        completionContext: CompletionContext,
+        completionContext: CompletionContext
     ): Theorem[] {
+        console.log("EUCLID IS USED");
         const goal = completionContext.proofGoal;
         const goalTheorem = this.goalAsTheorem(goal);
 
-        const jaccardIndex = (theorem: Theorem): number => {
+
+        const euclid = (theorem: Theorem): number => {
             const completionTokens = goalTheorem.split(" ")
                 .filter((token) => token !== "#" && token !== ":" && token !== "")
                 .map((token) => token.replace(/[\(\).\n]/g, ""));
@@ -49,9 +50,10 @@ export class JaccardIndexContextTheoremsRanker
 
             const union = new Set([...completionTokens, ...theoremTokens]);
 
-            return intersection.length / union.size;
+            
+            return Math.sqrt(intersection.length - union.size);
         };
 
-        return theorems.sort((a, b) => jaccardIndex(b) - jaccardIndex(a));
+        return theorems.sort((a, b) => euclid(b) - euclid(a));
     }
 }

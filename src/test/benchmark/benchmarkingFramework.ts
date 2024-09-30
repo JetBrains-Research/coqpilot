@@ -253,7 +253,6 @@ async function benchmarkCompletionGeneration(
         ...sourceFileEnvironment,
         fileTheorems: sourceFileEnvironment.fileTheorems
             .filter((thr) => completionContext.parentTheorem.name !== thr.name)
-            .slice(0, maximumUsedPremisesAmount),
     };
 
     const contextTheorems: ContextTheoremsHolder = {};
@@ -266,10 +265,15 @@ async function benchmarkCompletionGeneration(
         reactToRequestEvent(contextTheorems)
     );
 
+    const processEnvironmentWithPremiseAmount: ProcessEnvironment = {
+        ...processEnvironment,
+        amountOfPremises: maximumUsedPremisesAmount,
+    };
+
     const result = await generateCompletion(
         completionContext,
         sourceFileEnvironmentWithFilteredContext,
-        processEnvironment,
+        processEnvironmentWithPremiseAmount,
         undefined,
         workspaceRootPath,
         perProofTimeoutMillis

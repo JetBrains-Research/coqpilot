@@ -40,6 +40,7 @@ export interface ProcessEnvironment {
      * theorems would be passed sequentially in the same order as they are in the file
      */
     theoremRanker?: ContextTheoremsRanker;
+    amountOfPremises?: number;
 }
 
 export interface GenerationResult {}
@@ -75,8 +76,10 @@ export async function generateCompletion(
     const context = buildProofGenerationContext(
         completionContext,
         sourceFileEnvironment.fileTheorems,
+        processEnvironment.amountOfPremises,
         processEnvironment.theoremRanker
     );
+
     eventLogger?.log(
         "proof-gen-context-create",
         "Ranked theorems for proof generation",
@@ -333,10 +336,11 @@ function goalToTargetLemma(proofGoal: Goal<PpString>): string {
 export function buildProofGenerationContext(
     completionContext: CompletionContext,
     fileTheorems: Theorem[],
-    theoremRanker?: ContextTheoremsRanker
+    amountOfPremises?: number,
+    theoremRanker?: ContextTheoremsRanker,
 ): ProofGenerationContext {
     const rankedTheorems =
-        theoremRanker?.rankContextTheorems(fileTheorems, completionContext) ??
+        theoremRanker?.rankContextTheorems(fileTheorems, completionContext).slice(0, amountOfPremises) ??
         fileTheorems;
     return {
         contextTheorems: rankedTheorems,
