@@ -13,17 +13,17 @@ import { abortAsFailFast } from "../utils/asyncUtils/abortUtils";
 import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
 import { groupBy, mapValues } from "../utils/collectionUtils/mapUtils";
 import { getShortName } from "../utils/commonStructuresUtils/llmServicesUtils";
+import { buildSafeJsonFileName } from "../utils/fileUtils/fileNameUtils";
 import {
-    buildSafeJsonFileName,
     checkDirectoryIsEmpty,
     createDirectory,
     exists,
     getDatasetDir,
     joinPaths,
-    prependWithZeros,
     relativizeAbsolutePaths,
     writeToFile,
-} from "../utils/fsUtils";
+} from "../utils/fileUtils/fs";
+import { prependWithZeros } from "../utils/serializationUtils";
 
 import { executeBenchmarkingTask } from "./executeBenchmarkingTask";
 import { TimeMark } from "./singleCompletionGeneration/measureUtils";

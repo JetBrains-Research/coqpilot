@@ -2,7 +2,7 @@ import { stringifyAnyValue } from "../../../utils/printers";
 import {
     appendToFile,
     createFileWithParentDirectories,
-} from "../utils/fsUtils";
+} from "../utils/fileUtils/fs";
 
 import { LogColor, colorize } from "./colorLogging";
 import { writeToConsoleErr } from "./consoleWriteUtils";

@@ -8,7 +8,7 @@ import { TheoremData } from "../../structures/parsedCoqFile/theoremData";
 import { all } from "../../utils/collectionUtils/listUtils";
 import { mapValues } from "../../utils/collectionUtils/mapUtils";
 import { toTargetType } from "../../utils/commonStructuresUtils/targetTypeUtils";
-import { joinPaths } from "../../utils/fsUtils";
+import { joinPaths } from "../../utils/fileUtils/fs";
 
 export class DatasetCacheHolder {
     private readonly workspacePathToCache: Map<string, WorkspaceCacheHolder> =

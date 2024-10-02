@@ -19,7 +19,7 @@ import {
     readFile,
     relativizeAbsolutePaths,
     resolveAsAbsolutePath,
-} from "../../utils/fsUtils";
+} from "../../utils/fileUtils/fs";
 import {
     CacheHolderData,
     WorkspaceCacheHolder,

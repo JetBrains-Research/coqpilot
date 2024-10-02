@@ -19,7 +19,7 @@ import {
     clearDirectory,
     isDirectory,
     listCoqSourceFiles,
-} from "../../utils/fsUtils";
+} from "../../utils/fileUtils/fs";
 
 import { EnvironmentStringType, TargetsBuilderUtils } from "./targetsBuilder";
 

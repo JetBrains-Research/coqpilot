@@ -14,7 +14,7 @@ import {
     joinPaths,
     listCoqSourceFiles,
     resolveAsAbsolutePath,
-} from "../../utils/fsUtils";
+} from "../../utils/fileUtils/fs";
 
 export type EnvironmentStringType = "nix" | "no-special-environment";
 

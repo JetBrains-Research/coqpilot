@@ -8,3 +8,9 @@ export function getTargetTypeName(targetType: TargetType): string {
             return "prove theorem";
     }
 }
+
+export function prependWithZeros(n: number, maxN: number): string {
+    const maxDigitsNumber = maxN.toString().length;
+    const zerosToPrependNumber = maxDigitsNumber - n.toString().length;
+    return `${"0".repeat(zerosToPrependNumber)}${n}`;
+}

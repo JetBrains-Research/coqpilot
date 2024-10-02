@@ -24,17 +24,17 @@ import {
     goalToProveAsString,
     serializeGoal,
 } from "../../utils/coqUtils/goalParser";
+import { buildSafeJsonFileName } from "../../utils/fileUtils/fileNameUtils";
 import {
-    buildSafeJsonFileName,
     clearDirectory,
     createDirectory,
     getDatasetDir,
     getLastName,
     joinPaths,
-    prependWithZeros,
     relativizeAbsolutePaths,
     writeToFile,
-} from "../../utils/fsUtils";
+} from "../../utils/fileUtils/fs";
+import { prependWithZeros } from "../../utils/serializationUtils";
 import { getTargetTypeName } from "../../utils/serializationUtils";
 
 export namespace LightweightSerializer {

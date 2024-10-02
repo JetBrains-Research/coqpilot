@@ -18,7 +18,11 @@ import { DatasetCacheUsageMode } from "../structures/inputParameters/datasetCach
 import { ExperimentRunOptions } from "../structures/inputParameters/experimentRunOptions";
 import { InputBenchmarkingBundle } from "../structures/inputParameters/inputBenchmarkingBundle";
 import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
-import { getRootDir, joinPaths, resolveAsAbsolutePath } from "../utils/fsUtils";
+import {
+    getRootDir,
+    joinPaths,
+    resolveAsAbsolutePath,
+} from "../utils/fileUtils/fs";
 
 import { LightweightSerializer } from "./lightweightItems/lightweightSerializer";
 import {

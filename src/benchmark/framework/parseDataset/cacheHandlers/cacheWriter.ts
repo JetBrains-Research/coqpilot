@@ -12,7 +12,7 @@ import {
     joinPaths,
     relativizeAbsolutePaths,
     writeToFile,
-} from "../../utils/fsUtils";
+} from "../../utils/fileUtils/fs";
 import {
     CacheHolderData,
     DatasetCacheHolder,

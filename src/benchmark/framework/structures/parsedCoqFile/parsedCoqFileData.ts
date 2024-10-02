@@ -8,7 +8,7 @@ import {
     mapValues,
     toMappedObject,
 } from "../../utils/collectionUtils/mapUtils";
-import { getDirectoryPath } from "../../utils/fsUtils";
+import { getDirectoryPath } from "../../utils/fileUtils/fs";
 
 import {
     SerializedTheorem,

@@ -26,7 +26,7 @@ import {
 } from "../utils/asyncUtils/abortUtils";
 import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
 import { selectLLMServiceBuilder } from "../utils/commonStructuresUtils/llmServicesUtils";
-import { writeToFile } from "../utils/fsUtils";
+import { writeToFile } from "../utils/fileUtils/fs";
 
 import { benchmarkSingleCompletionGeneration } from "./singleCompletionGeneration/benchmarkSingleCompletionGeneration";
 import { AbstractProofsChecker } from "./singleCompletionGeneration/proofsCheckers/abstractProofsChecker";
