@@ -1,9 +1,6 @@
 import { stringifyAnyValue } from "../../../../utils/printers";
-import {
-    EqualTo,
-    EqualitySet,
-    HashUtils,
-} from "../../utils/collectionUtils/equalitySet";
+import { EqualitySet } from "../../utils/collectionUtils/equalitySet";
+import { EqualTo, HashUtils } from "../../utils/collectionUtils/equalityUtils";
 import { getOrPut } from "../../utils/collectionUtils/mapUtils";
 import { toTargetType } from "../../utils/commonStructuresUtils/targetTypeUtils";
 import { TargetType } from "../benchmarkingCore/completionGenerationTask";

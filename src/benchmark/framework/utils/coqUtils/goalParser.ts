@@ -9,3 +9,7 @@ export function serializeGoal(goal: ProofGoal): SerializedGoal {
 export function deserializeGoal(serializedGoal: SerializedGoal): ProofGoal {
     return JSON.parse(serializedGoal) as ProofGoal;
 }
+
+export function goalToProveAsString(goal: ProofGoal): string {
+    return `${goal.ty}`;
+}

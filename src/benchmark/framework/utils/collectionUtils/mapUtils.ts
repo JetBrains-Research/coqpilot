@@ -1,5 +1,8 @@
 import { stringifyAnyValue } from "../../../../utils/printers";
 
+import { EqualityMap } from "./equalityMap";
+import { EqualTo } from "./equalityUtils";
+
 export function getOrPut<K, V, M extends Map<K, V>>(
     map: M,
     key: K,
@@ -10,6 +13,18 @@ export function getOrPut<K, V, M extends Map<K, V>>(
     }
     const value = valueToPutIfAbsent();
     map.set(key, value);
+    return value;
+}
+
+export function getOrThrow<K, V, M extends Map<K, V>>(
+    map: M,
+    key: K,
+    errorMessage: string
+): V {
+    const value = map.get(key);
+    if (value === undefined) {
+        throw Error(errorMessage);
+    }
     return value;
 }
 
@@ -32,6 +47,20 @@ export function groupBy<T, K>(
     keyExtractor: (element: T) => K
 ): Map<K, T[]> {
     return groupByAndMap(elements, keyExtractor, (element) => element);
+}
+
+export function groupByToEqualityMap<T, K extends EqualTo<K>, V>(
+    elements: T[],
+    keyExtractor: (element: T) => K,
+    valueMapper: (element: T) => V
+): EqualityMap<K, V[]> {
+    const resultMap = new EqualityMap<K, V[]>();
+    for (const element of elements) {
+        const key = keyExtractor(element);
+        const values = resultMap.getOrPut(key, () => []);
+        values.push(valueMapper(element));
+    }
+    return resultMap;
 }
 
 export function mapValues<K, V, M extends Map<K, V>, T>(

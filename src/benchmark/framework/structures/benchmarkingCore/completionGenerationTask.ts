@@ -5,7 +5,8 @@ import {
     SourceFileEnvironment,
 } from "../../../../core/completionGenerationContext";
 
-import { EqualTo, HashUtils } from "../../utils/collectionUtils/equalitySet";
+import { EqualTo, HashUtils } from "../../utils/collectionUtils/equalityUtils";
+import { goalToProveAsString } from "../../utils/coqUtils/goalParser";
 import { CodeElementRange } from "../common/codeElementPositions";
 import { WorkspaceRoot } from "../common/workspaceRoot";
 import { ParsedCoqFileData } from "../parsedCoqFile/parsedCoqFileData";
@@ -24,7 +25,9 @@ export class CompletionGenerationTask
     ) {}
 
     readonly sourceFilePath = this.parsedSourceFileData.filePath;
-    readonly targetGoalToProveAsString = `${this.targetGoalToProve.ty}`;
+    readonly targetGoalToProveAsString = goalToProveAsString(
+        this.targetGoalToProve
+    );
 
     getCompletionContext(): CompletionContext {
         return {

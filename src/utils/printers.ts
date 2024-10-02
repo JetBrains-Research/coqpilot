@@ -21,7 +21,7 @@ export function stringifyDefinedValue(
 
 export function toJsonString(
     object: any,
-    space: number | undefined = undefined
+    space: number | undefined = undefined // TODO: support enum / constants
 ): string {
     return JSON.stringify(object, null, space);
 }
