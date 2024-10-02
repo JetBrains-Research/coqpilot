@@ -1,6 +1,6 @@
 import { BenchmarkingItem } from "../../structures/benchmarkingCore/benchmarkingItem";
-import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
 import { getShortName } from "../../utils/commonStructuresUtils/llmServicesUtils";
+import { getTargetTypeName } from "../../utils/serializationUtils";
 
 export function logBenchmarkingItems(
     benchmarkingItems: BenchmarkingItem[]
@@ -21,13 +21,4 @@ function logBenchmarkingItem(benchmarkingItem: BenchmarkingItem): string {
     const paramsLog = `* model id: "${benchmarkingItem.params.modelParams.modelId}"`; // TODO: support theorem ranker name
     const llmServiceLog = `* LLM service: ${getShortName(benchmarkingItem.params.llmServiceIdentifier)}`;
     return `${targetLog}\n${sourceLog}\n${paramsLog}\n${llmServiceLog}`;
-}
-
-function getTargetTypeName(targetType: TargetType): string {
-    switch (targetType) {
-        case TargetType.ADMIT:
-            return "complete hole";
-        case TargetType.PROVE_THEOREM:
-            return "prove theorem";
-    }
 }

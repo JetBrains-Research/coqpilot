@@ -14,11 +14,13 @@ import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
 import { groupBy, mapValues } from "../utils/collectionUtils/mapUtils";
 import { getShortName } from "../utils/commonStructuresUtils/llmServicesUtils";
 import {
+    buildSafeJsonFileName,
     checkDirectoryIsEmpty,
     createDirectory,
     exists,
     getDatasetDir,
     joinPaths,
+    prependWithZeros,
     relativizeAbsolutePaths,
     writeToFile,
 } from "../utils/fsUtils";
@@ -250,23 +252,11 @@ function buildUniqueItemReportFileName(
         getDatasetDir(),
         item.task.sourceFilePath
     );
-    const safeFileName = translateToSafeFileName(
-        [
-            `${augmentedIndex}-${getShortName(item.params.llmServiceIdentifier)}-${modelId}`,
-            `-${fileIdentifier}-${item.task.sourceTheorem.name}`,
-        ].join("")
-    );
-    return `${safeFileName}.json`;
-}
-
-function prependWithZeros(n: number, maxN: number): string {
-    const maxDigitsNumber = maxN.toString().length;
-    const zerosToPrependNumber = maxDigitsNumber - n.toString().length;
-    return `${"0".repeat(zerosToPrependNumber)}${n}`;
-}
-
-function translateToSafeFileName(text: string): string {
-    return text.replace(/[_ &\/\\#,+()$~%.'":*?<>{}]/g, "-").toLowerCase();
+    const unsafeFileName = [
+        `${augmentedIndex}-${getShortName(item.params.llmServiceIdentifier)}-${modelId}`,
+        `-${fileIdentifier}-${item.task.sourceTheorem.name}`,
+    ].join("");
+    return buildSafeJsonFileName(unsafeFileName);
 }
 
 function buildItemLogger(

@@ -8,6 +8,7 @@ import {
 } from "../logging/benchmarkingLogger";
 import { AbstractCoqProjectParser } from "../parseDataset/coqProjectParser/abstractCoqProjectParser";
 import { parseDatasetForBenchmarkingItems } from "../parseDataset/core/parseDatasetForBenchmarkingItems";
+import { BenchmarkingItem } from "../structures/benchmarkingCore/benchmarkingItem";
 import { ExperimentResults } from "../structures/benchmarkingResults/experimentResults";
 import {
     DatasetInputTargets,
@@ -19,6 +20,7 @@ import { InputBenchmarkingBundle } from "../structures/inputParameters/inputBenc
 import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
 import { getRootDir, joinPaths, resolveAsAbsolutePath } from "../utils/fsUtils";
 
+import { LightweightSerializer } from "./lightweightItems/lightweightSerializer";
 import {
     CacheTargetsImpl,
     DatasetCacheBuildingImpl,
@@ -100,8 +102,67 @@ export abstract class AbstractExperiment {
     }
 
     /**
+     * Builds lightweight benchmarking items for the requested targets and saves them into `outputDirectoryPath`.
+     * The returning promise resolves successfully if and only if the operation succeeded.
+     *
+     * *Warning:* `outputDirectoryPath` content will be cleared before saving the built lightweight benchmarking items.
+     *
+     * This operation is used as the first step for the large-scale benchmarking pipeline executed in TeamCity.
+     * The goal is to resolve input for the benchmarks (specified via the setup DSL) into **separate** benchmarking items
+     * that can be stored in the repository **efficiently**.
+     *
+     * The output `outputDirectoryPath` will have the following structure after the operation is successfully finished:
+     * - `projects` subfolder: `[workspace path descriptor].json` files with `LightweightWorkspaceRoot` objects;
+     * - `models` subfolder: `[modelId].json` files with `InputBenchmarkingModelParams.Params` objects;
+     * - `items` subfolder: `[task descriptor].json` files with `LightweightBenchmarkingItem` objects.
+     *
+     * *Note on the efficiency of the operation.*
+     * Unfortunately, calling this operation requires the requested dataset projects being built,
+     * even though the next pipeline step (executed remotely) will need to build them again. However:
+     * 1. The key importance of the `buildLightweightBenchmarkingItems` is to prepare *separate* benchmarking items:
+     *    that requires parsing source files, for example, to find all requested admits. Thus, this step could not be ommitted.
+     * 2. In practice, projects building and parsing can be skipped in case of dataset cache being present.
+     *    Therefore, building dataset projects should be done only once locally and then reused with no overhead.
+     *
+     * *Implementation note*. So far this method simply builds the complete benchmarking items the same way as it is done
+     * in the core `AbstractExperiment.run(...)` method and then serializes them in their lightweight versions.
+     * Although the "unneccesary" model parameters resolution takes place ("unneccessary", because the models
+     * will be saved unresolved for the sake of data storage efficiency), it actually validates the parameters specified by a user,
+     * preventing such errors from being propagated to the large-scale pipeline itself.
+     *
+     * @param outputDirectoryPath a directory path relative to the root directory to save lightweight serialization into.
+     */
+    // TODO: clear-output-dir parameter
+    // TODO: move this method to TeamCityExperiment
+    async buildLightweightBenchmarkingItems(outputDirectoryPath: string) {
+        const executionContext = this.prepareExecutionContext(
+            this.sharedRunOptions,
+            "[Building Lightweight Benchmarking Items]",
+            (logger) => mergeAndResolveRequestedTargets(this.bundles, logger)
+        );
+        const benchmarkingItems =
+            await this.buildBenchmarkingItems(executionContext);
+
+        const serialization = LightweightSerializer.serializeToLightweight(
+            benchmarkingItems,
+            this.bundles
+        );
+        LightweightSerializer.logSerialization(
+            serialization,
+            executionContext.logger
+        );
+        LightweightSerializer.saveSerializationToDirectory(
+            serialization,
+            outputDirectoryPath,
+            executionContext.logger
+        );
+    }
+
+    /**
+     * The core method that executes the benchmarking experiment.
+     *
      * @param artifactsDirPath empty directory path relative to the root directory.
-     * @param runOptions properties to update the options for **this** run with. To save the updated options for the further runs use `Experiment.updateRunOptions(...)` method instead.
+     * @param runOptions properties to update the options for **this** run with. To save the updated options for the further runs use `AbstractExperiment.updateRunOptions(...)` method instead.
      */
     async run(
         artifactsDirPath: string,
@@ -117,6 +178,22 @@ export abstract class AbstractExperiment {
         );
         const totalTime = new TimeMark();
 
+        const benchmarkingItems =
+            await this.buildBenchmarkingItems(executionContext);
+
+        // Since `AbstractExperiment.run(...)` is not always called with `await`,
+        // this one might help triggering the expected behaviour
+        return await this.executeBenchmarkingItems(
+            benchmarkingItems,
+            artifactsDirPath,
+            executionContext,
+            totalTime
+        );
+    }
+
+    private async buildBenchmarkingItems(
+        executionContext: ExecutionContext
+    ): Promise<BenchmarkingItem[]> {
         const benchmarkingItems = await parseDatasetForBenchmarkingItems(
             this.bundles,
             executionContext.requestedTargets,
@@ -129,10 +206,16 @@ export abstract class AbstractExperiment {
                 "No items to benchmark: make sure the experiment input is configured correctly."
             );
         }
+        return benchmarkingItems;
+    }
 
-        // Since `Experiment.run` is not always called with `await`,
-        // this one might help triggering the expected behaviour
-        return await benchmark(
+    private async executeBenchmarkingItems(
+        benchmarkingItems: BenchmarkingItem[],
+        artifactsDirPath: string,
+        executionContext: ExecutionContext,
+        totalTime: TimeMark
+    ): Promise<ExperimentResults> {
+        return benchmark(
             benchmarkingItems,
             resolveAsAbsolutePath(joinPaths(getRootDir(), artifactsDirPath)),
             executionContext.resolvedRunOptions,

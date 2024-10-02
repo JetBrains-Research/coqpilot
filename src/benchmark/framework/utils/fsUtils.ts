@@ -199,3 +199,22 @@ export function listCoqSourceFiles(
     traverseDirectory(dirPath, depth);
     return sourceFilePaths;
 }
+
+// TODO: move everything below to a separate "filename utils" file
+export function translateToSafeFileName(text: string): string {
+    return text.replace(/[_ &\/\\#,+()$~%.'":*?<>{}]/g, "-").toLowerCase();
+}
+
+export function addJsonExtension(fileName: string): string {
+    return `${fileName}.json`;
+}
+
+export function buildSafeJsonFileName(text: string): string {
+    return addJsonExtension(translateToSafeFileName(text));
+}
+
+export function prependWithZeros(n: number, maxN: number): string {
+    const maxDigitsNumber = maxN.toString().length;
+    const zerosToPrependNumber = maxDigitsNumber - n.toString().length;
+    return `${"0".repeat(zerosToPrependNumber)}${n}`;
+}
