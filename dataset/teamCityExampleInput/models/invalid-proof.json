@@ -1,0 +1,8 @@
+{
+  "ranker": "random",
+  "modelId": "invalid-proof",
+  "tactics": [
+    "a."
+  ],
+  "llmServiceIdentifier": 0
+}

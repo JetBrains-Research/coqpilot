@@ -1,0 +1,23 @@
+{
+  "task": {
+    "goalToProve": "{\"info\":{\"evar\":[\"Ser_Evar\",1],\"name\":null},\"hyps\":[],\"ty\":\"forall (A : Type) (P : A -> Prop) (x : A), P x -> P x\"}",
+    "positionRange": {
+      "start": {
+        "line": 2,
+        "character": 4
+      },
+      "end": {
+        "line": 2,
+        "character": 10
+      }
+    },
+    "targetType": "ADMIT",
+    "relativeSourceFilePath": "auto_benchmark.v",
+    "sourceTheoremName": "test",
+    "relativeWorkspacePath": "standalone-source-files"
+  },
+  "targetModelIds": [
+    "invalid-proof",
+    "prove-with-auto"
+  ]
+}
