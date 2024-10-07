@@ -79,7 +79,7 @@ function buildTasksAndResolveParams(
     return [modelIdToRequestedTasks, modelIdToResolvedParams];
 }
 
-function resolveInputBenchmarkingModelParams(
+export function resolveInputBenchmarkingModelParams(
     inputParams: InputBenchmarkingModelParams.Params,
     llmServiceIdentifier: LLMServiceIdentifier,
     paramsResolvers: LLMServicesParamsResolvers

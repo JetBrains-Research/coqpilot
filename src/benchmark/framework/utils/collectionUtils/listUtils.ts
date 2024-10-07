@@ -37,6 +37,10 @@ export function makeElementsUniqueByStringKeys<T>(
     );
 }
 
+export function makeStringsUnique(elements: string[]): string[] {
+    return makeElementsUniqueByStringKeys(elements, (element) => element);
+}
+
 export function makeAnyElementsUnique<T>(
     elements: T[],
     equals: (thisElement: T, otherElement: T) => boolean,

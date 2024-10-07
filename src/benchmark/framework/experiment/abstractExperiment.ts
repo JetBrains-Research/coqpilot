@@ -24,6 +24,7 @@ import {
     resolveAsAbsolutePath,
 } from "../utils/fileUtils/fs";
 
+import { LightweightDeserializer } from "./lightweightItems/lightweightDeserializer";
 import { LightweightSerialization } from "./lightweightItems/lightweightSerialization";
 import { LightweightSerializer } from "./lightweightItems/lightweightSerializer";
 import {
@@ -168,6 +169,70 @@ export abstract class AbstractExperiment {
             serialization,
             outputDirectoryPath,
             executionContext.logger
+        );
+    }
+
+    /**
+     * Conducts the same benchmarking experiment as the core `AbstractExperiment.run` method does,
+     * but with reading lightweight benchmarking items as input instead of interpreting the setup DSL specified by a user.
+     *
+     * **Important note:** current implementation requires the source files of the input lightweight items
+     * to be present in cache. Thus, make sure `datasetCacheDirectoryPath` option is set properly to the prepared cache.
+     *
+     * @param inputDirectoryPath a directory to read lightweight serialization from. It should have the structure specified by `AbstractExperiment.buildLightweightBenchmarkingItems` method.
+     * @param artifactsDirPath empty directory path relative to the root directory.
+     * @param runOptions properties to update the options for **this** run with. To save the updated options for the further runs use `AbstractExperiment.updateRunOptions(...)` method instead.
+     */
+    async executeLightweightBenchmarkingItems(
+        inputDirectoryPath: string,
+        artifactsDirPath: string,
+        runOptions: Partial<ExperimentRunOptions> = {}
+    ) {
+        const [serialization, executionContext] = this.prepareExecutionContext(
+            {
+                ...this.sharedRunOptions,
+                ...runOptions,
+            },
+            "[Building Lightweight Benchmarking Items]",
+            (logger) => {
+                const serialization =
+                    LightweightDeserializer.readSerializationFromDirectory(
+                        inputDirectoryPath,
+                        logger
+                    );
+                LightweightSerialization.logSerialization(
+                    "Successfully parsed lightweight serialization:",
+                    serialization,
+                    logger
+                );
+                return serialization;
+            },
+            (serialization) =>
+                serialization.projects.map(
+                    (project) => project.relativeDirectoryPath
+                )
+        );
+        const totalTime = new TimeMark();
+
+        const benchmarkingItems =
+            LightweightDeserializer.restoreBenchmarkingItems(
+                serialization,
+                executionContext.resolvedRunOptions.datasetCacheDirectoryPath,
+                executionContext.logger
+            );
+        if (benchmarkingItems.length === 0) {
+            throw Error(
+                "No items to benchmark: make sure the experiment input is configured correctly."
+            );
+        }
+
+        // Since `AbstractExperiment.run(...)` is not always called with `await`,
+        // this one might help triggering the expected behaviour
+        return await this.executeBenchmarkingItems(
+            benchmarkingItems,
+            artifactsDirPath,
+            executionContext,
+            totalTime
         );
     }
 
