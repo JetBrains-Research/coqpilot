@@ -23,7 +23,6 @@ export class CoqLspConnector extends LanguageClient {
                 { scheme: "file", language: "markdown", pattern: "**/*.mv" },
             ],
             outputChannel: logOutputChannel,
-            // outputChannelName: "CoqPilot: coq-lsp events",
             revealOutputChannelOn: RevealOutputChannelOn.Info,
             initializationOptions: serverConfig,
             markdown: { isTrusted: true, supportHtml: true },

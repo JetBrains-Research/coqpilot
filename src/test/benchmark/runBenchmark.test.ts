@@ -26,7 +26,7 @@ interface Benchmark {
     // prompt for the model.
     // If undefined, no limit is set and all possible premises
     // that fit into the context window will be used.
-    maximumUsedPremisesAmount?: number;
+    maxPremisesNumber?: number;
     // When using additional tools, issued for Coq, this timeout is used
     // to define how long do we wait for the proof to be generated.
     perProofTimeoutMillis: number;
@@ -56,7 +56,7 @@ const reportPath = path.join(
 //     AdditionalFileImport.tactician(),
 //     AdditionalFileImport.coqHammer(),
 // ],
-//     maximumUsedPremisesAmount: undefined,
+//     maxPremisesNumber: undefined,
 //     perProofTimeoutMillis: 30000,
 // };
 
@@ -97,7 +97,7 @@ suite("Benchmark", () => {
                             benchmark.benchmarkAdmits,
                             resolvedWorkspaceRootPath,
                             benchmark.requireAllAdmitsCompleted,
-                            benchmark.maximumUsedPremisesAmount,
+                            benchmark.maxPremisesNumber,
                             benchmark.groupName,
                             reportHolder,
                             benchmark.additionalImports,

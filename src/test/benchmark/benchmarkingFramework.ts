@@ -48,7 +48,7 @@ export async function runTestBenchmark(
     benchmarkAdmits: Boolean = true,
     workspaceRootPath?: string,
     requireAllAdmitsCompleted: Boolean = false,
-    maximumUsedPremisesAmount?: number,
+    maxPremisesNumber?: number,
     groupName: string = "Unnamed",
     reportHolder?: BenchmarkReportHolder,
     additionalImports?: AdditionalFileImport[],
@@ -97,7 +97,7 @@ export async function runTestBenchmark(
             relativePathToFile,
             groupName,
             eventLogger,
-            maximumUsedPremisesAmount,
+            maxPremisesNumber,
             reportHolder,
             workspaceRootPath,
             perProofTimeoutMillis
@@ -122,7 +122,7 @@ export async function runTestBenchmark(
             relativePathToFile,
             groupName,
             eventLogger,
-            maximumUsedPremisesAmount,
+            maxPremisesNumber,
             reportHolder,
             workspaceRootPath,
             perProofTimeoutMillis
@@ -199,7 +199,7 @@ export async function benchmarkTargets(
     checkedFilePath: string,
     groupName: string,
     eventLogger: EventLogger,
-    maximumUsedPremisesAmount?: number,
+    maxPremisesNumber?: number,
     reportHolder?: BenchmarkReportHolder,
     workspaceRootPath?: string,
     perProofTimeoutMillis: number = 15000
@@ -215,7 +215,7 @@ export async function benchmarkTargets(
             checkedFilePath,
             groupName,
             eventLogger,
-            maximumUsedPremisesAmount,
+            maxPremisesNumber,
             reportHolder,
             workspaceRootPath,
             perProofTimeoutMillis
@@ -238,7 +238,7 @@ async function benchmarkCompletionGeneration(
     checkedFilePath: string,
     groupName: string,
     eventLogger: EventLogger,
-    maximumUsedPremisesAmount?: number,
+    maxPremisesNumber?: number,
     reportHolder?: BenchmarkReportHolder,
     workspaceRootPath?: string,
     perProofTimeoutMillis: number = 15000
@@ -267,15 +267,15 @@ async function benchmarkCompletionGeneration(
         reactToRequestEvent(contextTheorems)
     );
 
-    const processEnvironmentWithPremiseAmount: ProcessEnvironment = {
+    const processEnvironmentWithPremisesNumber: ProcessEnvironment = {
         ...processEnvironment,
-        amountOfPremises: maximumUsedPremisesAmount,
+        premisesNumber: maxPremisesNumber,
     };
 
     const result = await generateCompletion(
         completionContext,
         sourceFileEnvironmentWithFilteredContext,
-        processEnvironmentWithPremiseAmount,
+        processEnvironmentWithPremisesNumber,
         undefined,
         workspaceRootPath,
         perProofTimeoutMillis
