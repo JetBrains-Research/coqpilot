@@ -1,16 +1,17 @@
+import { ModelParams } from "../../../../llm/llmServices/modelParams";
+
 import { toJsonString } from "../../../../utils/printers";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { BenchmarkingItem } from "../../structures/benchmarkingCore/benchmarkingItem";
+import { BenchmarkingModelParams } from "../../structures/benchmarkingCore/benchmarkingModelParams";
 import { CompletionGenerationTask } from "../../structures/benchmarkingCore/completionGenerationTask";
-import {
-    deserializeCodeElementRange,
-    serializeCodeElementRange,
-} from "../../structures/common/codeElementPositions";
+import { serializeCodeElementRange } from "../../structures/common/codeElementPositions";
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { InputBenchmarkingBundle } from "../../structures/inputParameters/inputBenchmarkingBundle";
 import { InputBenchmarkingModelParams } from "../../structures/inputParameters/inputBenchmarkingModelParams";
 import { LightweightBenchmarkingItem } from "../../structures/inputParameters/lightweight/lightweightBenchmarkingItem";
 import { LightweightCompletionGenerationTask } from "../../structures/inputParameters/lightweight/lightweightCompletionGenerationTask";
+import { LightweightInputModelParams } from "../../structures/inputParameters/lightweight/lightweightInputModelParams";
 import { LightweightWorkspaceRoot } from "../../structures/inputParameters/lightweight/lightweightWorkspaceRoot";
 import { makeElementsUniqueByStringKeys } from "../../utils/collectionUtils/listUtils";
 import {
@@ -19,11 +20,7 @@ import {
     packIntoMap,
     reduceToMap,
 } from "../../utils/collectionUtils/mapUtils";
-import {
-    deserializeGoal,
-    goalToProveAsString,
-    serializeGoal,
-} from "../../utils/coqUtils/goalParser";
+import { serializeGoal } from "../../utils/coqUtils/goalParser";
 import { buildSafeJsonFileName } from "../../utils/fileUtils/fileNameUtils";
 import {
     clearDirectory,
@@ -35,19 +32,14 @@ import {
     writeToFile,
 } from "../../utils/fileUtils/fs";
 import { prependWithZeros } from "../../utils/serializationUtils";
-import { getTargetTypeName } from "../../utils/serializationUtils";
+
+import { LightweightSerialization } from "./lightweightSerialization";
 
 export namespace LightweightSerializer {
-    export interface LightweightSerialization {
-        projects: LightweightWorkspaceRoot[];
-        models: InputBenchmarkingModelParams.Params[];
-        items: LightweightBenchmarkingItem[];
-    }
-
     export function serializeToLightweight(
         benchmarkingItems: BenchmarkingItem[],
         inputBundles: InputBenchmarkingBundle[]
-    ): LightweightSerialization {
+    ): LightweightSerialization.PackedItems {
         const inputModels = inputBundles.flatMap(
             (bundle) => bundle.inputBenchmarkingModelsParams
         );
@@ -63,19 +55,23 @@ export namespace LightweightSerializer {
             ),
             (workspaceRoot) => workspaceRoot.relativeDirectoryPath
         );
-        const selectedInputModelsByIds = reduceToMap<
+        const selectedLightweightModelsByIds = reduceToMap<
+            BenchmarkingModelParams<ModelParams>,
             string,
-            string,
-            InputBenchmarkingModelParams.Params
+            LightweightInputModelParams
         >(
-            benchmarkingItems.map((item) => item.params.modelParams.modelId),
-            (modelId) => modelId,
-            (modelId) =>
-                getOrThrow(
-                    inputModelsByIds,
-                    modelId,
-                    `Lightweight serialization failed, invariant has been violated: no input model with "${modelId}" model id`
-                )
+            benchmarkingItems.map((item) => item.params),
+            (params) => params.modelParams.modelId,
+            (params) => {
+                return {
+                    ...(getOrThrow(
+                        inputModelsByIds,
+                        params.modelParams.modelId,
+                        `Lightweight serialization failed, invariant has been violated: no input model with "${params.modelParams.modelId}" model id`
+                    ) as InputBenchmarkingModelParams.Params),
+                    llmServiceIdentifier: params.llmServiceIdentifier,
+                };
+            }
         );
 
         const lightweightItems = groupByToEqualityMap(
@@ -93,7 +89,7 @@ export namespace LightweightSerializer {
 
         return {
             projects: selectedProjects,
-            models: Array.from(selectedInputModelsByIds.values()),
+            models: Array.from(selectedLightweightModelsByIds.values()),
             items: lightweightItems,
         };
     }
@@ -129,42 +125,8 @@ export namespace LightweightSerializer {
         };
     }
 
-    export function logSerialization(
-        serialization: LightweightSerialization,
-        logger: BenchmarkingLogger
-    ) {
-        logger
-            .asOneRecord()
-            .info("Successfully prepared lightweight serialization:")
-            .info(`- ${serialization.projects.length} project(s)`)
-            .debug(
-                `${serialization.projects.map((project) => `  * "${project.relativeDirectoryPath}"`).join("\n")}\n`
-            )
-            .info(`- ${serialization.models.length} model(s)`)
-            .debug(
-                `${serialization.models.map((model) => `  * "${model.modelId}"`).join("\n")}\n`
-            )
-            .info(`- ${serialization.items.length} item(s)`)
-            .debug(
-                `${serialization.items.map((item, index) => `  * Lightweight benchmarking item ${index}:\n${logLightweightItem(item, "    ")}`).join("\n  ---\n")}`
-            );
-    }
-
-    function logLightweightItem(
-        item: LightweightBenchmarkingItem,
-        indent: string
-    ): string {
-        const task = item.task;
-        const targetLog = `> target: ${getTargetTypeName(task.targetType)}, goal \`${goalToProveAsString(deserializeGoal(task.goalToProve))}\``;
-        const sourceLog = `> source: ${deserializeCodeElementRange(task.positionRange)} of theorem "${task.sourceTheoremName}" from "${task.relativeSourceFilePath}"`;
-        const modelsLog = `> model id-s: [${item.targetModelIds.map((modelId) => `"${modelId}"`).join(", ")}]`;
-        return [targetLog, sourceLog, modelsLog]
-            .map((log) => `${indent}${log}`)
-            .join("\n");
-    }
-
     export function saveSerializationToDirectory(
-        serialization: LightweightSerialization,
+        serialization: LightweightSerialization.PackedItems,
         outputDirPath: string,
         logger: BenchmarkingLogger
     ) {

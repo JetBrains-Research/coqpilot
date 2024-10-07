@@ -159,7 +159,8 @@ export abstract class AbstractExperiment {
             benchmarkingItems,
             this.bundles
         );
-        LightweightSerializer.logSerialization(
+        LightweightSerialization.logSerialization(
+            "Successfully prepared lightweight serialization:",
             serialization,
             executionContext.logger
         );
