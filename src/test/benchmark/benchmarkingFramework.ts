@@ -252,8 +252,9 @@ async function benchmarkCompletionGeneration(
 
     const sourceFileEnvironmentWithFilteredContext: SourceFileEnvironment = {
         ...sourceFileEnvironment,
-        fileTheorems: sourceFileEnvironment.fileTheorems
-            .filter((thr) => completionContext.parentTheorem.name !== thr.name)
+        fileTheorems: sourceFileEnvironment.fileTheorems.filter(
+            (thr) => completionContext.parentTheorem.name !== thr.name
+        ),
     };
 
     const contextTheorems: ContextTheoremsHolder = {};

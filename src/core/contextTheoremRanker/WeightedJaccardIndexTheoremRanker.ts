@@ -13,7 +13,7 @@ import { ContextTheoremsRanker } from "./contextTheoremsRanker";
  */
 export class WeightedJaccardIndexContextTheoremsRanker
     implements ContextTheoremsRanker
-{    
+{
     private hypToString(hyp: Hyp<PpString>): string {
         return `${hyp.names.join(" ")} : ${hyp.ty}`;
     }
@@ -31,7 +31,6 @@ export class WeightedJaccardIndexContextTheoremsRanker
         return count / allTokens.length;
     }
 
-
     rankContextTheorems(
         theorems: Theorem[],
         completionContext: CompletionContext
@@ -40,21 +39,31 @@ export class WeightedJaccardIndexContextTheoremsRanker
         const goal = completionContext.proofGoal;
         const goalTheorem = this.goalAsTheorem(goal);
 
-        const allTokens = theorems.map((theorem) => {
-            return this.goalAsTheorem(theorem.initial_goal!!).split(" ")
-                .filter((token) => token !== "#" && token !== ":" && token !== "")
-                .map((token) => token.replace(/[\(\).\n]/g, ""));
-        }
-        ).flat();
-
+        const allTokens = theorems
+            .map((theorem) => {
+                return this.goalAsTheorem(theorem.initial_goal!!)
+                    .split(" ")
+                    .filter(
+                        (token) =>
+                            token !== "#" && token !== ":" && token !== ""
+                    )
+                    .map((token) => token.replace(/[\(\).\n]/g, ""));
+            })
+            .flat();
 
         const weightedJaccardIndex = (theorem: Theorem): number => {
-            const completionTokens = goalTheorem.split(" ")
-                .filter((token) => token !== "#" && token !== ":" && token !== "")
+            const completionTokens = goalTheorem
+                .split(" ")
+                .filter(
+                    (token) => token !== "#" && token !== ":" && token !== ""
+                )
                 .map((token) => token.replace(/[\(\).\n]/g, ""));
-            const theoremTokens = this.goalAsTheorem(theorem.initial_goal!!).split(" ")
-                .filter((token) => token !== "#" && token !== ":" && token !== "")
-                .map((token) => token.replace(/[\(\).\n]/g, ""))
+            const theoremTokens = this.goalAsTheorem(theorem.initial_goal!!)
+                .split(" ")
+                .filter(
+                    (token) => token !== "#" && token !== ":" && token !== ""
+                )
+                .map((token) => token.replace(/[\(\).\n]/g, ""));
 
             const intersection = completionTokens.filter((token) =>
                 theoremTokens.includes(token)
@@ -62,12 +71,18 @@ export class WeightedJaccardIndexContextTheoremsRanker
 
             const union = new Set([...completionTokens, ...theoremTokens]);
 
-            const tfidfIntersection = intersection.map((token) => this.tfidf(allTokens, token)).reduce((a, b) => a + b, 0);
-            const tfidfUnion = Array.from(union.values()).map((token) => this.tfidf(allTokens, token)).reduce((a, b) => a + b, 0);
+            const tfidfIntersection = intersection
+                .map((token) => this.tfidf(allTokens, token))
+                .reduce((a, b) => a + b, 0);
+            const tfidfUnion = Array.from(union.values())
+                .map((token) => this.tfidf(allTokens, token))
+                .reduce((a, b) => a + b, 0);
 
             return tfidfIntersection / tfidfUnion;
         };
 
-        return theorems.sort((a, b) => weightedJaccardIndex(b) - weightedJaccardIndex(a));
+        return theorems.sort(
+            (a, b) => weightedJaccardIndex(b) - weightedJaccardIndex(a)
+        );
     }
 }

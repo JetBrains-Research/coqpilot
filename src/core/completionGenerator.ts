@@ -337,11 +337,12 @@ export function buildProofGenerationContext(
     completionContext: CompletionContext,
     fileTheorems: Theorem[],
     amountOfPremises?: number,
-    theoremRanker?: ContextTheoremsRanker,
+    theoremRanker?: ContextTheoremsRanker
 ): ProofGenerationContext {
     const rankedTheorems =
-        theoremRanker?.rankContextTheorems(fileTheorems, completionContext).slice(0, amountOfPremises) ??
-        fileTheorems;
+        theoremRanker
+            ?.rankContextTheorems(fileTheorems, completionContext)
+            .slice(0, amountOfPremises) ?? fileTheorems;
     return {
         contextTheorems: rankedTheorems,
         completionTarget: goalToTargetLemma(completionContext.proofGoal),

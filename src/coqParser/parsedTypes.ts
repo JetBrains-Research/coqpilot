@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import { Range } from "vscode-languageclient";
+
 import { Goal, PpString } from "../coqLsp/coqLspTypes";
 
 export enum Vernacexpr {

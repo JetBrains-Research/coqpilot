@@ -14,7 +14,7 @@ import { ContextTheoremsRanker } from "./contextTheoremsRanker";
  */
 export class JaccardIndexContextTheoremsRanker
     implements ContextTheoremsRanker
-{    
+{
     private hypToString(hyp: Hyp<PpString>): string {
         return `${hyp.names.join(" ")} : ${hyp.ty}`;
     }
@@ -27,21 +27,26 @@ export class JaccardIndexContextTheoremsRanker
         return `${theoremIndeces} # ${auxTheoremConcl}.`;
     }
 
-
     rankContextTheorems(
         theorems: Theorem[],
-        completionContext: CompletionContext,
+        completionContext: CompletionContext
     ): Theorem[] {
         const goal = completionContext.proofGoal;
         const goalTheorem = this.goalAsTheorem(goal);
 
         const jaccardIndex = (theorem: Theorem): number => {
-            const completionTokens = goalTheorem.split(" ")
-                .filter((token) => token !== "#" && token !== ":" && token !== "")
+            const completionTokens = goalTheorem
+                .split(" ")
+                .filter(
+                    (token) => token !== "#" && token !== ":" && token !== ""
+                )
                 .map((token) => token.replace(/[\(\).\n]/g, ""));
-            const theoremTokens = this.goalAsTheorem(theorem.initial_goal!!).split(" ")
-                .filter((token) => token !== "#" && token !== ":" && token !== "")
-                .map((token) => token.replace(/[\(\).\n]/g, ""))
+            const theoremTokens = this.goalAsTheorem(theorem.initial_goal!!)
+                .split(" ")
+                .filter(
+                    (token) => token !== "#" && token !== ":" && token !== ""
+                )
+                .map((token) => token.replace(/[\(\).\n]/g, ""));
 
             const intersection = completionTokens.filter((token) =>
                 theoremTokens.includes(token)

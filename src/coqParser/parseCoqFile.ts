@@ -31,7 +31,7 @@ export async function parseCoqFile(
         });
 }
 
-function parseFlecheDocument(
+async function parseFlecheDocument(
     doc: FlecheDocument,
     textLines: string[],
     client: CoqLspClient,
@@ -86,7 +86,7 @@ function parseFlecheDocument(
                             thrName,
                             doc.spans[i].range,
                             thrStatement,
-                            null, 
+                            null,
                             null
                         )
                     );
@@ -109,7 +109,7 @@ function parseFlecheDocument(
                             thrName,
                             doc.spans[i].range,
                             thrStatement,
-                            proof, 
+                            proof,
                             initialGoal
                         )
                     );

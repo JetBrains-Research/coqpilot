@@ -11,9 +11,7 @@ import { ContextTheoremsRanker } from "./contextTheoremsRanker";
  * concatenated hypothesis and conclusion.
  *
  */
-export class EuclidContextTheoremsRanker
-    implements ContextTheoremsRanker
-{    
+export class EuclidContextTheoremsRanker implements ContextTheoremsRanker {
     private hypToString(hyp: Hyp<PpString>): string {
         return `${hyp.names.join(" ")} : ${hyp.ty}`;
     }
@@ -26,7 +24,6 @@ export class EuclidContextTheoremsRanker
         return `${theoremIndeces} # ${auxTheoremConcl}.`;
     }
 
-
     rankContextTheorems(
         theorems: Theorem[],
         completionContext: CompletionContext
@@ -35,14 +32,19 @@ export class EuclidContextTheoremsRanker
         const goal = completionContext.proofGoal;
         const goalTheorem = this.goalAsTheorem(goal);
 
-
         const euclid = (theorem: Theorem): number => {
-            const completionTokens = goalTheorem.split(" ")
-                .filter((token) => token !== "#" && token !== ":" && token !== "")
+            const completionTokens = goalTheorem
+                .split(" ")
+                .filter(
+                    (token) => token !== "#" && token !== ":" && token !== ""
+                )
                 .map((token) => token.replace(/[\(\).\n]/g, ""));
-            const theoremTokens = this.goalAsTheorem(theorem.initial_goal!!).split(" ")
-                .filter((token) => token !== "#" && token !== ":" && token !== "")
-                .map((token) => token.replace(/[\(\).\n]/g, ""))
+            const theoremTokens = this.goalAsTheorem(theorem.initial_goal!!)
+                .split(" ")
+                .filter(
+                    (token) => token !== "#" && token !== ":" && token !== ""
+                )
+                .map((token) => token.replace(/[\(\).\n]/g, ""));
 
             const intersection = completionTokens.filter((token) =>
                 theoremTokens.includes(token)
@@ -50,7 +52,6 @@ export class EuclidContextTheoremsRanker
 
             const union = new Set([...completionTokens, ...theoremTokens]);
 
-            
             return Math.sqrt(intersection.length - union.size);
         };
 

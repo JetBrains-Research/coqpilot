@@ -12,9 +12,7 @@ import { ContextTheoremsRanker } from "./contextTheoremsRanker";
  *
  * ```cosine(A, B) = |A ∩ B| / sqrt(|A| * |B|)```
  */
-export class CosineContextTheoremsRanker
-    implements ContextTheoremsRanker
-{    
+export class CosineContextTheoremsRanker implements ContextTheoremsRanker {
     private hypToString(hyp: Hyp<PpString>): string {
         return `${hyp.names.join(" ")} : ${hyp.ty}`;
     }
@@ -27,7 +25,6 @@ export class CosineContextTheoremsRanker
         return `${theoremIndeces} # ${auxTheoremConcl}.`;
     }
 
-
     rankContextTheorems(
         theorems: Theorem[],
         completionContext: CompletionContext
@@ -36,14 +33,19 @@ export class CosineContextTheoremsRanker
         const goal = completionContext.proofGoal;
         const goalTheorem = this.goalAsTheorem(goal);
 
-
         const cosine = (theorem: Theorem): number => {
-            const completionTokens = goalTheorem.split(" ")
-                .filter((token) => token !== "#" && token !== ":" && token !== "")
+            const completionTokens = goalTheorem
+                .split(" ")
+                .filter(
+                    (token) => token !== "#" && token !== ":" && token !== ""
+                )
                 .map((token) => token.replace(/[\(\).\n]/g, ""));
-            const theoremTokens = this.goalAsTheorem(theorem.initial_goal!!).split(" ")
-                .filter((token) => token !== "#" && token !== ":" && token !== "")
-                .map((token) => token.replace(/[\(\).\n]/g, ""))
+            const theoremTokens = this.goalAsTheorem(theorem.initial_goal!!)
+                .split(" ")
+                .filter(
+                    (token) => token !== "#" && token !== ":" && token !== ""
+                )
+                .map((token) => token.replace(/[\(\).\n]/g, ""));
 
             console.log("COMPLETION TOKENS", completionTokens);
             console.log("THEOREM TOKENS", theoremTokens);
@@ -52,7 +54,10 @@ export class CosineContextTheoremsRanker
                 theoremTokens.includes(token)
             );
 
-            return intersection.length / Math.sqrt(completionTokens.length * theoremTokens.length);
+            return (
+                intersection.length /
+                Math.sqrt(completionTokens.length * theoremTokens.length)
+            );
         };
 
         return theorems.sort((a, b) => cosine(b) - cosine(a));
