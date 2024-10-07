@@ -114,7 +114,7 @@
                 },
                 "modelName": {
                   "type": "string",
-                  "markdownDescription": "Model to use from the OpenAI platform. List of models known to CoqPilot: \n * gpt-4o \n * gpt-4o-2024-05-13 \n * gpt-4-turbo \n * gpt-4-turbo-2024-04-09 \n * gpt-4-turbo-preview \n * gpt-4-0125-preview \n * gpt-4-1106-preview \n * gpt-4-vision-preview \n * gpt-4-1106-vision-preview \n * gpt-4 \n * gpt-4-0314 \n * gpt-4-0613 \n * gpt-4-32k \n * gpt-4-32k-0314 \n * gpt-4-32k-0613 \n * gpt-3.5-turbo-0125 \n * gpt-3.5-turbo \n * gpt-3.5-turbo-1106 \n * gpt-3.5-turbo-instruct \n * gpt-3.5-turbo-16k \n * gpt-3.5-turbo-16k-0613 \n * gpt-3.5-turbo-0613 \n * gpt-3.5-turbo-0301",
+                  "markdownDescription": "Model to use from the OpenAI platform. List of models known to CoqPilot: \n * gpt-4o \n * gpt-4o-2024-08-06 \n * gpt-4o-2024-05-13 \n * gpt-4o-mini \n * gpt-4o-mini-2024-07-18 \n * gpt-4-turbo \n * gpt-4-turbo-2024-04-09 \n * gpt-4-turbo-preview \n * gpt-4-0125-preview \n * gpt-4-1106-preview \n * gpt-4 \n * gpt-4-0613 \n * gpt-4-0314 \n * gpt-3.5-turbo-0125 \n * gpt-3.5-turbo \n * gpt-3.5-turbo-1106 \n * gpt-3.5-turbo-instruct",
                   "default": "gpt-4o-mini"
                 },
                 "temperature": {
