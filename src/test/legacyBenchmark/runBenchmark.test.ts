@@ -3,7 +3,7 @@ import * as path from "path";
 
 import { AdditionalFileImport } from "./additionalImports";
 import { BenchmarkResult, runTestBenchmark } from "./benchmarkingFramework";
-import { InputModelsParams } from "./inputModelsParams";
+import { InputModelsParams, onlyAutoModelsParams } from "./inputModelsParams";
 import { BenchmarkReportHolder } from "./reportHolder";
 import { DatasetItem } from "./utils/datasetConstructionUtils";
 import {
@@ -32,14 +32,14 @@ interface Benchmark {
     perProofTimeoutMillis: number;
 }
 
+const reportPath = path.join(
+    __dirname,
+    "../../../src/test/legacyBenchmark/report.json"
+);
 // const resPath = path.join(
 //     __dirname,
 //     "../../../src/test/benchmark/benchmarkPrivate/resources/test.json"
 // );
-const reportPath = path.join(
-    __dirname,
-    "../../../src/test/benchmark/report.json"
-);
 // const immBenchmark: Benchmark = {
 //     name: "Benchmark predef tactics in IMM group A",
 //     items: datasetFromJson(resPath, "imm"),
@@ -60,7 +60,23 @@ const reportPath = path.join(
 //     perProofTimeoutMillis: 30000,
 // };
 
-const benchmarks: Benchmark[] = [];
+const exampleBenchmark: Benchmark = {
+    name: "Example Benchmark",
+    items: [
+        new DatasetItem("standalone-source-files/auto_benchmark.v", [
+            "test_thr",
+        ]),
+    ],
+    inputModelsParams: onlyAutoModelsParams,
+    requireAllAdmitsCompleted: true,
+    benchmarkFullTheorems: true,
+    benchmarkAdmits: true,
+    timeoutMinutes: 2,
+    groupName: "Example-Group",
+    perProofTimeoutMillis: 30000,
+};
+
+const benchmarks: Benchmark[] = [exampleBenchmark];
 
 suite("[SourceExecutable] Legacy Benchmark", () => {
     const reportHolder = new BenchmarkReportHolder(reportPath);

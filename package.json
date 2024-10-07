@@ -386,6 +386,7 @@
     "preteamcity-benchmark-setup": "npm run prebenchmark",
     "teamcity-benchmark-setup": "node ./out/benchmark/teamCitySetup.js",
     "teamcity-benchmark-agent": "npm run test-executables-unsafe -- -g=\"[SourceExecutable] Team City Benchmark Agent\"",
+    "prelegacy-benchmark": "npm run prebenchmark",
     "legacy-benchmark": "npm run test-executables-unsafe -- -g=\"[SourceExecutable] Legacy Benchmark\""
   },
   "devDependencies": {
