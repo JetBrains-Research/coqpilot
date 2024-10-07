@@ -24,6 +24,7 @@ import {
     resolveAsAbsolutePath,
 } from "../utils/fileUtils/fs";
 
+import { LightweightSerialization } from "./lightweightItems/lightweightSerialization";
 import { LightweightSerializer } from "./lightweightItems/lightweightSerializer";
 import {
     CacheTargetsImpl,
@@ -31,7 +32,7 @@ import {
 } from "./setupDSL/datasetCacheBuilder";
 
 export interface ExecutionContext {
-    requestedTargets: DatasetInputTargets;
+    requestedWorkspaces: string[];
     resolvedRunOptions: ExperimentRunOptions;
     subprocessesScheduler: AsyncScheduler;
     logger: BenchmarkingLogger;
@@ -88,17 +89,21 @@ export abstract class AbstractExperiment {
         datasetCacheDirectoryPath: string,
         ...cacheTargetsBuilders: CacheTargetsImpl.CacheTargetsBuilder[]
     ) {
-        const executionContext = this.prepareExecutionContext(
-            {
-                ...this.sharedRunOptions,
-                datasetCacheDirectoryPath: datasetCacheDirectoryPath,
-            },
-            "[Dataset Cache Building]",
-            (logger) =>
-                CacheTargetsImpl.buildCacheTargets(cacheTargetsBuilders, logger)
-        );
+        const [requestedTargets, executionContext] =
+            this.prepareExecutionContextFromInputTargets(
+                {
+                    ...this.sharedRunOptions,
+                    datasetCacheDirectoryPath: datasetCacheDirectoryPath,
+                },
+                "[Dataset Cache Building]",
+                (logger) =>
+                    CacheTargetsImpl.buildCacheTargets(
+                        cacheTargetsBuilders,
+                        logger
+                    )
+            );
         await DatasetCacheBuildingImpl.buildDatasetCache(
-            executionContext.requestedTargets,
+            requestedTargets,
             executionContext.resolvedRunOptions,
             executionContext.logger,
             this.setupCoqProjectParser(executionContext)
@@ -117,7 +122,7 @@ export abstract class AbstractExperiment {
      *
      * The output `outputDirectoryPath` will have the following structure after the operation is successfully finished:
      * - `projects` subfolder: `[workspace path descriptor].json` files with `LightweightWorkspaceRoot` objects;
-     * - `models` subfolder: `[modelId].json` files with `InputBenchmarkingModelParams.Params` objects;
+     * - `models` subfolder: `[modelId].json` files with `LightweightInputModelParams` objects;
      * - `items` subfolder: `[task descriptor].json` files with `LightweightBenchmarkingItem` objects.
      *
      * *Note on the efficiency of the operation.*
@@ -136,16 +141,19 @@ export abstract class AbstractExperiment {
      *
      * @param outputDirectoryPath a directory path relative to the root directory to save lightweight serialization into.
      */
-    // TODO: clear-output-dir parameter
     // TODO: move this method to TeamCityExperiment
     async buildLightweightBenchmarkingItems(outputDirectoryPath: string) {
-        const executionContext = this.prepareExecutionContext(
-            this.sharedRunOptions,
-            "[Building Lightweight Benchmarking Items]",
-            (logger) => mergeAndResolveRequestedTargets(this.bundles, logger)
+        const [requestedTargets, executionContext] =
+            this.prepareExecutionContextFromInputTargets(
+                this.sharedRunOptions,
+                "[Building Lightweight Benchmarking Items]",
+                (logger) =>
+                    mergeAndResolveRequestedTargets(this.bundles, logger)
+            );
+        const benchmarkingItems = await this.buildBenchmarkingItems(
+            requestedTargets,
+            executionContext
         );
-        const benchmarkingItems =
-            await this.buildBenchmarkingItems(executionContext);
 
         const serialization = LightweightSerializer.serializeToLightweight(
             benchmarkingItems,
@@ -172,18 +180,22 @@ export abstract class AbstractExperiment {
         artifactsDirPath: string,
         runOptions: Partial<ExperimentRunOptions> = {}
     ): Promise<ExperimentResults> {
-        const executionContext = this.prepareExecutionContext(
-            {
-                ...this.sharedRunOptions,
-                ...runOptions,
-            },
-            "[Benchmarking]", // TODO: customize through run options
-            (logger) => mergeAndResolveRequestedTargets(this.bundles, logger)
-        );
+        const [requestedTargets, executionContext] =
+            this.prepareExecutionContextFromInputTargets(
+                {
+                    ...this.sharedRunOptions,
+                    ...runOptions,
+                },
+                "[Benchmarking]", // TODO: customize through run options
+                (logger) =>
+                    mergeAndResolveRequestedTargets(this.bundles, logger)
+            );
         const totalTime = new TimeMark();
 
-        const benchmarkingItems =
-            await this.buildBenchmarkingItems(executionContext);
+        const benchmarkingItems = await this.buildBenchmarkingItems(
+            requestedTargets,
+            executionContext
+        );
 
         // Since `AbstractExperiment.run(...)` is not always called with `await`,
         // this one might help triggering the expected behaviour
@@ -196,11 +208,12 @@ export abstract class AbstractExperiment {
     }
 
     private async buildBenchmarkingItems(
+        requestedTargets: DatasetInputTargets,
         executionContext: ExecutionContext
     ): Promise<BenchmarkingItem[]> {
         const benchmarkingItems = await parseDatasetForBenchmarkingItems(
             this.bundles,
-            executionContext.requestedTargets,
+            requestedTargets,
             executionContext.resolvedRunOptions,
             executionContext.logger,
             this.setupCoqProjectParser(executionContext)
@@ -229,13 +242,30 @@ export abstract class AbstractExperiment {
         );
     }
 
-    private prepareExecutionContext(
+    private prepareExecutionContextFromInputTargets(
         runOptions: Partial<ExperimentRunOptions>,
         loggerIdentifier: string,
         buildRequestedTargets: (
             logger: BenchmarkingLogger
         ) => DatasetInputTargets
-    ): ExecutionContext {
+    ): [DatasetInputTargets, ExecutionContext] {
+        return this.prepareExecutionContext(
+            runOptions,
+            loggerIdentifier,
+            buildRequestedTargets,
+            (requestedTargets) =>
+                requestedTargets
+                    .entries()
+                    .map(([workspaceRoot, _]) => workspaceRoot.directoryPath)
+        );
+    }
+
+    private prepareExecutionContext<T>(
+        runOptions: Partial<ExperimentRunOptions>,
+        loggerIdentifier: string,
+        prepareTargets: (logger: BenchmarkingLogger) => T,
+        getRequestedWorkspaces: (preparedTargets: T) => string[]
+    ): [T, ExecutionContext] {
         const optionsAfterStartupResolution =
             this.resolveOnStartupOptions(runOptions);
         const logger = this.initLogger(
@@ -243,10 +273,11 @@ export abstract class AbstractExperiment {
             loggerIdentifier
         );
 
-        const requestedTargets = buildRequestedTargets(logger);
+        const preparedTargets = prepareTargets(logger);
+        const requestedWorkspaces = getRequestedWorkspaces(preparedTargets);
         const resolvedRunOptions = this.resolveAllExperimentRunOptions(
             optionsAfterStartupResolution,
-            requestedTargets
+            requestedWorkspaces
         );
 
         const subprocessesScheduler = new AsyncScheduler(
@@ -256,14 +287,14 @@ export abstract class AbstractExperiment {
         );
 
         const executionContext: ExecutionContext = {
-            requestedTargets: requestedTargets,
+            requestedWorkspaces: requestedWorkspaces,
             resolvedRunOptions: resolvedRunOptions,
             subprocessesScheduler: subprocessesScheduler,
             logger: logger,
         };
         this.validateExecutionContextOrThrow(executionContext);
 
-        return executionContext;
+        return [preparedTargets, executionContext];
     }
 
     private initLogger(
@@ -306,7 +337,7 @@ export abstract class AbstractExperiment {
 
     private resolveAllExperimentRunOptions(
         optionsAfterStartupResolution: ExperimentRunOptions.AfterStartupResolution,
-        requestedTargets: DatasetInputTargets
+        requestedWorkspaces: string[]
     ): ExperimentRunOptions {
         return {
             loggerSeverity: optionsAfterStartupResolution.loggerSeverity,
@@ -318,7 +349,7 @@ export abstract class AbstractExperiment {
 
             maxActiveSubprocessesNumber: Math.max(
                 optionsAfterStartupResolution.maxActiveSubprocessesNumber ??
-                    requestedTargets.workspacesNumber(),
+                    requestedWorkspaces.length,
                 1
             ),
             maxParallelGenerationRequestsToModel:

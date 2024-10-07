@@ -31,11 +31,9 @@ export class SingleWorkspaceExperiment extends AbstractExperiment {
     protected validateExecutionContextOrThrow(
         executionContext: ExecutionContext
     ): void {
-        if (executionContext.requestedTargets.workspacesNumber() > 1) {
-            const workspacesList = executionContext.requestedTargets
-                .entries()
-                .map(([workspaceRoot, _]) => workspaceRoot.directoryPath)
-                .join(", ");
+        if (executionContext.requestedWorkspaces.length > 1) {
+            const workspacesList =
+                executionContext.requestedWorkspaces.join(", ");
             throw Error(
                 [
                     "The `SingleWorkspaceExperiment` targets must belong to the same workspace,",
