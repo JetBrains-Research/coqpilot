@@ -78,13 +78,14 @@ export interface CompletionGenerationBenchmarkArgs<
  * Note: this function does not support multi-round generation so far (TODO).
  *
  * If proof generation fails due to the `llmService` being unavailable or unreachable (e.g., connection error),
- * the function will retry indefinitely. The retries will occur with delays as specified in
- * `LLMService.estimateTimeToBecomeAvailable` and `RemoteConnectionErrorDelays`, until a response with proofs is received.
+ * the function will retry indefinitely by default or until `options.proofGenerationRetries` are reached / abort signal is sent.
+ * The retries will occur with delays as specified in `LLMService.estimateTimeToBecomeAvailable` and `RemoteConnectionErrorDelays`,
+ * until a response with proofs is received.
  *
  * Typically, this function does not throw errors:
  * expected errors are encapsulated within `FailedCompletionGeneration`.
  * However, the following exceptions will be handled differently:
- * - `ConfigurationError`-s will always be rethrown;
+ * - `ConfigurationError`-s and `FailFastAbortError`-s will always be rethrown;
  * - errors will be thrown if internal invariants are violated.
  */
 export async function benchmarkSingleCompletionGeneration<
