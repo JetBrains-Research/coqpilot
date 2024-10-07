@@ -383,6 +383,9 @@
     "presingle-workspace-benchmark": "npm run prebenchmark",
     "single-workspace-benchmark": "npm run test-executables-unsafe -- -g=\"[SourceExecutable] Single Workspace Benchmark\"",
     "benchmark": "npm run single-workspace-benchmark",
+    "preteamcity-benchmark-setup": "npm run prebenchmark",
+    "teamcity-benchmark-setup": "node ./out/benchmark/teamCitySetup.js",
+    "teamcity-benchmark-agent": "npm run test-executables-unsafe -- -g=\"[SourceExecutable] Team City Benchmark Agent\"",
     "legacy-benchmark": "npm run test-executables-unsafe -- -g=\"[SourceExecutable] Legacy Benchmark\""
   },
   "devDependencies": {
