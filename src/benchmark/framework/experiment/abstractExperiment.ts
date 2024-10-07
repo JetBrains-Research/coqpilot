@@ -24,9 +24,6 @@ import {
     resolveAsAbsolutePath,
 } from "../utils/fileUtils/fs";
 
-import { LightweightDeserializer } from "./lightweightItems/lightweightDeserializer";
-import { LightweightSerialization } from "./lightweightItems/lightweightSerialization";
-import { LightweightSerializer } from "./lightweightItems/lightweightSerializer";
 import {
     CacheTargetsImpl,
     DatasetCacheBuildingImpl,
@@ -45,8 +42,8 @@ namespace CacheDirNames {
 
 export abstract class AbstractExperiment {
     constructor(
-        private readonly bundles: InputBenchmarkingBundle[] = [],
-        private sharedRunOptions: Partial<ExperimentRunOptions> = {}
+        protected readonly bundles: InputBenchmarkingBundle[] = [],
+        protected sharedRunOptions: Partial<ExperimentRunOptions> = {}
     ) {}
 
     protected abstract validateExecutionContextOrThrow(
@@ -112,131 +109,6 @@ export abstract class AbstractExperiment {
     }
 
     /**
-     * Builds lightweight benchmarking items for the requested targets and saves them into `outputDirectoryPath`.
-     * The returning promise resolves successfully if and only if the operation succeeded.
-     *
-     * *Warning:* `outputDirectoryPath` content will be cleared before saving the built lightweight benchmarking items.
-     *
-     * This operation is used as the first step for the large-scale benchmarking pipeline executed in TeamCity.
-     * The goal is to resolve input for the benchmarks (specified via the setup DSL) into **separate** benchmarking items
-     * that can be stored in the repository **efficiently**.
-     *
-     * The output `outputDirectoryPath` will have the following structure after the operation is successfully finished:
-     * - `projects` subfolder: `[workspace path descriptor].json` files with `LightweightWorkspaceRoot` objects;
-     * - `models` subfolder: `[modelId].json` files with `LightweightInputModelParams` objects;
-     * - `items` subfolder: `[task descriptor].json` files with `LightweightBenchmarkingItem` objects.
-     *
-     * *Note on the efficiency of the operation.*
-     * Unfortunately, calling this operation requires the requested dataset projects being built,
-     * even though the next pipeline step (executed remotely) will need to build them again. However:
-     * 1. The key importance of the `buildLightweightBenchmarkingItems` is to prepare *separate* benchmarking items:
-     *    that requires parsing source files, for example, to find all requested admits. Thus, this step could not be ommitted.
-     * 2. In practice, projects building and parsing can be skipped in case of dataset cache being present.
-     *    Therefore, building dataset projects should be done only once locally and then reused with no overhead.
-     *
-     * *Implementation note*. So far this method simply builds the complete benchmarking items the same way as it is done
-     * in the core `AbstractExperiment.run(...)` method and then serializes them in their lightweight versions.
-     * Although the "unneccesary" model parameters resolution takes place ("unneccessary", because the models
-     * will be saved unresolved for the sake of data storage efficiency), it actually validates the parameters specified by a user,
-     * preventing such errors from being propagated to the large-scale pipeline itself.
-     *
-     * @param outputDirectoryPath a directory path relative to the root directory to save lightweight serialization into.
-     */
-    // TODO: move this method to TeamCityExperiment
-    async buildLightweightBenchmarkingItems(outputDirectoryPath: string) {
-        const [requestedTargets, executionContext] =
-            this.prepareExecutionContextFromInputTargets(
-                this.sharedRunOptions,
-                "[Building Lightweight Benchmarking Items]",
-                (logger) =>
-                    mergeAndResolveRequestedTargets(this.bundles, logger)
-            );
-        const benchmarkingItems = await this.buildBenchmarkingItems(
-            requestedTargets,
-            executionContext
-        );
-
-        const serialization = LightweightSerializer.serializeToLightweight(
-            benchmarkingItems,
-            this.bundles
-        );
-        LightweightSerialization.logSerialization(
-            "Successfully prepared lightweight serialization:",
-            serialization,
-            executionContext.logger
-        );
-        LightweightSerializer.saveSerializationToDirectory(
-            serialization,
-            outputDirectoryPath,
-            executionContext.logger
-        );
-    }
-
-    /**
-     * Conducts the same benchmarking experiment as the core `AbstractExperiment.run` method does,
-     * but with reading lightweight benchmarking items as input instead of interpreting the setup DSL specified by a user.
-     *
-     * **Important note:** current implementation requires the source files of the input lightweight items
-     * to be present in cache. Thus, make sure `datasetCacheDirectoryPath` option is set properly to the prepared cache.
-     *
-     * @param inputDirectoryPath a directory to read lightweight serialization from. It should have the structure specified by `AbstractExperiment.buildLightweightBenchmarkingItems` method.
-     * @param artifactsDirPath empty directory path relative to the root directory.
-     * @param runOptions properties to update the options for **this** run with. To save the updated options for the further runs use `AbstractExperiment.updateRunOptions(...)` method instead.
-     */
-    async executeLightweightBenchmarkingItems(
-        inputDirectoryPath: string,
-        artifactsDirPath: string,
-        runOptions: Partial<ExperimentRunOptions> = {}
-    ) {
-        const [serialization, executionContext] = this.prepareExecutionContext(
-            {
-                ...this.sharedRunOptions,
-                ...runOptions,
-            },
-            "[Building Lightweight Benchmarking Items]",
-            (logger) => {
-                const serialization =
-                    LightweightDeserializer.readSerializationFromDirectory(
-                        inputDirectoryPath,
-                        logger
-                    );
-                LightweightSerialization.logSerialization(
-                    "Successfully parsed lightweight serialization:",
-                    serialization,
-                    logger
-                );
-                return serialization;
-            },
-            (serialization) =>
-                serialization.projects.map(
-                    (project) => project.relativeDirectoryPath
-                )
-        );
-        const totalTime = new TimeMark();
-
-        const benchmarkingItems =
-            LightweightDeserializer.restoreBenchmarkingItems(
-                serialization,
-                executionContext.resolvedRunOptions.datasetCacheDirectoryPath,
-                executionContext.logger
-            );
-        if (benchmarkingItems.length === 0) {
-            throw Error(
-                "No items to benchmark: make sure the experiment input is configured correctly."
-            );
-        }
-
-        // Since `AbstractExperiment.run(...)` is not always called with `await`,
-        // this one might help triggering the expected behaviour
-        return await this.executeBenchmarkingItems(
-            benchmarkingItems,
-            artifactsDirPath,
-            executionContext,
-            totalTime
-        );
-    }
-
-    /**
      * The core method that executes the benchmarking experiment.
      *
      * @param artifactsDirPath empty directory path relative to the root directory.
@@ -254,7 +126,10 @@ export abstract class AbstractExperiment {
                 },
                 "[Benchmarking]", // TODO: customize through run options
                 (logger) =>
-                    mergeAndResolveRequestedTargets(this.bundles, logger)
+                    AbstractExperiment.mergeAndResolveRequestedTargets(
+                        this.bundles,
+                        logger
+                    )
             );
         const totalTime = new TimeMark();
 
@@ -273,7 +148,7 @@ export abstract class AbstractExperiment {
         );
     }
 
-    private async buildBenchmarkingItems(
+    protected async buildBenchmarkingItems(
         requestedTargets: DatasetInputTargets,
         executionContext: ExecutionContext
     ): Promise<BenchmarkingItem[]> {
@@ -286,13 +161,13 @@ export abstract class AbstractExperiment {
         );
         if (benchmarkingItems.length === 0) {
             throw Error(
-                "No items to benchmark: make sure the experiment input is configured correctly."
+                "No items to benchmark: make sure the experiment input is configured correctly"
             );
         }
         return benchmarkingItems;
     }
 
-    private async executeBenchmarkingItems(
+    protected async executeBenchmarkingItems(
         benchmarkingItems: BenchmarkingItem[],
         artifactsDirPath: string,
         executionContext: ExecutionContext,
@@ -308,7 +183,7 @@ export abstract class AbstractExperiment {
         );
     }
 
-    private prepareExecutionContextFromInputTargets(
+    protected prepareExecutionContextFromInputTargets(
         runOptions: Partial<ExperimentRunOptions>,
         loggerIdentifier: string,
         buildRequestedTargets: (
@@ -326,7 +201,7 @@ export abstract class AbstractExperiment {
         );
     }
 
-    private prepareExecutionContext<T>(
+    protected prepareExecutionContext<T>(
         runOptions: Partial<ExperimentRunOptions>,
         loggerIdentifier: string,
         prepareTargets: (logger: BenchmarkingLogger) => T,
@@ -447,17 +322,17 @@ export abstract class AbstractExperiment {
                 optionsAfterStartupResolution.logTeamCityStatistics ?? false,
         };
     }
-}
 
-function mergeAndResolveRequestedTargets(
-    inputBundles: InputBenchmarkingBundle[],
-    logger: BenchmarkingLogger
-): DatasetInputTargets {
-    const mergedTargets = mergeInputTargets(
-        inputBundles.map((bundle) => bundle.requestedTargets)
-    ).resolveRequests();
-    logger.debug(
-        `Successfully merged requested targets: {\n${mergedTargets.toString()}\n}`
-    );
-    return mergedTargets;
+    protected static mergeAndResolveRequestedTargets(
+        inputBundles: InputBenchmarkingBundle[],
+        logger: BenchmarkingLogger
+    ): DatasetInputTargets {
+        const mergedTargets = mergeInputTargets(
+            inputBundles.map((bundle) => bundle.requestedTargets)
+        ).resolveRequests();
+        logger.debug(
+            `Successfully merged requested targets: {\n${mergedTargets.toString()}\n}`
+        );
+        return mergedTargets;
+    }
 }
