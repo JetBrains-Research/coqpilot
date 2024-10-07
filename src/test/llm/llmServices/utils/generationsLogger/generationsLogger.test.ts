@@ -32,7 +32,7 @@ import { SyncFile } from "../../../../../llm/llmServices/utils/generationsLogger
 import { nowTimestampMillis } from "../../../../../llm/llmServices/utils/time";
 
 import {
-    gptTurboModelName,
+    gptModelName,
     testModelId,
 } from "../../../llmSpecificTestUtils/constants";
 import { DummyLLMService } from "../../../llmSpecificTestUtils/dummyLLMService";
@@ -62,7 +62,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
     };
     const mockOpenAiParams: OpenAiModelParams = {
         ...mockParamsBase,
-        modelName: gptTurboModelName,
+        modelName: gptModelName,
         apiKey: "very sensitive api key",
         temperature: 1,
     };

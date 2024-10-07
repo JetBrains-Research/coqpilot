@@ -433,7 +433,7 @@
     "path": "^0.12.7",
     "pino": "^8.15.1",
     "pino-pretty": "^10.2.0",
-    "tiktoken": "^1.0.13",
+    "tiktoken": "^1.0.17",
     "tmp": "^0.2.3",
     "toml": "^3.0.0",
     "vscode-languageclient": "^9.0.1",

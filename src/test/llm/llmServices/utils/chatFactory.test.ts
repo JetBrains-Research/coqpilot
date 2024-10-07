@@ -28,7 +28,7 @@ import {
     calculateTokensViaTikToken,
 } from "../../llmSpecificTestUtils/calculateTokens";
 import {
-    gptTurboModelName,
+    gptModelName,
     testModelId,
 } from "../../llmSpecificTestUtils/constants";
 
@@ -348,9 +348,9 @@ suite("[LLMService-s utils] Building chats test", () => {
         [
             [
                 "TikToken tokens",
-                gptTurboModelName,
+                gptModelName,
                 (text: string) => {
-                    return calculateTokensViaTikToken(text, gptTurboModelName);
+                    return calculateTokensViaTikToken(text, gptModelName);
                 },
             ],
             [
