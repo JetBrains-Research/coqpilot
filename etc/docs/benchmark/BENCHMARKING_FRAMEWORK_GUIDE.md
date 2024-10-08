@@ -207,7 +207,7 @@ All options have reasonable defaults (check their docs for details), so adjust o
 
 ## Framework Maintenance
 
-The benchmarking framework is still in the testing phase, so bugs and missing features are expected. Please report issues to @GlebSolovev or trhough GitHub issues.
+The benchmarking framework is still in the testing phase, so bugs and missing features are expected. Please report issues to [@GlebSolovev](https://github.com/GlebSolovev) or through GitHub issues.
 
 _Upcoming improvements:_
 
