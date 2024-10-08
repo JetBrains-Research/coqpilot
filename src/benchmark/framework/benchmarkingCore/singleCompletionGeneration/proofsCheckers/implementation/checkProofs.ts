@@ -1,7 +1,7 @@
 import { createTestCoqLspClient } from "../../../../../../coqLsp/coqLspBuilders";
+import { CoqLspTimeoutError } from "../../../../../../coqLsp/coqLspTypes";
 
 import {
-    CoqLspTimeoutError,
     CoqProofChecker,
     ProofCheckResult,
 } from "../../../../../../core/coqProofChecker";
@@ -29,7 +29,9 @@ export namespace CheckProofsImpl {
         args: Signature.Args,
         providedLogger: ProvidedLogger
     ): Promise<Signature.Result> {
-        const coqLspClient = createTestCoqLspClient(args.workspaceRootPath);
+        const coqLspClient = await createTestCoqLspClient(
+            args.workspaceRootPath
+        );
         const coqProofChecker = new CoqProofChecker(coqLspClient);
         // TODO: each coq proof checker should use its own prefix to work good in parallel (many checkers for the same theorem in the same file)
 

@@ -47,7 +47,7 @@ export async function runTestBenchmark(
     benchmarkAdmits: Boolean = true,
     workspaceRootPath?: string,
     requireAllAdmitsCompleted: Boolean = false,
-    maximumUsedPremisesAmount?: number,
+    maxPremisesNumber?: number,
     groupName: string = "Unnamed",
     reportHolder?: BenchmarkReportHolder,
     additionalImports?: AdditionalFileImport[],
@@ -96,7 +96,7 @@ export async function runTestBenchmark(
             relativePathToFile,
             groupName,
             eventLogger,
-            maximumUsedPremisesAmount,
+            maxPremisesNumber,
             reportHolder,
             workspaceRootPath,
             perProofTimeoutMillis
@@ -121,7 +121,7 @@ export async function runTestBenchmark(
             relativePathToFile,
             groupName,
             eventLogger,
-            maximumUsedPremisesAmount,
+            maxPremisesNumber,
             reportHolder,
             workspaceRootPath,
             perProofTimeoutMillis
@@ -198,7 +198,7 @@ export async function benchmarkTargets(
     checkedFilePath: string,
     groupName: string,
     eventLogger: EventLogger,
-    maximumUsedPremisesAmount?: number,
+    maxPremisesNumber?: number,
     reportHolder?: BenchmarkReportHolder,
     workspaceRootPath?: string,
     perProofTimeoutMillis: number = 15000
@@ -214,7 +214,7 @@ export async function benchmarkTargets(
             checkedFilePath,
             groupName,
             eventLogger,
-            maximumUsedPremisesAmount,
+            maxPremisesNumber,
             reportHolder,
             workspaceRootPath,
             perProofTimeoutMillis
@@ -237,7 +237,7 @@ async function benchmarkCompletionGeneration(
     checkedFilePath: string,
     groupName: string,
     eventLogger: EventLogger,
-    maximumUsedPremisesAmount?: number,
+    maxPremisesNumber?: number,
     reportHolder?: BenchmarkReportHolder,
     workspaceRootPath?: string,
     perProofTimeoutMillis: number = 15000
@@ -251,9 +251,9 @@ async function benchmarkCompletionGeneration(
 
     const sourceFileEnvironmentWithFilteredContext: SourceFileEnvironment = {
         ...sourceFileEnvironment,
-        fileTheorems: sourceFileEnvironment.fileTheorems
-            .filter((thr) => completionContext.parentTheorem.name !== thr.name)
-            .slice(0, maximumUsedPremisesAmount),
+        fileTheorems: sourceFileEnvironment.fileTheorems.filter(
+            (thr) => completionContext.parentTheorem.name !== thr.name
+        ),
     };
 
     const contextTheorems: ContextTheoremsHolder = {};
@@ -266,16 +266,15 @@ async function benchmarkCompletionGeneration(
         reactToRequestEvent(contextTheorems)
     );
 
+    const processEnvironmentWithPremisesNumber: ProcessEnvironment = {
+        ...processEnvironment,
+        premisesNumber: maxPremisesNumber,
+    };
+
     const result = await generateCompletion(
         completionContext,
         sourceFileEnvironmentWithFilteredContext,
-        processEnvironment,
-        (processEnvironment) => {
-            processEnvironment.coqProofChecker.dispose();
-            processEnvironment.coqProofChecker = new CoqProofChecker(
-                createTestCoqLspClient(workspaceRootPath)
-            );
-        },
+        processEnvironmentWithPremisesNumber,
         undefined,
         workspaceRootPath,
         perProofTimeoutMillis
@@ -389,7 +388,7 @@ async function prepareForBenchmarkCompletions(
 
     const [fileUri, isNew] = getFileUriWithImports(filePath, additionalImports);
 
-    const client = createTestCoqLspClient(workspaceRootPath);
+    const client = await createTestCoqLspClient(workspaceRootPath);
     await client.openTextDocument(fileUri);
 
     const coqProofChecker = new CoqProofChecker(client);

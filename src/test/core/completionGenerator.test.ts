@@ -39,8 +39,7 @@ suite("Completion generation tests", () => {
                         const result = await generateCompletion(
                             completionContext,
                             environment.sourceFileEnvironment,
-                            processEnvironment,
-                            () => {}
+                            processEnvironment
                         );
                         return result;
                     }

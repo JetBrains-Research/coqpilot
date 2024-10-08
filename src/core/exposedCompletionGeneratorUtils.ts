@@ -38,11 +38,13 @@ export function goalToTargetLemma(proofGoal: ProofGoal): string {
 export function buildProofGenerationContext(
     completionContext: CompletionContext,
     fileTheorems: Theorem[],
-    theoremRanker?: ContextTheoremsRanker
+    theoremRanker?: ContextTheoremsRanker,
+    premisesNumber?: number
 ): ProofGenerationContext {
     const rankedTheorems =
-        theoremRanker?.rankContextTheorems(fileTheorems, completionContext) ??
-        fileTheorems;
+        theoremRanker
+            ?.rankContextTheorems(fileTheorems, completionContext)
+            .slice(0, premisesNumber) ?? fileTheorems;
     return {
         contextTheorems: rankedTheorems,
         completionTarget: goalToTargetLemma(completionContext.proofGoal),

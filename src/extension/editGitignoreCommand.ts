@@ -29,7 +29,7 @@ export async function suggestAddingAuxFilesToGitignore() {
                 )
                 .then((choice) => {
                     if (choice === "Yes") {
-                        const rule = `\n# Coqpilot auxiliary files\n${auxExt}`;
+                        const rule = `\n# CoqPilot auxiliary files\n${auxExt}`;
                         appendFile(gitIgnorePath, rule, (err) => {
                             if (err) {
                                 showMessageToUser(

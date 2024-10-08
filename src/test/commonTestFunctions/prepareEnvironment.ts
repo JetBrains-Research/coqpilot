@@ -34,7 +34,7 @@ export async function prepareEnvironment(
     );
     const fileUri = Uri.fromPath(filePath);
 
-    const client = createTestCoqLspClient(rootDir);
+    const client = await createTestCoqLspClient(rootDir);
     const coqProofChecker = new CoqProofChecker(client);
 
     await client.openTextDocument(fileUri);

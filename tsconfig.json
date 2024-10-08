@@ -35,6 +35,10 @@
 
 		/* To Create decorators */
 		"experimentalDecorators": true,
+
+		/* To allow access to constants from package.json */
+		"resolveJsonModule": true,
+		// "esModuleInterop": true,
 	},
 	"exclude": [
 		"./_opam/**/*",

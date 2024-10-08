@@ -33,4 +33,5 @@ export interface ProcessEnvironment {
      * theorems would be passed sequentially in the same order as they are in the file
      */
     theoremRanker?: ContextTheoremsRanker;
+    premisesNumber?: number;
 }

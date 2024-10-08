@@ -72,6 +72,7 @@ suite("Parse `UserModelParams` from JSON test", () => {
         ...validUserModelParamsCompelete,
         modelName: "gpt-model",
         apiKey: "api-key",
+        authType: "stgn",
     };
     const validLMStudioUserModelParamsComplete = {
         ...validUserModelParamsCompelete,

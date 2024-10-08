@@ -1,9 +1,8 @@
-import { Hyp, PpString, ProofGoal } from "../../coqLsp/coqLspTypes";
-
 import { Theorem } from "../../coqParser/parsedTypes";
 import { CompletionContext } from "../completionGenerationContext";
 
 import { ContextTheoremsRanker } from "./contextTheoremsRanker";
+import { goalAsTheoremString } from "./tokenUtils";
 
 /**
  * Ranks theorems based on how similar their statements are to
@@ -15,29 +14,26 @@ import { ContextTheoremsRanker } from "./contextTheoremsRanker";
 export class JaccardIndexContextTheoremsRanker
     implements ContextTheoremsRanker
 {
-    private hypToString(hyp: Hyp<PpString>): string {
-        return `${hyp.names.join(" ")} : ${hyp.ty}`;
-    }
-
-    private goalAsTheorem(proofGoal: ProofGoal): string {
-        const auxTheoremConcl = proofGoal?.ty;
-        const theoremIndeces = proofGoal?.hyps
-            .map((hyp) => `(${this.hypToString(hyp)})`)
-            .join(" ");
-        return `Theorem helper_theorem ${theoremIndeces} : ${auxTheoremConcl}.`;
-    }
-
     rankContextTheorems(
         theorems: Theorem[],
         completionContext: CompletionContext
     ): Theorem[] {
         const goal = completionContext.proofGoal;
-        const goalTheorem = this.goalAsTheorem(goal);
+        const goalTheorem = goalAsTheoremString(goal);
 
         const jaccardIndex = (theorem: Theorem): number => {
-            const theoremStatement = theorem.statement;
-            const completionTokens = goalTheorem.split(" ");
-            const theoremTokens = theoremStatement.split(" ");
+            const completionTokens = goalTheorem
+                .split(" ")
+                .filter(
+                    (token) => token !== "#" && token !== ":" && token !== ""
+                )
+                .map((token) => token.replace(/[\(\).\n]/g, ""));
+            const theoremTokens = goalAsTheoremString(theorem.initial_goal!!)
+                .split(" ")
+                .filter(
+                    (token) => token !== "#" && token !== ":" && token !== ""
+                )
+                .map((token) => token.replace(/[\(\).\n]/g, ""));
 
             const intersection = completionTokens.filter((token) =>
                 theoremTokens.includes(token)

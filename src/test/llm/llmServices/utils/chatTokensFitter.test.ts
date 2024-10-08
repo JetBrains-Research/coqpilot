@@ -11,7 +11,7 @@ import {
     approxCalculateTokens,
     calculateTokensViaTikToken,
 } from "../../llmSpecificTestUtils/calculateTokens";
-import { gptTurboModelName } from "../../llmSpecificTestUtils/constants";
+import { gptModelName } from "../../llmSpecificTestUtils/constants";
 
 suite("[LLMService-s utils] ChatTokensFitter test", () => {
     async function readTwoTheorems(): Promise<Theorem[]> {
@@ -126,15 +126,15 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
         const twoTheorems = await readTwoTheorems();
         const statementTokens = calculateTokensViaTikToken(
             twoTheorems[0].statement,
-            gptTurboModelName
+            gptModelName
         );
         const theoremProof = twoTheorems[0].proof?.onlyText() ?? "";
         const proofTokens = calculateTokensViaTikToken(
             theoremProof,
-            gptTurboModelName
+            gptModelName
         );
         const fittedTheoremsNumber = countTheoremsPickedFromContext({
-            modelName: gptTurboModelName,
+            modelName: gptModelName,
             maxTokensToGenerate: 1000,
             tokensLimit: 1000 + statementTokens + proofTokens,
             systemMessage: "",
@@ -151,7 +151,7 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
     test("Test if two tokenizers are similar: short text", () => {
         const tiktokenTokens = calculateTokensViaTikToken(
             shortText,
-            gptTurboModelName
+            gptModelName
         );
         const approxTokens = approxCalculateTokens(shortText);
         expect(tiktokenTokens).toBeCloseTo(approxTokens, 2);
@@ -160,10 +160,10 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
     test("Test if two tokenizers are similar: long text", () => {
         const tiktokenTokens = calculateTokensViaTikToken(
             longText,
-            gptTurboModelName
+            gptModelName
         );
         const approxTokens = approxCalculateTokens(longText);
-        expect(tiktokenTokens).toBeCloseTo(approxTokens, 20);
+        expect(tiktokenTokens).toBeCloseTo(approxTokens, 30);
     });
 
     function estimateTokensWithFitter(
@@ -190,12 +190,12 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
     test("Test `estimateTokens`", () => {
         const tiktokenTokens = calculateTokensViaTikToken(
             longText,
-            gptTurboModelName
+            gptModelName
         );
         const maxTokensToGenerate = 100;
         expect(
             estimateTokensWithFitter(
-                gptTurboModelName,
+                gptModelName,
                 longText,
                 maxTokensToGenerate
             )

@@ -16,7 +16,7 @@ export async function parseTheoremsFromCoqFile(
     );
 
     const fileUri = Uri.fromPath(filePath);
-    const client = createTestCoqLspClient(rootDir);
+    const client = await createTestCoqLspClient(rootDir);
 
     await client.openTextDocument(fileUri);
     const document = await parseCoqFile(fileUri, client);

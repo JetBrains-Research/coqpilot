@@ -1,6 +1,9 @@
 import { LLMSequentialIterator } from "../llm/llmIterator";
 import { GeneratedProof } from "../llm/llmServices/generatedProof";
 
+import { createCoqLspClient } from "../coqLsp/coqLspBuilders";
+import { CoqLspTimeoutError } from "../coqLsp/coqLspTypes";
+
 import { EventLogger } from "../logging/eventLogger";
 import { asErrorOrRethrow, buildErrorCompleteLog } from "../utils/errorsUtils";
 import { stringifyAnyValue } from "../utils/printers";
@@ -10,7 +13,7 @@ import {
     ProcessEnvironment,
     SourceFileEnvironment,
 } from "./completionGenerationContext";
-import { CoqLspTimeoutError, ProofCheckResult } from "./coqProofChecker";
+import { CoqProofChecker, ProofCheckResult } from "./coqProofChecker";
 import {
     buildProofGenerationContext,
     getTextBeforePosition,
@@ -43,9 +46,6 @@ export async function generateCompletion(
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
-    repairProcessEnvironmentBeforeEachProofsCheck: (
-        processEnvironment: ProcessEnvironment
-    ) => void,
     eventLogger?: EventLogger,
     workspaceRootPath?: string,
     perProofTimeoutMillis: number = 15000
@@ -53,8 +53,10 @@ export async function generateCompletion(
     const context = buildProofGenerationContext(
         completionContext,
         sourceFileEnvironment.fileTheorems,
-        processEnvironment.theoremRanker
+        processEnvironment.theoremRanker,
+        processEnvironment.premisesNumber
     );
+
     eventLogger?.log(
         "proof-gen-context-create",
         "Ranked theorems for proof generation",
@@ -89,7 +91,6 @@ export async function generateCompletion(
                 completionContext,
                 sourceFileEnvironment,
                 processEnvironment,
-                repairProcessEnvironmentBeforeEachProofsCheck,
                 eventLogger,
                 workspaceRootPath,
                 perProofTimeoutMillis
@@ -107,7 +108,6 @@ export async function generateCompletion(
                 completionContext,
                 sourceFileEnvironment,
                 processEnvironment,
-                repairProcessEnvironmentBeforeEachProofsCheck,
                 eventLogger,
                 workspaceRootPath,
                 perProofTimeoutMillis
@@ -152,9 +152,6 @@ async function checkAndFixProofs(
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
-    repairProcessEnvironmentBeforeEachProofsCheck: (
-        processEnvironment: ProcessEnvironment
-    ) => void,
     eventLogger?: EventLogger,
     workspaceRootPath?: string,
     perProofTimeoutMillis: number = 15000
@@ -166,7 +163,6 @@ async function checkAndFixProofs(
         completionContext,
         sourceFileEnvironment,
         processEnvironment,
-        repairProcessEnvironmentBeforeEachProofsCheck,
         workspaceRootPath,
         perProofTimeoutMillis
     );
@@ -203,9 +199,6 @@ async function checkGeneratedProofs(
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
-    repairProcessEnvironmentBeforeEachProofsCheck: (
-        processEnvironment: ProcessEnvironment
-    ) => void,
     workspaceRootPath?: string,
     perProofTimeoutMillis = 15000
 ): Promise<ProofCheckResult[]> {
@@ -215,7 +208,10 @@ async function checkGeneratedProofs(
     );
 
     if (workspaceRootPath) {
-        repairProcessEnvironmentBeforeEachProofsCheck(processEnvironment);
+        processEnvironment.coqProofChecker.dispose();
+        const client = await createCoqLspClient(workspaceRootPath);
+        const coqProofChecker = new CoqProofChecker(client);
+        processEnvironment.coqProofChecker = coqProofChecker;
     }
 
     return processEnvironment.coqProofChecker.checkProofs(

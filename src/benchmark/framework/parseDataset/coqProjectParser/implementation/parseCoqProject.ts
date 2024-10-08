@@ -38,7 +38,9 @@ export namespace ParseCoqProjectImpl {
         args: Signature.ArgsModels.Args,
         logger: Logger
     ): Promise<Signature.ResultModels.Result> {
-        const coqLspClient = createTestCoqLspClient(args.workspaceRootPath);
+        const coqLspClient = await createTestCoqLspClient(
+            args.workspaceRootPath
+        );
         const parsedWorkspace: Signature.ResultModels.Result = {};
         for (const filePath in args.workspaceTargets) {
             const fileTargets = args.workspaceTargets[filePath];

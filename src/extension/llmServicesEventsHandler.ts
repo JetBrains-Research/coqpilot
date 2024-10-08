@@ -16,11 +16,12 @@ import { EventLogger } from "../logging/eventLogger";
 import { stringifyAnyValue } from "../utils/printers";
 import { SimpleSet } from "../utils/simpleSet";
 
-import { EditorMessages, showMessageToUser } from "./editorMessages";
 import {
+    EditorMessages,
+    showMessageToUser,
     showMessageToUserWithSettingsHint,
-    toSettingName,
-} from "./settingsValidationError";
+} from "./editorMessages";
+import { toSettingName } from "./settingsValidationError";
 
 enum LLMServiceAvailablityState {
     AVAILABLE,

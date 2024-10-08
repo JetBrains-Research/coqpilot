@@ -18,7 +18,7 @@ suite("Retrieve goals from Coq file", () => {
         );
         const fileUri = Uri.fromPath(filePath);
 
-        const client = createTestCoqLspClient(rootDir);
+        const client = await createTestCoqLspClient(rootDir);
         await client.openTextDocument(fileUri);
         const goals = await Promise.all(
             points.map(async (point) => {

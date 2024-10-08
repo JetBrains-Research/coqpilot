@@ -8,7 +8,8 @@ export type GrazieChatRole = "User" | "System" | "Assistant";
 export type GrazieFormattedHistory = { role: GrazieChatRole; text: string }[];
 
 interface GrazieConfig {
-    gateawayUrl: string;
+    gateawayUrlStgn: string;
+    gateawayUrlProd: string;
     chatUrl: string;
     quotaUrl: string;
 }
@@ -17,8 +18,10 @@ export class GrazieApi {
     private readonly config: GrazieConfig = {
         chatUrl: "v5/llm/chat/stream/v3",
         quotaUrl: "v5/quota/get",
-        gateawayUrl:
+        gateawayUrlStgn:
             "https://api.app.stgn.grazie.aws.intellij.net/application/",
+        gateawayUrlProd:
+            "https://api.app.prod.grazie.aws.intellij.net/application/",
     };
 
     constructor(private readonly debug: DebugWrappers) {}
@@ -28,11 +31,16 @@ export class GrazieApi {
         history: GrazieFormattedHistory
     ): Promise<string> {
         const body = this.createRequestBody(history, params);
-        return this.post(this.config.chatUrl, body, params.apiKey);
+        return this.post(
+            this.config.chatUrl,
+            body,
+            params.apiKey,
+            params.authType
+        );
     }
 
     async checkQuota(apiToken: string): Promise<any> {
-        const headers = this.createHeaders(apiToken);
+        const headers = await this.createHeaders(apiToken);
         const response = await axios.get(this.config.quotaUrl, {
             headers: headers,
         });
@@ -55,9 +63,10 @@ export class GrazieApi {
     private async post(
         url: string,
         body: string,
-        apiToken: string
+        apiToken: string,
+        authType: "stgn" | "prod"
     ): Promise<string> {
-        const headers = this.createHeaders(apiToken);
+        const headers = await this.createHeaders(apiToken);
 
         this.debug.logEvent("Completion requested", {
             url: url,
@@ -65,8 +74,13 @@ export class GrazieApi {
             headers: headers,
         });
 
+        const baseUrl =
+            authType === "stgn"
+                ? this.config.gateawayUrlStgn
+                : this.config.gateawayUrlProd;
+
         const response = await this.fetchAndProcessEvents(
-            this.config.gateawayUrl + url,
+            baseUrl + url,
             body,
             headers
         );
@@ -74,12 +88,32 @@ export class GrazieApi {
         return response;
     }
 
-    private createHeaders(token: string): any {
+    async getAgentVersion(): Promise<string> {
+        try {
+            const packageJson = await import("../../../../package.json");
+            const versionData = packageJson.default || packageJson;
+
+            if (!versionData || !versionData.version) {
+                throw new Error(
+                    "Not able to retrieve app version from package.json"
+                );
+            }
+            return versionData.version;
+        } catch (error) {
+            throw new Error("Error loading package.json: " + error);
+        }
+    }
+
+    private async createHeaders(token: string): Promise<any> {
         /* eslint-disable @typescript-eslint/naming-convention */
         return {
             Accept: "*/*",
             "Content-Type": "application/json",
             "Grazie-Authenticate-Jwt": token,
+            "Grazie-Agent": JSON.stringify({
+                name: "coq-pilot",
+                version: await this.getAgentVersion(),
+            }),
         };
         /* eslint-enable @typescript-eslint/naming-convention */
     }

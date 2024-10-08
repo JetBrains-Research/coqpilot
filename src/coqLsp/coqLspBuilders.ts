@@ -1,13 +1,23 @@
+import { OutputChannel, window } from "vscode";
+
 import { CoqLspClient } from "./coqLspClient";
 import { CoqLspClientConfig, CoqLspConfig } from "./coqLspConfig";
 
-export function createCoqLspClient(): CoqLspClient {
-    return createAbstractCoqLspClient(CoqLspConfig.createClientConfig());
+export async function createCoqLspClient(
+    coqLspServerPath: string,
+    logOutputChannel: OutputChannel = window.createOutputChannel(
+        "CoqPilot: coq-lsp events"
+    )
+): Promise<CoqLspClient> {
+    return createAbstractCoqLspClient(
+        CoqLspConfig.createClientConfig(coqLspServerPath),
+        logOutputChannel
+    );
 }
 
-export function createTestCoqLspClient(
+export async function createTestCoqLspClient(
     workspaceRootPath?: string
-): CoqLspClient {
+): Promise<CoqLspClient> {
     return createAbstractCoqLspClient(
         CoqLspConfig.createClientConfig(
             process.env.COQ_LSP_PATH || "coq-lsp",
@@ -16,9 +26,16 @@ export function createTestCoqLspClient(
     );
 }
 
-function createAbstractCoqLspClient(
-    coqLspClientConfig: CoqLspClientConfig
-): CoqLspClient {
+async function createAbstractCoqLspClient(
+    coqLspClientConfig: CoqLspClientConfig,
+    logOutputChannel: OutputChannel = window.createOutputChannel(
+        "CoqPilot: coq-lsp events"
+    )
+): Promise<CoqLspClient> {
     const coqLspServerConfig = CoqLspConfig.createServerConfig();
-    return new CoqLspClient(coqLspServerConfig, coqLspClientConfig);
+    return await CoqLspClient.create(
+        coqLspServerConfig,
+        coqLspClientConfig,
+        logOutputChannel
+    );
 }

@@ -8,6 +8,7 @@ import {
 } from "vscode";
 
 import { createCoqLspClient } from "../coqLsp/coqLspBuilders";
+import { CoqLspStartupError } from "../coqLsp/coqLspTypes";
 
 import {
     CompletionContext,
@@ -29,6 +30,7 @@ import { Uri } from "../utils/uri";
 
 import {
     buildTheoremsRankerFromConfig,
+    parseCoqLspServerPath,
     readAndValidateUserModelsParams,
 } from "./configReaders";
 import {
@@ -37,7 +39,11 @@ import {
     insertCompletion,
 } from "./documentEditor";
 import { suggestAddingAuxFilesToGitignore } from "./editGitignoreCommand";
-import { EditorMessages, showMessageToUser } from "./editorMessages";
+import {
+    EditorMessages,
+    showMessageToUser,
+    showMessageToUserWithSettingsHint,
+} from "./editorMessages";
 import { GlobalExtensionState } from "./globalExtensionState";
 import { subscribeToHandleLLMServicesEvents } from "./llmServicesEventsHandler";
 import {
@@ -49,6 +55,7 @@ import { SettingsValidationError } from "./settingsValidationError";
 import { cleanAuxFiles, hideAuxFiles } from "./tmpFilesCleanup";
 
 export const pluginId = "coqpilot";
+export const pluginName = "CoqPilot";
 
 export class CoqPilot {
     private readonly globalExtensionState: GlobalExtensionState;
@@ -104,7 +111,7 @@ export class CoqPilot {
         await window.withProgress(
             {
                 location: ProgressLocation.Window,
-                title: `${pluginId}: In progress`,
+                title: `${pluginName}: In progress`,
             },
             async () => {
                 try {
@@ -115,6 +122,12 @@ export class CoqPilot {
                 } catch (e) {
                     if (e instanceof SettingsValidationError) {
                         e.showAsMessageToUser();
+                    } else if (e instanceof CoqLspStartupError) {
+                        showMessageToUserWithSettingsHint(
+                            EditorMessages.coqLspStartupFailure(e.path),
+                            "error",
+                            `${pluginId}.coqLspServerPath`
+                        );
                     } else {
                         showMessageToUser(
                             e instanceof Error
@@ -133,12 +146,34 @@ export class CoqPilot {
         shouldCompleteHole: (hole: ProofStep) => boolean,
         editor: TextEditor
     ) {
+        this.globalExtensionState.eventLogger.log(
+            "completion-started",
+            "CoqPilot has started the completion process"
+        );
+
+        if (editor.document.isDirty) {
+            showMessageToUser(
+                EditorMessages.saveFileBeforeCompletion,
+                "warning"
+            );
+            return;
+        }
+
         const [completionContexts, sourceFileEnvironment, processEnvironment] =
             await this.prepareForCompletions(
                 shouldCompleteHole,
                 editor.document.version,
                 editor.document.uri.fsPath
             );
+        this.globalExtensionState.eventLogger.log(
+            "completion-preparation-finished",
+            `CoqPilot has successfully parsed the file with ${sourceFileEnvironment.fileTheorems.length} theorems and has found ${completionContexts.length} admits inside chosen selection`
+        );
+
+        if (completionContexts.length === 0) {
+            showMessageToUser(EditorMessages.noAdmitsFound, "warning");
+            return;
+        }
 
         const unsubscribeFromLLMServicesEventsCallback =
             subscribeToHandleLLMServicesEvents(
@@ -174,12 +209,6 @@ export class CoqPilot {
             completionContext,
             sourceFileEnvironment,
             processEnvironment,
-            (processEnvironment) => {
-                processEnvironment.coqProofChecker.dispose();
-                processEnvironment.coqProofChecker = new CoqProofChecker(
-                    createCoqLspClient()
-                );
-            },
             this.globalExtensionState.eventLogger
         );
 
@@ -245,7 +274,11 @@ export class CoqPilot {
         [CompletionContext[], SourceFileEnvironment, ProcessEnvironment]
     > {
         const fileUri = Uri.fromPath(filePath);
-        const client = createCoqLspClient();
+        const coqLspServerPath = parseCoqLspServerPath();
+        const client = await createCoqLspClient(
+            coqLspServerPath,
+            this.globalExtensionState.logOutputChannel
+        );
         const contextTheoremsRanker = buildTheoremsRankerFromConfig();
 
         const coqProofChecker = new CoqProofChecker(client);

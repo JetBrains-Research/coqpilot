@@ -23,7 +23,7 @@ suite("`CoqProofChecker` tests", () => {
         const fileDir = path.dirname(filePath);
 
         const fileLines = readFileSync(filePath).toString().split("\n");
-        const client = createTestCoqLspClient(rootDir);
+        const client = await createTestCoqLspClient(rootDir);
         const coqProofChecker = new CoqProofChecker(client);
         const preparedProofs = proofsToCheck.map((proofs) =>
             proofs.map(prepareProofBeforeCheck)

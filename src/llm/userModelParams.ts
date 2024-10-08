@@ -59,6 +59,7 @@ export interface OpenAiUserModelParams extends UserModelParams {
 export interface GrazieUserModelParams extends UserModelParams {
     modelName: string;
     apiKey: string;
+    authType: string;
 }
 
 export interface LMStudioUserModelParams extends UserModelParams {
@@ -135,9 +136,10 @@ export const grazieUserModelParamsSchema: JSONSchemaType<GrazieUserModelParams> 
         properties: {
             modelName: { type: "string" },
             apiKey: { type: "string" },
+            authType: { type: "string" },
             ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
         },
-        required: ["modelId", "modelName", "apiKey"],
+        required: ["modelId", "modelName", "apiKey", "authType"],
         additionalProperties: false,
     };
 

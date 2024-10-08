@@ -4,6 +4,7 @@ import * as path from "path";
 import { Position } from "vscode-languageclient";
 
 import { CoqLspClient } from "../coqLsp/coqLspClient";
+import { CoqLspTimeoutError } from "../coqLsp/coqLspTypes";
 
 import { Uri } from "../utils/uri";
 
@@ -24,13 +25,6 @@ export interface CoqProofCheckerInterface {
     ): Promise<ProofCheckResult[]>;
 
     dispose(): void;
-}
-
-export class CoqLspTimeoutError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = "CoqLspTimeoutError";
-    }
 }
 
 export class CoqProofChecker implements CoqProofCheckerInterface {

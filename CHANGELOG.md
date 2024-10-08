@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.2.7
+
+### Internal changes: 
+- Allow prod/stgn auth-type for JetBrains AI service.
+
+## 2.2.6
+
+### Public changes
+
+- Allow manually modifying the location of the `coq-lsp` executable in the settings. This is useful when the `coq-lsp` executable is not in the PATH. Alongside, correctly handle the case when the `coq-lsp` executable is not found.
+- Improve proof extraction from the LLM services for proofs, containing `Proof using X Y Z.` and similar constructs. Improve the handling of the obfuscatedly generated proofs by small language models, such as `LLaMA` through `LMStudio`.
+- Add a hotkey for solving admits inside selection: `ctrl+shift+[BracketRight]` on Windows and Linux, `shift+cmd+[BracketRight]` on MacOS.
+
+### Internal changes
+- Update private headers, sent to JetBrains-AI services, to identify the client as CoqPilot.
+
 ## 2.2.5
 
 - Contribute the new benchmarking report for 300 theorems. 

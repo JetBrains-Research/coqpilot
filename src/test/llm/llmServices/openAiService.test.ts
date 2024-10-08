@@ -13,7 +13,7 @@ import {
     withLLMServiceAndParams,
 } from "../../commonTestFunctions/withLLMService";
 import {
-    gptTurboModelName,
+    gptModelName,
     mockProofGenerationContext,
     testModelId,
 } from "../llmSpecificTestUtils/constants";
@@ -31,7 +31,7 @@ suite("[LLMService] Test `OpenAiService`", function () {
 
     const requiredInputParamsTemplate = {
         modelId: testModelId,
-        modelName: gptTurboModelName,
+        modelName: gptModelName,
         temperature: 1,
         choices: choices,
     };
@@ -81,13 +81,14 @@ suite("[LLMService] Test `OpenAiService`", function () {
         modelName: string,
         inputTokensLimit: number | undefined,
         expectedTokensLimit: number,
-        expectedMaxTokensToGenerate: number
+        expectedMaxTokensToGenerate: number,
+        tokensLimitSuffix: string | undefined
     ) {
         const withDefinedTokensLimit =
             inputTokensLimit === undefined
                 ? ""
                 : ", defined input `tokensLimit`";
-        test(`Test \`resolveParameters\` resolves tokens with defaults: "${modelName}${withDefinedTokensLimit}"`, async () => {
+        test(`Test \`resolveParameters\` resolves tokens with defaults: "${modelName}"${withDefinedTokensLimit} ${tokensLimitSuffix}`, async () => {
             const inputParams: OpenAiUserModelParams = {
                 ...requiredInputParamsTemplate,
                 apiKey: "undefined",
@@ -125,23 +126,51 @@ suite("[LLMService] Test `OpenAiService`", function () {
 
     (
         [
-            ["gpt-3.5-turbo-0301", undefined, 4096, 2048],
-            ["gpt-3.5-turbo-0125", undefined, 16_385, 4096],
-            ["gpt-4-32k-0314", undefined, 32_768, 4096],
-            ["gpt-3.5-turbo-0301", 3000, 3000, 1500],
-        ] as [string, number | undefined, number, number][]
+            // just different models known to `OpenAiModelParamsResolver`
+            [gptModelName, undefined, 128_000, 16_384, undefined],
+            ["gpt-3.5-turbo-0125", undefined, 16_385, 4096, undefined],
+
+            // input tokens limit value >= 2 * max tokens to generate, known max tokens is the answer
+            [
+                gptModelName,
+                50_000,
+                50_000,
+                16_384,
+                ">= 2 * `maxTokensToGenerate`",
+            ],
+
+            // input tokens limit value < 2 * max tokens to generate, 4096 is the answer
+            [
+                gptModelName,
+                4096 * 2 + 1,
+                4096 * 2 + 1,
+                4096,
+                "< 2 * `maxTokensToGenerate`",
+            ],
+
+            // input tokens limit value < 2 * max tokens to generate, known max tokens / 2 is the answer
+            [
+                "gpt-3.5-turbo-instruct",
+                undefined,
+                4096,
+                2048,
+                "< 2 * `maxTokensToGenerate`",
+            ],
+        ] as [string, number | undefined, number, number, string | undefined][]
     ).forEach(
         ([
             modelName,
             inputTokensLimit,
             expectedTokensLimit,
             expectedMaxTokensToGenerate,
+            tokensLimitSuffix,
         ]) => {
             testResolvesTokensWithDefault(
                 modelName,
                 inputTokensLimit,
                 expectedTokensLimit,
-                expectedMaxTokensToGenerate
+                expectedMaxTokensToGenerate,
+                tokensLimitSuffix
             );
         }
     );
@@ -162,24 +191,24 @@ suite("[LLMService] Test `OpenAiService`", function () {
                 "temperature"
             );
 
-            // `maxTokensToGenerate` > known `maxTokensToGenerate` for the "gpt-3.5-turbo-0301" model
+            // `maxTokensToGenerate` > known `maxTokensToGenerate` for the "gpt-4o-mini-2024-07-18" model
             testResolveParametersFailsWithSingleCause(
                 openAiService,
                 {
                     ...inputParams,
-                    modelName: "gpt-3.5-turbo-0301",
-                    maxTokensToGenerate: 5000,
+                    modelName: gptModelName,
+                    maxTokensToGenerate: 50_000,
                 },
                 "maxTokensToGenerate"
             );
 
-            // `tokensLimit` > known `tokensLimit` for the "gpt-3.5-turbo-0301" model
+            // `tokensLimit` > known `tokensLimit` for the "gpt-4o-mini-2024-07-18" model
             testResolveParametersFailsWithSingleCause(
                 openAiService,
                 {
                     ...inputParams,
-                    modelName: "gpt-3.5-turbo-0301",
-                    tokensLimit: 5000,
+                    modelName: gptModelName,
+                    tokensLimit: 200_000,
                 },
                 "tokensLimit"
             );
