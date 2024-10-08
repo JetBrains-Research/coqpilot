@@ -1,4 +1,4 @@
-# Benchmarking Framework Guide ⚡️
+# Benchmarking Framework Guide
 
 To run the new benchmarks, follow these steps:
 
@@ -11,15 +11,15 @@ Below are more details about each step.
 
 # Table of Contents
 
-- [Benchmarking Framework Guide ⚡️](#benchmarking-framework-guide-️⚡️)
+- ⚡️ [Benchmarking Framework Guide](#benchmarking-framework-guide)
   - [About Dataset](#about-dataset)
   - [Select & Run Experiment](#select--run-experiment)
-    - [`SingleWorkspaceExperiment` 🏠](#singleworkspaceexperiment-🏠)
-    - [`MultiWorkspacesExperiment` 🌍](#multiworkspacesexperiment-🌍)
-    - [TeamCity Experiment 👽 (coming soon)](#teamcity-experiment-👽-coming-soon)
-  - [Setting Up Experiment Pipeline](#setting-up-experiment-pipeline)
-    - [Example Pipeline Explained 🪁](#example-pipeline-explained-🪁)
-    - [Run Options ⛹️](#run-options-⛹️)
+    - 🏠 [`SingleWorkspaceExperiment`](#singleworkspaceexperiment)
+    - 🌍 [`MultiWorkspacesExperiment`](#multiworkspacesexperiment)
+    - 👽 [TeamCity Experiment (coming soon)](#teamcity-experiment-coming-soon)
+  - [Setting Up the Experiment Pipeline](#setting-up-the-experiment-pipeline)
+    - 🪁 [Example Pipeline Explained](#example-pipeline-explained)
+    - ⛹️ [Run Options](#run-options)
   - [Framework Maintenance](#framework-maintenance)
 
 ## About Dataset
@@ -32,7 +32,7 @@ Most importantly, each workspace can have its own Coq dependencies; therefore, y
 
 Currently, two types of experiments are supported:
 
-### `SingleWorkspaceExperiment` 🏠
+### `SingleWorkspaceExperiment`
 
 This experiment must be run within the workspace environment, which the user activates and manages. For example, for the `imm` project built with Nix:
 
@@ -46,7 +46,7 @@ npm run single-workspace-benchmark
 
 While manual environment management is required, `SingleWorkspaceExperiment` offers the best performance and is ideal for small, preliminary experiments.
 
-### `MultiWorkspacesExperiment` 🌍
+### `MultiWorkspacesExperiment`
 
 This experiment can run across multiple workspaces, with the framework handling environment activation and switching automatically.
 
@@ -56,11 +56,11 @@ npm run multi-workspaces-benchmark
 
 However, this process incurs a performance overhead due to subprocess execution. This will be optimized in future releases, so for now, use `MultiWorkspacesExperiment` only when there are no strict time constraints.
 
-### TeamCity Experiment 👽 (coming soon)
+### TeamCity Experiment (coming soon)
 
 Benchmarks can also be run in TeamCity, which is ideal for large-scale experiments. This feature is currently **under development**, coming in the next releases.
 
-## Setting Up Experiment Pipeline
+## Setting Up the Experiment Pipeline
 
 Each experiment type has a corresponding setup file:
 
@@ -69,7 +69,7 @@ Each experiment type has a corresponding setup file:
 
 Modify the relevant file to configure the experiment. Example pipelines are provided in these files for reference.
 
-### Example Pipeline Explained 🪁
+### Example Pipeline Explained
 
 Basically, the steps are the following.
 
@@ -150,7 +150,7 @@ await experiment
 
 **Important:** Most experiment commands are `async`, so use `await` or chain them with promises to avoid early termination. Check the setup files for examples.
 
-### Run Options ⛹️
+### Run Options
 
 Experiment behavior can be finely controlled using run options, which can be specified either per method (e.g. `experiment.run(...)`) or globally via `experiment.updateRunOptions(...)`.
 
