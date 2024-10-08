@@ -8,6 +8,17 @@ import { DatasetCacheUsageMode } from "./framework/structures/inputParameters/da
 
 const experiment = new MultiWorkspacesExperiment();
 
+const standaloneTargets = new TargetsBuilder()
+    .withStandaloneFilesRoot()
+    .withAdmitTargetsFromFile("auto_benchmark.v", "test", "test_thr")
+    .withAdmitTargetsFromFile("mixed_benchmark.v")
+    .buildInputTargets();
+
+// const immTargets = new TargetsBuilder()
+//     .withWorkspaceRoot("imm", "nix")
+//     .withProveTheoremTargetsFromFile("src/basic/Events.v")
+//     .buildInputTargets();
+
 new BenchmarkingBundle()
     .withLLMService("predefined")
     .withBenchmarkingModelsParamsCommons({
@@ -17,17 +28,7 @@ new BenchmarkingBundle()
         { modelId: "invalid-proof", tactics: ["a."] },
         { modelId: "prove-with-auto", tactics: ["auto."] }
     )
-    .withTargets(
-        new TargetsBuilder()
-            .withStandaloneFilesRoot()
-            .withAdmitTargetsFromFile("auto_benchmark.v", "test", "test_thr")
-            // .withAdmitTargetsFromFile("mixed_benchmark.v", "add_comm")
-            .buildInputTargets()
-        // new TargetsBuilder()
-        //     .withWorkspaceRoot("imm", "nix")
-        //     .withAdmitTargetsFromFile("src/basic/Events.v")
-        //     .buildInputTargets()
-    )
+    .withTargets(standaloneTargets)
     .addTo(experiment);
 
 experiment.updateRunOptions({
