@@ -8,6 +8,11 @@ import {
     Vernacexpr,
 } from "../../../../coqParser/parsedTypes";
 import {
+    SerializedGoal,
+    deserializeGoal,
+    serializeGoal,
+} from "../../utils/coqUtils/goalParser";
+import {
     SerializedCodeElementRange,
     deserializeCodeElementRange,
     serializeCodeElementRange,
@@ -29,6 +34,7 @@ export interface SerializedTheorem {
     statement_range: SerializedCodeElementRange;
     statement: string;
     proof: SerializedTheoremProof | undefined;
+    initial_goal: SerializedGoal | undefined;
     fileTheoremsIndex: number;
 }
 
@@ -96,6 +102,10 @@ export const serializedTheoremSchema: JSONSchemaType<SerializedTheorem> = {
             oneOf: [serializedTheoremProofSchema],
             nullable: true,
         },
+        initial_goal: {
+            type: "string",
+            nullable: true,
+        },
         fileTheoremsIndex: {
             type: "number",
         },
@@ -117,12 +127,18 @@ export function deserializeTheoremData(
             serializedTheoremProof.holes.map(deserializeProofStep)
         );
     }
+    const serializedInitialGoal = serializedTheorem.initial_goal;
+    const initialGoal =
+        serializedInitialGoal === undefined
+            ? null
+            : deserializeGoal(serializedInitialGoal);
     return new TheoremData(
         new Theorem(
             serializedTheorem.name,
             deserializeCodeElementRange(serializedTheorem.statement_range),
             serializedTheorem.statement,
-            theoremProof
+            theoremProof,
+            initialGoal
         ),
         serializedTheorem.fileTheoremsIndex
     );
@@ -141,6 +157,9 @@ export function serializeTheoremData(
             holes: theoremProof.holes.map(serializeProofStep),
         };
     }
+    const initialGoal = theoremData.sourceTheorem.initial_goal;
+    const serializedInitialGoal =
+        initialGoal === null ? undefined : serializeGoal(initialGoal);
     return {
         name: theoremData.name,
         statement_range: serializeCodeElementRange(
@@ -148,6 +167,7 @@ export function serializeTheoremData(
         ),
         statement: theoremData.sourceTheorem.statement,
         proof: serializedTheoremProof,
+        initial_goal: serializedInitialGoal,
         fileTheoremsIndex: theoremData.fileTheoremsIndex,
     };
 }

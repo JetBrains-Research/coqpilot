@@ -19,8 +19,10 @@ import {
     mappedObjectValues,
     packIntoMappedObject,
 } from "../../../utils/collectionUtils/mapUtils";
-import { serializeGoal } from "../../../utils/coqUtils/goalParser";
-import { extractSerializedTheoremFisrtProofStep } from "../../../utils/coqUtils/proofTargetExtractor";
+import {
+    SerializedGoal,
+    serializeGoal,
+} from "../../../utils/coqUtils/goalParser";
 import { LogsIPCSender } from "../../../utils/subprocessUtils/ipc/onParentProcessCallExecutor/logsIpcSender";
 
 import { ParseCoqProjectInternalSignature } from "./internalSignature";
@@ -159,37 +161,39 @@ export namespace ParseCoqProjectImpl {
     ): Promise<Signature.ResultModels.ParsedFileTarget[]> {
         const targetBuilder: (
             proofStep: SerializedProofStep,
-            targetType: TargetType
+            targetType: TargetType,
+            knownGoal: SerializedGoal | undefined
         ) => Promise<Signature.ResultModels.ParsedFileTarget> = (
             proofStep,
-            targetType
+            targetType,
+            knownGoal
         ) =>
             buildParsedFileTarget(
                 proofStep,
                 targetType,
                 theorem.name,
+                knownGoal,
                 serializedParsedFile,
                 coqLspClient,
                 logger
             );
         switch (requestType) {
+            case TargetRequestType.THEOREM_PROOF:
+                // THEOREM_PROOF goals are already parsed within the theorems,
+                // so `ParsedFileTarget`-s for them are redundant
+                return [];
             case TargetRequestType.ALL_ADMITS:
                 const parsedTargets = [];
                 for (const holeProofStep of theorem.proof!.holes) {
                     parsedTargets.push(
-                        await targetBuilder(holeProofStep, TargetType.ADMIT)
+                        await targetBuilder(
+                            holeProofStep,
+                            TargetType.ADMIT,
+                            undefined
+                        )
                     );
                 }
                 return parsedTargets;
-            case TargetRequestType.THEOREM_PROOF:
-                const firstProofStep =
-                    extractSerializedTheoremFisrtProofStep(theorem);
-                return [
-                    await targetBuilder(
-                        firstProofStep,
-                        TargetType.PROVE_THEOREM
-                    ),
-                ];
         }
     }
 
@@ -197,33 +201,39 @@ export namespace ParseCoqProjectImpl {
         proofStep: SerializedProofStep,
         targetType: TargetType,
         theoremName: string,
+        knownGoal: SerializedGoal | undefined,
         serializedParsedFile: SerializedParsedCoqFile,
         coqLspClient: CoqLspClient,
         logger: Logger
     ): Promise<Signature.ResultModels.ParsedFileTarget> {
-        const goal = await coqLspClient.getFirstGoalAtPoint(
-            proofStep.range.start,
-            Uri.fromPath(serializedParsedFile.filePath),
-            serializedParsedFile.fileVersion
-        );
-        const startPosition = deserializeCodeElementPosition(
-            proofStep.range.start
-        );
-        if (goal instanceof Error) {
-            const stack = goal.stack === undefined ? "" : `\n${goal.stack}`;
-            logger.error(
-                `Failed to retrieve target goal at point: "${goal.message}" at ${startPosition}, "${serializedParsedFile.filePath}"${stack}`
+        let serializedGoal = knownGoal;
+        if (serializedGoal === undefined) {
+            const goal = await coqLspClient.getFirstGoalAtPoint(
+                proofStep.range.start,
+                Uri.fromPath(serializedParsedFile.filePath),
+                serializedParsedFile.fileVersion
             );
-            throw goal;
-        } else {
-            logger.debug(
-                `Successfully retrieved target goal at point: "${goal.ty}" at ${startPosition}, "${serializedParsedFile.filePath}"`
+            const startPosition = deserializeCodeElementPosition(
+                proofStep.range.start
             );
+            if (goal instanceof Error) {
+                const stack = goal.stack === undefined ? "" : `\n${goal.stack}`;
+                logger.error(
+                    `Failed to retrieve target goal at point: "${goal.message}" at ${startPosition}, "${serializedParsedFile.filePath}"${stack}`
+                );
+                throw goal;
+            } else {
+                logger.debug(
+                    `Successfully retrieved target goal at point: "${goal.ty}" at ${startPosition}, "${serializedParsedFile.filePath}"`
+                );
+            }
+            serializedGoal = serializeGoal(goal);
         }
+
         return {
             theoremName: theoremName,
             targetType: targetType,
-            goalToProve: serializeGoal(goal),
+            goalToProve: serializedGoal,
             positionRange: proofStep.range,
         };
     }

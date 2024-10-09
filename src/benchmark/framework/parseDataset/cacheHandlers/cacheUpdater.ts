@@ -1,3 +1,5 @@
+import { ProofGoal } from "../../../../coqLsp/coqLspTypes";
+
 import { ProofStep } from "../../../../coqParser/parsedTypes";
 import { toJsonString } from "../../../../utils/printers";
 import {
@@ -18,6 +20,7 @@ import {
     ParsedFileHolder,
     ParsedFileTarget,
 } from "../coqProjectParser/implementation/parsedWorkspaceHolder";
+import { throwOnTheoremWithoutInitialGoal } from "../utils/invariantFailedErrors";
 
 export function updateWorkspaceCache(
     workspaceCache: WorkspaceCacheHolder,
@@ -93,7 +96,11 @@ namespace UpdateCacheHolders {
                 cachedTheorem = new CacheHolderData.CachedTheoremData(
                     fileTarget.sourceTheorem
                 );
-                buildInitialTargets(cachedTheorem, cacheUpdaterLogger);
+                buildInitialTargets(
+                    cachedTheorem,
+                    cacheUpdaterLogger,
+                    parsedFile.filePath
+                );
                 cachedFile.addCachedTheorem(cachedTheorem);
             } else {
                 cacheUpdaterLogger.debug(
@@ -132,7 +139,11 @@ namespace UpdateCacheHolders {
                 const cachedTheorem = new CacheHolderData.CachedTheoremData(
                     theoremData
                 );
-                buildInitialTargets(cachedTheorem, cachedFileUpdateLogger);
+                buildInitialTargets(
+                    cachedTheorem,
+                    cachedFileUpdateLogger,
+                    parsedFile.filePath
+                );
 
                 for (const fileTarget of parsedFileTargetsByTheorem.get(
                     theoremData.name
@@ -158,7 +169,8 @@ namespace UpdateCacheHolders {
 
     export function buildInitialTargets(
         cachedTheorem: CacheHolderData.CachedTheoremData,
-        cachedFileUpdateLogger: AsOneRecordLogsBuilder
+        cachedFileUpdateLogger: AsOneRecordLogsBuilder,
+        sourceFilePath: string
     ) {
         if (!cachedTheorem.hasNoTargets()) {
             cachedFileUpdateLogger
@@ -172,32 +184,46 @@ namespace UpdateCacheHolders {
                 `Cache building invariant failed: \`CachedTheoremData\` is built incorrectly`
             );
         }
-        const sourceTheoremData = cachedTheorem.theoremData;
-        const sourceTargets = new Map<TargetType, ProofStep[]>([
-            [
-                TargetType.PROVE_THEOREM,
 
-                [extractTheoremFisrtProofStep(sourceTheoremData)],
-            ],
-            [TargetType.ADMIT, sourceTheoremData.proof?.holes ?? []],
-        ]);
-
-        for (const [targetType, targetsOfType] of sourceTargets) {
-            targetsOfType
-                .map(
-                    (proofStep) =>
-                        new CacheHolderData.CachedTargetData(
-                            undefined,
-                            fromRange(proofStep.range)
-                        )
-                )
-                .forEach((cachedTarget) => {
-                    cachedTheorem.addCachedTarget(targetType, cachedTarget);
-                    cachedFileUpdateLogger.debug(
-                        `  ** initialized ${targetType} target: ${[cachedTarget.positionRange]}`
-                    );
-                });
+        function initializeCachedTarget(
+            targetType: TargetType,
+            proofStep: ProofStep,
+            knownGoal: ProofGoal | undefined
+        ) {
+            const cachedTarget = new CacheHolderData.CachedTargetData(
+                knownGoal,
+                fromRange(proofStep.range)
+            );
+            cachedTheorem.addCachedTarget(targetType, cachedTarget);
+            cachedFileUpdateLogger.debug(
+                `  ${
+                    knownGoal === undefined
+                        ? "** initialized"
+                        : "*+ initialized & cached"
+                } ${targetType} target: ${[cachedTarget.positionRange]}`
+            );
         }
+
+        const sourceTheoremData = cachedTheorem.theoremData;
+
+        // PROVE_THEOREM target
+        const initialGoal = sourceTheoremData.sourceTheorem.initial_goal;
+        if (initialGoal === null) {
+            throwOnTheoremWithoutInitialGoal(
+                sourceTheoremData.name,
+                sourceFilePath
+            );
+        }
+        initializeCachedTarget(
+            TargetType.PROVE_THEOREM,
+            extractTheoremFisrtProofStep(sourceTheoremData),
+            initialGoal
+        );
+
+        // ADMIT target
+        sourceTheoremData.proof?.holes.map((hole) =>
+            initializeCachedTarget(TargetType.ADMIT, hole, undefined)
+        );
     }
 
     export function updateCachedTheoremData(
