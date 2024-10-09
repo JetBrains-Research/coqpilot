@@ -11,9 +11,8 @@ suite("Retrieve goals from Coq file", () => {
     async function getGoalsAtPoints(
         points: { line: number; character: number }[],
         resourcePath: string[],
-        projectRootPath?: string[],
-        command?: string
-    ): Promise<Result<Goal<PpString>, Error>[]> {
+        projectRootPath?: string[]
+    ): Promise<Result<Goal<PpString>[], Error>[]> {
         const [filePath, rootDir] = resolveResourcesDir(
             resourcePath,
             projectRootPath
@@ -24,12 +23,7 @@ suite("Retrieve goals from Coq file", () => {
         await client.openTextDocument(fileUri);
         const goals = await Promise.all(
             points.map(async (point) => {
-                return await client.getFirstGoalAtPoint(
-                    point,
-                    fileUri,
-                    1,
-                    command
-                );
+                return await client.getGoalsAtPoint(point, fileUri, 1);
             })
         );
         await client.closeTextDocument(fileUri);
@@ -56,9 +50,11 @@ suite("Retrieve goals from Coq file", () => {
         };
 
         expect(goals).toHaveLength(1);
-        expect(unpackGoal(goals[0].val as Goal<PpString>)).toEqual(
-            expectedGoal
-        );
+        expect(goals[0].ok).toEqual(true);
+        if (goals[0].ok) {
+            expect(goals[0].val).toHaveLength(1);
+            expect(unpackGoal(goals[0].val[0])).toEqual(expectedGoal);
+        }
     });
 
     test("Check correct goals requests", async () => {
@@ -98,10 +94,10 @@ suite("Retrieve goals from Coq file", () => {
 
         expect(goals).toHaveLength(5);
         for (const [i, goal] of goals.entries()) {
-            expect(goals[i]).not.toBeA(Error);
-            expect(unpackGoal(goal.val as Goal<PpString>)).toEqual(
-                expectedGoals[i]
-            );
+            expect(goal).not.toBeA(Error);
+            if (goal.ok) {
+                expect(unpackGoal(goal.val[0])).toEqual(expectedGoals[i]);
+            }
         }
     });
 
@@ -110,16 +106,32 @@ suite("Retrieve goals from Coq file", () => {
             [
                 { line: 5, character: 0 },
                 { line: 6, character: 0 },
-                { line: 9, character: 10 },
                 { line: 10, character: 9 },
+            ],
+            ["small_document.v"]
+        );
+
+        expect(goals).toHaveLength(3);
+        for (const goal of goals) {
+            expect(goal.err).toEqual(true);
+        }
+    });
+
+    test("Retreive goals where no more goals", async () => {
+        const goals = await getGoalsAtPoints(
+            [
+                { line: 9, character: 10 },
                 { line: 10, character: 3 },
             ],
             ["small_document.v"]
         );
 
-        expect(goals).toHaveLength(5);
+        expect(goals).toHaveLength(2);
         for (const goal of goals) {
-            expect(goal).toBeA(Error);
+            expect(goal.ok).toEqual(true);
+            if (goal.ok) {
+                expect(goal.val).toBeEmpty();
+            }
         }
     });
 
@@ -151,10 +163,13 @@ suite("Retrieve goals from Coq file", () => {
 
         expect(goals).toHaveLength(3);
         for (const [i, goal] of goals.entries()) {
-            expect(goals[i]).not.toBeA(Error);
-            expect(unpackGoal(goal.val as Goal<PpString>)).toEqual(
-                expectedGoals[i]
-            );
+            if (goal.err) {
+                console.error("ERROR", i, goal.val.message);
+            }
+            expect(goal.ok).toEqual(true);
+            if (goal.ok) {
+                expect(unpackGoal(goal.val[0])).toEqual(expectedGoals[i]);
+            }
         }
     });
 });

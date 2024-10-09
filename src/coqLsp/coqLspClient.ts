@@ -31,12 +31,12 @@ import { FlecheDocument, FlecheDocumentParams } from "./coqLspTypes";
 import { CoqLspError } from "./coqLspTypes";
 
 export interface CoqLspClientInterface extends Disposable {
-    getFirstGoalAtPoint(
+    getGoalsAtPoint(
         position: Position,
         documentUri: Uri,
         version: number,
         command: string
-    ): Promise<Result<Goal<PpString>, Error>>;
+    ): Promise<Result<Goal<PpString>[], Error>>;
 
     openTextDocument(uri: Uri, version: number): Promise<DiagnosticMessage>;
 
@@ -85,14 +85,14 @@ export class CoqLspClient implements CoqLspClientInterface {
         });
     }
 
-    async getFirstGoalAtPoint(
+    async getGoalsAtPoint(
         position: Position,
         documentUri: Uri,
         version: number,
         command?: string
-    ): Promise<Result<Goal<PpString>, Error>> {
+    ): Promise<Result<Goal<PpString>[], Error>> {
         return await this.mutex.runExclusive(async () => {
-            return this.getFirstGoalAtPointUnsafe(
+            return this.getGoalsAtPointUnsafe(
                 position,
                 documentUri,
                 version,
@@ -138,11 +138,35 @@ export class CoqLspClient implements CoqLspClientInterface {
         });
     }
 
+    /**
+     * Dirty due to the fact that the client sends no pure
+     * error: https://github.com/ejgallego/coq-lsp/blob/f98b65344c961d1aad1e0c3785199258f21c3abc/controller/request.ml#L29
+     */
+    cleanLspError(errorMsg?: string): string | undefined {
+        const errorMsgPrefixRegex = /^Error in .* request: (.*)$/s;
+        if (!errorMsg) {
+            return undefined;
+        }
+        const match = errorMsg.match(errorMsgPrefixRegex);
+        return match ? match[1] : undefined;
+    }
+
+    removeTraceFromLspError(errorMsgWithTrace: string): string | undefined {
+        const traceStartString = "Raised at";
+
+        if (!errorMsgWithTrace.includes(traceStartString)) {
+            return errorMsgWithTrace.split("\n").shift();
+        }
+
+        return errorMsgWithTrace
+            .substring(0, errorMsgWithTrace.indexOf(traceStartString))
+            .trim();
+    }
+
     filterDiagnostics(
         diagnostics: Diagnostic[],
         position: Position
     ): string | undefined {
-        const traceStartString = "Raised at";
         const diagnosticMessageWithTrace = diagnostics
             .filter((diag) => diag.range.start.line >= position.line)
             .filter((diag) => diag.severity === 1) // 1 is error
@@ -150,12 +174,9 @@ export class CoqLspClient implements CoqLspClientInterface {
 
         if (!diagnosticMessageWithTrace) {
             return undefined;
-        } else if (!diagnosticMessageWithTrace.includes(traceStartString)) {
-            return diagnosticMessageWithTrace.split("\n").shift();
+        } else {
+            return this.removeTraceFromLspError(diagnosticMessageWithTrace);
         }
-        return diagnosticMessageWithTrace
-            .substring(0, diagnosticMessageWithTrace.indexOf(traceStartString))
-            .trim();
     }
 
     private async getDocumentSymbolsUnsafe(uri: Uri): Promise<any> {
@@ -168,12 +189,12 @@ export class CoqLspClient implements CoqLspClientInterface {
         );
     }
 
-    private async getFirstGoalAtPointUnsafe(
+    private async getGoalsAtPointUnsafe(
         position: Position,
         documentUri: Uri,
         version: number,
         command?: string
-    ): Promise<Result<Goal<PpString>, Error>> {
+    ): Promise<Result<Goal<PpString>[], Error>> {
         let goalRequestParams: GoalRequest = {
             textDocument: VersionedTextDocumentIdentifier.create(
                 documentUri.uri,
@@ -182,23 +203,39 @@ export class CoqLspClient implements CoqLspClientInterface {
             position,
             // eslint-disable-next-line @typescript-eslint/naming-convention
             pp_format: "Str",
+            command: command,
         };
 
-        if (command) {
-            goalRequestParams.command = command;
-            // goalRequestParams.mode = "After";
-        }
+        try {
+            const goalAnswer = await this.client.sendRequest(
+                goalReqType,
+                goalRequestParams
+            );
+            const goals = goalAnswer?.goals?.goals;
 
-        const goals = await this.client.sendRequest(
-            goalReqType,
-            goalRequestParams
-        );
-        const goal = goals?.goals?.goals?.shift() ?? undefined;
-        if (!goal) {
-            return Err(new CoqLspError("no goals at point"));
-        }
+            if (!goals) {
+                return Err(CoqLspError.unknownError());
+            }
 
-        return Ok(goal);
+            return Ok(goals);
+        } catch (e) {
+            if (e instanceof Error) {
+                const errorMsg = this.cleanLspError(
+                    this.removeTraceFromLspError(e.message)
+                );
+                if (errorMsg) {
+                    return Err(new CoqLspError(errorMsg));
+                }
+                return Err(
+                    new CoqLspError(
+                        "Unable to parse CoqLSP error, please report this issue: " +
+                            e.message
+                    )
+                );
+            }
+
+            return Err(CoqLspError.unknownError());
+        }
     }
 
     private sleep(ms: number): Promise<ReturnType<typeof setTimeout>> {
@@ -357,5 +394,6 @@ export class CoqLspClient implements CoqLspClientInterface {
 
     dispose(): void {
         this.subscriptions.forEach((d) => d.dispose());
+        this.client.stop();
     }
 }

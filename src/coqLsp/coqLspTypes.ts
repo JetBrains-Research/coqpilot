@@ -155,4 +155,10 @@ export class CoqLspError extends Error {
         super(message);
         this.name = "CoqLspError";
     }
+
+    static unknownError(): CoqLspError {
+        return new CoqLspError(
+            "Unknown CoqLSP error, please report this issue"
+        );
+    }
 }

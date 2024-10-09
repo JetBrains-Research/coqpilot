@@ -511,18 +511,21 @@ async function resolveProofStepsToCompletionContexts(
 ): Promise<BenchmarkingCompletionContext[]> {
     let completionContexts: BenchmarkingCompletionContext[] = [];
     for (const parentedProofStep of parentedProofSteps) {
-        const goal = await client.getFirstGoalAtPoint(
+        const goals = await client.getGoalsAtPoint(
             parentedProofStep.proofStep.range.start,
             fileUri,
             fileVersion
         );
-        if (goal.ok) {
-            completionContexts.push({
-                proofGoal: goal.val,
-                prefixEndPosition: parentedProofStep.proofStep.range.start,
-                admitEndPosition: parentedProofStep.proofStep.range.end,
-                parentTheorem: parentedProofStep.parentTheorem,
-            });
+        if (goals.ok) {
+            const firstGoal = goals.val.shift();
+            if (firstGoal) {
+                completionContexts.push({
+                    proofGoal: firstGoal,
+                    prefixEndPosition: parentedProofStep.proofStep.range.start,
+                    admitEndPosition: parentedProofStep.proofStep.range.end,
+                    parentTheorem: parentedProofStep.parentTheorem,
+                });
+            }
         }
     }
     return completionContexts;

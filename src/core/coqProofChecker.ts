@@ -111,7 +111,6 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
         try {
             // 2. Issue open text document request
             await this.coqLspClient.openTextDocument(auxFileUri);
-            // let auxFileVersion = 1;
 
             // 3. Iterate over the proofs and сheck them
             for (const proof of proofs) {
@@ -125,7 +124,8 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
                     continue;
                 }
 
-                const goalResult = await this.coqLspClient.getFirstGoalAtPoint(
+                // 3.2 Check if proof is valid and closes the first goal
+                const goalResult = await this.coqLspClient.getGoalsAtPoint(
                     prefixEndPosition,
                     auxFileUri,
                     1,
@@ -139,37 +139,6 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
                         ? goalResult.val.message
                         : undefined,
                 });
-
-                // auxFileVersion += 1;
-                // 3.2. Append the proof the end of the aux file
-                // appendFileSync(auxFileUri.fsPath, proof);
-                // 3.3. Issue update text request
-                // const diagnosticMessage =
-                //     await this.coqLspClient.updateTextDocument(
-                //         sourceFileContentPrefix,
-                //         proof,
-                //         auxFileUri,
-                //         auxFileVersion
-                //     );
-
-                // 3.4. Check diagnostics
-                // results.push({
-                //     proof: proof,
-                //     isValid: diagnosticMessage === undefined,
-                //     diagnostic: diagnosticMessage,
-                // });
-
-                // 3.5. Bring file to the previous state
-                // writeFileSync(auxFileUri.fsPath, sourceFileContent);
-
-                // 3.6. Issue update text request
-                // auxFileVersion += 1;
-                // await this.coqLspClient.updateTextDocument(
-                //     sourceFileContentPrefix,
-                //     "",
-                //     auxFileUri,
-                //     auxFileVersion
-                // );
             }
         } finally {
             // 4. Issue close text document request

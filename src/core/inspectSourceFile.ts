@@ -57,17 +57,20 @@ async function createCompletionContexts(
 
     let completionContexts: CompletionContext[] = [];
     for (const hole of holesToComplete) {
-        const goal = await client.getFirstGoalAtPoint(
+        const goals = await client.getGoalsAtPoint(
             hole.range.start,
             fileUri,
             fileVersion
         );
-        if (goal.ok) {
-            completionContexts.push({
-                proofGoal: goal.val,
-                prefixEndPosition: hole.range.start,
-                admitEndPosition: hole.range.end,
-            });
+        if (goals.ok) {
+            const firstGoal = goals.val.shift();
+            if (firstGoal) {
+                completionContexts.push({
+                    proofGoal: firstGoal,
+                    prefixEndPosition: hole.range.start,
+                    admitEndPosition: hole.range.end,
+                });
+            }
         }
     }
 
