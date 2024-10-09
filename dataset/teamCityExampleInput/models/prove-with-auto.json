@@ -1,0 +1,8 @@
+{
+  "ranker": "random",
+  "modelId": "prove-with-auto",
+  "tactics": [
+    "auto."
+  ],
+  "llmServiceIdentifier": 0
+}

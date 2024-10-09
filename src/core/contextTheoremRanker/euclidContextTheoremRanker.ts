@@ -1,5 +1,5 @@
 import { Theorem } from "../../coqParser/parsedTypes";
-import { CompletionContext } from "../completionGenerator";
+import { CompletionContext } from "../completionGenerationContext";
 
 import { ContextTheoremsRanker } from "./contextTheoremsRanker";
 import { goalAsTheoremString } from "./tokenUtils";

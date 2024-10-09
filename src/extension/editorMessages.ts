@@ -1,10 +1,9 @@
 import { DefinedError } from "ajv";
 import { commands, window } from "vscode";
 
-import { Time } from "../llm/llmServices/utils/time";
-
 import { ajvErrorsAsString } from "../utils/ajvErrorsHandling";
 import { stringifyAnyValue } from "../utils/printers";
+import { Time } from "../utils/time";
 
 import { pluginId } from "./coqPilot";
 
@@ -28,6 +27,14 @@ export namespace EditorMessages {
 
     export const coqLspStartupFailure = (pathToServer: string) =>
         `CoqPilot failed to start the Coq LSP server at path "${pathToServer}". Please make sure the path is correct and the server is properly installed. If your installation is not in a standard location, please set the path to the server in the settings.`;
+
+    export const reportUnexpectedError = (errorDescription: string) =>
+        `Coqpilot got an unexpected error: ${errorDescription}. Please report this crash by opening an issue in the Coqpilot GitHub repository.`;
+
+    export const objectWasThrownAsError = (e: any) =>
+        reportUnexpectedError(
+            `object was thrown as error, ${stringifyAnyValue(e)}`
+        );
 
     export const serviceBecameUnavailable = (
         serviceName: string,

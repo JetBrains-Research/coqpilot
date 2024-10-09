@@ -5,8 +5,8 @@ import {
     GenerationFailedError,
     LLMServiceError,
 } from "../../../llm/llmServiceErrors";
-import { AnalyzedChatHistory } from "../../../llm/llmServices/chat";
-import { ErrorsHandlingMode } from "../../../llm/llmServices/llmService";
+import { AnalyzedChatHistory } from "../../../llm/llmServices/commonStructures/chat";
+import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
 
 import { subscribeToTrackMockEvents } from "./eventsTracker";
 import { ExpectedRecord, expectLogs } from "./expectLogs";

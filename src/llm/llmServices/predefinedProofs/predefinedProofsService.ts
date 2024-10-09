@@ -1,17 +1,17 @@
 import { EventLogger } from "../../../logging/eventLogger";
+import { Time, timeZero } from "../../../utils/time";
 import { ConfigurationError } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { PredefinedProofsUserModelParams } from "../../userModelParams";
-import { ChatHistory } from "../chat";
-import {
-    ErrorsHandlingMode,
-    GeneratedProofImpl,
-    ProofVersion,
-} from "../llmService";
+import { AnalyzedChatHistory } from "../commonStructures/chat";
+import { ErrorsHandlingMode } from "../commonStructures/errorsHandlingMode";
+import { GeneratedRawContent } from "../commonStructures/generatedRawContent";
+import { zeroTokens } from "../commonStructures/generationTokens";
+import { ProofVersion } from "../commonStructures/proofVersion";
+import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
 import { LLMServiceInternal } from "../llmServiceInternal";
 import { PredefinedProofsModelParams } from "../modelParams";
-import { Time, timeZero } from "../utils/time";
 
 import { PredefinedProofsModelParamsResolver } from "./predefinedProofsModelParamsResolver";
 
@@ -55,7 +55,7 @@ export class PredefinedProofsService extends LLMServiceImpl<
             choices,
             errorsHandlingMode,
             (_request) => {
-                this.internal.validateChoices(choices);
+                LLMServiceInternal.validateChoices(choices);
                 const tactics = params.tactics;
                 if (choices > tactics.length) {
                     throw new ConfigurationError(
@@ -64,9 +64,17 @@ export class PredefinedProofsService extends LLMServiceImpl<
                 }
             },
             async (_request) => {
-                return this.formatCoqSentences(
-                    params.tactics.slice(0, choices)
-                ).map((tactic) => `Proof. ${tactic} Qed.`);
+                return {
+                    items: this.formatCoqSentences(
+                        params.tactics.slice(0, choices)
+                    ).map((tactic) => {
+                        return {
+                            content: `Proof. ${tactic} Qed.`,
+                            tokensSpent: zeroTokens(),
+                        };
+                    }),
+                    tokensSpentInTotal: zeroTokens(),
+                };
             },
             (proof) =>
                 this.internal.constructGeneratedProof(
@@ -148,10 +156,10 @@ class PredefinedProofsServiceInternal extends LLMServiceInternal<
     }
 
     generateFromChatImpl(
-        _chat: ChatHistory,
+        _analyzedChat: AnalyzedChatHistory,
         _params: PredefinedProofsModelParams,
         _choices: number
-    ): Promise<string[]> {
+    ): Promise<GeneratedRawContent> {
         throw new ConfigurationError(
             "`PredefinedProofsService` does not support generation from chat"
         );

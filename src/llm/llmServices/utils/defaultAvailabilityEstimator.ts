@@ -1,4 +1,3 @@
-import { LoggerRecord } from "./generationsLogger/loggerRecord";
 import {
     Time,
     millisToTime,
@@ -6,7 +5,9 @@ import {
     time,
     timeToMillis,
     timeZero,
-} from "./time";
+} from "../../../utils/time";
+
+import { LoggerRecord } from "./generationsLogger/loggerRecord";
 
 export const defaultHeuristicEstimationsMillis = [
     time(1, "second"),

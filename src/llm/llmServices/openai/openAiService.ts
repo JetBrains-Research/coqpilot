@@ -7,12 +7,11 @@ import {
 } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { OpenAiUserModelParams } from "../../userModelParams";
-import { ChatHistory } from "../chat";
-import {
-    GeneratedProofImpl,
-    LLMServiceImpl,
-    ProofVersion,
-} from "../llmService";
+import { AnalyzedChatHistory } from "../commonStructures/chat";
+import { GeneratedRawContent } from "../commonStructures/generatedRawContent";
+import { ProofVersion } from "../commonStructures/proofVersion";
+import { GeneratedProofImpl } from "../generatedProof";
+import { LLMServiceImpl } from "../llmService";
 import { LLMServiceInternal } from "../llmServiceInternal";
 import { OpenAiModelParams } from "../modelParams";
 
@@ -87,34 +86,64 @@ class OpenAiServiceInternal extends LLMServiceInternal<
     }
 
     async generateFromChatImpl(
-        chat: ChatHistory,
+        analyzedChat: AnalyzedChatHistory,
         params: OpenAiModelParams,
         choices: number
-    ): Promise<string[]> {
-        this.validateChoices(choices);
+    ): Promise<GeneratedRawContent> {
+        LLMServiceInternal.validateChoices(choices);
 
         const openai = new OpenAI({ apiKey: params.apiKey });
-        this.debug.logEvent("Completion requested", { history: chat });
+        this.debug.logEvent("Completion requested", {
+            history: analyzedChat.chat,
+        });
 
         try {
             const completion = await openai.chat.completions.create({
-                messages: chat,
+                messages: analyzedChat.chat,
                 model: params.modelName,
                 n: choices,
                 temperature: params.temperature,
                 // eslint-disable-next-line @typescript-eslint/naming-convention
                 max_tokens: params.maxTokensToGenerate,
             });
-            return completion.choices.map((choice) => {
+            const rawContentItems = completion.choices.map((choice) => {
                 const content = choice.message.content;
                 if (content === null) {
                     throw Error("response message content is null");
                 }
                 return content;
             });
+
+            return this.packContentWithTokensMetrics(
+                rawContentItems,
+                completion.usage,
+                analyzedChat,
+                params
+            );
         } catch (e) {
             throw OpenAiServiceInternal.repackKnownError(e, params);
         }
+    }
+
+    private packContentWithTokensMetrics(
+        rawContentItems: string[],
+        tokensUsage: OpenAI.Completions.CompletionUsage | undefined,
+        analyzedChat: AnalyzedChatHistory,
+        params: OpenAiModelParams
+    ): GeneratedRawContent {
+        const promptTokens =
+            tokensUsage?.prompt_tokens ??
+            analyzedChat.estimatedTokens.messagesTokens;
+        return LLMServiceInternal.aggregateToGeneratedRawContent(
+            rawContentItems,
+            promptTokens,
+            params.modelName,
+            {
+                promptTokens: promptTokens,
+                generatedTokens: tokensUsage?.completion_tokens,
+                tokensSpentInTotal: tokensUsage?.total_tokens,
+            }
+        );
     }
 
     private static repackKnownError(

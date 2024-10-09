@@ -2,7 +2,7 @@ import { expect } from "earl";
 
 import { LLMSequentialIterator } from "../../llm/llmIterator";
 import { disposeServices } from "../../llm/llmServices";
-import { GeneratedProof } from "../../llm/llmServices/llmService";
+import { GeneratedProof } from "../../llm/llmServices/generatedProof";
 import { ProofGenerationContext } from "../../llm/proofGenerationContext";
 
 import {

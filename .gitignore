@@ -18,9 +18,15 @@ src/test/resources/coqProj/Makefile.coq
 src/test/resources/coqProj/Makefile.coq.conf
 src/test/resources/**/.vscode
 
-# Ignore the generated build files in datatests inside benchmarks
+## Benchmarking files
+
+# Ignore generated build files inside dataset
 dataset/**/result
 dataset/**/.vscode/
 
-# Ignore private files used while benchmarking
+# Ignore logs & cache
+benchmarkLogs/
+.cache/
+
+# Ignore private files (outdated)
 src/test/benchmark/benchmarkPrivate/

@@ -8,6 +8,7 @@ export function run(): Promise<void> {
         ui: "tdd",
         color: true,
         diff: true,
+        grep: process.env["TEST_ARG-r"],
         fgrep: process.env["TEST_ARG-g"],
         invert: process.env["TEST_ARG-i"] === "true",
     });

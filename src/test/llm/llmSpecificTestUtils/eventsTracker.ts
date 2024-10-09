@@ -4,12 +4,14 @@ import { LLMServiceError } from "../../../llm/llmServiceErrors";
 import {
     AnalyzedChatHistory,
     ChatHistory,
-} from "../../../llm/llmServices/chat";
+} from "../../../llm/llmServices/commonStructures/chat";
+import {
+    LLMServiceRequestFailed,
+    LLMServiceRequestSucceeded,
+} from "../../../llm/llmServices/commonStructures/llmServiceRequest";
 import {
     LLMService,
     LLMServiceImpl,
-    LLMServiceRequestFailed,
-    LLMServiceRequestSucceeded,
 } from "../../../llm/llmServices/llmService";
 
 import { EventLogger } from "../../../logging/eventLogger";

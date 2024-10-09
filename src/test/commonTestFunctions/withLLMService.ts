@@ -1,8 +1,7 @@
 import { LLMService } from "../../llm/llmServices/llmService";
 import { ModelParams } from "../../llm/llmServices/modelParams";
+import { resolveParametersOrThrow } from "../../llm/llmServices/utils/resolveOrThrow";
 import { UserModelParams } from "../../llm/userModelParams";
-
-import { resolveParametersOrThrow } from "./resolveOrThrow";
 
 export async function withLLMService<
     InputModelParams extends UserModelParams,

@@ -1,4 +1,4 @@
-import { ChatHistory } from "../chat";
+import { ChatHistory } from "../commonStructures/chat";
 
 /* `UserAssistantChatItem` and `ItemizedChat` interfaces are used
  * as wrappers for fitting objects with `ChatTokensFitter` &

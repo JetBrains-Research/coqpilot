@@ -1,6 +1,6 @@
 import { Goal, PpString } from "../../coqLsp/coqLspTypes";
 
-import { hypToString } from "../../utils/printers";
+import { hypToString } from "../exposedCompletionGeneratorUtils";
 
 export function goalAsTheoremString(proofGoal: Goal<PpString>): string {
     const auxTheoremConcl = proofGoal?.ty;

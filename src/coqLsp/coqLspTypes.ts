@@ -6,6 +6,8 @@ import {
     VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
 
+export type ProofGoal = Goal<PpString>;
+
 export interface Hyp<Pp> {
     names: Pp[];
     def?: Pp;

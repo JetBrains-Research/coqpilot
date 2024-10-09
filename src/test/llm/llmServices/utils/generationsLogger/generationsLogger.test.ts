@@ -7,14 +7,20 @@ import {
     LLMServiceError,
 } from "../../../../../llm/llmServiceErrors";
 import {
+    AnalyzedChatHistory,
     ChatHistory,
     EstimatedTokens,
-} from "../../../../../llm/llmServices/chat";
+} from "../../../../../llm/llmServices/commonStructures/chat";
+import { GeneratedRawContentItem } from "../../../../../llm/llmServices/commonStructures/generatedRawContent";
+import {
+    GenerationTokens,
+    constructGenerationTokens,
+} from "../../../../../llm/llmServices/commonStructures/generationTokens";
 import {
     LLMServiceRequest,
     LLMServiceRequestFailed,
     LLMServiceRequestSucceeded,
-} from "../../../../../llm/llmServices/llmService";
+} from "../../../../../llm/llmServices/commonStructures/llmServiceRequest";
 import {
     ModelParams,
     OpenAiModelParams,
@@ -29,8 +35,8 @@ import {
     LoggerRecord,
 } from "../../../../../llm/llmServices/utils/generationsLogger/loggerRecord";
 import { SyncFile } from "../../../../../llm/llmServices/utils/generationsLogger/syncFile";
-import { nowTimestampMillis } from "../../../../../llm/llmServices/utils/time";
 
+import { nowTimestampMillis } from "../../../../../utils/time";
 import {
     gptModelName,
     testModelId,
@@ -68,11 +74,6 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
     };
     // different from `defaultChoices`, it's a real-life case
     const mockChoices = 2;
-    const mockEstimatedTokens: EstimatedTokens = {
-        messagesTokens: 100,
-        maxTokensToGenerate: 80,
-        maxTokensInTotal: 180,
-    };
     const mockChat: ChatHistory = [
         {
             role: "system",
@@ -87,7 +88,35 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
             content: "hello from assistant!",
         },
     ];
+    const mockContextTheorems = ["test_theorm", "another_theorem"];
+    const mockEstimatedTokens: EstimatedTokens = {
+        messagesTokens: 100,
+        maxTokensToGenerate: 80,
+        maxTokensInTotal: 180,
+    };
+    const analyzedMockChat: AnalyzedChatHistory = {
+        chat: mockChat,
+        contextTheorems: mockContextTheorems,
+        estimatedTokens: mockEstimatedTokens,
+    };
+
     const mockProofs = ["auto.\nintro.", "auto."];
+    const mockGenerationTokensSpent: GenerationTokens =
+        constructGenerationTokens(
+            mockEstimatedTokens.messagesTokens,
+            mockEstimatedTokens.maxTokensToGenerate
+        );
+    const mockGeneratedRawProofs: GeneratedRawContentItem[] = mockProofs.map(
+        (proofContent) => {
+            return {
+                content: proofContent,
+                tokensSpent: constructGenerationTokens(
+                    mockEstimatedTokens.messagesTokens,
+                    5
+                ),
+            };
+        }
+    );
 
     async function withGenerationsLogger(
         settings: GenerationsLoggerSettings,
@@ -127,10 +156,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
             llmService: llmService,
             params: params,
             choices: mockChoices,
-            analyzedChat: {
-                chat: mockChat,
-                estimatedTokens: mockEstimatedTokens,
-            },
+            analyzedChat: analyzedMockChat,
         };
         return mockRequest;
     }
@@ -140,7 +166,8 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
     ): LLMServiceRequestSucceeded {
         return {
             ...mockRequest,
-            generatedRawProofs: mockProofs,
+            generatedRawProofs: mockGeneratedRawProofs,
+            tokensSpentInTotal: mockGenerationTokensSpent,
         };
     }
 
@@ -217,24 +244,24 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
                     );
                 }
             );
+        });
 
-            test(`Test read no records ${testNamePostfix}`, async () => {
-                await withTestGenerationsLogger(
-                    loggerDebugMode,
-                    async (generationsLogger) => {
-                        expect(generationsLogger.readLogs()).toHaveLength(0);
-                        expect(
-                            generationsLogger.readLogsSinceLastSuccess()
-                        ).toHaveLength(0);
-                        generationsLogger.logGenerationSucceeded(
-                            succeeded(buildMockRequest(generationsLogger))
-                        );
-                        expect(
-                            generationsLogger.readLogsSinceLastSuccess()
-                        ).toHaveLength(0);
-                    }
-                );
-            });
+        test(`Test read no records ${testNamePostfix}`, async () => {
+            await withTestGenerationsLogger(
+                loggerDebugMode,
+                async (generationsLogger) => {
+                    expect(generationsLogger.readLogs()).toHaveLength(0);
+                    expect(
+                        generationsLogger.readLogsSinceLastSuccess()
+                    ).toHaveLength(0);
+                    generationsLogger.logGenerationSucceeded(
+                        succeeded(buildMockRequest(generationsLogger))
+                    );
+                    expect(
+                        generationsLogger.readLogsSinceLastSuccess()
+                    ).toHaveLength(0);
+                }
+            );
         });
 
         test(`Pseudo-concurrent write-read ${testNamePostfix}`, async () => {
@@ -340,7 +367,8 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
             mockParams.modelId,
             "SUCCESS",
             mockChoices,
-            mockEstimatedTokens
+            mockEstimatedTokens,
+            mockGenerationTokensSpent
         );
         expect(
             LoggerRecord.deserealizeFromString(loggerRecord.serializeToString())
@@ -348,6 +376,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
 
         const debugLoggerRecord = new DebugLoggerRecord(
             loggerRecord,
+            mockContextTheorems,
             mockChat,
             mockParams,
             mockProofs
@@ -367,6 +396,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
             "FAILURE",
             mockChoices,
             mockEstimatedTokens,
+            undefined,
             {
                 typeName: error.name,
                 message: error.message,
@@ -378,6 +408,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
 
         const debugLoggerRecord = new DebugLoggerRecord(
             loggerRecord,
+            mockContextTheorems,
             mockChat,
             mockParams
         );
@@ -395,6 +426,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
             "SUCCESS",
             mockChoices,
             undefined,
+            undefined,
             undefined
         );
         expect(
@@ -403,6 +435,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
 
         const debugLoggerRecord = new DebugLoggerRecord(
             loggerRecord,
+            undefined,
             undefined,
             mockParams,
             undefined
@@ -422,8 +455,10 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
                 "SUCCESS",
                 mockChoices,
                 undefined,
+                undefined,
                 undefined
             ),
+            [], // empty context theorems list
             [], // empty chat list
             mockParams,
             [] // empty generated proofs list

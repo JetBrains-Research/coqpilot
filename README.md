@@ -213,7 +213,16 @@ git submodule update
 ```
 After that, you need to build the projects. Be careful, the actively maintained way to build this projects is `nix`. Moreover, when adding your own projects, make sure that they are built using `coq-8.19.0`.
 
-First things first, the process of running the benchmark is not perfectly automated yet. We are working on it. For now, one project (one unit containing nix environment) shall be ran at a time. Let's say you are going to run the benchmark on the `imm` project. You will have to do the following: 
+### New framework (beta)
+
+The new benchmarking framework with extended capabilities is now available. 
+However, it is still in the testing phase, so some bugs and missing features may be present.
+
+To use it, follow the instructions in the [`BENCHMARKING_FRAMEWORK_GUIDE.md`](etc/docs/benchmark/BENCHMARKING_FRAMEWORK_GUIDE.md).
+
+### Legacy framework
+
+The process of running the benchmark is not perfectly automated and we are working on it. For now, one project (one unit containing nix environment) shall be ran at a time. Let's say you are going to run the benchmark on the `imm` project. You will have to do the following: 
 
 <!-- 0. Go the the `imm` subdirectory and add a `_CoqProject` file in the root with the following: 
     ```

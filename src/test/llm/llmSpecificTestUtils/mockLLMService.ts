@@ -6,13 +6,12 @@ import {
     AnalyzedChatHistory,
     ChatHistory,
     ChatMessage,
-} from "../../../llm/llmServices/chat";
-import {
-    ErrorsHandlingMode,
-    GeneratedProofImpl,
-    LLMServiceImpl,
-    ProofVersion,
-} from "../../../llm/llmServices/llmService";
+} from "../../../llm/llmServices/commonStructures/chat";
+import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
+import { GeneratedRawContent } from "../../../llm/llmServices/commonStructures/generatedRawContent";
+import { ProofVersion } from "../../../llm/llmServices/commonStructures/proofVersion";
+import { GeneratedProofImpl } from "../../../llm/llmServices/generatedProof";
+import { LLMServiceImpl } from "../../../llm/llmServices/llmService";
 import { LLMServiceInternal } from "../../../llm/llmServices/llmServiceInternal";
 import {
     ModelParams,
@@ -266,10 +265,11 @@ class MockLLMServiceInternal extends LLMServiceInternal<
      *   then all the generated proofs will be equal to `this.fixedProofString`.
      */
     async generateFromChatImpl(
-        chat: ChatHistory,
+        analyzedChat: AnalyzedChatHistory,
         params: MockLLMModelParams,
         choices: number
-    ): Promise<string[]> {
+    ): Promise<GeneratedRawContent> {
+        const chat = analyzedChat.chat;
         this.eventLogger?.logLogicEvent(
             MockLLMService.generationFromChatEvent,
             chat
@@ -293,7 +293,11 @@ class MockLLMServiceInternal extends LLMServiceInternal<
             (message) => message.content === MockLLMService.proofFixPrompt
         );
         if (proofFixPromptInChat !== undefined) {
-            return Array(choices).fill(MockLLMService.fixedProofString);
+            return LLMServiceInternal.aggregateToGeneratedRawContent(
+                Array(choices).fill(MockLLMService.fixedProofString),
+                analyzedChat.estimatedTokens?.messagesTokens,
+                undefined
+            );
         }
 
         const lastChatMessage = chat[chat.length - 1];
@@ -309,9 +313,13 @@ class MockLLMServiceInternal extends LLMServiceInternal<
             );
         }
 
-        return params.proofsToGenerate.slice(
-            skipFirstNProofs,
-            skipFirstNProofs + choices
+        return LLMServiceInternal.aggregateToGeneratedRawContent(
+            params.proofsToGenerate.slice(
+                skipFirstNProofs,
+                skipFirstNProofs + choices
+            ),
+            analyzedChat.estimatedTokens?.messagesTokens,
+            undefined
         );
     }
 
