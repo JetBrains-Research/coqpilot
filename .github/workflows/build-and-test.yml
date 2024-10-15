@@ -51,7 +51,7 @@ jobs:
         restore-keys: opam-${{ matrix.os }}-${{ matrix.ocaml-compiler }}-
 
     - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
-      uses: ocaml/setup-ocaml@v2
+      uses: ocaml/setup-ocaml@v3.0.10
       with:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
         dune-cache: true
