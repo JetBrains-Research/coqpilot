@@ -1,5 +1,36 @@
 # Changelog
 
+## 2.3.0
+
+**A major upgrade of the benchmarking system**: At the moment, only a little **new** functionality is provided; moreover, the ability to run benchmarks on Tactician/CoqHammer is temporarily unavailable. However, it will soon be restored and improved. Excessive work has been done to make the benchmarking system more flexible, secure, robust, self-contained, and easy to use. Experiments via our benchmarking framework have been made more accessible than ever. The configurability and reliability of the pipeline have been improved drastically. In a nutshell, the main features of the improved benchmarking system include:
+- Flexible DSL for input setup
+- Extensive configuration for fine-grained experiments
+- Support for single and multi-workspace runs
+- Dataset caching
+- Comprehensive logging
+- Fail-fast strategy
+- Additional metrics (tokens used, context theorems, proof generation stats)
+
+An extensive benchmarking guide is now available in [BENCHMARKING_FRAMEWORK_GUIDE.md](etc/docs/benchmark/BENCHMARKING_FRAMEWORK_GUIDE.md).
+
+We are looking forward to your feedback and suggestions for further improvements/new features.
+
+## 2.2.7
+
+### Internal changes: 
+- Allow prod/stgn auth-type for JetBrains AI service.
+
+## 2.2.6
+
+### Public changes
+
+- Allow manually modifying the location of the `coq-lsp` executable in the settings. This is useful when the `coq-lsp` executable is not in the PATH. Alongside, correctly handle the case when the `coq-lsp` executable is not found.
+- Improve proof extraction from the LLM services for proofs, containing `Proof using X Y Z.` and similar constructs. Improve the handling of the obfuscatedly generated proofs by small language models, such as `LLaMA` through `LMStudio`.
+- Add a hotkey for solving admits inside selection: `ctrl+shift+[BracketRight]` on Windows and Linux, `shift+cmd+[BracketRight]` on MacOS.
+
+### Internal changes
+- Update private headers, sent to JetBrains-AI services, to identify the client as CoqPilot.
+
 ## 2.2.5
 
 - Contribute the new benchmarking report for 300 theorems. 

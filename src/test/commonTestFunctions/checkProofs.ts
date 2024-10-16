@@ -1,11 +1,9 @@
-import { GeneratedProof } from "../../llm/llmServices/llmService";
+import { GeneratedProof } from "../../llm/llmServices/generatedProof";
 
-import {
-    CompletionContext,
-    getTextBeforePosition,
-    prepareProofToCheck,
-} from "../../core/completionGenerator";
+import { CompletionContext } from "../../core/completionGenerationContext";
 import { ProofCheckResult } from "../../core/coqProofChecker";
+import { prepareProofToCheck } from "../../core/exposedCompletionGeneratorUtils";
+import { getTextBeforePosition } from "../../core/exposedCompletionGeneratorUtils";
 
 import { PreparedEnvironment } from "./prepareEnvironment";
 

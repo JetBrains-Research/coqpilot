@@ -1,4 +1,9 @@
-import { ChatHistory, ChatRole, EstimatedTokens } from "../../chat";
+import {
+    ChatHistory,
+    ChatRole,
+    EstimatedTokens,
+} from "../../commonStructures/chat";
+import { GenerationTokens } from "../../commonStructures/generationTokens";
 import { ModelParams } from "../../modelParams";
 
 export type ResponseStatus = "SUCCESS" | "FAILURE";
@@ -34,7 +39,8 @@ export class LoggerRecord {
         readonly modelId: string,
         readonly responseStatus: ResponseStatus,
         readonly choices: number,
-        readonly estimatedTokens: EstimatedTokens | undefined = undefined,
+        readonly requestTokens: EstimatedTokens | undefined = undefined,
+        readonly generationTokens: GenerationTokens | undefined = undefined,
         readonly error: LoggedError | undefined = undefined
     ) {
         this.timestampMillis =
@@ -53,6 +59,11 @@ export class LoggerRecord {
     protected static readonly requestTokensHeader = "- request's tokens:";
     protected static readonly requestTokensPattern =
         /^- request's tokens: ([0-9]+) = ([0-9]+) \(chat messages\) \+ ([0-9]+) \(max to generate\)$/;
+
+    protected static readonly generationTokensHeader =
+        "- successful generation tokens:";
+    protected static readonly generationTokensPattern =
+        /^- successful generation tokens: ([0-9]+) = ([0-9]+) \(prompt\) \+ ([0-9]+) \(generated answer\)$/;
 
     serializeToString(): string {
         const introInfo = this.buildStatusLine();
@@ -80,14 +91,24 @@ export class LoggerRecord {
     protected buildRequestInfo(): string {
         const choicesRequested = `- requested choices: ${this.choices}\n`;
         const requestTokens =
-            this.estimatedTokens !== undefined
-                ? `${LoggerRecord.requestTokensHeader} ${this.estimatedTokensToString()}\n`
+            this.requestTokens !== undefined
+                ? `${LoggerRecord.requestTokensHeader} ${this.requestTokensToString()}\n`
                 : "";
-        return `${choicesRequested}${requestTokens}`;
+        const generationTokens =
+            this.generationTokens !== undefined
+                ? `${LoggerRecord.generationTokensHeader} ${this.generationTokensToString()}\n`
+                : "";
+        return `${choicesRequested}${requestTokens}${generationTokens}`;
     }
 
-    private estimatedTokensToString(): string {
-        return `${this.estimatedTokens!.maxTokensInTotal} = ${this.estimatedTokens!.messagesTokens} (chat messages) + ${this.estimatedTokens!.maxTokensToGenerate} (max to generate)`;
+    private requestTokensToString(): string {
+        const tokens = this.requestTokens!;
+        return `${tokens.maxTokensInTotal} = ${tokens.messagesTokens} (chat messages) + ${tokens.maxTokensToGenerate} (max to generate)`;
+    }
+
+    private generationTokensToString(): string {
+        const tokens = this.generationTokens!;
+        return `${tokens.tokensSpentInTotal} = ${tokens.promptTokens} (prompt) + ${tokens.generatedTokens} (generated answer)`;
     }
 
     protected static escapeNewlines(text: string): string {
@@ -118,22 +139,31 @@ export class LoggerRecord {
             afterLoggedErrorRawRecord,
             "requested choices"
         );
-        const [estimatedTokens, afterTokensRawRecord] = this.parseOptional(
+        const choices = this.parseIntValue(rawChoices, "requested choices");
+
+        const [requestTokens, afterRequestTokensRawRecord] = this.parseOptional(
             this.requestTokensHeader,
             (text) => this.parseRequestTokens(text),
             afterChoicesRawRecord
         );
+        const [generationTokens, afterGenerationTokensRawRecord] =
+            this.parseOptional(
+                this.generationTokensHeader,
+                (text) => this.parseGenerationTokens(text),
+                afterRequestTokensRawRecord
+            );
 
         return [
             new LoggerRecord(
                 timestampMillis,
                 modelId,
                 responseStatus,
-                this.parseIntValue(rawChoices, "requested choices"),
-                estimatedTokens,
+                choices,
+                requestTokens,
+                generationTokens,
                 error
             ),
-            afterTokensRawRecord,
+            afterGenerationTokensRawRecord,
         ];
     }
 
@@ -177,6 +207,31 @@ export class LoggerRecord {
                 maxTokensInTotal: this.parseIntValue(
                     maxTokensInTotal,
                     "max tokens in total"
+                ),
+            },
+            restRawRecord,
+        ];
+    }
+
+    private static parseGenerationTokens(
+        text: string
+    ): [GenerationTokens, string] {
+        let [tokensSpentInTotal, promptTokens, generatedTokens, restRawRecord] =
+            this.parseFirstLineByRegex(
+                this.generationTokensPattern,
+                text,
+                "generation tokens header"
+            );
+        return [
+            {
+                promptTokens: this.parseIntValue(promptTokens, "prompt tokens"),
+                generatedTokens: this.parseIntValue(
+                    generatedTokens,
+                    "generated answer tokens"
+                ),
+                tokensSpentInTotal: this.parseIntValue(
+                    tokensSpentInTotal,
+                    "tokens spent in total"
                 ),
             },
             restRawRecord,
@@ -272,6 +327,7 @@ export class LoggerRecord {
 export class DebugLoggerRecord extends LoggerRecord {
     constructor(
         baseRecord: LoggerRecord,
+        readonly contextTheorems: string[] | undefined,
         readonly chat: ChatHistory | undefined,
         readonly params: ModelParams,
         readonly generatedProofs: string[] | undefined = undefined
@@ -281,7 +337,8 @@ export class DebugLoggerRecord extends LoggerRecord {
             baseRecord.modelId,
             baseRecord.responseStatus,
             baseRecord.choices,
-            baseRecord.estimatedTokens,
+            baseRecord.requestTokens,
+            baseRecord.generationTokens,
             baseRecord.error
         );
     }
@@ -292,6 +349,11 @@ export class DebugLoggerRecord extends LoggerRecord {
 
     protected static readonly emptyListLine = `${this.subItemIndent}~ empty`;
     protected static readonly emptyListPattern = /^\t~ empty$/;
+
+    protected static readonly contextTheoremsHeader = "- context theorems:";
+    protected static readonly contextTheoremsHeaderPattern =
+        /^- context theorems:$/;
+    protected static readonly contextTheoremsPattern = /^\t> "(.*)"$/;
 
     protected static readonly chatHeader = "- chat sent:";
     protected static readonly chatHeaderPattern = /^- chat sent:$/;
@@ -312,6 +374,10 @@ export class DebugLoggerRecord extends LoggerRecord {
     }
 
     private buildExtraInfo(): string {
+        const contextTheorems =
+            this.contextTheorems !== undefined
+                ? `${DebugLoggerRecord.contextTheoremsHeader}\n${this.contextTheoremsToExtraLogs()}\n`
+                : "";
         const chatInfo =
             this.chat !== undefined
                 ? `${DebugLoggerRecord.chatHeader}\n${this.chatToExtraLogs()}\n`
@@ -321,7 +387,16 @@ export class DebugLoggerRecord extends LoggerRecord {
                 ? `${DebugLoggerRecord.generatedProofsHeader}\n${this.proofsToExtraLogs()}\n`
                 : "";
         const paramsInfo = `${DebugLoggerRecord.paramsHeader}\n${this.paramsToExtraLogs()}\n`;
-        return `${chatInfo}${generatedProofs}${paramsInfo}`;
+        return `${contextTheorems}${chatInfo}${generatedProofs}${paramsInfo}`;
+    }
+
+    private contextTheoremsToExtraLogs(): string {
+        return this.contextTheorems!.length === 0
+            ? DebugLoggerRecord.emptyListLine
+            : this.contextTheorems!.map(
+                  (theoremName) =>
+                      `${DebugLoggerRecord.subItemDelimIndented}"${LoggerRecord.escapeNewlines(theoremName)}"`
+              ).join("\n");
     }
 
     private chatToExtraLogs(): string {
@@ -356,10 +431,15 @@ export class DebugLoggerRecord extends LoggerRecord {
         const [baseRecord, afterBaseRawRecord] = super.deserealizeFromString(
             rawRecord
         );
+        const [contextTheorems, afterTheoremsRawRecord] = this.parseOptional(
+            this.contextTheoremsHeader,
+            (text) => this.parseContextTheorems(text),
+            afterBaseRawRecord
+        );
         const [chat, afterChatRawRecord] = this.parseOptional(
             this.chatHeader,
             (text) => this.parseChatHistory(text),
-            afterBaseRawRecord
+            afterTheoremsRawRecord
         );
         const [generatedProofs, afterProofsRawRecord] = this.parseOptional(
             this.generatedProofsHeader,
@@ -370,9 +450,45 @@ export class DebugLoggerRecord extends LoggerRecord {
             this.parseModelParams(afterProofsRawRecord);
 
         return [
-            new DebugLoggerRecord(baseRecord, chat, params, generatedProofs),
+            new DebugLoggerRecord(
+                baseRecord,
+                contextTheorems,
+                chat,
+                params,
+                generatedProofs
+            ),
             unparsedData,
         ];
+    }
+
+    private static parseContextTheorems(text: string): [string[], string] {
+        let [restRawRecord] = this.parseFirstLineByRegex(
+            this.contextTheoremsHeaderPattern,
+            text,
+            "context theorems header"
+        );
+        const contextTheorems: string[] = [];
+        if (restRawRecord.startsWith(this.emptyListLine)) {
+            return [
+                contextTheorems,
+                this.parseFirstLineByRegex(
+                    this.emptyListPattern,
+                    restRawRecord,
+                    "empty context theorems keyword"
+                )[0],
+            ];
+        }
+        while (restRawRecord.startsWith(this.subItemDelimIndented)) {
+            const [rawContextTheorem, newRestRawRecord] =
+                this.parseFirstLineByRegex(
+                    this.contextTheoremsPattern,
+                    restRawRecord,
+                    "context theorem"
+                );
+            contextTheorems.push(this.unescapeNewlines(rawContextTheorem));
+            restRawRecord = newRestRawRecord;
+        }
+        return [contextTheorems, restRawRecord];
     }
 
     private static parseChatHistory(text: string): [ChatHistory, string] {

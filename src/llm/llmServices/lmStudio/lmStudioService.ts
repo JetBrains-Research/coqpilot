@@ -1,12 +1,11 @@
 import { EventLogger } from "../../../logging/eventLogger";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { LMStudioUserModelParams } from "../../userModelParams";
-import { ChatHistory } from "../chat";
-import {
-    GeneratedProofImpl,
-    LLMServiceImpl,
-    ProofVersion,
-} from "../llmService";
+import { AnalyzedChatHistory, ChatHistory } from "../commonStructures/chat";
+import { GeneratedRawContent } from "../commonStructures/generatedRawContent";
+import { ProofVersion } from "../commonStructures/proofVersion";
+import { GeneratedProofImpl } from "../generatedProof";
+import { LLMServiceImpl } from "../llmService";
 import { LLMServiceInternal } from "../llmServiceInternal";
 import { LMStudioModelParams } from "../modelParams";
 
@@ -86,14 +85,16 @@ class LMStudioServiceInternal extends LLMServiceInternal<
     }
 
     async generateFromChatImpl(
-        chat: ChatHistory,
+        analyzedChat: AnalyzedChatHistory,
         params: LMStudioModelParams,
         choices: number
-    ): Promise<string[]> {
-        this.validateChoices(choices);
+    ): Promise<GeneratedRawContent> {
+        LLMServiceInternal.validateChoices(choices);
         let attempts = choices * 2;
         const completions: string[] = [];
-        this.debug.logEvent("Completion requested", { history: chat });
+        this.debug.logEvent("Completion requested", {
+            history: analyzedChat.chat,
+        });
 
         let lastErrorThrown: Error | undefined = undefined;
         while (completions.length < choices && attempts > 0) {
@@ -101,7 +102,7 @@ class LMStudioServiceInternal extends LLMServiceInternal<
                 const responce = await fetch(this.endpoint(params), {
                     method: "POST",
                     headers: this.headers,
-                    body: this.body(chat, params),
+                    body: this.body(analyzedChat.chat, params),
                 });
                 if (responce.ok) {
                     const res = await responce.json();
@@ -122,11 +123,16 @@ class LMStudioServiceInternal extends LLMServiceInternal<
             }
             attempts--;
         }
-
         if (completions.length < choices) {
             throw lastErrorThrown;
         }
-        return completions;
+
+        // TODO: find a way to get actual tokens spent instead of approximation
+        return LLMServiceInternal.aggregateToGeneratedRawContent(
+            completions,
+            analyzedChat.estimatedTokens.messagesTokens,
+            undefined
+        );
     }
 
     private readonly headers = {

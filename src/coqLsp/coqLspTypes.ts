@@ -6,6 +6,8 @@ import {
     VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
 
+export type ProofGoal = Goal<PpString>;
+
 export interface Hyp<Pp> {
     names: Pp[];
     def?: Pp;
@@ -160,5 +162,32 @@ export class CoqLspError extends Error {
         return new CoqLspError(
             "Unknown CoqLSP error, please report this issue"
         );
+    }
+}
+
+export class CoqParsingError extends CoqLspError {
+    constructor(
+        message: string,
+        public data?: any
+    ) {
+        super(message);
+        this.name = "CoqParsingError";
+    }
+}
+
+export class CoqLspTimeoutError extends CoqLspError {
+    constructor(message: string) {
+        super(message);
+        this.name = "CoqLspTimeoutError";
+    }
+}
+
+export class CoqLspStartupError extends CoqLspError {
+    constructor(
+        message: string,
+        readonly path: string
+    ) {
+        super(message);
+        this.name = "CoqLspStartupError";
     }
 }

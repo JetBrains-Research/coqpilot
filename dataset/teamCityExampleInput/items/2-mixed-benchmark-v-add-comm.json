@@ -1,0 +1,23 @@
+{
+  "task": {
+    "goalToProve": "{\"info\":{\"evar\":[\"Ser_Evar\",7],\"name\":null},\"hyps\":[],\"ty\":\"forall n m : nat, n + m = m + n\"}",
+    "positionRange": {
+      "start": {
+        "line": 12,
+        "character": 4
+      },
+      "end": {
+        "line": 12,
+        "character": 10
+      }
+    },
+    "targetType": "ADMIT",
+    "relativeSourceFilePath": "mixed_benchmark.v",
+    "sourceTheoremName": "add_comm",
+    "relativeWorkspacePath": "standalone-source-files"
+  },
+  "targetModelIds": [
+    "invalid-proof",
+    "prove-with-auto"
+  ]
+}

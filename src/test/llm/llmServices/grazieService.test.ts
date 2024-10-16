@@ -1,14 +1,14 @@
 import { expect } from "earl";
 
 import { ConfigurationError } from "../../../llm/llmServiceErrors";
+import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
 import { GrazieService } from "../../../llm/llmServices/grazie/grazieService";
-import { ErrorsHandlingMode } from "../../../llm/llmServices/llmService";
 import { GrazieModelParams } from "../../../llm/llmServices/modelParams";
 import { defaultSystemMessageContent } from "../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";
+import { resolveParametersOrThrow } from "../../../llm/llmServices/utils/resolveOrThrow";
 import { GrazieUserModelParams } from "../../../llm/userModelParams";
 
 import { testIf } from "../../commonTestFunctions/conditionalTest";
-import { resolveParametersOrThrow } from "../../commonTestFunctions/resolveOrThrow";
 import {
     withLLMService,
     withLLMServiceAndParams,
@@ -25,6 +25,7 @@ import {
 
 suite("[LLMService] Test `GrazieService`", function () {
     const apiKey = process.env.GRAZIE_API_KEY;
+    const authType = process.env.GRAZIE_AUTH_TYPE;
     const choices = 15;
     const inputFile = ["small_document.v"];
 
@@ -37,14 +38,15 @@ suite("[LLMService] Test `GrazieService`", function () {
     };
 
     testIf(
-        apiKey !== undefined,
-        "`GRAZIE_API_KEY` is not specified",
+        apiKey !== undefined && authType !== undefined,
+        "`GRAZIE_API_KEY` or `GRAZIE_AUTH_TYPE` is not specified",
         this.title,
         `Simple generation: 1 request, ${choices} choices`,
         async () => {
             const inputParams: GrazieUserModelParams = {
                 ...requiredInputParamsTemplate,
                 apiKey: apiKey!,
+                authType: authType!,
             };
             const grazieService = new GrazieService();
             await testLLMServiceCompletesAdmitFromFile(
@@ -60,6 +62,7 @@ suite("[LLMService] Test `GrazieService`", function () {
         const inputParams: GrazieUserModelParams = {
             ...requiredInputParamsTemplate,
             apiKey: "undefined",
+            authType: "stgn",
         };
         await withLLMService(new GrazieService(), async (grazieService) => {
             testResolveValidCompleteParameters(grazieService, inputParams);
@@ -79,6 +82,7 @@ suite("[LLMService] Test `GrazieService`", function () {
         const inputParams: GrazieUserModelParams = {
             ...requiredInputParamsTemplate,
             apiKey: "undefined",
+            authType: "stgn",
             maxTokensToGenerate: 6666, // should be overriden by GrazieService
         };
         withLLMService(new GrazieService(), async (grazieService) => {
@@ -96,6 +100,7 @@ suite("[LLMService] Test `GrazieService`", function () {
         const inputParams: GrazieUserModelParams = {
             ...requiredInputParamsTemplate,
             apiKey: "undefined",
+            authType: "stgn",
         };
         await withLLMServiceAndParams(
             new GrazieService(),

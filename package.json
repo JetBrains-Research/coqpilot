@@ -1,14 +1,14 @@
 {
   "name": "coqpilot",
-  "displayName": "Сoqpilot",
-  "description": "An ai based completion extension for Coq interactive prover.",
+  "displayName": "СoqPilot",
+  "description": "An AI-based completion extension for Coq interactive prover.",
   "icon": "etc/img/logo.ico",
   "repository": {
     "type": "git",
-    "url": "https://github.com/K-dizzled/coqpilot"
+    "url": "https://github.com/JetBrains-Research/coqpilot"
   },
   "publisher": "JetBrains-Research",
-  "version": "2.2.5",
+  "version": "2.3.0",
   "engines": {
     "vscode": "^1.82.0"
   },
@@ -37,15 +37,22 @@
     "commands": [
       {
         "command": "coqpilot.perform_completion_under_cursor",
-        "title": "Coqpilot: Try to generate proof for the goal under the cursor"
+        "title": "CoqPilot: Try to generate proof for the goal under the cursor"
       },
       {
         "command": "coqpilot.perform_completion_for_all_admits",
-        "title": "Coqpilot: Try to prove all holes (admitted goals) in the current file"
+        "title": "CoqPilot: Try to prove all holes (admitted goals) in the current file"
       },
       {
         "command": "coqpilot.perform_completion_in_selection",
-        "title": "Coqpilot: Try to prove holes (admitted goals) in the selection"
+        "title": "CoqPilot: Try to prove holes (admitted goals) in the selection"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "coqpilot.perform_completion_in_selection",
+        "key": "ctrl+shift+[BracketRight]",
+        "mac": "shift+cmd+[BracketRight]"
       }
     ],
     "menus": {
@@ -103,12 +110,12 @@
                 "modelId": {
                   "type": "string",
                   "markdownDescription": "Unique identifier of this model to distinguish it from others. Could be any string.",
-                  "default": "openai-gpt-3.5"
+                  "default": "gpt-4o-mini"
                 },
                 "modelName": {
                   "type": "string",
-                  "markdownDescription": "Model to use from the OpenAI platform. List of models known to Coqpilot: \n * gpt-4o \n * gpt-4o-2024-05-13 \n * gpt-4-turbo \n * gpt-4-turbo-2024-04-09 \n * gpt-4-turbo-preview \n * gpt-4-0125-preview \n * gpt-4-1106-preview \n * gpt-4-vision-preview \n * gpt-4-1106-vision-preview \n * gpt-4 \n * gpt-4-0314 \n * gpt-4-0613 \n * gpt-4-32k \n * gpt-4-32k-0314 \n * gpt-4-32k-0613 \n * gpt-3.5-turbo-0125 \n * gpt-3.5-turbo \n * gpt-3.5-turbo-1106 \n * gpt-3.5-turbo-instruct \n * gpt-3.5-turbo-16k \n * gpt-3.5-turbo-16k-0613 \n * gpt-3.5-turbo-0613 \n * gpt-3.5-turbo-0301",
-                  "default": "gpt-3.5-turbo-0301"
+                  "markdownDescription": "Model to use from the OpenAI platform. List of models known to CoqPilot: \n * gpt-4o \n * gpt-4o-2024-08-06 \n * gpt-4o-2024-05-13 \n * gpt-4o-mini \n * gpt-4o-mini-2024-07-18 \n * gpt-4-turbo \n * gpt-4-turbo-2024-04-09 \n * gpt-4-turbo-preview \n * gpt-4-0125-preview \n * gpt-4-1106-preview \n * gpt-4 \n * gpt-4-0613 \n * gpt-4-0314 \n * gpt-3.5-turbo-0125 \n * gpt-3.5-turbo \n * gpt-3.5-turbo-1106 \n * gpt-3.5-turbo-instruct",
+                  "default": "gpt-4o-mini"
                 },
                 "temperature": {
                   "type": "number",
@@ -132,12 +139,12 @@
                 },
                 "maxTokensToGenerate": {
                   "type": "number",
-                  "description": "Number of tokens that the model is allowed to generate as a response message (i.e. message with proof). For known models, Coqpilot provides a recommended default value, but it can be customized for more advanced proof generation. The default value is the maximum allowed value for the model if it takes no more than half of `tokensLimit`, otherwise the minimum of half of `tokensLimit` and 4096.",
+                  "description": "Number of tokens that the model is allowed to generate as a response message (i.e. message with proof). For known models, CoqPilot provides a recommended default value, but it can be customized for more advanced proof generation. The default value is the maximum allowed value for the model if it takes no more than half of `tokensLimit`, otherwise the minimum of half of `tokensLimit` and 4096.",
                   "default": 2048
                 },
                 "tokensLimit": {
                   "type": "number",
-                  "description": "Total length of input and generated tokens, it is determined by the model. For known models, Coqpilot provides a recommended default value (the maximum model context length), but it can be customized for more advanced proof generation.",
+                  "description": "Total length of input and generated tokens, it is determined by the model. For known models, CoqPilot provides a recommended default value (the maximum model context length), but it can be customized for more advanced proof generation.",
                   "default": 4096
                 },
                 "multiroundProfile": {
@@ -169,8 +176,8 @@
             },
             "default": [
               {
-                "modelId": "openai-gpt-3.5",
-                "modelName": "gpt-3.5-turbo-0301",
+                "modelId": "gpt-4o-mini",
+                "modelName": "gpt-4o-mini",
                 "temperature": 1,
                 "apiKey": "None",
                 "choices": 15,
@@ -195,17 +202,22 @@
                 "modelId": {
                   "type": "string",
                   "markdownDescription": "Unique identifier of this model to distinguish it from others. Could be any string.",
-                  "default": "openai-gpt-3.5"
+                  "default": "openai-gpt-4o-via-grazie"
                 },
                 "modelName": {
                   "type": "string",
                   "markdownDescription": "Model to use from the Grazie platform: \n * openai-gpt-4 \n * openai-chat-gpt \n * grazie-chat-llama-v2-7b \n * grazie-chat-llama-v2-13b \n * grazie-chat-zephyr-7b \n * qwen-turbo \n * qwen-plus",
-                  "default": "openai-gpt-4"
+                  "default": "openai-gpt-4o"
                 },
                 "apiKey": {
                   "type": "string",
                   "description": "Api key to communicate with the Grazie api. Now available for JetBrains employees only.",
                   "default": "None"
+                },
+                "authType": {
+                  "type": "string",
+                  "description": "Use stgn if you are an internal JetBrains AI user and use prod otherwise.",
+                  "default": "stgn"
                 },
                 "choices": {
                   "type": "number",
@@ -358,6 +370,12 @@
             "description": "The verbosity of the logs.",
             "default": "info",
             "order": 5
+          },
+          "coqpilot.coqLspServerPath": {
+            "type": "string",
+            "description": "Path to the Coq LSP server. If not specified, CoqPilot will try to find the server automatically at the default location: coq-lsp at PATH.",
+            "default": "coq-lsp",
+            "order": 6
           }
         }
       }
@@ -369,13 +387,25 @@
     "watch": "tsc -watch -p ./",
     "lint": "eslint \"src/**/*.{ts,js}\" --ext .ts",
     "format": "prettier --write \"src/**/*.{ts,js}\" && eslint \"src/**/*.{ts,js}\" --ext .ts --fix",
+    "test-executables-unsafe": "node ./out/test/runTest.js",
+    "test-only": "npm run test-executables-unsafe -- -r=\"\\[SourceExecutable\\] *\" -i=true",
     "pretest": "npm run compile && npm run lint",
-    "test": "node ./out/test/runTest.js",
+    "test": "npm run test-only",
     "clean": "rm -rf out",
     "rebuild-test-resources": "cd ./src/test/resources/coqProj && make clean && make",
     "preclean-test": "npm run clean && npm run rebuild-test-resources && npm run compile && npm run lint",
-    "clean-test": "node ./out/test/runTest.js",
-    "benchmark": "npm run clean-test -- -g='Benchmark'"
+    "clean-test": "npm run test-only",
+    "prebenchmark": "npm run preclean-test",
+    "premulti-workspace-benchmark": "npm run prebenchmark",
+    "multi-workspaces-benchmark": "node ./out/benchmark/multiWorkspacesSetup.js",
+    "presingle-workspace-benchmark": "npm run prebenchmark",
+    "single-workspace-benchmark": "npm run test-executables-unsafe -- -g=\"[SourceExecutable] Single Workspace Benchmark\"",
+    "benchmark": "npm run single-workspace-benchmark",
+    "preteamcity-benchmark-setup": "npm run prebenchmark",
+    "teamcity-benchmark-setup": "node ./out/benchmark/teamCitySetup.js",
+    "teamcity-benchmark-agent": "npm run test-executables-unsafe -- -g=\"[SourceExecutable] Team City Benchmark Agent\"",
+    "prelegacy-benchmark": "npm run prebenchmark",
+    "legacy-benchmark": "npm run test-executables-unsafe -- -g=\"[SourceExecutable] Legacy Benchmark\""
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
@@ -385,6 +415,7 @@
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "20.2.5",
+    "@types/node-ipc": "^9.2.3",
     "@types/tmp": "^0.2.6",
     "@types/vscode": "^1.82.0",
     "@types/yargs": "^17.0.24",
@@ -410,12 +441,13 @@
     "event-source-polyfill": "^1.0.31",
     "i": "^0.3.7",
     "mocha-param": "^2.0.1",
+    "node-ipc": "^11.1.0",
     "npm": "^10.4.0",
     "openai": "^4.6.0",
     "path": "^0.12.7",
     "pino": "^8.15.1",
     "pino-pretty": "^10.2.0",
-    "tiktoken": "^1.0.13",
+    "tiktoken": "^1.0.17",
     "tmp": "^0.2.3",
     "toml": "^3.0.0",
     "ts-results": "^3.3.0",

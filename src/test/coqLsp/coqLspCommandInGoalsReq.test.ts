@@ -1,10 +1,10 @@
 import { expect } from "earl";
 import { Result } from "ts-results";
 
+import { createTestCoqLspClient } from "../../coqLsp/coqLspBuilders";
 import { Goal, PpString } from "../../coqLsp/coqLspTypes";
 
 import { Uri } from "../../utils/uri";
-import { createCoqLspClient } from "../commonTestFunctions/coqLspBuilder";
 import { resolveResourcesDir } from "../commonTestFunctions/pathsResolver";
 
 suite("Request goals with `command/pretac` argument", () => {
@@ -20,7 +20,7 @@ suite("Request goals with `command/pretac` argument", () => {
         );
         const fileUri = Uri.fromPath(filePath);
 
-        const client = createCoqLspClient(rootDir);
+        const client = await createTestCoqLspClient(rootDir);
         await client.openTextDocument(fileUri);
         const goals = await client.getGoalsAtPoint(
             position,

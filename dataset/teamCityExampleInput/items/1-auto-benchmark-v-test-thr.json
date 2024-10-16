@@ -1,0 +1,23 @@
+{
+  "task": {
+    "goalToProve": "{\"info\":{\"evar\":[\"Ser_Evar\",36],\"name\":null},\"hyps\":[{\"names\":[\"n\"],\"def\":null,\"ty\":\"nat\"}],\"ty\":\"0 + n = n\"}",
+    "positionRange": {
+      "start": {
+        "line": 35,
+        "character": 4
+      },
+      "end": {
+        "line": 35,
+        "character": 10
+      }
+    },
+    "targetType": "ADMIT",
+    "relativeSourceFilePath": "auto_benchmark.v",
+    "sourceTheoremName": "test_thr",
+    "relativeWorkspacePath": "standalone-source-files"
+  },
+  "targetModelIds": [
+    "invalid-proof",
+    "prove-with-auto"
+  ]
+}

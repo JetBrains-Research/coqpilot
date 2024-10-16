@@ -42,6 +42,7 @@ export interface OpenAiModelParams extends ModelParams {
 export interface GrazieModelParams extends ModelParams {
     modelName: string;
     apiKey: string;
+    authType: "stgn" | "prod";
 }
 
 export interface LMStudioModelParams extends ModelParams {
@@ -134,9 +135,18 @@ export const grazieModelParamsSchema: JSONSchemaType<GrazieModelParams> = {
     properties: {
         modelName: { type: "string" },
         apiKey: { type: "string" },
+        authType: {
+            type: "string",
+            enum: ["stgn", "prod"],
+        },
         ...(modelParamsSchema.properties as PropertiesSchema<ModelParams>),
     },
-    required: ["modelName", "apiKey", ...modelParamsSchema.required],
+    required: [
+        "modelName",
+        "apiKey",
+        "authType",
+        ...modelParamsSchema.required,
+    ],
     additionalProperties: false,
 };
 

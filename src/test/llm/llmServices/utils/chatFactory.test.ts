@@ -1,8 +1,11 @@
 import { expect } from "earl";
 
 import { ConfigurationError } from "../../../../llm/llmServiceErrors";
-import { ChatHistory, ChatMessage } from "../../../../llm/llmServices/chat";
-import { ProofVersion } from "../../../../llm/llmServices/llmService";
+import {
+    ChatHistory,
+    ChatMessage,
+} from "../../../../llm/llmServices/commonStructures/chat";
+import { ProofVersion } from "../../../../llm/llmServices/commonStructures/proofVersion";
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 import {
     buildChat,
@@ -28,7 +31,7 @@ import {
     calculateTokensViaTikToken,
 } from "../../llmSpecificTestUtils/calculateTokens";
 import {
-    gptTurboModelName,
+    gptModelName,
     testModelId,
 } from "../../llmSpecificTestUtils/constants";
 
@@ -348,9 +351,9 @@ suite("[LLMService-s utils] Building chats test", () => {
         [
             [
                 "TikToken tokens",
-                gptTurboModelName,
+                gptModelName,
                 (text: string) => {
-                    return calculateTokensViaTikToken(text, gptTurboModelName);
+                    return calculateTokensViaTikToken(text, gptModelName);
                 },
             ],
             [
@@ -400,7 +403,7 @@ suite("[LLMService-s utils] Building chats test", () => {
                 limitedTokensModelParams
             ).chat;
             expect(oneTheoremChat).toEqual(expectedChat);
-        });
+        }).timeout(5000);
 
         function buildProofFixChatFromContext(
             messages: TestMessages,
@@ -449,7 +452,7 @@ suite("[LLMService-s utils] Building chats test", () => {
                 unlimitedTokensModelParams
             ).chat;
             expect(completeProofFixChat).toEqual(expectedChat);
-        });
+        }).timeout(5000);
 
         test(`Test proof-fix-chat builder: all diagnostics & only 1/2 theorem, ${tokensMethodName}`, async () => {
             const [
@@ -476,7 +479,7 @@ suite("[LLMService-s utils] Building chats test", () => {
                 limitedTokensModelParams
             ).chat;
             expect(allDiagnosticsOneTheoremChat).toEqual(expectedChat);
-        });
+        }).timeout(10000);
 
         test(`Test proof-fix-chat builder: no extra diagnostics & theorems, ${tokensMethodName}`, async () => {
             const [
@@ -503,6 +506,6 @@ suite("[LLMService-s utils] Building chats test", () => {
                 limitedTokensModelParams
             ).chat;
             expect(noExtraContextChat).toEqual(expectedChat);
-        });
+        }).timeout(10000);
     });
 });

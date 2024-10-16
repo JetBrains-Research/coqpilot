@@ -1,8 +1,12 @@
 import { Theorem } from "../../../coqParser/parsedTypes";
 import { ConfigurationError } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
-import { AnalyzedChatHistory, ChatHistory, ChatMessage } from "../chat";
-import { ProofVersion } from "../llmService";
+import {
+    AnalyzedChatHistory,
+    ChatHistory,
+    ChatMessage,
+} from "../commonStructures/chat";
+import { ProofVersion } from "../commonStructures/proofVersion";
 import { ModelParams } from "../modelParams";
 
 import { ChatTokensFitter } from "./chatTokensFitter";

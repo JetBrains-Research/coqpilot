@@ -1,6 +1,6 @@
 import { expect } from "earl";
 
-import { ProofVersion } from "../../../llm/llmServices/llmService";
+import { ProofVersion } from "../../../llm/llmServices/commonStructures/proofVersion";
 
 import { MockLLMGeneratedProof } from "./mockLLMService";
 

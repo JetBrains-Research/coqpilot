@@ -1,5 +1,7 @@
 # CoqPilot
 
+![Version](https://img.shields.io/badge/version-v2.3.0-blue?style=flat-square)
+
 *Authors:* Andrei Kozyrev, Gleb Solovev, Nikita Khramov, and Anton Podkopaev, [Programming Languages and Tools Lab](https://lp.jetbrains.com/research/plt_lab/) at JetBrains Research.
 
 `CoqPilot` is a [Visual Studio Code](https://code.visualstudio.com/) extension that is designed to help automate writing of Coq proofs. It uses Large Language Models to generate multiple potential proofs and then uses [coq-lsp](https://github.com/ejgallego/coq-lsp) to typecheck them. It substitutes the proof in the editor only if a valid proof is found. 
@@ -11,7 +13,7 @@
 - 🔍 [Brief Technical Overview](#brief-technical-overview)
 - 💡 [Example Usage](#example-usage)
 - 🛠 [Installation](#installation)
-  - ▶️ [Coq-lsp Installation](#coq-lsp-installation)
+  - ▶️ [Coq-LSP Installation](#coq-lsp-installation)
   - 🤖 [Building Locally](#building-locally)
 - ⚠️ [Important Information](#important)
 - ⚙️ [Extension Settings](#extension-settings)
@@ -28,7 +30,7 @@
 
 ## Requirements
 
-* `coq-lsp` version `0.1.8+8.19.0` is currently required to run the extension.
+* `coq-lsp` version `0.1.9+8.19` is currently required to run the extension.
 
 ## Brief technical overview
 
@@ -42,7 +44,7 @@ For each service, an array of models could be defined through the settings. Each
 
 When `CoqPilot` completion command is issued, it parses the currently opened file, extracts theorems that have complete proofs and processes them into a message history for the LLM. It helps LLM to keep the style and hallucinate less. 
 
-For each `admit.` present in the file, an independent completion process is issued. If a valid proof is found, it is substituted in the editor. `CoqPilot` also allows a multi-round fixing procedure for the proofs from the LLM. I.e. if the proof was incorrect, compiler message could be automatically sent to the LLM with a request to repair it. It can now be configured in the settings. One can set the amount of attempts for the consequtive proof fixing with compiler feedback.
+For each `admit.` present in the file, an independent completion process is issued. If a valid proof is found, it is substituted in the editor. `CoqPilot` also allows a multi-round fixing procedure for the proofs from the LLM. I.e. if the proof was incorrect, compiler message could be automatically sent to the LLM with a request to repair it. It can now be configured in the settings. One can set the number of attempts for the consequtive proof fixing with compiler feedback.
 
 As soon as at least one valid proof is found, it is substituted in the editor and the process is finished.
 
@@ -62,16 +64,18 @@ As soon as at least one valid proof is found, it is substituted in the editor an
 
 ## Installation
 
-### Coq-lsp installation
+### Coq-LSP installation
 
-To make the extension running you will have to install `coq-lsp` server. You can install it using opam: 
+To run the extension, you must install a `coq-lsp` server. Depending on the system used in your project, you should install it using `opam` or `nix`. A well-configured `nix` project should have the `coq-lsp` server installed as a dependency. To install `coq-lsp` using `opam`, you can use the following commands: 
 ```bash
-opam pin add coq-lsp 0.1.8+8.19.0
+opam pin add coq-lsp 0.1.9+8.19
 opam install coq-lsp
 ```
 For more information on how to install `coq-lsp` please refer to [coq-lsp](https://github.com/ejgallego/coq-lsp). 
 
-With coq-lsp, extension should have everything it needs to run.
+Either way around, if the [coq-lsp](https://github.com/ejgallego/coq-lsp) extension works well and you can see the goals and theorems in the VSCode, then `CoqPilot` should work as well. However, using [coq-lsp](https://github.com/ejgallego/coq-lsp) as a plugin for Coq support is not mandatory for `CoqPilot` to work.
+
+If your installation of `coq-lsp` is not in the default path, you can specify the path to the `coq-lsp` server in the settings using the `coqpilot.coqLspServerPath` setting. Default value should work well for most of the cases.
 
 ### Building locally
 
@@ -93,7 +97,7 @@ npm install
 npm run compile
 ```
 
-To run the extension from the vscode, you can press `F5` or click on `Run extension` in the `Run and Debug` section. It will open a new window with the extension running.
+To run the extension from the VSCode, you can press `F5` or click on `Run extension` in the `Run and Debug` section. It will open a new window with the extension running.
 
 To run all tests properly (i.e. with rebuilding the resources and the code first), execute the following task:
 ```bash
@@ -111,13 +115,13 @@ The extension's architecture overview is stored in the [ARCHITECTURE.md](https:/
 CoqPilot generates aux files with `_cp_aux.v` suffix. Sometimes when generation fails with exception, it is possible that such file will not be deleted. When a project is open, extension shall show a window that asks if you want to add such files to the local project gitignore. 
 
 Moreover, this repository contains a script for your convenience that adds the format of such files to the global gitignore file on your system.  
-- Copy the [`set_gitignore.sh`](https://github.com/K-dizzled/coqpilot/blob/main/set_gitignore.sh) file to your computer. Then: 
+- Copy the [`set_gitignore.sh`](https://github.com/JetBrains-Research/coqpilot/blob/main/set_gitignore.sh) file to your computer. Then: 
 ```bash 
 chmod +x set_gitignore.sh
 ./set_gitignore.sh
 ```
 It will add the format of CoqPilot aux files to your global gitignore file on the system, so that even if CoqPilot forgets to clean files up, they will not be marked as new files in git.
-Comment: Such files are not visible in the vscode explorer, because plugin adds them to the `files.exclude` setting on startup.
+Comment: Such files are not visible in the VSCode explorer, because plugin adds them to the `files.exclude` setting on startup.
 
 ## Extension Settings
 
@@ -125,6 +129,7 @@ This extension contributes the following settings:
 
 * `coqpilot.contextTheoremsRankerType` : The type of theorems ranker that will be used to select theorems for proof generation (when context is smaller than taking all of them). Either randomly, by Jacard index (similarity metric) or by distance from the theorem, with the currently observed admit. 
 * `coqpilot.loggingVerbosity` : Verbosity of the logs. Could be `info`, `debug`.
+* `coqpilot.coqLspServerPath` : Path to the coq-lsp server. By default, it is set to `coq-lsp`.
 
 * `coqpilot.predefinedProofsModelsParameters`, `coqpilot.openAiModelsParameters`, `coqpilot.grazieModelsParameters` and `coqpilot.lmStudioModelsParameters`:
 
@@ -210,7 +215,16 @@ git submodule update
 ```
 After that, you need to build the projects. Be careful, the actively maintained way to build this projects is `nix`. Moreover, when adding your own projects, make sure that they are built using `coq-8.19.0`.
 
-First things first, the process of running the benchmark is not perfectly automated yet. We are working on it. For now, one project (one unit containing nix environment) shall be ran at a time. Let's say you are going to run the benchmark on the `imm` project. You will have to do the following: 
+### New framework (beta)
+
+The new benchmarking framework with extended capabilities is now available. 
+However, it is still in the testing phase, so some bugs and missing features may be present.
+
+To use it, follow the instructions in the [`BENCHMARKING_FRAMEWORK_GUIDE.md`](etc/docs/benchmark/BENCHMARKING_FRAMEWORK_GUIDE.md).
+
+### Legacy framework
+
+The process of running the benchmark is not perfectly automated and we are working on it. For now, one project (one unit containing nix environment) shall be ran at a time. Let's say you are going to run the benchmark on the `imm` project. You will have to do the following: 
 
 <!-- 0. Go the the `imm` subdirectory and add a `_CoqProject` file in the root with the following: 
     ```
@@ -227,11 +241,11 @@ First things first, the process of running the benchmark is not perfectly automa
     cachix use weakmemory
     ```
 
-3. Go to the `imm` subdirectory, apply the nix environment (without it the project will NOT build) and build the project: 
+3. Go to the `imm` subdirectory, apply the nix environment (without it the project will **NOT** build) and build the project: 
     ```bash
     cd dataset/imm 
-    nix-build
     nix-shell 
+    make
     ```
 4. Make sure the `_CoqProject` was successfully generated in the root of your project. Return to the project root not exiting the nix-shell. Run the benchmark: 
     ```bash

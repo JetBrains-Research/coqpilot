@@ -1,0 +1,141 @@
+{
+    "allFileTheorems": [
+      {
+        "name": "test",
+        "statement_range": {
+          "start": {
+            "line": 0,
+            "character": 0
+          },
+          "end": {
+            "line": 0,
+            "character": 69
+          }
+        },
+        "statement": "Theorem test : forall (A : Type) (P : A -> Prop) (x : A), P x -> P x.",
+        "proof": {
+          "proof_steps": [
+            {
+              "text": "Proof.",
+              "vernac_type": "VernacProof",
+              "range": {
+                "start": {
+                  "line": 1,
+                  "character": 0
+                },
+                "end": {
+                  "line": 1,
+                  "character": 6
+                }
+              }
+            },
+            {
+              "text": "admit.",
+              "vernac_type": "VernacExtend",
+              "range": {
+                "start": {
+                  "line": 2,
+                  "character": 4
+                },
+                "end": {
+                  "line": 2,
+                  "character": 10
+                }
+              }
+            },
+            {
+              "text": "Admitted.",
+              "vernac_type": "VernacEndProof",
+              "range": {
+                "start": {
+                  "line": 3,
+                  "character": 0
+                },
+                "end": {
+                  "line": 3,
+                  "character": 9
+                }
+              }
+            }
+          ],
+          "end_pos": {
+            "start": {
+              "line": 3,
+              "character": 0
+            },
+            "end": {
+              "line": 3,
+              "character": 9
+            }
+          },
+          "is_incomplete": true,
+          "holes": [
+            {
+              "text": "admit.",
+              "vernac_type": "VernacExtend",
+              "range": {
+                "start": {
+                  "line": 2,
+                  "character": 4
+                },
+                "end": {
+                  "line": 2,
+                  "character": 10
+                }
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "fileLines": [
+      "Theorem test : forall (A : Type) (P : A -> Prop) (x : A), P x -> P x.",
+      "Proof.",
+      "    admit.",
+      "Admitted.",
+      "",
+      "(* Theorem test2 : forall (A : Type) (P : A -> Prop) (x : A), P x -> P x.",
+      "Proof.",
+      "    intros A P x H.",
+      "    admit.",
+      "Admitted.",
+      "",
+      "Theorem test2nat1 : forall n : nat, n = 0 \\/ n <> 0.",
+      "Proof.",
+      "  intros n.",
+      "  destruct n.",
+      "  - admit.",
+      "  - right.",
+      "  discriminate.",
+      "Admitted.",
+      "",
+      "Theorem test2nat2 : forall n : nat, n = 0 \\/ n <> 0.",
+      "Proof.",
+      "    intros n.",
+      "    destruct n.",
+      "    {",
+      "        admit.",
+      "    }",
+      "    {",
+      "        admit.",
+      "    }",
+      "Admitted.",
+      "",
+      "Theorem test_thr : forall n:nat, 0 + n = n.",
+      "Proof.",
+      "    intros n. Print plus.",
+      "    admit.",
+      "    (* reflexivity. *)",
+      "Admitted.",
+      "",
+      "Lemma test_thr1 : forall n:nat, 0 + n + 0 = n.",
+      "Proof.",
+      "    intros n. Print plus.",
+      "    admit.",
+      "    (* reflexivity. *)",
+      "Admitted. *)",
+      ""
+    ],
+    "fileVersion": 1,
+    "filePath": "auto_benchmark.v"
+  }

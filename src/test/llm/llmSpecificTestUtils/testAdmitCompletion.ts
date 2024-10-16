@@ -1,9 +1,7 @@
 import { expect } from "earl";
 
-import {
-    ErrorsHandlingMode,
-    LLMService,
-} from "../../../llm/llmServices/llmService";
+import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
+import { LLMService } from "../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
 import { UserModelParams } from "../../../llm/userModelParams";
 
