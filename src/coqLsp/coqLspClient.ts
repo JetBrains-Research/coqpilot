@@ -36,10 +36,10 @@ export interface CoqLspClientInterface extends Disposable {
         position: Position,
         documentUri: Uri,
         version: number,
-        command: string
+        command?: string
     ): Promise<Result<Goal<PpString>[], Error>>;
 
-    openTextDocument(uri: Uri, version: number): Promise<DiagnosticMessage>;
+    openTextDocument(uri: Uri, version?: number): Promise<DiagnosticMessage>;
 
     getDocumentSymbols(uri: Uri): Promise<any>;
 

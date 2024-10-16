@@ -12,7 +12,7 @@ import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/
 import { resolveParametersOrThrow } from "../../llm/llmServices/utils/resolveOrThrow";
 
 import { createTestCoqLspClient } from "../../coqLsp/coqLspBuilders";
-import { CoqLspClient } from "../../coqLsp/coqLspClient";
+import { CoqLspClientInterface } from "../../coqLsp/coqLspClient";
 import { ProofGoal } from "../../coqLsp/coqLspTypes";
 
 import {
@@ -427,7 +427,7 @@ async function extractCompletionTargets(
     fileVersion: number,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileUri: Uri,
-    client: CoqLspClient
+    client: CoqLspClientInterface
 ): Promise<[BenchmarkingCompletionTargets, SourceFileEnvironment]> {
     const sourceFileEnvironment = await createSourceFileEnvironment(
         fileVersion,
@@ -461,7 +461,7 @@ async function createCompletionTargets(
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileTheorems: Theorem[],
     fileUri: Uri,
-    client: CoqLspClient
+    client: CoqLspClientInterface
 ): Promise<BenchmarkingCompletionTargets> {
     const theoremsWithProofs = fileTheorems.filter((thr) => thr.proof);
     const admitHolesToComplete = theoremsWithProofs
@@ -504,7 +504,7 @@ async function resolveProofStepsToCompletionContexts(
     parentedProofSteps: ParentedProofStep[],
     fileVersion: number,
     fileUri: Uri,
-    client: CoqLspClient
+    client: CoqLspClientInterface
 ): Promise<BenchmarkingCompletionContext[]> {
     let completionContexts: BenchmarkingCompletionContext[] = [];
     for (const parentedProofStep of parentedProofSteps) {

@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { Position, Range } from "vscode-languageclient";
 
-import { CoqLspClient } from "../coqLsp/coqLspClient";
+import { CoqLspClientInterface } from "../coqLsp/coqLspClient";
 import {
     CoqParsingError,
     FlecheDocument,
@@ -14,7 +14,7 @@ import { ProofStep, Theorem, TheoremProof, Vernacexpr } from "./parsedTypes";
 
 export async function parseCoqFile(
     uri: Uri,
-    client: CoqLspClient
+    client: CoqLspClientInterface
 ): Promise<Theorem[]> {
     return client
         .getFlecheDocument(uri)
@@ -34,7 +34,7 @@ export async function parseCoqFile(
 async function parseFlecheDocument(
     doc: FlecheDocument,
     textLines: string[],
-    client: CoqLspClient,
+    client: CoqLspClientInterface,
     uri: Uri
 ): Promise<Theorem[]> {
     if (doc === null) {

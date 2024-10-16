@@ -3,7 +3,7 @@ import { existsSync, unlinkSync, writeFileSync } from "fs";
 import * as path from "path";
 import { Position } from "vscode-languageclient";
 
-import { CoqLspClient } from "../coqLsp/coqLspClient";
+import { CoqLspClientInterface } from "../coqLsp/coqLspClient";
 import { CoqLspTimeoutError } from "../coqLsp/coqLspTypes";
 
 import { Uri } from "../utils/uri";
@@ -30,7 +30,7 @@ export interface CoqProofCheckerInterface {
 export class CoqProofChecker implements CoqProofCheckerInterface {
     private mutex: Mutex = new Mutex();
 
-    constructor(private coqLspClient: CoqLspClient) {}
+    constructor(private coqLspClient: CoqLspClientInterface) {}
 
     async checkProofs(
         sourceDirPath: string,

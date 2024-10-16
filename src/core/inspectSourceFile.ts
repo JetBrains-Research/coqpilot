@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import * as path from "path";
 
-import { CoqLspClient } from "../coqLsp/coqLspClient";
+import { CoqLspClientInterface } from "../coqLsp/coqLspClient";
 
 import { parseCoqFile } from "../coqParser/parseCoqFile";
 import { ProofStep, Theorem } from "../coqParser/parsedTypes";
@@ -18,7 +18,7 @@ export async function inspectSourceFile(
     fileVersion: number,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileUri: Uri,
-    client: CoqLspClient
+    client: CoqLspClientInterface
 ): Promise<AnalyzedFile> {
     const sourceFileEnvironment = await createSourceFileEnvironment(
         fileVersion,
@@ -47,7 +47,7 @@ async function createCompletionContexts(
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileTheorems: Theorem[],
     fileUri: Uri,
-    client: CoqLspClient
+    client: CoqLspClientInterface
 ): Promise<CompletionContext[]> {
     const holesToComplete = fileTheorems
         .filter((thr) => thr.proof)
@@ -80,7 +80,7 @@ async function createCompletionContexts(
 export async function createSourceFileEnvironment(
     fileVersion: number,
     fileUri: Uri,
-    client: CoqLspClient
+    client: CoqLspClientInterface
 ): Promise<SourceFileEnvironment> {
     const fileTheorems = await parseCoqFile(fileUri, client);
     const fileText = readFileSync(fileUri.fsPath);

@@ -1,7 +1,7 @@
 import { ProofGenerationContext } from "../../llm/proofGenerationContext";
 
 import { createTestCoqLspClient } from "../../coqLsp/coqLspBuilders";
-import { CoqLspClient } from "../../coqLsp/coqLspClient";
+import { CoqLspClientInterface } from "../../coqLsp/coqLspClient";
 
 import {
     CompletionContext,
@@ -16,7 +16,7 @@ import { Uri } from "../../utils/uri";
 import { resolveResourcesDir } from "./pathsResolver";
 
 export interface PreparedEnvironment {
-    coqLspClient: CoqLspClient;
+    coqLspClient: CoqLspClientInterface;
     coqProofChecker: CoqProofChecker;
     completionContexts: CompletionContext[];
     sourceFileEnvironment: SourceFileEnvironment;
