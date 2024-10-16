@@ -13,8 +13,6 @@ import {
     VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
 import {
-    DidChangeTextDocumentNotification,
-    DidChangeTextDocumentParams,
     DidCloseTextDocumentNotification,
     DidCloseTextDocumentParams,
     DidOpenTextDocumentNotification,
@@ -40,15 +38,6 @@ export interface CoqLspClientInterface extends Disposable {
     ): Promise<Result<Goal<PpString>[], Error>>;
 
     openTextDocument(uri: Uri, version?: number): Promise<DiagnosticMessage>;
-
-    getDocumentSymbols(uri: Uri): Promise<any>;
-
-    updateTextDocument(
-        oldDocumentText: string[],
-        appendedSuffix: string,
-        uri: Uri,
-        version: number
-    ): Promise<DiagnosticMessage>;
 
     closeTextDocument(uri: Uri): Promise<void>;
 
@@ -95,12 +84,6 @@ export class CoqLspClient implements CoqLspClientInterface {
         return new CoqLspClient(connector);
     }
 
-    async getDocumentSymbols(uri: Uri): Promise<any> {
-        return await this.mutex.runExclusive(async () => {
-            return this.getDocumentSymbolsUnsafe(uri);
-        });
-    }
-
     async getGoalsAtPoint(
         position: Position,
         documentUri: Uri,
@@ -123,22 +106,6 @@ export class CoqLspClient implements CoqLspClientInterface {
     ): Promise<DiagnosticMessage> {
         return await this.mutex.runExclusive(async () => {
             return this.openTextDocumentUnsafe(uri, version);
-        });
-    }
-
-    async updateTextDocument(
-        oldDocumentText: string[],
-        appendedSuffix: string,
-        uri: Uri,
-        version: number = 1
-    ): Promise<DiagnosticMessage> {
-        return await this.mutex.runExclusive(async () => {
-            return this.updateTextDocumentUnsafe(
-                oldDocumentText,
-                appendedSuffix,
-                uri,
-                version
-            );
         });
     }
 
@@ -193,16 +160,6 @@ export class CoqLspClient implements CoqLspClientInterface {
         } else {
             return this.removeTraceFromLspError(diagnosticMessageWithTrace);
         }
-    }
-
-    private async getDocumentSymbolsUnsafe(uri: Uri): Promise<any> {
-        let textDocument = TextDocumentIdentifier.create(uri.uri);
-        let params: any = { textDocument };
-
-        return await this.client.sendRequest(
-            "textDocument/documentSymbol",
-            params
-        );
     }
 
     private async getGoalsAtPointUnsafe(
@@ -347,43 +304,6 @@ export class CoqLspClient implements CoqLspClientInterface {
             params,
             uri,
             version
-        );
-    }
-
-    private getTextEndPosition(lines: string[]): Position {
-        return Position.create(
-            lines.length - 1,
-            lines[lines.length - 1].length
-        );
-    }
-
-    private async updateTextDocumentUnsafe(
-        oldDocumentText: string[],
-        appendedSuffix: string,
-        uri: Uri,
-        version: number = 1
-    ): Promise<DiagnosticMessage> {
-        const updatedText = oldDocumentText.join("\n") + appendedSuffix;
-        const oldEndPosition = this.getTextEndPosition(oldDocumentText);
-
-        const params: DidChangeTextDocumentParams = {
-            textDocument: {
-                uri: uri.uri,
-                version: version,
-            },
-            contentChanges: [
-                {
-                    text: updatedText,
-                },
-            ],
-        };
-
-        return await this.waitUntilFileFullyChecked(
-            DidChangeTextDocumentNotification.type,
-            params,
-            uri,
-            version,
-            oldEndPosition
         );
     }
 
