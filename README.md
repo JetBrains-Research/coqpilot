@@ -30,7 +30,7 @@
 
 ## Requirements
 
-* `coq-lsp` version `0.1.9+8.19` is currently required to run the extension.
+* `coq-lsp` version `0.2.2+8.19` is currently required to run the extension.
 
 ## Brief technical overview
 
@@ -68,7 +68,7 @@ As soon as at least one valid proof is found, it is substituted in the editor an
 
 To run the extension, you must install a `coq-lsp` server. Depending on the system used in your project, you should install it using `opam` or `nix`. A well-configured `nix` project should have the `coq-lsp` server installed as a dependency. To install `coq-lsp` using `opam`, you can use the following commands: 
 ```bash
-opam pin add coq-lsp 0.1.9+8.19
+opam pin add coq-lsp 0.2.2+8.19
 opam install coq-lsp
 ```
 For more information on how to install `coq-lsp` please refer to [coq-lsp](https://github.com/ejgallego/coq-lsp). 
