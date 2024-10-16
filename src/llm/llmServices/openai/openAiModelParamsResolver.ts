@@ -104,39 +104,28 @@ export class OpenAiModelParamsResolver
         ]);
 
     /*
-     * About default tokens parameters (both `_modelToTokensLimit` and `_modelToMaxTokensToGenerate`).
-     * The values are taken mostly from the official OpenAI docs: https://platform.openai.com/docs/models.
-     * However, the information there is incomplete. Thus, external resources were used for some models.
-     * Such records are marked with the comments containing the reference to the source.
-     * - (*) = the post from the OpenAI community: https://community.openai.com/t/request-query-for-a-models-max-tokens/161891/8.
-     * - (sources) = Python OpenAI api sources: https://github.com/langchain-ai/langchain/blob/master/libs/community/langchain_community/llms/openai.py.
-     * - (microsoft) = Azure OpenAI Service models: https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models#gpt-4o-and-gpt-4-turbo.
+     * Default tokens parameters (both `_modelToTokensLimit` and `_modelToMaxTokensToGenerate`) values
+     * are taken from the official OpenAI docs: https://platform.openai.com/docs/models.
      */
 
     static readonly _modelToTokensLimit: Map<string, number> = new Map([
-        ["gpt-4o", 4096],
-        ["gpt-4o-2024-05-13", 4096],
+        ["gpt-4o", 128_000],
+        ["gpt-4o-2024-08-06", 128_000],
+        ["gpt-4o-2024-05-13", 128_000],
+        ["gpt-4o-mini", 128_000],
+        ["gpt-4o-mini-2024-07-18", 128_000],
         ["gpt-4-turbo", 128_000],
         ["gpt-4-turbo-2024-04-09", 128_000],
         ["gpt-4-turbo-preview", 128_000],
         ["gpt-4-0125-preview", 128_000],
         ["gpt-4-1106-preview", 128_000],
-        ["gpt-4-vision-preview", 128_000],
-        ["gpt-4-1106-vision-preview", 128_000],
         ["gpt-4", 8192],
-        ["gpt-4-0314", 8192], // (*), (microsoft)
         ["gpt-4-0613", 8192],
-        ["gpt-4-32k", 32_768],
-        ["gpt-4-32k-0314", 32_768], // (*), (microsoft)
-        ["gpt-4-32k-0613", 32_768],
+        ["gpt-4-0314", 8192],
         ["gpt-3.5-turbo-0125", 16_385],
         ["gpt-3.5-turbo", 16_385],
         ["gpt-3.5-turbo-1106", 16_385],
         ["gpt-3.5-turbo-instruct", 4096],
-        ["gpt-3.5-turbo-16k", 16_385],
-        ["gpt-3.5-turbo-16k-0613", 16_385],
-        ["gpt-3.5-turbo-0613", 4096],
-        ["gpt-3.5-turbo-0301", 4096],
     ]);
 
     /**
@@ -146,28 +135,22 @@ export class OpenAiModelParamsResolver
      * Thus, the default resolver should check this case and suggest smaller values if possible.
      */
     static readonly _modelToMaxTokensToGenerate: Map<string, number> = new Map([
-        ["gpt-4o", 4096], // (microsoft)
-        ["gpt-4o-2024-05-13", 4096], // (microsoft)
-        ["gpt-4-turbo", 4096], // (microsoft)
-        ["gpt-4-turbo-2024-04-09", 4096], // (microsoft)
+        ["gpt-4o", 16_384],
+        ["gpt-4o-2024-08-06", 16_384],
+        ["gpt-4o-2024-05-13", 4096],
+        ["gpt-4o-mini", 16_384],
+        ["gpt-4o-mini-2024-07-18", 16_384],
+        ["gpt-4-turbo", 4096],
+        ["gpt-4-turbo-2024-04-09", 4096],
         ["gpt-4-turbo-preview", 4096],
         ["gpt-4-0125-preview", 4096],
         ["gpt-4-1106-preview", 4096],
-        ["gpt-4-vision-preview", 4096],
-        ["gpt-4-1106-vision-preview", 4096],
-        ["gpt-4", 8192], // (*), (sources)
-        ["gpt-4-0314", 8192], // (*), (sources), (microsoft)
-        ["gpt-4-0613", 8192], // (*), (sources), (microsoft)
-        ["gpt-4-32k", 32_768], // (*), (sources)
-        ["gpt-4-32k-0314", 32_768], // (*), (sources), (microsoft)
-        ["gpt-4-32k-0613", 32_768], // (*), (sources), (microsoft)
+        ["gpt-4", 8192],
+        ["gpt-4-0613", 8192],
+        ["gpt-4-0314", 8192],
         ["gpt-3.5-turbo-0125", 4096],
         ["gpt-3.5-turbo", 4096],
         ["gpt-3.5-turbo-1106", 4096],
-        ["gpt-3.5-turbo-instruct", 4096], // (sources)
-        ["gpt-3.5-turbo-16k", 16_385], // (*), (sources)
-        ["gpt-3.5-turbo-16k-0613", 16_385], // (*), (sources), (microsoft)
-        ["gpt-3.5-turbo-0613", 4096], // (*), (sources), (microsoft)
-        ["gpt-3.5-turbo-0301", 4096], // (*), (sources), (microsoft)
+        ["gpt-3.5-turbo-instruct", 4096],
     ]);
 }

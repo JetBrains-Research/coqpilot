@@ -1,4 +1,5 @@
 import { EventLogger, Severity } from "../../logging/eventLogger";
+import { asErrorOrRethrow } from "../../utils/errorsUtils";
 import {
     ConfigurationError,
     GenerationFailedError,
@@ -7,17 +8,27 @@ import {
 import { ProofGenerationContext } from "../proofGenerationContext";
 import { UserModelParams } from "../userModelParams";
 
-import { AnalyzedChatHistory, ChatHistory } from "./chat";
+import { AnalyzedChatHistory } from "./commonStructures/chat";
+import { ErrorsHandlingMode } from "./commonStructures/errorsHandlingMode";
 import {
-    ErrorsHandlingMode,
-    GeneratedProofImpl,
-    LLMServiceImpl,
+    GeneratedRawContent,
+    GeneratedRawContentItem,
+} from "./commonStructures/generatedRawContent";
+import {
+    GenerationTokens,
+    constructGenerationTokens,
+    sumGenerationTokens,
+} from "./commonStructures/generationTokens";
+import {
     LLMServiceRequest,
     LLMServiceRequestFailed,
     LLMServiceRequestSucceeded,
-    ProofVersion,
-} from "./llmService";
+} from "./commonStructures/llmServiceRequest";
+import { ProofVersion } from "./commonStructures/proofVersion";
+import { GeneratedProofImpl } from "./generatedProof";
+import { LLMServiceImpl } from "./llmService";
 import { ModelParams } from "./modelParams";
+import { TokensCounter } from "./utils/chatTokensFitter";
 import { GenerationsLogger } from "./utils/generationsLogger/generationsLogger";
 
 /**
@@ -85,7 +96,7 @@ export abstract class LLMServiceInternal<
     /**
      * This method should be mostly a pure implementation of
      * the generation from chat, namely, its happy path.
-     * This function doesn't need to handle errors!
+     * This function does not need to handle errors!
      *
      * In case something goes wrong on the side of the external API, any error can be thrown.
      *
@@ -97,14 +108,14 @@ export abstract class LLMServiceInternal<
      * Important note: `ResolvedModelParams` are expected to be already validated by `LLMServiceImpl.resolveParameters`,
      * so there is no need to perform this checks again. Report `ConfigurationError` only if something goes wrong during generation runtime.
      *
-     * Subnote: most likely you'd like to call `this.validateChoices` to validate `choices` parameter.
+     * Subnote: most likely, you'd like to call `this.validateChoices` to validate `choices` parameter.
      * Since it overrides `choices`-like parameters of already validated `params`, it might have any number value.
      */
     abstract generateFromChatImpl(
-        chat: ChatHistory,
+        analyzedChat: AnalyzedChatHistory,
         params: ResolvedModelParams,
         choices: number
-    ): Promise<string[]>;
+    ): Promise<GeneratedRawContent>;
 
     /**
      * All the resources that `LLMServiceInternal` is responsible for should be disposed.
@@ -130,7 +141,7 @@ export abstract class LLMServiceInternal<
         choices: number,
         errorsHandlingMode: ErrorsHandlingMode,
         buildAndValidateChat: () => AnalyzedChatHistory,
-        wrapRawProof: (proof: string) => T
+        wrapRawProofContent: (proof: string) => T
     ): Promise<T[]> => {
         return this.logGenerationAndHandleErrors<T>(
             params,
@@ -141,12 +152,12 @@ export abstract class LLMServiceInternal<
             },
             async (request) => {
                 return this.generateFromChatImpl(
-                    request.analyzedChat!.chat,
+                    request.analyzedChat!,
                     params,
                     choices
                 );
             },
-            wrapRawProof
+            wrapRawProofContent
         );
     };
 
@@ -192,8 +203,10 @@ export abstract class LLMServiceInternal<
         choices: number,
         errorsHandlingMode: ErrorsHandlingMode,
         completeAndValidateRequest: (request: LLMServiceRequest) => void,
-        generateProofs: (request: LLMServiceRequest) => Promise<string[]>,
-        wrapRawProof: (proof: string) => T
+        generateProofs: (
+            request: LLMServiceRequest
+        ) => Promise<GeneratedRawContent>,
+        wrapRawProofContent: (proof: string) => T
     ): Promise<T[]> => {
         const request: LLMServiceRequest = {
             llmService: this.llmService,
@@ -203,7 +216,7 @@ export abstract class LLMServiceInternal<
         try {
             completeAndValidateRequest(request);
         } catch (e) {
-            const error = LLMServiceInternal.asErrorOrRethrow(e);
+            const error = asErrorOrRethrow(e);
             const configurationError =
                 error instanceof ConfigurationError
                     ? error
@@ -216,11 +229,13 @@ export abstract class LLMServiceInternal<
             return [];
         }
         try {
-            const proofs = await generateProofs(request);
-            this.logSuccess(request, proofs);
-            return proofs.map(wrapRawProof);
+            const rawGeneratedContent = await generateProofs(request);
+            this.logSuccess(request, rawGeneratedContent);
+            return rawGeneratedContent.items.map((rawProof) =>
+                wrapRawProofContent(rawProof.content)
+            );
         } catch (e) {
-            const error = LLMServiceInternal.asErrorOrRethrow(e);
+            const error = asErrorOrRethrow(e);
             this.logAndHandleError(error, errorsHandlingMode, request);
             return [];
         }
@@ -254,33 +269,67 @@ export abstract class LLMServiceInternal<
      * might handle negative or zero `choices` in some special way.
      * However, this validation is most likely needed in any normal `LLMServiceInternal` implementation.
      */
-    validateChoices(choices: number) {
+    static validateChoices(choices: number) {
         if (choices <= 0) {
             throw new ConfigurationError("choices number should be positive");
         }
     }
 
+    /**
+     * Helper function to build `GeneratedRawContent` from the generated raw strings.
+     *
+     * By default, this method builds `GeneratedRawContent` with tokens metrics being estimated **approximately**.
+     * Total metrics can be overriden with the `overrideTokensSpentInTotal` parameter.
+     */
+    static aggregateToGeneratedRawContent(
+        rawContentItems: string[],
+        perItemPromptTokens: number,
+        modelName: string | undefined,
+        overrideTokensSpentInTotal: Partial<GenerationTokens> = {}
+    ): GeneratedRawContent {
+        const tokensCounter = new TokensCounter(modelName);
+        try {
+            const builtItems: GeneratedRawContentItem[] = rawContentItems.map(
+                (content) => {
+                    return {
+                        content: content,
+                        tokensSpent: constructGenerationTokens(
+                            perItemPromptTokens,
+                            tokensCounter.countTokens(content)
+                        ),
+                    };
+                }
+            );
+            const builtContent = {
+                items: builtItems,
+                tokensSpentInTotal: sumGenerationTokens(
+                    builtItems.map((item) => item.tokensSpent)
+                ),
+            };
+            builtContent.tokensSpentInTotal = {
+                ...builtContent.tokensSpentInTotal,
+                ...overrideTokensSpentInTotal,
+            };
+            return builtContent;
+        } finally {
+            tokensCounter.dispose();
+        }
+    }
+
     private logSuccess(
         request: LLMServiceRequest,
-        generatedRawProofs: string[]
+        generatedProofsAsRawContent: GeneratedRawContent
     ) {
         const requestSucceeded: LLMServiceRequestSucceeded = {
             ...request,
-            generatedRawProofs: generatedRawProofs,
+            generatedRawProofs: generatedProofsAsRawContent.items,
+            tokensSpentInTotal: generatedProofsAsRawContent.tokensSpentInTotal,
         };
         this.generationsLogger.logGenerationSucceeded(requestSucceeded);
         this.eventLogger?.logLogicEvent(
             LLMServiceImpl.requestSucceededEvent,
             requestSucceeded
         );
-    }
-
-    private static asErrorOrRethrow(e: any): Error {
-        const error = e as Error;
-        if (error === null) {
-            throw e;
-        }
-        return error;
     }
 
     private logAndHandleError(

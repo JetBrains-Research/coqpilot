@@ -50,7 +50,7 @@ suite("Coq file parser tests", () => {
         }
     });
 
-    test("Retreive Multiple nested holes", async () => {
+    test("Retreive multiple nested holes", async () => {
         const doc = await parseTheoremsFromCoqFile(["test_many_admits.v"]);
 
         const expectedHoleRanges = [

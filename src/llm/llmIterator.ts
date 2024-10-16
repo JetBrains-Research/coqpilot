@@ -1,7 +1,8 @@
 import { EventLogger } from "../logging/eventLogger";
 
 import { LLMServices } from "./llmServices";
-import { GeneratedProof, LLMService } from "./llmServices/llmService";
+import { GeneratedProof } from "./llmServices/generatedProof";
+import { LLMService } from "./llmServices/llmService";
 import { ModelParams, ModelsParams } from "./llmServices/modelParams";
 import { ProofGenerationContext } from "./proofGenerationContext";
 

@@ -1,14 +1,13 @@
 import { Tiktoken, TiktokenModel, encoding_for_model } from "tiktoken";
 
 import { ConfigurationError } from "../../llmServiceErrors";
-import { ChatMessage, EstimatedTokens } from "../chat";
+import { ChatMessage, EstimatedTokens } from "../commonStructures/chat";
 
 export class ChatTokensFitter {
     readonly tokensLimit: number;
 
     private tokens: number = 0;
-    private encoder: Tiktoken | undefined;
-    private readonly countTokens: (text: string) => number;
+    private tokensCounter: TokensCounter;
 
     constructor(
         private readonly maxTokensToGenerate: number,
@@ -23,21 +22,11 @@ export class ChatTokensFitter {
         }
         this.tokens += this.maxTokensToGenerate;
 
-        this.encoder = undefined;
-        try {
-            this.encoder = encoding_for_model(modelName as TiktokenModel);
-        } catch (e) {}
-        this.countTokens = (text: string) => {
-            if (this.encoder) {
-                return this.encoder.encode(text).length;
-            } else {
-                return Math.floor(text.length / 4);
-            }
-        };
+        this.tokensCounter = new TokensCounter(modelName);
     }
 
     dispose() {
-        this.encoder?.free();
+        this.tokensCounter.dispose();
     }
 
     estimateTokens(): EstimatedTokens {
@@ -91,8 +80,35 @@ export class ChatTokensFitter {
 
     private countContentTokens(...contents: string[]): number {
         return contents.reduce(
-            (sum, content) => sum + this.countTokens(content),
+            (sum, content) => sum + this.tokensCounter.countTokens(content),
             0
         );
+    }
+}
+
+export class TokensCounter {
+    private encoder: Tiktoken | undefined;
+    private readonly countTokensInternal: (text: string) => number;
+
+    constructor(modelName: string | undefined) {
+        this.encoder = undefined;
+        try {
+            this.encoder = encoding_for_model(modelName as TiktokenModel);
+        } catch (e) {}
+        this.countTokensInternal = (text: string) => {
+            if (this.encoder) {
+                return this.encoder.encode(text).length;
+            } else {
+                return Math.floor(text.length / 4);
+            }
+        };
+    }
+
+    countTokens(text: string): number {
+        return this.countTokensInternal(text);
+    }
+
+    dispose() {
+        this.encoder?.free();
     }
 }

@@ -1,0 +1,36 @@
+{
+    "target": {
+        "goalToProve": {
+            "info": {
+            "evar": [
+                "Ser_Evar",
+                1
+            ],
+            "name": null
+            },
+            "hyps": [],
+            "ty": "forall (A : Type) (P : A -> Prop) (x : A), P x -> P x"
+        },
+        "positionRange": {
+            "start": {
+            "line": 2,
+            "character": 4
+            },
+            "end": {
+            "line": 2,
+            "character": 10
+            }
+        },
+        "sourceTheoremName": "test"
+    },
+    "inputParams": {
+        "llmServiceIdentifier": 0,
+        "inputBenchmarkingModelsParams": {
+            "ranker": "random",
+            "modelId": "prove-with-auto",
+            "tactics": [
+                "auto."
+            ]
+        }
+    }
+}

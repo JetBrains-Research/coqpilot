@@ -28,7 +28,7 @@
 
 ## Requirements
 
-* `coq-lsp` version `0.1.8+8.19.0` is currently required to run the extension.
+* `coq-lsp` version `0.1.9+8.19` is currently required to run the extension.
 
 ## Brief technical overview
 
@@ -42,7 +42,7 @@ For each service, an array of models could be defined through the settings. Each
 
 When `CoqPilot` completion command is issued, it parses the currently opened file, extracts theorems that have complete proofs and processes them into a message history for the LLM. It helps LLM to keep the style and hallucinate less. 
 
-For each `admit.` present in the file, an independent completion process is issued. If a valid proof is found, it is substituted in the editor. `CoqPilot` also allows a multi-round fixing procedure for the proofs from the LLM. I.e. if the proof was incorrect, compiler message could be automatically sent to the LLM with a request to repair it. It can now be configured in the settings. One can set the amount of attempts for the consequtive proof fixing with compiler feedback.
+For each `admit.` present in the file, an independent completion process is issued. If a valid proof is found, it is substituted in the editor. `CoqPilot` also allows a multi-round fixing procedure for the proofs from the LLM. I.e. if the proof was incorrect, compiler message could be automatically sent to the LLM with a request to repair it. It can now be configured in the settings. One can set the number of attempts for the consequtive proof fixing with compiler feedback.
 
 As soon as at least one valid proof is found, it is substituted in the editor and the process is finished.
 
@@ -66,7 +66,7 @@ As soon as at least one valid proof is found, it is substituted in the editor an
 
 To run the extension, you must install a `coq-lsp` server. Depending on the system used in your project, you should install it using `opam` or `nix`. A well-configured `nix` project should have the `coq-lsp` server installed as a dependency. To install `coq-lsp` using `opam`, you can use the following commands: 
 ```bash
-opam pin add coq-lsp 0.1.8+8.19.0
+opam pin add coq-lsp 0.1.9+8.19
 opam install coq-lsp
 ```
 For more information on how to install `coq-lsp` please refer to [coq-lsp](https://github.com/ejgallego/coq-lsp). 
@@ -213,7 +213,16 @@ git submodule update
 ```
 After that, you need to build the projects. Be careful, the actively maintained way to build this projects is `nix`. Moreover, when adding your own projects, make sure that they are built using `coq-8.19.0`.
 
-First things first, the process of running the benchmark is not perfectly automated yet. We are working on it. For now, one project (one unit containing nix environment) shall be ran at a time. Let's say you are going to run the benchmark on the `imm` project. You will have to do the following: 
+### New framework (beta)
+
+The new benchmarking framework with extended capabilities is now available. 
+However, it is still in the testing phase, so some bugs and missing features may be present.
+
+To use it, follow the instructions in the [`BENCHMARKING_FRAMEWORK_GUIDE.md`](etc/docs/benchmark/BENCHMARKING_FRAMEWORK_GUIDE.md).
+
+### Legacy framework
+
+The process of running the benchmark is not perfectly automated and we are working on it. For now, one project (one unit containing nix environment) shall be ran at a time. Let's say you are going to run the benchmark on the `imm` project. You will have to do the following: 
 
 <!-- 0. Go the the `imm` subdirectory and add a `_CoqProject` file in the root with the following: 
     ```

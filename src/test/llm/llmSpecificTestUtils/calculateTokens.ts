@@ -1,15 +1,23 @@
-import { TiktokenModel, encoding_for_model } from "tiktoken";
+import { TiktokenModel } from "tiktoken";
+
+import { TokensCounter } from "../../../llm/llmServices/utils/chatTokensFitter";
 
 export function calculateTokensViaTikToken(
     text: string,
     model: TiktokenModel
 ): number {
-    const encoder = encoding_for_model(model);
-    const tokens = encoder.encode(text).length;
-    encoder.free();
-    return tokens;
+    return countTokens(text, model);
 }
 
 export function approxCalculateTokens(text: string): number {
-    return (text.length / 4) >> 0;
+    return countTokens(text, undefined);
+}
+
+function countTokens(text: string, model: TiktokenModel | undefined): number {
+    const tokensCounter = new TokensCounter(model);
+    try {
+        return tokensCounter.countTokens(text);
+    } finally {
+        tokensCounter.dispose();
+    }
 }

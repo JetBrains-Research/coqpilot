@@ -1,16 +1,16 @@
 import { expect } from "earl";
 
 import { ConfigurationError } from "../../../llm/llmServiceErrors";
-import { ErrorsHandlingMode } from "../../../llm/llmServices/llmService";
+import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
 import { PredefinedProofsModelParams } from "../../../llm/llmServices/modelParams";
 import { PredefinedProofsService } from "../../../llm/llmServices/predefinedProofs/predefinedProofsService";
-import { timeZero } from "../../../llm/llmServices/utils/time";
+import { resolveParametersOrThrow } from "../../../llm/llmServices/utils/resolveOrThrow";
 import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { PredefinedProofsUserModelParams } from "../../../llm/userModelParams";
 
 import { EventLogger } from "../../../logging/eventLogger";
-import { delay } from "../../commonTestFunctions/delay";
-import { resolveParametersOrThrow } from "../../commonTestFunctions/resolveOrThrow";
+import { delay } from "../../../utils/delay";
+import { timeZero } from "../../../utils/time";
 import { withLLMService } from "../../commonTestFunctions/withLLMService";
 import { testModelId } from "../llmSpecificTestUtils/constants";
 import {
@@ -234,6 +234,7 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                 await predefinedProofsService.generateFromChat(
                     {
                         chat: [],
+                        contextTheorems: [],
                         estimatedTokens: {
                             messagesTokens: 0,
                             maxTokensToGenerate: 0,

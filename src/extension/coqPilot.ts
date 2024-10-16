@@ -7,25 +7,25 @@ import {
     workspace,
 } from "vscode";
 
-import { CoqLspClient } from "../coqLsp/coqLspClient";
-import { CoqLspConfig } from "../coqLsp/coqLspConfig";
+import { createCoqLspClient } from "../coqLsp/coqLspBuilders";
 import { CoqLspStartupError } from "../coqLsp/coqLspTypes";
 
+import {
+    CompletionContext,
+    ProcessEnvironment,
+    SourceFileEnvironment,
+} from "../core/completionGenerationContext";
 import { generateCompletion } from "../core/completionGenerator";
 import {
     FailureGenerationResult,
     FailureGenerationStatus,
     SuccessGenerationResult,
 } from "../core/completionGenerator";
-import {
-    CompletionContext,
-    ProcessEnvironment,
-    SourceFileEnvironment,
-} from "../core/completionGenerator";
 import { CoqProofChecker } from "../core/coqProofChecker";
 import { inspectSourceFile } from "../core/inspectSourceFile";
 
 import { ProofStep } from "../coqParser/parsedTypes";
+import { buildErrorCompleteLog } from "../utils/errorsUtils";
 import { Uri } from "../utils/uri";
 
 import {
@@ -119,21 +119,23 @@ export class CoqPilot {
                         shouldCompleteHole,
                         editor
                     );
-                } catch (error) {
-                    if (error instanceof SettingsValidationError) {
-                        error.showAsMessageToUser();
-                    } else if (error instanceof CoqLspStartupError) {
+                } catch (e) {
+                    if (e instanceof SettingsValidationError) {
+                        e.showAsMessageToUser();
+                    } else if (e instanceof CoqLspStartupError) {
                         showMessageToUserWithSettingsHint(
-                            EditorMessages.coqLspStartupFailure(error.path),
+                            EditorMessages.coqLspStartupFailure(e.path),
                             "error",
                             `${pluginId}.coqLspServerPath`
                         );
-                    } else if (error instanceof Error) {
+                    } else {
                         showMessageToUser(
-                            EditorMessages.errorOccurred(error.message),
+                            e instanceof Error
+                                ? EditorMessages.errorOccurred(e.message)
+                                : EditorMessages.objectWasThrownAsError(e),
                             "error"
                         );
-                        console.error(`${error.stack ?? error}`);
+                        console.error(buildErrorCompleteLog(e));
                     }
                 }
             }
@@ -272,13 +274,10 @@ export class CoqPilot {
         [CompletionContext[], SourceFileEnvironment, ProcessEnvironment]
     > {
         const fileUri = Uri.fromPath(filePath);
-        const coqLspServerConfig = CoqLspConfig.createServerConfig();
         const coqLspServerPath = parseCoqLspServerPath();
-        const coqLspClientConfig =
-            CoqLspConfig.createClientConfig(coqLspServerPath);
-        const client = await CoqLspClient.create(
-            coqLspServerConfig,
-            coqLspClientConfig
+        const client = await createCoqLspClient(
+            coqLspServerPath,
+            this.globalExtensionState.logOutputChannel
         );
         const contextTheoremsRanker = buildTheoremsRankerFromConfig();
 

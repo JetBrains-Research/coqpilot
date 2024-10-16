@@ -5,6 +5,7 @@ import {
     LoggerRecord,
     ResponseStatus,
 } from "../../../../llm/llmServices/utils/generationsLogger/loggerRecord";
+
 import {
     Time,
     nowTimestampMillis,
@@ -12,7 +13,7 @@ import {
     timeToMillis,
     timeToString,
     timeZero,
-} from "../../../../llm/llmServices/utils/time";
+} from "../../../../utils/time";
 
 suite("[LLMService] Test default availability estimator", () => {
     function buildNextRecord(
@@ -25,6 +26,7 @@ suite("[LLMService] Test default availability estimator", () => {
             "test model",
             responseStatus,
             5,
+            undefined,
             undefined,
             responseStatus === "FAILURE"
                 ? {

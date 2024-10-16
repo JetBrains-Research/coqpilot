@@ -1,13 +1,9 @@
-import {
-    AnalyzedChatHistory,
-    ChatHistory,
-} from "../../../llm/llmServices/chat";
-import {
-    ErrorsHandlingMode,
-    GeneratedProofImpl,
-    LLMServiceImpl,
-    ProofVersion,
-} from "../../../llm/llmServices/llmService";
+import { AnalyzedChatHistory } from "../../../llm/llmServices/commonStructures/chat";
+import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
+import { GeneratedRawContent } from "../../../llm/llmServices/commonStructures/generatedRawContent";
+import { ProofVersion } from "../../../llm/llmServices/commonStructures/proofVersion";
+import { GeneratedProofImpl } from "../../../llm/llmServices/generatedProof";
+import { LLMServiceImpl } from "../../../llm/llmServices/llmService";
 import { LLMServiceInternal } from "../../../llm/llmServices/llmServiceInternal";
 import {
     ModelParams,
@@ -114,10 +110,10 @@ class DummyLLMServiceInternal extends LLMServiceInternal<
     }
 
     async generateFromChatImpl(
-        _chat: ChatHistory,
+        _analyzedChat: AnalyzedChatHistory,
         _params: ModelParams,
         _choices: number
-    ): Promise<string[]> {
+    ): Promise<GeneratedRawContent> {
         throw Error("I'm a teapot");
     }
 }

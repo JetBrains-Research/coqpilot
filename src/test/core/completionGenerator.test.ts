@@ -2,13 +2,13 @@ import { expect } from "earl";
 
 import { disposeServices } from "../../llm/llmServices";
 
+import { ProcessEnvironment } from "../../core/completionGenerationContext";
 import {
     FailureGenerationResult,
     FailureGenerationStatus,
     GenerationResult,
     generateCompletion,
 } from "../../core/completionGenerator";
-import { ProcessEnvironment } from "../../core/completionGenerator";
 import { SuccessGenerationResult } from "../../core/completionGenerator";
 
 import {

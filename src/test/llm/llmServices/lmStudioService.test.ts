@@ -1,7 +1,7 @@
 import { expect } from "earl";
 
 import { ConfigurationError } from "../../../llm/llmServiceErrors";
-import { ErrorsHandlingMode } from "../../../llm/llmServices/llmService";
+import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
 import { LMStudioService } from "../../../llm/llmServices/lmStudio/lmStudioService";
 import { LMStudioModelParams } from "../../../llm/llmServices/modelParams";
 import { defaultSystemMessageContent } from "../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";

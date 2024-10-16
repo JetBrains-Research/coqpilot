@@ -1,7 +1,7 @@
 import { expect } from "earl";
 
-import { AnalyzedChatHistory } from "../../../../llm/llmServices/chat";
-import { ErrorsHandlingMode } from "../../../../llm/llmServices/llmService";
+import { AnalyzedChatHistory } from "../../../../llm/llmServices/commonStructures/chat";
+import { ErrorsHandlingMode } from "../../../../llm/llmServices/commonStructures/errorsHandlingMode";
 
 import {
     mockChat,
@@ -40,6 +40,7 @@ suite("[LLMService] Test `GeneratedProof`", () => {
                 analyzedChat.chat,
                 skipFirstNProofs
             ),
+            contextTheorems: analyzedChat.contextTheorems,
             estimatedTokens: analyzedChat.estimatedTokens,
         };
     }

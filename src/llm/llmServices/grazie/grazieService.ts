@@ -1,8 +1,14 @@
 import { EventLogger } from "../../../logging/eventLogger";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { GrazieUserModelParams } from "../../userModelParams";
-import { ChatHistory, ChatMessage } from "../chat";
-import { GeneratedProofImpl, ProofVersion } from "../llmService";
+import {
+    AnalyzedChatHistory,
+    ChatHistory,
+    ChatMessage,
+} from "../commonStructures/chat";
+import { GeneratedRawContent } from "../commonStructures/generatedRawContent";
+import { ProofVersion } from "../commonStructures/proofVersion";
+import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
 import { LLMServiceInternal } from "../llmServiceInternal";
 import { GrazieModelParams } from "../modelParams";
@@ -86,14 +92,14 @@ class GrazieServiceInternal extends LLMServiceInternal<
     }
 
     async generateFromChatImpl(
-        chat: ChatHistory,
+        analyzedChat: AnalyzedChatHistory,
         params: GrazieModelParams,
         choices: number
-    ): Promise<string[]> {
-        this.validateChoices(choices);
+    ): Promise<GeneratedRawContent> {
+        LLMServiceInternal.validateChoices(choices);
         let attempts = choices * 2;
         const completions: Promise<string>[] = [];
-        const formattedChat = this.formatChatHistory(chat);
+        const formattedChat = this.formatChatHistory(analyzedChat.chat);
 
         while (completions.length < choices && attempts > 0) {
             completions.push(
@@ -101,8 +107,14 @@ class GrazieServiceInternal extends LLMServiceInternal<
             );
             attempts--;
         }
+        const rawContentItems = await Promise.all(completions);
 
-        return Promise.all(completions);
+        // TODO: find a way to get actual tokens spent instead of approximation
+        return LLMServiceInternal.aggregateToGeneratedRawContent(
+            rawContentItems,
+            analyzedChat.estimatedTokens.messagesTokens,
+            params.modelName
+        );
     }
 
     private formatChatHistory(chat: ChatHistory): GrazieFormattedHistory {

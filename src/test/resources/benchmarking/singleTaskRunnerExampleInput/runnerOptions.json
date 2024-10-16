@@ -1,0 +1,8 @@
+{
+    "saveResultToFilePath": "benchmarksOutput/singleTaskRunnerResult.json",
+    "loggerSeverity": 2,
+    "execution": {
+        "requestLLMServiceMaxRetries": 5,
+        "proofsValidationTimeoutMillis": 30000
+    }
+}
