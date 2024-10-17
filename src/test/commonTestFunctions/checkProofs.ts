@@ -3,7 +3,6 @@ import { GeneratedProof } from "../../llm/llmServices/generatedProof";
 import { CompletionContext } from "../../core/completionGenerationContext";
 import { ProofCheckResult } from "../../core/coqProofChecker";
 import { prepareProofToCheck } from "../../core/exposedCompletionGeneratorUtils";
-import { getTextBeforePosition } from "../../core/exposedCompletionGeneratorUtils";
 
 import { PreparedEnvironment } from "./prepareEnvironment";
 
@@ -12,14 +11,10 @@ export async function checkProofs(
     completionContext: CompletionContext,
     environment: PreparedEnvironment
 ): Promise<ProofCheckResult[]> {
-    const sourceFileContentPrefix = getTextBeforePosition(
-        environment.sourceFileEnvironment.fileLines,
-        completionContext.prefixEndPosition
-    );
     return await environment.coqProofChecker.checkProofs(
-        environment.sourceFileEnvironment.dirPath,
-        sourceFileContentPrefix,
-        completionContext.prefixEndPosition,
+        environment.sourceFileEnvironment.fileUri,
+        environment.sourceFileEnvironment.fileVersion,
+        completionContext.admitRange.start,
         proofsToCheck
     );
 }

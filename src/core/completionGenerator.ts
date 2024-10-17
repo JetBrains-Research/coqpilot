@@ -18,7 +18,6 @@ import {
 import { CoqProofChecker, ProofCheckResult } from "./coqProofChecker";
 import {
     buildProofGenerationContext,
-    getTextBeforePosition,
     prepareProofToCheck,
 } from "./exposedCompletionGeneratorUtils";
 
@@ -71,10 +70,6 @@ export async function generateCompletion(
         processEnvironment.services,
         eventLogger
     );
-    const sourceFileContentPrefix = getTextBeforePosition(
-        sourceFileEnvironment.fileLines,
-        completionContext.prefixEndPosition
-    );
 
     try {
         /** newlyGeneratedProofs = generatedProofsBatch from iterator +
@@ -90,7 +85,6 @@ export async function generateCompletion(
             );
             const fixedProofsOrCompletion = await checkAndFixProofs(
                 newlyGeneratedProofs,
-                sourceFileContentPrefix,
                 completionContext,
                 sourceFileEnvironment,
                 processEnvironment,
@@ -108,7 +102,6 @@ export async function generateCompletion(
         while (newlyGeneratedProofs.length > 0) {
             const fixedProofsOrCompletion = await checkAndFixProofs(
                 newlyGeneratedProofs,
-                sourceFileContentPrefix,
                 completionContext,
                 sourceFileEnvironment,
                 processEnvironment,
@@ -153,7 +146,6 @@ export async function generateCompletion(
 
 async function checkAndFixProofs(
     newlyGeneratedProofs: GeneratedProof[],
-    sourceFileContentPrefix: string[],
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
@@ -165,7 +157,6 @@ async function checkAndFixProofs(
     // check proofs and finish with success if at least one is valid
     const proofCheckResults = await checkGeneratedProofs(
         newlyGeneratedProofs,
-        sourceFileContentPrefix,
         completionContext,
         sourceFileEnvironment,
         processEnvironment,
@@ -202,7 +193,6 @@ async function checkAndFixProofs(
 
 async function checkGeneratedProofs(
     generatedProofs: GeneratedProof[],
-    sourceFileContentPrefix: string[],
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
@@ -215,6 +205,7 @@ async function checkGeneratedProofs(
             prepareProofToCheck(generatedProof.proof())
     );
 
+    // TODO: [LspCoreRefactor] Why is it happening every time?
     if (workspaceRootPath) {
         processEnvironment.coqProofChecker.dispose();
         const client = await createCoqLspClient(
@@ -226,9 +217,9 @@ async function checkGeneratedProofs(
     }
 
     return processEnvironment.coqProofChecker.checkProofs(
-        sourceFileEnvironment.dirPath,
-        sourceFileContentPrefix,
-        completionContext.prefixEndPosition,
+        sourceFileEnvironment.fileUri,
+        sourceFileEnvironment.fileVersion,
+        completionContext.admitRange.start,
         preparedProofBatch,
         perProofTimeoutMillis
     );

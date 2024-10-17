@@ -5,29 +5,34 @@ import { OutputChannel } from "vscode";
 import {
     BaseLanguageClient,
     Diagnostic,
-    Disposable,
-    Position,
-    ProtocolNotificationType,
-    RequestType,
-    TextDocumentIdentifier,
-    VersionedTextDocumentIdentifier,
-} from "vscode-languageclient";
-import {
     DidCloseTextDocumentNotification,
     DidCloseTextDocumentParams,
     DidOpenTextDocumentNotification,
     DidOpenTextDocumentParams,
+    Disposable,
     LogTraceNotification,
+    Position,
+    ProtocolNotificationType,
     PublishDiagnosticsNotification,
+    RequestType,
+    TextDocumentIdentifier,
+    VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
 
 import { Uri } from "../utils/uri";
 
 import { CoqLspClientConfig, CoqLspServerConfig } from "./coqLspConfig";
 import { CoqLspConnector } from "./coqLspConnector";
-import { Goal, GoalAnswer, GoalRequest, PpString } from "./coqLspTypes";
-import { FlecheDocument, FlecheDocumentParams } from "./coqLspTypes";
-import { CoqLspError, CoqLspStartupError } from "./coqLspTypes";
+import {
+    CoqLspError,
+    CoqLspStartupError,
+    FlecheDocument,
+    FlecheDocumentParams,
+    Goal,
+    GoalAnswer,
+    GoalRequest,
+    PpString,
+} from "./coqLspTypes";
 
 export interface CoqLspClientInterface extends Disposable {
     getGoalsAtPoint(

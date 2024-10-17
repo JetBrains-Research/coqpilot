@@ -33,7 +33,11 @@ suite("Completion generation tests", () => {
             services: createDefaultServices(),
         };
         try {
-            return await Promise.all(
+            await environment.coqLspClient.openTextDocument(
+                environment.sourceFileEnvironment.fileUri
+            );
+
+            const generationResult = await Promise.all(
                 environment.completionContexts.map(
                     async (completionContext) => {
                         const result = await generateCompletion(
@@ -45,6 +49,12 @@ suite("Completion generation tests", () => {
                     }
                 )
             );
+
+            await environment.coqLspClient.closeTextDocument(
+                environment.sourceFileEnvironment.fileUri
+            );
+
+            return generationResult;
         } finally {
             disposeServices(processEnvironment.services);
         }

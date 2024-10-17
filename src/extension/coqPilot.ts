@@ -215,16 +215,13 @@ export class CoqPilot {
 
         if (result instanceof SuccessGenerationResult) {
             const flatProof = this.prepareCompletionForInsertion(result.data);
-            const vscodeHoleRange = toVSCodeRange({
-                start: completionContext.prefixEndPosition,
-                end: completionContext.admitEndPosition,
-            });
+            const vscodeHoleRange = toVSCodeRange(completionContext.admitRange);
             const completionRange = toVSCodeRange({
-                start: completionContext.prefixEndPosition,
+                start: completionContext.admitRange.start,
                 end: {
-                    line: completionContext.prefixEndPosition.line,
+                    line: completionContext.admitRange.start.line,
                     character:
-                        completionContext.prefixEndPosition.character +
+                        completionContext.admitRange.start.character +
                         flatProof.length,
                 },
             });
@@ -233,7 +230,7 @@ export class CoqPilot {
             await insertCompletion(
                 editor,
                 flatProof,
-                toVSCodePosition(completionContext.prefixEndPosition)
+                toVSCodePosition(completionContext.admitRange.start)
             );
             highlightTextInEditor(completionRange);
         } else if (result instanceof FailureGenerationResult) {
@@ -249,7 +246,7 @@ export class CoqPilot {
                     break;
                 case FailureGenerationStatus.SEARCH_FAILED:
                     const completionLine =
-                        completionContext.prefixEndPosition.line + 1;
+                        completionContext.admitRange.start.line + 1;
                     showMessageToUser(
                         EditorMessages.noProofsForAdmit(completionLine),
                         "info"
@@ -276,6 +273,14 @@ export class CoqPilot {
     > {
         const fileUri = Uri.fromPath(filePath);
         const coqLspServerPath = parseCoqLspServerPath();
+        // TODO: [LspCoreRefactor] Now a tone of Coq-LSPs are created and destroyed for each completion.
+        // It is not efficient. Refactor it to create a single Coq-LSP client for the whole session.
+        // But allow restarting it when issues occur.
+
+        // TODO: [LspCoreRefactor] Check hypothesis that we do not really need
+        // to send any events when user uses the plugin.
+
+        // TODO: [LspCoreRefactor] Check what happens in plugin runtime when file not prepared, but goals requested.
         const client = await createCoqLspClient(
             coqLspServerPath,
             this.globalExtensionState.logOutputChannel

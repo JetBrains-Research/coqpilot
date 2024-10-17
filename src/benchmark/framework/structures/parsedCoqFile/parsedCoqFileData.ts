@@ -3,6 +3,7 @@ import { JSONSchemaType } from "ajv";
 import { SourceFileEnvironment } from "../../../../core/completionGenerationContext";
 
 import { Theorem } from "../../../../coqParser/parsedTypes";
+import { Uri } from "../../../../utils/uri";
 import {
     fromMappedObject,
     mapValues,
@@ -48,6 +49,7 @@ export class ParsedCoqFileData {
             fileLines: this.fileLines,
             fileVersion: this.fileVersion,
             dirPath: getDirectoryPath(this.filePath),
+            fileUri: Uri.fromPath(this.filePath),
         };
     }
 }

@@ -32,8 +32,7 @@ export class CompletionGenerationTask
     getCompletionContext(): CompletionContext {
         return {
             proofGoal: this.targetGoalToProve,
-            prefixEndPosition: this.targetPositionRange.start,
-            admitEndPosition: this.targetPositionRange.end,
+            admitRange: this.targetPositionRange,
         };
     }
 

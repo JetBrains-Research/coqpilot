@@ -67,8 +67,7 @@ async function createCompletionContexts(
             if (firstGoal) {
                 completionContexts.push({
                     proofGoal: firstGoal,
-                    prefixEndPosition: hole.range.start,
-                    admitEndPosition: hole.range.end,
+                    admitRange: hole.range,
                 });
             }
         }
@@ -96,6 +95,7 @@ export async function createSourceFileEnvironment(
         fileLines: fileText.toString().split("\n"),
         fileVersion: fileVersion,
         dirPath: dirPath,
+        fileUri: fileUri,
     };
 }
 

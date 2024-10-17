@@ -242,7 +242,7 @@ async function benchmarkCompletionGeneration(
     workspaceRootPath?: string,
     perProofTimeoutMillis: number = 15000
 ): Promise<boolean> {
-    const completionPosition = completionContext.admitEndPosition;
+    const completionPosition = completionContext.admitRange.start;
     consoleLog(
         `Completion position: ${completionPosition.line}:${completionPosition.character}`
     );
@@ -518,8 +518,7 @@ async function resolveProofStepsToCompletionContexts(
             if (firstGoal) {
                 completionContexts.push({
                     proofGoal: firstGoal,
-                    prefixEndPosition: parentedProofStep.proofStep.range.start,
-                    admitEndPosition: parentedProofStep.proofStep.range.end,
+                    admitRange: parentedProofStep.proofStep.range,
                     parentTheorem: parentedProofStep.parentTheorem,
                 });
             }

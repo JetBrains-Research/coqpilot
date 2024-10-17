@@ -1,6 +1,6 @@
 import { Mutex } from "async-mutex";
-import { existsSync, unlinkSync, writeFileSync } from "fs";
-import * as path from "path";
+// import { existsSync, unlinkSync, writeFileSync } from "fs";
+// import * as path from "path";
 import { Position } from "vscode-languageclient";
 
 import { CoqLspClientInterface } from "../coqLsp/coqLspClient";
@@ -18,10 +18,11 @@ type Proof = string;
 
 export interface CoqProofCheckerInterface {
     checkProofs(
-        sourceDirPath: string,
-        sourceFileContentPrefix: string[],
-        prefixEndPosition: Position,
-        proofs: Proof[]
+        fileUri: Uri,
+        documentVersion: number,
+        checkAtPosition: Position,
+        proofs: Proof[],
+        coqLspTimeoutMillis?: number
     ): Promise<ProofCheckResult[]>;
 
     dispose(): void;
@@ -33,9 +34,9 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
     constructor(private coqLspClient: CoqLspClientInterface) {}
 
     async checkProofs(
-        sourceDirPath: string,
-        sourceFileContentPrefix: string[],
-        prefixEndPosition: Position,
+        fileUri: Uri,
+        documentVersion: number,
+        checkAtPosition: Position,
         proofs: Proof[],
         coqLspTimeoutMillis: number = 15000
     ): Promise<ProofCheckResult[]> {
@@ -54,9 +55,9 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
 
             return Promise.race([
                 this.checkProofsUnsafe(
-                    sourceDirPath,
-                    sourceFileContentPrefix,
-                    prefixEndPosition,
+                    fileUri,
+                    documentVersion,
+                    checkAtPosition,
                     proofs
                 ),
                 timeoutPromise,
@@ -64,83 +65,87 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
         });
     }
 
-    private buildAuxFileUri(
-        sourceDirPath: string,
-        holePosition: Position,
-        unique: boolean = true
-    ): Uri {
-        const holeIdentifier = `${holePosition.line}_${holePosition.character}`;
-        const defaultAuxFileName = `hole_${holeIdentifier}_cp_aux.v`;
-        let auxFilePath = path.join(sourceDirPath, defaultAuxFileName);
-        if (unique && existsSync(auxFilePath)) {
-            const randomSuffix = Math.floor(Math.random() * 1000000);
-            auxFilePath = auxFilePath.replace(
-                /\_cp_aux.v$/,
-                `_${randomSuffix}_cp_aux.v`
-            );
-        }
+    // private buildAuxFileUri(
+    //     sourceDirPath: string,
+    //     holePosition: Position,
+    //     unique: boolean = true
+    // ): Uri {
+    //     const holeIdentifier = `${holePosition.line}_${holePosition.character}`;
+    //     const defaultAuxFileName = `hole_${holeIdentifier}_cp_aux.v`;
+    //     let auxFilePath = path.join(sourceDirPath, defaultAuxFileName);
+    //     if (unique && existsSync(auxFilePath)) {
+    //         const randomSuffix = Math.floor(Math.random() * 1000000);
+    //         auxFilePath = auxFilePath.replace(
+    //             /\_cp_aux.v$/,
+    //             `_${randomSuffix}_cp_aux.v`
+    //         );
+    //     }
 
-        return Uri.fromPath(auxFilePath);
-    }
+    //     return Uri.fromPath(auxFilePath);
+    // }
 
     private checkIfProofContainsAdmit(proof: Proof): boolean {
         return forbiddenAdmitTactics.some((tactic) => proof.includes(tactic));
     }
 
     private async checkProofsUnsafe(
-        sourceDirPath: string,
-        sourceFileContentPrefix: string[],
-        prefixEndPosition: Position,
+        fileUri: Uri,
+        documentVersion: number,
+        // sourceDirPath: string,
+        // sourceFileContentPrefix: string[],
+        checkAtPosition: Position,
         proofs: Proof[]
     ): Promise<ProofCheckResult[]> {
         // 1. Write the text to the aux file
-        const auxFileUri = this.buildAuxFileUri(
-            sourceDirPath,
-            prefixEndPosition
-        );
-        const sourceFileContent = sourceFileContentPrefix.join("\n");
-        writeFileSync(auxFileUri.fsPath, sourceFileContent);
+        // const auxFileUri = this.buildAuxFileUri(
+        //     sourceDirPath,
+        //     prefixEndPosition
+        // );
+        // const sourceFileContent = sourceFileContentPrefix.join("\n");
+        // writeFileSync(auxFileUri.fsPath, sourceFileContent);
 
         const results: ProofCheckResult[] = [];
-        try {
-            // 2. Issue open text document request
-            await this.coqLspClient.openTextDocument(auxFileUri);
+        // try {
+        // 2. Issue open text document request
+        // await this.coqLspClient.openTextDocument(fileUri);
 
-            // 3. Iterate over the proofs and сheck them
-            for (const proof of proofs) {
-                // 3.1. Check if the proof contains admit
-                if (this.checkIfProofContainsAdmit(proof)) {
-                    results.push({
-                        proof: proof,
-                        isValid: false,
-                        diagnostic: "Proof contains admit",
-                    });
-                    continue;
-                }
-
-                // 3.2 Check if proof is valid and closes the first goal
-                const goalResult = await this.coqLspClient.getGoalsAtPoint(
-                    prefixEndPosition,
-                    auxFileUri,
-                    1,
-                    proof
-                );
-
+        // 3. Iterate over the proofs and сheck them
+        for (const proof of proofs) {
+            // 3.1. Check if the proof contains admit
+            if (this.checkIfProofContainsAdmit(proof)) {
                 results.push({
                     proof: proof,
-                    isValid: goalResult.ok,
-                    diagnostic: goalResult.err
-                        ? goalResult.val.message
-                        : undefined,
+                    isValid: false,
+                    diagnostic: "Proof contains admit",
                 });
+                continue;
             }
-        } finally {
-            // 4. Issue close text document request
-            await this.coqLspClient.closeTextDocument(auxFileUri);
 
-            // 5. Remove the aux file
-            unlinkSync(auxFileUri.fsPath);
+            // 3.2 Check if proof is valid and closes the first goal
+            const goalResult = await this.coqLspClient.getGoalsAtPoint(
+                checkAtPosition,
+                fileUri,
+                documentVersion,
+                proof
+            );
+
+            results.push({
+                proof: proof,
+                isValid: goalResult.ok,
+                diagnostic: goalResult.err ? goalResult.val.message : undefined,
+            });
         }
+        // } catch (error) {
+        //     console.log("Error in checkProofsUnsafe", error);
+        //     throw error;
+        // }
+        // finally {
+        // 4. Issue close text document request
+        // await this.coqLspClient.closeTextDocument(fileUri);
+
+        // 5. Remove the aux file
+        // unlinkSync(auxFileUri.fsPath);
+        // }
 
         return results;
     }

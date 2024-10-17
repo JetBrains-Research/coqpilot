@@ -11,7 +11,7 @@ export class DistanceContextTheoremsRanker implements ContextTheoremsRanker {
         const theoremsBeforeCompletionPosition = theorems.filter(
             (theorem) =>
                 theorem.statement_range.start.line <
-                completionContext.prefixEndPosition.line
+                completionContext.admitRange.start.line
         );
         // Sort theorems such that closer theorems are first
         theoremsBeforeCompletionPosition.sort((a, b) => {
@@ -21,7 +21,7 @@ export class DistanceContextTheoremsRanker implements ContextTheoremsRanker {
         const theoremsAfterCompletionPosition = theorems.filter(
             (theorem) =>
                 theorem.statement_range.start.line >
-                completionContext.prefixEndPosition.line
+                completionContext.admitRange.start.line
         );
 
         theoremsAfterCompletionPosition.sort((a, b) => {
