@@ -1,7 +1,12 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as tmp from "tmp";
-import { WorkspaceConfiguration, window, workspace } from "vscode";
+import {
+    OutputChannel,
+    WorkspaceConfiguration,
+    window,
+    workspace,
+} from "vscode";
 
 import { LLMServices, disposeServices } from "../llm/llmServices";
 import { GrazieService } from "../llm/llmServices/grazie/grazieService";
@@ -9,8 +14,12 @@ import { LMStudioService } from "../llm/llmServices/lmStudio/lmStudioService";
 import { OpenAiService } from "../llm/llmServices/openai/openAiService";
 import { PredefinedProofsService } from "../llm/llmServices/predefinedProofs/predefinedProofsService";
 
+import { createCoqLspClient } from "../coqLsp/coqLspBuilders";
+import { CoqLspClientInterface } from "../coqLsp/coqLspClient";
+
 import { EventLogger, Severity } from "../logging/eventLogger";
 
+import { parseCoqLspServerPath } from "./configReaders";
 import { pluginId } from "./coqPilot";
 import VSCodeLogWriter from "./vscodeLogWriter";
 
@@ -20,9 +29,24 @@ export class GlobalExtensionState {
         this.eventLogger,
         this.parseLoggingVerbosity(workspace.getConfiguration(pluginId))
     );
-    public readonly logOutputChannel = window.createOutputChannel(
-        "CoqPilot: coq-lsp events"
-    );
+
+    private constructor(
+        public readonly coqLspClient: CoqLspClientInterface,
+        public readonly logOutputChannel: OutputChannel
+    ) {}
+
+    static async create(): Promise<GlobalExtensionState> {
+        const coqLspServerPath = parseCoqLspServerPath();
+        const logOutputChannel = window.createOutputChannel(
+            "CoqPilot: coq-lsp events"
+        );
+        const coqLspClient = await createCoqLspClient(
+            coqLspServerPath,
+            logOutputChannel
+        );
+
+        return new GlobalExtensionState(coqLspClient, logOutputChannel);
+    }
 
     public readonly llmServicesLogsDir = path.join(
         tmp.dirSync().name,
@@ -67,6 +91,7 @@ export class GlobalExtensionState {
     dispose(): void {
         disposeServices(this.llmServices);
         this.logWriter.dispose();
+        this.coqLspClient.dispose();
         fs.rmSync(this.llmServicesLogsDir, { recursive: true, force: true });
         this.logOutputChannel.dispose();
     }

@@ -7,7 +7,7 @@ import {
     workspace,
 } from "vscode";
 
-import { createCoqLspClient } from "../coqLsp/coqLspBuilders";
+// import { createCoqLspClient } from "../coqLsp/coqLspBuilders";
 import { CoqLspStartupError } from "../coqLsp/coqLspTypes";
 
 import {
@@ -30,7 +30,6 @@ import { Uri } from "../utils/uri";
 
 import {
     buildTheoremsRankerFromConfig,
-    parseCoqLspServerPath,
     readAndValidateUserModelsParams,
 } from "./configReaders";
 import {
@@ -61,12 +60,17 @@ export class CoqPilot {
     private readonly globalExtensionState: GlobalExtensionState;
     private readonly vscodeExtensionContext: ExtensionContext;
 
-    constructor(vscodeExtensionContext: ExtensionContext) {
+    private constructor(
+        vscodeExtensionContext: ExtensionContext,
+        globalExtensionState: GlobalExtensionState
+    ) {
         hideAuxFiles();
         suggestAddingAuxFilesToGitignore();
 
         this.vscodeExtensionContext = vscodeExtensionContext;
-        this.globalExtensionState = new GlobalExtensionState();
+        this.globalExtensionState = globalExtensionState;
+
+        console.log("CoqPilot extension is now active!");
 
         this.registerEditorCommand(
             "perform_completion_under_cursor",
@@ -82,6 +86,11 @@ export class CoqPilot {
         );
 
         this.vscodeExtensionContext.subscriptions.push(this);
+    }
+
+    static async create(vscodeExtensionContext: ExtensionContext) {
+        const globalExtensionState = await GlobalExtensionState.create();
+        return new CoqPilot(vscodeExtensionContext, globalExtensionState);
     }
 
     async performCompletionUnderCursor(editor: TextEditor) {
@@ -272,7 +281,7 @@ export class CoqPilot {
         [CompletionContext[], SourceFileEnvironment, ProcessEnvironment]
     > {
         const fileUri = Uri.fromPath(filePath);
-        const coqLspServerPath = parseCoqLspServerPath();
+        // const coqLspServerPath = parseCoqLspServerPath();
         // TODO: [LspCoreRefactor] Now a tone of Coq-LSPs are created and destroyed for each completion.
         // It is not efficient. Refactor it to create a single Coq-LSP client for the whole session.
         // But allow restarting it when issues occur.
@@ -281,19 +290,22 @@ export class CoqPilot {
         // to send any events when user uses the plugin.
 
         // TODO: [LspCoreRefactor] Check what happens in plugin runtime when file not prepared, but goals requested.
-        const client = await createCoqLspClient(
-            coqLspServerPath,
-            this.globalExtensionState.logOutputChannel
-        );
+        // const client = await createCoqLspClient(
+        //     coqLspServerPath,
+        //     this.globalExtensionState.logOutputChannel
+        // );
         const contextTheoremsRanker = buildTheoremsRankerFromConfig();
 
-        const coqProofChecker = new CoqProofChecker(client);
+        const coqProofChecker = new CoqProofChecker(
+            this.globalExtensionState.coqLspClient
+        );
+        // TODO: [LspCoreRefactor] Unclear double dependency on Coq-LSP client.
         const [completionContexts, sourceFileEnvironment] =
             await inspectSourceFile(
                 fileVersion,
                 shouldCompleteHole,
                 fileUri,
-                client
+                this.globalExtensionState.coqLspClient
             );
         const processEnvironment: ProcessEnvironment = {
             coqProofChecker: coqProofChecker,
