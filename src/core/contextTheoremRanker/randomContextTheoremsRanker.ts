@@ -4,6 +4,8 @@ import { CompletionContext } from "../completionGenerationContext";
 import { ContextTheoremsRanker } from "./contextTheoremsRanker";
 
 export class RandomContextTheoremsRanker implements ContextTheoremsRanker {
+    public readonly needsUnwrappedNotations = false;
+
     private shuffleArray(array: any[]) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));

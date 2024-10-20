@@ -5,16 +5,24 @@ import { CoqLspClientInterface } from "../coqLsp/coqLspClient";
 import {
     CoqParsingError,
     FlecheDocument,
+    Goal,
+    PpString,
     RangedSpan,
 } from "../coqLsp/coqLspTypes";
 
 import { Uri } from "../utils/uri";
 
 import { ProofStep, Theorem, TheoremProof, Vernacexpr } from "./parsedTypes";
+import { Result } from "ts-results";
 
+/**
+ * TODO: [LspCoreRefactor] Refactor retrieveInitialGoal param 
+ * to be something more reasonable and readable. 
+ */
 export async function parseCoqFile(
     uri: Uri,
-    client: CoqLspClientInterface
+    client: CoqLspClientInterface,
+    retrieveInitialGoal: boolean = true
 ): Promise<Theorem[]> {
     return client
         .getFlecheDocument(uri)
@@ -22,7 +30,7 @@ export async function parseCoqFile(
             const documentText = readFileSync(uri.fsPath)
                 .toString()
                 .split("\n");
-            return parseFlecheDocument(doc, documentText, client, uri);
+            return parseFlecheDocument(doc, documentText, client, uri, retrieveInitialGoal);
         })
         .catch((error) => {
             throw new CoqParsingError(
@@ -35,7 +43,8 @@ async function parseFlecheDocument(
     doc: FlecheDocument,
     textLines: string[],
     client: CoqLspClientInterface,
-    uri: Uri
+    uri: Uri,
+    retrieveInitialGoal: boolean
 ): Promise<Theorem[]> {
     if (doc === null) {
         throw Error("could not parse file");
@@ -91,16 +100,22 @@ async function parseFlecheDocument(
                         )
                     );
                 } else {
-                    const initialGoal = await client.getGoalsAtPoint(
-                        doc.spans[i + 1].range.start,
-                        uri,
-                        1
-                    );
-
-                    if (initialGoal.err) {
-                        throw new CoqParsingError(
-                            `unable to get initial goal for theorem: ${thrName}`
+                     // TODO: [LspCoreRefactor] Discuss invariants on initial_goal
+                     // and allow it's absence. As calculation of initial_goal
+                     // brings overhead of 100ms per theorem.
+                    let initialGoal: Result<Goal<PpString>[], Error> | null = null;
+                    if (retrieveInitialGoal) {
+                        initialGoal = await client.getGoalsAtPoint(
+                            doc.spans[i + 1].range.start,
+                            uri,
+                            1
                         );
+
+                        if (initialGoal.err) {
+                            throw new CoqParsingError(
+                                `unable to get initial goal for theorem: ${thrName}`
+                            );
+                        }
                     }
 
                     const proof = parseProof(i + 1, doc.spans, textLines);
@@ -110,7 +125,7 @@ async function parseFlecheDocument(
                             doc.spans[i].range,
                             thrStatement,
                             proof,
-                            initialGoal.val[0]
+                            initialGoal?.val[0]
                         )
                     );
                 }

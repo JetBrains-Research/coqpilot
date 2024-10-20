@@ -1,11 +1,6 @@
-import { Severity } from "./eventLogger";
-
-
 /**
  * A decorator that logs the execution time of a method. 
- * Execution time is logged in milliseconds with severity 
- * `DEBUG` in the event logger. If the class does not have
- * an event logger, the execution time is logged to the console.
+ * Execution time is logged into console in milliseconds.
  * 
  * (Note: typescript supports decorators only for class methods).
  */
@@ -22,18 +17,9 @@ export function logExecutionTime(
         const result = originalMethod.apply(this, args);
 
         const logTime = (duration: number) => {
-            if (this.eventLogger) {
-                this.eventLogger.log(
-                    "function-execution-time",
-                    `${propertyKey} took ${duration.toFixed(2)}ms to execute`,
-                    undefined,
-                    Severity.DEBUG
-                );
-            } else {
-                console.log(
-                    `${propertyKey} took ${duration.toFixed(2)}ms to execute`
-                );
-            }
+            console.log(
+                `${propertyKey} took ${duration.toFixed(2)}ms to execute`
+            );
         };
 
         if (result && typeof result.then === "function") {

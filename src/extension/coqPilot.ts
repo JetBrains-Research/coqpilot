@@ -49,6 +49,7 @@ import {
     toVSCodeRange,
 } from "./positionRangeUtils";
 import { SettingsValidationError } from "./settingsValidationError";
+import { logExecutionTime } from "../logging/timeMeasureDecorator";
 
 export const pluginId = "coqpilot";
 export const pluginName = "CoqPilot";
@@ -202,6 +203,7 @@ export class CoqPilot {
         }
     }
 
+    @logExecutionTime
     private async performSingleCompletion(
         completionContext: CompletionContext,
         sourceFileEnvironment: SourceFileEnvironment,
@@ -267,6 +269,7 @@ export class CoqPilot {
             .trim();
     }
 
+    @logExecutionTime
     private async prepareForCompletions(
         shouldCompleteHole: (hole: ProofStep) => boolean,
         fileVersion: number,
@@ -299,7 +302,8 @@ export class CoqPilot {
                 fileVersion,
                 shouldCompleteHole,
                 fileUri,
-                this.globalExtensionState.coqLspClient
+                this.globalExtensionState.coqLspClient,
+                contextTheoremsRanker.needsUnwrappedNotations
             );
         const processEnvironment: ProcessEnvironment = {
             coqProofChecker: coqProofChecker,
