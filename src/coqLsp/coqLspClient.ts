@@ -19,6 +19,7 @@ import {
     VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
 
+import { EventLogger } from "../logging/eventLogger";
 import { Uri } from "../utils/uri";
 
 import { CoqLspClientConfig, CoqLspServerConfig } from "./coqLspConfig";
@@ -33,6 +34,7 @@ import {
     GoalRequest,
     PpString,
 } from "./coqLspTypes";
+import { logExecutionTime } from "../logging/timeMeasureDecorator";
 
 export interface CoqLspClientInterface extends Disposable {
     getGoalsAtPoint(
@@ -66,14 +68,18 @@ export class CoqLspClient implements CoqLspClientInterface {
     private subscriptions: Disposable[] = [];
     private mutex = new Mutex();
 
-    private constructor(coqLspConnector: CoqLspConnector) {
+    private constructor(
+        coqLspConnector: CoqLspConnector,
+        public readonly eventLogger?: EventLogger
+    ) {
         this.client = coqLspConnector;
     }
 
     static async create(
         serverConfig: CoqLspServerConfig,
         clientConfig: CoqLspClientConfig,
-        logOutputChannel: OutputChannel
+        logOutputChannel: OutputChannel,
+        eventLogger?: EventLogger
     ): Promise<CoqLspClient> {
         const connector = new CoqLspConnector(
             serverConfig,
@@ -86,9 +92,10 @@ export class CoqLspClient implements CoqLspClientInterface {
                 clientConfig.coq_lsp_server_path
             );
         });
-        return new CoqLspClient(connector);
+        return new CoqLspClient(connector, eventLogger);
     }
 
+    @logExecutionTime
     async getGoalsAtPoint(
         position: Position,
         documentUri: Uri,
@@ -120,6 +127,7 @@ export class CoqLspClient implements CoqLspClientInterface {
         });
     }
 
+    @logExecutionTime
     async getFlecheDocument(uri: Uri): Promise<FlecheDocument> {
         return await this.mutex.runExclusive(async () => {
             return this.getFlecheDocumentUnsafe(uri);

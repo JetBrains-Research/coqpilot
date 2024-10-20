@@ -12,12 +12,15 @@
         "**/CVS": true,
         "**/.DS_Store": true,
         "**/Thumbs.db": true,
-        "out": false,
-        "**/*_cp_aux.v": true
+        "out": false
     },
     "search.exclude": {
         "out": true // set this to false to include "out" folder in search results
     },
     // Turn off tsc task auto detection since we have the necessary tasks as npm scripts
-    "typescript.tsc.autoDetect": "off"
+    "typescript.tsc.autoDetect": "off",
+    "coq-lsp.check_only_on_request": false,
+    "eslint.options": {
+        "experimentalDecorators": true
+    }
 }

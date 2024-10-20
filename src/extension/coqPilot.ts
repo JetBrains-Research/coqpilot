@@ -7,7 +7,6 @@ import {
     workspace,
 } from "vscode";
 
-// import { createCoqLspClient } from "../coqLsp/coqLspBuilders";
 import { CoqLspStartupError } from "../coqLsp/coqLspTypes";
 
 import {
@@ -37,7 +36,6 @@ import {
     highlightTextInEditor,
     insertCompletion,
 } from "./documentEditor";
-import { suggestAddingAuxFilesToGitignore } from "./editGitignoreCommand";
 import {
     EditorMessages,
     showMessageToUser,
@@ -51,7 +49,6 @@ import {
     toVSCodeRange,
 } from "./positionRangeUtils";
 import { SettingsValidationError } from "./settingsValidationError";
-import { cleanAuxFiles, hideAuxFiles } from "./tmpFilesCleanup";
 
 export const pluginId = "coqpilot";
 export const pluginName = "CoqPilot";
@@ -64,9 +61,6 @@ export class CoqPilot {
         vscodeExtensionContext: ExtensionContext,
         globalExtensionState: GlobalExtensionState
     ) {
-        hideAuxFiles();
-        suggestAddingAuxFilesToGitignore();
-
         this.vscodeExtensionContext = vscodeExtensionContext;
         this.globalExtensionState = globalExtensionState;
 
@@ -332,7 +326,6 @@ export class CoqPilot {
     }
 
     dispose(): void {
-        cleanAuxFiles();
         this.globalExtensionState.dispose();
     }
 }

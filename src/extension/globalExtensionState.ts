@@ -24,7 +24,6 @@ import { pluginId } from "./coqPilot";
 import VSCodeLogWriter from "./vscodeLogWriter";
 
 export class GlobalExtensionState {
-    public readonly eventLogger: EventLogger = new EventLogger();
     public readonly logWriter: VSCodeLogWriter = new VSCodeLogWriter(
         this.eventLogger,
         this.parseLoggingVerbosity(workspace.getConfiguration(pluginId))
@@ -32,7 +31,8 @@ export class GlobalExtensionState {
 
     private constructor(
         public readonly coqLspClient: CoqLspClientInterface,
-        public readonly logOutputChannel: OutputChannel
+        public readonly logOutputChannel: OutputChannel,
+        public readonly eventLogger: EventLogger
     ) {}
 
     static async create(): Promise<GlobalExtensionState> {
@@ -40,12 +40,18 @@ export class GlobalExtensionState {
         const logOutputChannel = window.createOutputChannel(
             "CoqPilot: coq-lsp events"
         );
+        const eventLogger = new EventLogger();
         const coqLspClient = await createCoqLspClient(
             coqLspServerPath,
-            logOutputChannel
+            logOutputChannel,
+            eventLogger
         );
 
-        return new GlobalExtensionState(coqLspClient, logOutputChannel);
+        return new GlobalExtensionState(
+            coqLspClient,
+            logOutputChannel,
+            eventLogger
+        );
     }
 
     public readonly llmServicesLogsDir = path.join(
