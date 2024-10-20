@@ -8,6 +8,7 @@ import {
 
 import { pluginId, pluginName } from "./coqPilot";
 
+// TODO: [LspCoreRefactor] Looks a bit dirty, refactor
 export class StatusBarButton {
     private statusBarItem: StatusBarItem;
     private isActive: boolean;
