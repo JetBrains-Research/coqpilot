@@ -392,7 +392,7 @@
     "pretest": "npm run compile && npm run lint",
     "test": "npm run test-only",
     "clean": "rm -rf out",
-    "rebuild": "npm run clean && npm run compile",
+    "rebuild": "npm run clean && npm run compile && npm run format",
     "rebuild-test-resources": "cd ./src/test/resources/coqProj && make clean && make",
     "preclean-test": "npm run clean && npm run rebuild-test-resources && npm run compile && npm run lint",
     "clean-test": "npm run test-only",

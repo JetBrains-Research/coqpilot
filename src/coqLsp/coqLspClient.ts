@@ -20,6 +20,7 @@ import {
 } from "vscode-languageclient";
 
 import { EventLogger } from "../logging/eventLogger";
+import { logExecutionTime } from "../logging/timeMeasureDecorator";
 import { Uri } from "../utils/uri";
 
 import { CoqLspClientConfig, CoqLspServerConfig } from "./coqLspConfig";
@@ -34,7 +35,6 @@ import {
     GoalRequest,
     PpString,
 } from "./coqLspTypes";
-import { logExecutionTime } from "../logging/timeMeasureDecorator";
 
 export interface CoqLspClientInterface extends Disposable {
     getGoalsAtPoint(

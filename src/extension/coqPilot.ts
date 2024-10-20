@@ -1,9 +1,7 @@
 import {
-    ExtensionContext,
-    ProgressLocation,
+    ExtensionContext, // ProgressLocation,
     TextEditor,
-    commands,
-    window,
+    commands, // window,
     workspace,
 } from "vscode";
 
@@ -24,6 +22,7 @@ import { CoqProofChecker } from "../core/coqProofChecker";
 import { inspectSourceFile } from "../core/inspectSourceFile";
 
 import { ProofStep } from "../coqParser/parsedTypes";
+import { logExecutionTime } from "../logging/timeMeasureDecorator";
 import { buildErrorCompleteLog } from "../utils/errorsUtils";
 import { Uri } from "../utils/uri";
 
@@ -49,7 +48,7 @@ import {
     toVSCodeRange,
 } from "./positionRangeUtils";
 import { SettingsValidationError } from "./settingsValidationError";
-import { logExecutionTime } from "../logging/timeMeasureDecorator";
+import { StatusBarButton } from "./statusBarButton";
 
 export const pluginId = "coqpilot";
 export const pluginName = "CoqPilot";
@@ -57,15 +56,15 @@ export const pluginName = "CoqPilot";
 export class CoqPilot {
     private readonly globalExtensionState: GlobalExtensionState;
     private readonly vscodeExtensionContext: ExtensionContext;
+    private subscriptions: { dispose(): any }[] = [];
 
     private constructor(
         vscodeExtensionContext: ExtensionContext,
-        globalExtensionState: GlobalExtensionState
+        globalExtensionState: GlobalExtensionState,
+        private readonly statusBarButton: StatusBarButton
     ) {
         this.vscodeExtensionContext = vscodeExtensionContext;
         this.globalExtensionState = globalExtensionState;
-
-        console.log("CoqPilot extension is now active!");
 
         this.registerEditorCommand(
             "perform_completion_under_cursor",
@@ -83,9 +82,16 @@ export class CoqPilot {
         this.vscodeExtensionContext.subscriptions.push(this);
     }
 
-    static async create(vscodeExtensionContext: ExtensionContext) {
+    static async create(
+        vscodeExtensionContext: ExtensionContext,
+        statusBarItem: StatusBarButton
+    ) {
         const globalExtensionState = await GlobalExtensionState.create();
-        return new CoqPilot(vscodeExtensionContext, globalExtensionState);
+        return new CoqPilot(
+            vscodeExtensionContext,
+            globalExtensionState,
+            statusBarItem
+        );
     }
 
     async performCompletionUnderCursor(editor: TextEditor) {
@@ -112,38 +118,31 @@ export class CoqPilot {
         shouldCompleteHole: (hole: ProofStep) => boolean,
         editor: TextEditor
     ) {
-        await window.withProgress(
-            {
-                location: ProgressLocation.Window,
-                title: `${pluginName}: In progress`,
-            },
-            async () => {
-                try {
-                    await this.performSpecificCompletions(
-                        shouldCompleteHole,
-                        editor
-                    );
-                } catch (e) {
-                    if (e instanceof SettingsValidationError) {
-                        e.showAsMessageToUser();
-                    } else if (e instanceof CoqLspStartupError) {
-                        showMessageToUserWithSettingsHint(
-                            EditorMessages.coqLspStartupFailure(e.path),
-                            "error",
-                            `${pluginId}.coqLspServerPath`
-                        );
-                    } else {
-                        showMessageToUser(
-                            e instanceof Error
-                                ? EditorMessages.errorOccurred(e.message)
-                                : EditorMessages.objectWasThrownAsError(e),
-                            "error"
-                        );
-                        console.error(buildErrorCompleteLog(e));
-                    }
-                }
+        try {
+            this.statusBarButton.showSpinner();
+
+            await this.performSpecificCompletions(shouldCompleteHole, editor);
+        } catch (e) {
+            if (e instanceof SettingsValidationError) {
+                e.showAsMessageToUser();
+            } else if (e instanceof CoqLspStartupError) {
+                showMessageToUserWithSettingsHint(
+                    EditorMessages.coqLspStartupFailure(e.path),
+                    "error",
+                    `${pluginId}.coqLspServerPath`
+                );
+            } else {
+                showMessageToUser(
+                    e instanceof Error
+                        ? EditorMessages.errorOccurred(e.message)
+                        : EditorMessages.objectWasThrownAsError(e),
+                    "error"
+                );
+                console.error(buildErrorCompleteLog(e));
             }
-        );
+        } finally {
+            this.statusBarButton.hideSpinner();
+        }
     }
 
     private async performSpecificCompletions(
@@ -327,9 +326,13 @@ export class CoqPilot {
             fn
         );
         this.vscodeExtensionContext.subscriptions.push(disposable);
+        this.subscriptions.push(disposable);
     }
 
     dispose(): void {
+        // This is not the same as vscodeExtensionContext.subscriptions
+        // As it doesn't contain the statusBar item and the toggle command
+        this.subscriptions.forEach((d) => d.dispose());
         this.globalExtensionState.dispose();
     }
 }

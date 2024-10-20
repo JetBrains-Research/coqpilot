@@ -1,4 +1,5 @@
 import { readFileSync } from "fs";
+import { Result } from "ts-results";
 import { Position, Range } from "vscode-languageclient";
 
 import { CoqLspClientInterface } from "../coqLsp/coqLspClient";
@@ -13,11 +14,10 @@ import {
 import { Uri } from "../utils/uri";
 
 import { ProofStep, Theorem, TheoremProof, Vernacexpr } from "./parsedTypes";
-import { Result } from "ts-results";
 
 /**
- * TODO: [LspCoreRefactor] Refactor retrieveInitialGoal param 
- * to be something more reasonable and readable. 
+ * TODO: [LspCoreRefactor] Refactor retrieveInitialGoal param
+ * to be something more reasonable and readable.
  */
 export async function parseCoqFile(
     uri: Uri,
@@ -30,7 +30,13 @@ export async function parseCoqFile(
             const documentText = readFileSync(uri.fsPath)
                 .toString()
                 .split("\n");
-            return parseFlecheDocument(doc, documentText, client, uri, retrieveInitialGoal);
+            return parseFlecheDocument(
+                doc,
+                documentText,
+                client,
+                uri,
+                retrieveInitialGoal
+            );
         })
         .catch((error) => {
             throw new CoqParsingError(
@@ -100,10 +106,11 @@ async function parseFlecheDocument(
                         )
                     );
                 } else {
-                     // TODO: [LspCoreRefactor] Discuss invariants on initial_goal
-                     // and allow it's absence. As calculation of initial_goal
-                     // brings overhead of 100ms per theorem.
-                    let initialGoal: Result<Goal<PpString>[], Error> | null = null;
+                    // TODO: [LspCoreRefactor] Discuss invariants on initial_goal
+                    // and allow it's absence. As calculation of initial_goal
+                    // brings overhead of 100ms per theorem.
+                    let initialGoal: Result<Goal<PpString>[], Error> | null =
+                        null;
                     if (retrieveInitialGoal) {
                         initialGoal = await client.getGoalsAtPoint(
                             doc.spans[i + 1].range.start,

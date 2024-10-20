@@ -15,7 +15,7 @@ export class WeightedJaccardIndexContextTheoremsRanker
     implements ContextTheoremsRanker
 {
     public readonly needsUnwrappedNotations = true;
-    
+
     rankContextTheorems(
         theorems: Theorem[],
         completionContext: CompletionContext

@@ -18,7 +18,7 @@ export async function inspectSourceFile(
     fileVersion: number,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileUri: Uri,
-    client: CoqLspClientInterface, 
+    client: CoqLspClientInterface,
     rankerNeedsInitialGoals: boolean = true
 ): Promise<AnalyzedFile> {
     const sourceFileEnvironment = await createSourceFileEnvironment(
@@ -84,7 +84,11 @@ export async function createSourceFileEnvironment(
     client: CoqLspClientInterface,
     rankerNeedsInitialGoals: boolean = true
 ): Promise<SourceFileEnvironment> {
-    const fileTheorems = await parseCoqFile(fileUri, client, rankerNeedsInitialGoals);
+    const fileTheorems = await parseCoqFile(
+        fileUri,
+        client,
+        rankerNeedsInitialGoals
+    );
     const fileText = readFileSync(fileUri.fsPath);
     const dirPath = getSourceFolderPath(fileUri);
     if (!dirPath) {

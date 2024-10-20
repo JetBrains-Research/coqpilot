@@ -1,7 +1,7 @@
 /**
- * A decorator that logs the execution time of a method. 
+ * A decorator that logs the execution time of a method.
  * Execution time is logged into console in milliseconds.
- * 
+ *
  * (Note: typescript supports decorators only for class methods).
  */
 export function logExecutionTime(

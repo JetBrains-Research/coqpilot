@@ -95,9 +95,9 @@ export class GlobalExtensionState {
     }
 
     dispose(): void {
+        this.coqLspClient.dispose();
         disposeServices(this.llmServices);
         this.logWriter.dispose();
-        this.coqLspClient.dispose();
         fs.rmSync(this.llmServicesLogsDir, { recursive: true, force: true });
         this.logOutputChannel.dispose();
     }

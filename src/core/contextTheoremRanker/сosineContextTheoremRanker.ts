@@ -13,7 +13,7 @@ import { goalAsTheoremString } from "./tokenUtils";
  */
 export class CosineContextTheoremsRanker implements ContextTheoremsRanker {
     public readonly needsUnwrappedNotations = true;
-    
+
     rankContextTheorems(
         theorems: Theorem[],
         completionContext: CompletionContext
