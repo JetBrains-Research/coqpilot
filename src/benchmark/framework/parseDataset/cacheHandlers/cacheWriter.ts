@@ -119,7 +119,6 @@ namespace SerializeCacheHolders {
                         )
                     )
             ),
-            fileLines: cachedCoqFileData.getFileLines(),
             documentVersion: cachedCoqFileData.getDocumentVersion(),
             filePathRelativeToWorkspace:
                 cachedCoqFileData.filePathRelativeToWorkspace,

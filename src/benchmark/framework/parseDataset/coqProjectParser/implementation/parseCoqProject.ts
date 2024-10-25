@@ -93,14 +93,12 @@ export namespace ParseCoqProjectImpl {
                 (serializedTheorem) => serializedTheorem.name,
                 (serializedTheorem) => serializedTheorem
             ),
-            fileLines: sourceFileEnvironment.fileLines,
             documentVersion: sourceFileEnvironment.documentVersion,
             filePath: filePath,
         };
         const foundTheoremsLog = `found ${Object.keys(serializedParsedFile.serializedTheoremsByNames).length} theorem(s)`;
-        const readLinesLog = `read ${serializedParsedFile.fileLines.length} lines`;
         logger.debug(
-            `Successfully parsed "${filePath}": ${foundTheoremsLog}, ${readLinesLog}`
+            `Successfully parsed "${filePath}": ${foundTheoremsLog}`
         );
         return serializedParsedFile;
     }

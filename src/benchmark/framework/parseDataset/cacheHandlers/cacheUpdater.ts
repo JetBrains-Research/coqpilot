@@ -82,7 +82,6 @@ namespace UpdateCacheHolders {
                 `* file version update: ${cachedFile.getDocumentVersion()} -> ${parsedFile.documentVersion}`
             );
         }
-        cachedFile.updateFileLines(parsedFile.fileLines);
         cachedFile.updateDocumentVersion(parsedFile.documentVersion);
 
         for (const fileTarget of parsedFileHolder.targets()) {
@@ -161,7 +160,6 @@ namespace UpdateCacheHolders {
         return new CacheHolderData.CachedCoqFileData(
             cachedTheoremsMap,
             relativizeAbsolutePaths(workspacePath, parsedFile.filePath),
-            parsedFile.fileLines,
             parsedFile.documentVersion,
             workspacePath
         );

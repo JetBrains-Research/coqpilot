@@ -150,7 +150,6 @@ namespace BuildCacheHoldersFromModels {
         return new CacheHolderData.CachedCoqFileData(
             theorems,
             readCachedFile.filePathRelativeToWorkspace,
-            readCachedFile.fileLines,
             readCachedFile.documentVersion,
             workspacePath
         );

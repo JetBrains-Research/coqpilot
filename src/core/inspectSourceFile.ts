@@ -1,5 +1,3 @@
-import { readFileSync } from "fs";
-
 import { CoqLspClientInterface } from "../coqLsp/coqLspClient";
 
 import { parseCoqFile } from "../coqParser/parseCoqFile";
@@ -88,11 +86,9 @@ export async function createSourceFileEnvironment(
         client,
         rankerNeedsInitialGoals
     );
-    const fileText = readFileSync(fileUri.fsPath);
 
     return {
         fileTheorems: fileTheorems,
-        fileLines: fileText.toString().split("\n"),
         documentVersion: documentVersion,
         fileUri: fileUri,
     };

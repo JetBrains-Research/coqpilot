@@ -25,7 +25,6 @@ export class ParsedCoqFileData {
          * Ones that don't end with `Qed.` are also included.
          */
         readonly theoremsByNames: Map<string, TheoremData>,
-        readonly fileLines: string[],
         readonly documentVersion: number,
         readonly filePath: string
     ) {}
@@ -45,7 +44,6 @@ export class ParsedCoqFileData {
             fileTheorems: this.getOrderedFileTheorems().filter(
                 (theorem) => theorem.proof && !theorem.proof.is_incomplete
             ),
-            fileLines: this.fileLines,
             documentVersion: this.documentVersion,
             fileUri: Uri.fromPath(this.filePath),
         };
@@ -58,8 +56,6 @@ export interface SerializedParsedCoqFile {
      * Ones that don't end with `Qed.` are also included.
      */
     serializedTheoremsByNames: SerializedTheoremsByNames;
-
-    fileLines: string[];
     documentVersion: number;
     filePath: string;
 }
@@ -84,12 +80,6 @@ export const serializedParsedCoqFileSchema: JSONSchemaType<SerializedParsedCoqFi
         type: "object",
         properties: {
             serializedTheoremsByNames: serializedTheoremsByNamesSchema,
-            fileLines: {
-                type: "array",
-                items: {
-                    type: "string",
-                },
-            },
             documentVersion: {
                 type: "number",
             },
@@ -99,7 +89,6 @@ export const serializedParsedCoqFileSchema: JSONSchemaType<SerializedParsedCoqFi
         },
         required: [
             "serializedTheoremsByNames",
-            "fileLines",
             "documentVersion",
             "filePath",
         ],
@@ -115,7 +104,6 @@ export function deserializeParsedCoqFile(
             (_: string, serializedTheorem: SerializedTheorem) =>
                 deserializeTheoremData(serializedTheorem)
         ),
-        serializedParsedCoqFile.fileLines,
         serializedParsedCoqFile.documentVersion,
         serializedParsedCoqFile.filePath
     );
@@ -132,7 +120,6 @@ export function serializeParsedCoqFile(
                     serializeTheoremData(theoremData)
             )
         ),
-        fileLines: parsedCoqFileData.fileLines,
         documentVersion: parsedCoqFileData.documentVersion,
         filePath: parsedCoqFileData.filePath,
     };

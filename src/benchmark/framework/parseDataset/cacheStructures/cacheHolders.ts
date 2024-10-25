@@ -91,7 +91,6 @@ export namespace CacheHolderData {
         constructor(
             private readonly theorems: Map<string, CachedTheoremData>,
             readonly filePathRelativeToWorkspace: string,
-            private fileLines: string[],
             private documentVersion: number,
             readonly workspacePath: string
         ) {}
@@ -104,20 +103,12 @@ export namespace CacheHolderData {
             return this.theorems.get(theoremName);
         }
 
-        getFileLines(): string[] {
-            return this.fileLines;
-        }
-
         getDocumentVersion(): number {
             return this.documentVersion;
         }
 
         addCachedTheorem(cachedTheorem: CachedTheoremData) {
             this.theorems.set(cachedTheorem.theoremData.name, cachedTheorem);
-        }
-
-        updateFileLines(fileLines: string[]) {
-            this.fileLines = fileLines;
         }
 
         updateDocumentVersion(documentVersion: number) {
@@ -131,7 +122,6 @@ export namespace CacheHolderData {
                     (_: string, cachedTheorem: CachedTheoremData) =>
                         cachedTheorem.theoremData
                 ),
-                this.fileLines,
                 this.documentVersion,
                 joinPaths(this.workspacePath, this.filePathRelativeToWorkspace)
             );

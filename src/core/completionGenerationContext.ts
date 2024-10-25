@@ -19,10 +19,7 @@ export interface CompletionContext {
 export interface SourceFileEnvironment {
     // `fileTheorems` contain only ones that successfully finish with Qed.
     fileTheorems: Theorem[];
-    // TODO: [LspCoreRefactor] Check if `fileLines` is needed
-    fileLines: string[];
     documentVersion: number;
-    // TODO: [LspCoreRefactor] Rename to `documentUri`
     fileUri: Uri;
 }
 
