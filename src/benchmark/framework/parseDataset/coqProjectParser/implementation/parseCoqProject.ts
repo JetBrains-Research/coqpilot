@@ -74,11 +74,11 @@ export namespace ParseCoqProjectImpl {
         coqLspClient: CoqLspClientInterface,
         logger: Logger
     ): Promise<SerializedParsedCoqFile> {
-        const mockFileVersion = 1;
+        const mockDocumentVersion = 1;
         const sourceFileUri = Uri.fromPath(filePath);
         await coqLspClient.openTextDocument(sourceFileUri);
         const sourceFileEnvironment = await createSourceFileEnvironment(
-            mockFileVersion,
+            mockDocumentVersion,
             sourceFileUri,
             coqLspClient
         );
@@ -94,7 +94,7 @@ export namespace ParseCoqProjectImpl {
                 (serializedTheorem) => serializedTheorem
             ),
             fileLines: sourceFileEnvironment.fileLines,
-            fileVersion: sourceFileEnvironment.fileVersion,
+            documentVersion: sourceFileEnvironment.documentVersion,
             filePath: filePath,
         };
         const foundTheoremsLog = `found ${Object.keys(serializedParsedFile.serializedTheoremsByNames).length} theorem(s)`;
@@ -211,7 +211,7 @@ export namespace ParseCoqProjectImpl {
             const goals = await coqLspClient.getGoalsAtPoint(
                 proofStep.range.start,
                 Uri.fromPath(serializedParsedFile.filePath),
-                serializedParsedFile.fileVersion
+                serializedParsedFile.documentVersion
             );
             const startPosition = deserializeCodeElementPosition(
                 proofStep.range.start

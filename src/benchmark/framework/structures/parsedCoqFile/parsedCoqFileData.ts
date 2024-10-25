@@ -9,7 +9,6 @@ import {
     mapValues,
     toMappedObject,
 } from "../../utils/collectionUtils/mapUtils";
-import { getDirectoryPath } from "../../utils/fileUtils/fs";
 
 import {
     SerializedTheorem,
@@ -27,7 +26,7 @@ export class ParsedCoqFileData {
          */
         readonly theoremsByNames: Map<string, TheoremData>,
         readonly fileLines: string[],
-        readonly fileVersion: number,
+        readonly documentVersion: number,
         readonly filePath: string
     ) {}
 
@@ -47,8 +46,7 @@ export class ParsedCoqFileData {
                 (theorem) => theorem.proof && !theorem.proof.is_incomplete
             ),
             fileLines: this.fileLines,
-            fileVersion: this.fileVersion,
-            dirPath: getDirectoryPath(this.filePath),
+            documentVersion: this.documentVersion,
             fileUri: Uri.fromPath(this.filePath),
         };
     }
@@ -62,7 +60,7 @@ export interface SerializedParsedCoqFile {
     serializedTheoremsByNames: SerializedTheoremsByNames;
 
     fileLines: string[];
-    fileVersion: number;
+    documentVersion: number;
     filePath: string;
 }
 
@@ -92,7 +90,7 @@ export const serializedParsedCoqFileSchema: JSONSchemaType<SerializedParsedCoqFi
                     type: "string",
                 },
             },
-            fileVersion: {
+            documentVersion: {
                 type: "number",
             },
             filePath: {
@@ -102,7 +100,7 @@ export const serializedParsedCoqFileSchema: JSONSchemaType<SerializedParsedCoqFi
         required: [
             "serializedTheoremsByNames",
             "fileLines",
-            "fileVersion",
+            "documentVersion",
             "filePath",
         ],
         additionalProperties: false,
@@ -118,7 +116,7 @@ export function deserializeParsedCoqFile(
                 deserializeTheoremData(serializedTheorem)
         ),
         serializedParsedCoqFile.fileLines,
-        serializedParsedCoqFile.fileVersion,
+        serializedParsedCoqFile.documentVersion,
         serializedParsedCoqFile.filePath
     );
 }
@@ -135,7 +133,7 @@ export function serializeParsedCoqFile(
             )
         ),
         fileLines: parsedCoqFileData.fileLines,
-        fileVersion: parsedCoqFileData.fileVersion,
+        documentVersion: parsedCoqFileData.documentVersion,
         filePath: parsedCoqFileData.filePath,
     };
 }

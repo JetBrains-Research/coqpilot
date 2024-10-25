@@ -23,7 +23,7 @@ export namespace DatasetCacheModels {
         allFileTheorems: CachedTheoremsByNames;
 
         fileLines: string[];
-        fileVersion: number;
+        documentVersion: number;
         filePathRelativeToWorkspace: string;
     }
 
@@ -101,7 +101,7 @@ export namespace DatasetCacheModels {
                     type: "string",
                 },
             },
-            fileVersion: {
+            documentVersion: {
                 type: "number",
             },
             filePathRelativeToWorkspace: {
@@ -111,7 +111,7 @@ export namespace DatasetCacheModels {
         required: [
             "allFileTheorems",
             "fileLines",
-            "fileVersion",
+            "documentVersion",
             "filePathRelativeToWorkspace",
         ],
         additionalProperties: false,

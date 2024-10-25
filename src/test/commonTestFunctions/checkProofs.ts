@@ -13,7 +13,7 @@ export async function checkProofs(
 ): Promise<ProofCheckResult[]> {
     return await environment.coqProofChecker.checkProofs(
         environment.sourceFileEnvironment.fileUri,
-        environment.sourceFileEnvironment.fileVersion,
+        environment.sourceFileEnvironment.documentVersion,
         completionContext.admitRange.start,
         proofsToCheck
     );

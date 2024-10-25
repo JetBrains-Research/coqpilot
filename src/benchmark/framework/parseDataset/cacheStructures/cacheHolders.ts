@@ -92,7 +92,7 @@ export namespace CacheHolderData {
             private readonly theorems: Map<string, CachedTheoremData>,
             readonly filePathRelativeToWorkspace: string,
             private fileLines: string[],
-            private fileVersion: number,
+            private documentVersion: number,
             readonly workspacePath: string
         ) {}
 
@@ -108,8 +108,8 @@ export namespace CacheHolderData {
             return this.fileLines;
         }
 
-        getFileVersion(): number {
-            return this.fileVersion;
+        getDocumentVersion(): number {
+            return this.documentVersion;
         }
 
         addCachedTheorem(cachedTheorem: CachedTheoremData) {
@@ -120,8 +120,8 @@ export namespace CacheHolderData {
             this.fileLines = fileLines;
         }
 
-        updateFileVersion(fileVersion: number) {
-            this.fileVersion = fileVersion;
+        updateDocumentVersion(documentVersion: number) {
+            this.documentVersion = documentVersion;
         }
 
         restoreParsedCoqFileData(): ParsedCoqFileData {
@@ -132,7 +132,7 @@ export namespace CacheHolderData {
                         cachedTheorem.theoremData
                 ),
                 this.fileLines,
-                this.fileVersion,
+                this.documentVersion,
                 joinPaths(this.workspacePath, this.filePathRelativeToWorkspace)
             );
         }

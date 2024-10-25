@@ -1,5 +1,4 @@
 import { readFileSync } from "fs";
-import * as path from "path";
 
 import { CoqLspClientInterface } from "../coqLsp/coqLspClient";
 
@@ -15,20 +14,20 @@ import {
 type AnalyzedFile = [CompletionContext[], SourceFileEnvironment];
 
 export async function inspectSourceFile(
-    fileVersion: number,
+    documentVersion: number,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileUri: Uri,
     client: CoqLspClientInterface,
     rankerNeedsInitialGoals: boolean = true
 ): Promise<AnalyzedFile> {
     const sourceFileEnvironment = await createSourceFileEnvironment(
-        fileVersion,
+        documentVersion,
         fileUri,
         client,
         rankerNeedsInitialGoals
     );
     const completionContexts = await createCompletionContexts(
-        fileVersion,
+        documentVersion,
         shouldCompleteHole,
         sourceFileEnvironment.fileTheorems,
         fileUri,
@@ -45,7 +44,7 @@ export async function inspectSourceFile(
 }
 
 async function createCompletionContexts(
-    fileVersion: number,
+    documentVersion: number,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileTheorems: Theorem[],
     fileUri: Uri,
@@ -62,7 +61,7 @@ async function createCompletionContexts(
         const goals = await client.getGoalsAtPoint(
             hole.range.start,
             fileUri,
-            fileVersion
+            documentVersion
         );
         if (goals.ok) {
             const firstGoal = goals.val.shift();
@@ -79,7 +78,7 @@ async function createCompletionContexts(
 }
 
 export async function createSourceFileEnvironment(
-    fileVersion: number,
+    documentVersion: number,
     fileUri: Uri,
     client: CoqLspClientInterface,
     rankerNeedsInitialGoals: boolean = true
@@ -90,26 +89,11 @@ export async function createSourceFileEnvironment(
         rankerNeedsInitialGoals
     );
     const fileText = readFileSync(fileUri.fsPath);
-    const dirPath = getSourceFolderPath(fileUri);
-    if (!dirPath) {
-        throw Error(
-            `unable to get source folder path from \`fileUri\`: ${fileUri}`
-        );
-    }
 
     return {
         fileTheorems: fileTheorems,
         fileLines: fileText.toString().split("\n"),
-        fileVersion: fileVersion,
-        dirPath: dirPath,
+        documentVersion: documentVersion,
         fileUri: fileUri,
     };
-}
-
-function getSourceFolderPath(documentUri: Uri): string | undefined {
-    try {
-        return path.dirname(documentUri.fsPath);
-    } catch (error) {
-        return undefined;
-    }
 }

@@ -393,10 +393,10 @@ async function prepareForBenchmarkCompletions(
     await client.openTextDocument(fileUri);
 
     const coqProofChecker = new CoqProofChecker(client);
-    const mockFileVersion = 1;
+    const mockDocumentVersion = 1;
     const [completionTargets, sourceFileEnvironment] =
         await extractCompletionTargets(
-            mockFileVersion,
+            mockDocumentVersion,
             shouldCompleteHole,
             fileUri,
             client
@@ -424,18 +424,18 @@ async function prepareForBenchmarkCompletions(
 }
 
 async function extractCompletionTargets(
-    fileVersion: number,
+    documentVersion: number,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileUri: Uri,
     client: CoqLspClientInterface
 ): Promise<[BenchmarkingCompletionTargets, SourceFileEnvironment]> {
     const sourceFileEnvironment = await createSourceFileEnvironment(
-        fileVersion,
+        documentVersion,
         fileUri,
         client
     );
     const completionTargets = await createCompletionTargets(
-        fileVersion,
+        documentVersion,
         shouldCompleteHole,
         sourceFileEnvironment.fileTheorems,
         fileUri,
@@ -457,7 +457,7 @@ interface ParentedProofStep {
 }
 
 async function createCompletionTargets(
-    fileVersion: number,
+    documentVersion: number,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileTheorems: Theorem[],
     fileUri: Uri,
@@ -487,13 +487,13 @@ async function createCompletionTargets(
     return {
         admitTargets: await resolveProofStepsToCompletionContexts(
             admitHolesToComplete,
-            fileVersion,
+            documentVersion,
             fileUri,
             client
         ),
         theoremTargets: await resolveProofStepsToCompletionContexts(
             firstProofSteps,
-            fileVersion,
+            documentVersion,
             fileUri,
             client
         ),
@@ -502,7 +502,7 @@ async function createCompletionTargets(
 
 async function resolveProofStepsToCompletionContexts(
     parentedProofSteps: ParentedProofStep[],
-    fileVersion: number,
+    documentVersion: number,
     fileUri: Uri,
     client: CoqLspClientInterface
 ): Promise<BenchmarkingCompletionContext[]> {
@@ -511,7 +511,7 @@ async function resolveProofStepsToCompletionContexts(
         const goals = await client.getGoalsAtPoint(
             parentedProofStep.proofStep.range.start,
             fileUri,
-            fileVersion
+            documentVersion
         );
         if (goals.ok) {
             const firstGoal = goals.val.shift();

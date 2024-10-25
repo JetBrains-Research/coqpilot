@@ -271,7 +271,7 @@ export class CoqPilot {
     @logExecutionTime
     private async prepareForCompletions(
         shouldCompleteHole: (hole: ProofStep) => boolean,
-        fileVersion: number,
+        documentVersion: number,
         filePath: string
     ): Promise<
         [CompletionContext[], SourceFileEnvironment, ProcessEnvironment]
@@ -298,7 +298,7 @@ export class CoqPilot {
         // TODO: [LspCoreRefactor] Unclear double dependency on Coq-LSP client.
         const [completionContexts, sourceFileEnvironment] =
             await inspectSourceFile(
-                fileVersion,
+                documentVersion,
                 shouldCompleteHole,
                 fileUri,
                 this.globalExtensionState.coqLspClient,

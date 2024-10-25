@@ -21,10 +21,7 @@ export interface SourceFileEnvironment {
     fileTheorems: Theorem[];
     // TODO: [LspCoreRefactor] Check if `fileLines` is needed
     fileLines: string[];
-    // TODO: [LspCoreRefactor] Check if `fileVersion` is provided correctly && rename to `documentVersion`
-    fileVersion: number;
-    // TODO: [LspCoreRefactor] Remove `dirPath` from here as it is probably not used anymore
-    dirPath: string;
+    documentVersion: number;
     // TODO: [LspCoreRefactor] Rename to `documentUri`
     fileUri: Uri;
 }

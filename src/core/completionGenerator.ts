@@ -218,7 +218,7 @@ async function checkGeneratedProofs(
 
     return processEnvironment.coqProofChecker.checkProofs(
         sourceFileEnvironment.fileUri,
-        sourceFileEnvironment.fileVersion,
+        sourceFileEnvironment.documentVersion,
         completionContext.admitRange.start,
         preparedProofBatch,
         perProofTimeoutMillis

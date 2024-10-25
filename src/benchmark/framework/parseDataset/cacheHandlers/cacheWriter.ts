@@ -120,7 +120,7 @@ namespace SerializeCacheHolders {
                     )
             ),
             fileLines: cachedCoqFileData.getFileLines(),
-            fileVersion: cachedCoqFileData.getFileVersion(),
+            documentVersion: cachedCoqFileData.getDocumentVersion(),
             filePathRelativeToWorkspace:
                 cachedCoqFileData.filePathRelativeToWorkspace,
         };

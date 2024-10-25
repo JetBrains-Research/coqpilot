@@ -151,7 +151,7 @@ namespace BuildCacheHoldersFromModels {
             theorems,
             readCachedFile.filePathRelativeToWorkspace,
             readCachedFile.fileLines,
-            readCachedFile.fileVersion,
+            readCachedFile.documentVersion,
             workspacePath
         );
     }
