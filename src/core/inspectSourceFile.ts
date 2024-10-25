@@ -11,6 +11,7 @@ import {
     CompletionContext,
     SourceFileEnvironment,
 } from "./completionGenerationContext";
+import { throwOnAbort } from "../extension/extensionAbortUtils";
 
 type AnalyzedFile = [CompletionContext[], SourceFileEnvironment];
 
@@ -19,20 +20,23 @@ export async function inspectSourceFile(
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileUri: Uri,
     client: CoqLspClientInterface,
+    abortSignal: AbortSignal,
     rankerNeedsInitialGoals: boolean = true
 ): Promise<AnalyzedFile> {
     const sourceFileEnvironment = await createSourceFileEnvironment(
         fileVersion,
         fileUri,
         client,
-        rankerNeedsInitialGoals
+        abortSignal,
+        rankerNeedsInitialGoals,
     );
     const completionContexts = await createCompletionContexts(
         fileVersion,
         shouldCompleteHole,
         sourceFileEnvironment.fileTheorems,
         fileUri,
-        client
+        client,
+        abortSignal
     );
     const sourceFileEnvironmentWithCompleteProofs: SourceFileEnvironment = {
         ...sourceFileEnvironment,
@@ -49,7 +53,8 @@ async function createCompletionContexts(
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileTheorems: Theorem[],
     fileUri: Uri,
-    client: CoqLspClientInterface
+    client: CoqLspClientInterface,
+    abortSignal: AbortSignal
 ): Promise<CompletionContext[]> {
     const holesToComplete = fileTheorems
         .filter((thr) => thr.proof)
@@ -59,6 +64,7 @@ async function createCompletionContexts(
 
     let completionContexts: CompletionContext[] = [];
     for (const hole of holesToComplete) {
+        throwOnAbort(abortSignal);
         const goals = await client.getGoalsAtPoint(
             hole.range.start,
             fileUri,
@@ -82,11 +88,13 @@ export async function createSourceFileEnvironment(
     fileVersion: number,
     fileUri: Uri,
     client: CoqLspClientInterface,
+    abortSignal: AbortSignal,
     rankerNeedsInitialGoals: boolean = true
 ): Promise<SourceFileEnvironment> {
     const fileTheorems = await parseCoqFile(
         fileUri,
         client,
+        abortSignal,
         rankerNeedsInitialGoals
     );
     const fileText = readFileSync(fileUri.fsPath);

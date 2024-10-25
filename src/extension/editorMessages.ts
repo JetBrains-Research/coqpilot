@@ -31,6 +31,9 @@ export namespace EditorMessages {
     export const reportUnexpectedError = (errorDescription: string) =>
         `Coqpilot got an unexpected error: ${errorDescription}. Please report this crash by opening an issue in the Coqpilot GitHub repository.`;
 
+    export const completionAborted = 
+        "Completion generation was forcefully aborted, Coq-LSP server stopping. Please hit the Status Bar button again to restart the server and proceed with completions.";
+
     export const objectWasThrownAsError = (e: any) =>
         reportUnexpectedError(
             `object was thrown as error, ${stringifyAnyValue(e)}`

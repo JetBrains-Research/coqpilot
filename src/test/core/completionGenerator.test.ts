@@ -32,6 +32,7 @@ suite("Completion generation tests", () => {
             modelsParams: createPredefinedProofsModelsParams(predefinedProofs),
             services: createDefaultServices(),
         };
+        const abortController = new AbortController();
         try {
             await environment.coqLspClient.openTextDocument(
                 environment.sourceFileEnvironment.fileUri
@@ -43,7 +44,8 @@ suite("Completion generation tests", () => {
                         const result = await generateCompletion(
                             completionContext,
                             environment.sourceFileEnvironment,
-                            processEnvironment
+                            processEnvironment,
+                            abortController.signal
                         );
                         return result;
                     }

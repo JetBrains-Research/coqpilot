@@ -14,6 +14,7 @@ import {
 import { Uri } from "../utils/uri";
 
 import { ProofStep, Theorem, TheoremProof, Vernacexpr } from "./parsedTypes";
+import { throwOnAbort } from "../extension/extensionAbortUtils";
 
 /**
  * TODO: [LspCoreRefactor] Refactor retrieveInitialGoal param
@@ -22,6 +23,7 @@ import { ProofStep, Theorem, TheoremProof, Vernacexpr } from "./parsedTypes";
 export async function parseCoqFile(
     uri: Uri,
     client: CoqLspClientInterface,
+    abortSignal: AbortSignal,
     retrieveInitialGoal: boolean = true
 ): Promise<Theorem[]> {
     return client
@@ -35,6 +37,7 @@ export async function parseCoqFile(
                 documentText,
                 client,
                 uri,
+                abortSignal,
                 retrieveInitialGoal
             );
         })
@@ -50,6 +53,7 @@ async function parseFlecheDocument(
     textLines: string[],
     client: CoqLspClientInterface,
     uri: Uri,
+    abortSignal: AbortSignal,
     retrieveInitialGoal: boolean
 ): Promise<Theorem[]> {
     if (doc === null) {
@@ -58,6 +62,8 @@ async function parseFlecheDocument(
 
     const theorems: Theorem[] = [];
     for (let i = 0; i < doc.spans.length; i++) {
+        throwOnAbort(abortSignal);
+
         const span = doc.spans[i];
         try {
             const vernacType = getVernacexpr(getExpr(span));

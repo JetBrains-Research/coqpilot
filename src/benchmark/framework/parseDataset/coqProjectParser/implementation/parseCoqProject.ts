@@ -77,10 +77,12 @@ export namespace ParseCoqProjectImpl {
         const mockFileVersion = 1;
         const sourceFileUri = Uri.fromPath(filePath);
         await coqLspClient.openTextDocument(sourceFileUri);
+        const abortController = new AbortController();
         const sourceFileEnvironment = await createSourceFileEnvironment(
             mockFileVersion,
             sourceFileUri,
-            coqLspClient
+            coqLspClient,
+            abortController.signal
         );
         const serializedParsedFile: SerializedParsedCoqFile = {
             serializedTheoremsByNames: packIntoMappedObject(

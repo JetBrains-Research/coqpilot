@@ -49,6 +49,7 @@ import {
 } from "./positionRangeUtils";
 import { SettingsValidationError } from "./settingsValidationError";
 import { StatusBarButton } from "./statusBarButton";
+import { CompletionAbortError, throwOnAbort } from "./extensionAbortUtils";
 
 export const pluginId = "coqpilot";
 export const pluginName = "CoqPilot";
@@ -57,6 +58,7 @@ export class CoqPilot {
     private readonly globalExtensionState: GlobalExtensionState;
     private readonly vscodeExtensionContext: ExtensionContext;
     private subscriptions: { dispose(): any }[] = [];
+    private abortController = new AbortController();
 
     private constructor(
         vscodeExtensionContext: ExtensionContext,
@@ -76,6 +78,10 @@ export class CoqPilot {
         );
         this.registerEditorCommand(
             "perform_completion_for_all_admits",
+            this.performCompletionForAllAdmits.bind(this)
+        );
+        this.registerEditorCommand(
+            "toggle_current_session",
             this.performCompletionForAllAdmits.bind(this)
         );
 
@@ -98,7 +104,8 @@ export class CoqPilot {
         const cursorPosition = editor.selection.active;
         this.performSpecificCompletionsWithProgress(
             (hole) => positionInRange(cursorPosition, hole.range),
-            editor
+            editor,
+            this.abortController.signal
         );
     }
 
@@ -106,22 +113,33 @@ export class CoqPilot {
         const selection = editor.selection;
         this.performSpecificCompletionsWithProgress(
             (hole) => selection.contains(toVSCodePosition(hole.range.start)),
-            editor
+            editor,
+            this.abortController.signal
         );
     }
 
     async performCompletionForAllAdmits(editor: TextEditor) {
-        this.performSpecificCompletionsWithProgress((_hole) => true, editor);
+        this.performSpecificCompletionsWithProgress(
+            (_hole) => true, 
+            editor, 
+            this.abortController.signal
+        );
+    }
+
+    async toggleCurrentSession() {
+        console.log("Toggle current session");
+        this.abortController.abort(new CompletionAbortError());
     }
 
     private async performSpecificCompletionsWithProgress(
         shouldCompleteHole: (hole: ProofStep) => boolean,
-        editor: TextEditor
+        editor: TextEditor,
+        abortSignal: AbortSignal
     ) {
         try {
             this.statusBarButton.showSpinner();
 
-            await this.performSpecificCompletions(shouldCompleteHole, editor);
+            await this.performSpecificCompletions(shouldCompleteHole, editor, abortSignal);
         } catch (e) {
             if (e instanceof SettingsValidationError) {
                 e.showAsMessageToUser();
@@ -131,6 +149,8 @@ export class CoqPilot {
                     "error",
                     `${pluginId}.coqLspServerPath`
                 );
+            } else if (e instanceof CompletionAbortError) {
+                showMessageToUser(EditorMessages.completionAborted, "info");
             } else {
                 showMessageToUser(
                     e instanceof Error
@@ -147,7 +167,8 @@ export class CoqPilot {
 
     private async performSpecificCompletions(
         shouldCompleteHole: (hole: ProofStep) => boolean,
-        editor: TextEditor
+        editor: TextEditor,
+        abortSignal: AbortSignal
     ) {
         this.globalExtensionState.eventLogger.log(
             "completion-started",
@@ -166,7 +187,8 @@ export class CoqPilot {
             await this.prepareForCompletions(
                 shouldCompleteHole,
                 editor.document.version,
-                editor.document.uri.fsPath
+                editor.document.uri.fsPath,
+                abortSignal
             );
         this.globalExtensionState.eventLogger.log(
             "completion-preparation-finished",
@@ -191,7 +213,8 @@ export class CoqPilot {
                         completionContext,
                         sourceFileEnvironment,
                         processEnvironment,
-                        editor
+                        editor,
+                        abortSignal
                     );
                 }
             );
@@ -207,12 +230,15 @@ export class CoqPilot {
         completionContext: CompletionContext,
         sourceFileEnvironment: SourceFileEnvironment,
         processEnvironment: ProcessEnvironment,
-        editor: TextEditor
+        editor: TextEditor,
+        abortSignal: AbortSignal
     ) {
+        throwOnAbort(abortSignal);
         const result = await generateCompletion(
             completionContext,
             sourceFileEnvironment,
             processEnvironment,
+            abortSignal,
             this.globalExtensionState.logOutputChannel,
             this.globalExtensionState.eventLogger
         );
@@ -272,7 +298,8 @@ export class CoqPilot {
     private async prepareForCompletions(
         shouldCompleteHole: (hole: ProofStep) => boolean,
         fileVersion: number,
-        filePath: string
+        filePath: string,
+        abortSignal: AbortSignal
     ): Promise<
         [CompletionContext[], SourceFileEnvironment, ProcessEnvironment]
     > {
@@ -302,6 +329,7 @@ export class CoqPilot {
                 shouldCompleteHole,
                 fileUri,
                 this.globalExtensionState.coqLspClient,
+                abortSignal,
                 contextTheoremsRanker.needsUnwrappedNotations
             );
         const processEnvironment: ProcessEnvironment = {

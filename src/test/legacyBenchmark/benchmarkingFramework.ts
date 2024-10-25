@@ -271,10 +271,12 @@ async function benchmarkCompletionGeneration(
         premisesNumber: maxPremisesNumber,
     };
 
+    const abortController = new AbortController();
     const result = await generateCompletion(
         completionContext,
         sourceFileEnvironmentWithFilteredContext,
         processEnvironmentWithPremisesNumber,
+        abortController.signal,
         undefined,
         undefined,
         workspaceRootPath,
@@ -429,10 +431,12 @@ async function extractCompletionTargets(
     fileUri: Uri,
     client: CoqLspClientInterface
 ): Promise<[BenchmarkingCompletionTargets, SourceFileEnvironment]> {
+    const abortController = new AbortController();
     const sourceFileEnvironment = await createSourceFileEnvironment(
         fileVersion,
         fileUri,
-        client
+        client,
+        abortController.signal
     );
     const completionTargets = await createCompletionTargets(
         fileVersion,
