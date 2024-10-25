@@ -16,7 +16,7 @@ import { Uri } from "../utils/uri";
 import { ProofStep, Theorem, TheoremProof, Vernacexpr } from "./parsedTypes";
 
 /**
- * TODO: [LspCoreRefactor] Refactor retrieveInitialGoal param
+ * TODO: [@Gleb Solovev] Refactor retrieveInitialGoal param
  * to be something more reasonable and readable.
  */
 export async function parseCoqFile(
@@ -106,9 +106,8 @@ async function parseFlecheDocument(
                         )
                     );
                 } else {
-                    // TODO: [LspCoreRefactor] Discuss invariants on initial_goal
-                    // and allow it's absence. As calculation of initial_goal
-                    // brings overhead of 100ms per theorem.
+                    // TODO: Might be a source of bugs if somewhere absense of initialGoal
+                    // is not handled properly or invariants are broken
                     let initialGoal: Result<Goal<PpString>[], Error> | null =
                         null;
                     if (retrieveInitialGoal) {

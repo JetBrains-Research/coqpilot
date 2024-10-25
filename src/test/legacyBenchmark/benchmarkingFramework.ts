@@ -98,7 +98,6 @@ export async function runTestBenchmark(
             eventLogger,
             maxPremisesNumber,
             reportHolder,
-            workspaceRootPath,
             perProofTimeoutMillis
         );
         consoleLog(
@@ -123,7 +122,6 @@ export async function runTestBenchmark(
             eventLogger,
             maxPremisesNumber,
             reportHolder,
-            workspaceRootPath,
             perProofTimeoutMillis
         );
         consoleLog(
@@ -200,7 +198,6 @@ export async function benchmarkTargets(
     eventLogger: EventLogger,
     maxPremisesNumber?: number,
     reportHolder?: BenchmarkReportHolder,
-    workspaceRootPath?: string,
     perProofTimeoutMillis: number = 15000
 ): Promise<BenchmarkResult> {
     const totalCompletionsNumber = targets.length;
@@ -216,7 +213,6 @@ export async function benchmarkTargets(
             eventLogger,
             maxPremisesNumber,
             reportHolder,
-            workspaceRootPath,
             perProofTimeoutMillis
         );
         if (success) {
@@ -239,7 +235,6 @@ async function benchmarkCompletionGeneration(
     eventLogger: EventLogger,
     maxPremisesNumber?: number,
     reportHolder?: BenchmarkReportHolder,
-    workspaceRootPath?: string,
     perProofTimeoutMillis: number = 15000
 ): Promise<boolean> {
     const completionPosition = completionContext.admitRange.start;
@@ -276,8 +271,6 @@ async function benchmarkCompletionGeneration(
         sourceFileEnvironmentWithFilteredContext,
         processEnvironmentWithPremisesNumber,
         undefined,
-        undefined,
-        workspaceRootPath,
         perProofTimeoutMillis
     );
     let message = "unknown";

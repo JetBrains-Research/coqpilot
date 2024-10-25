@@ -40,7 +40,7 @@ export namespace CheckProofsImpl {
             const timeMark = new TimeMark();
             const fileUri = Uri.fromPath(args.fileUri);
 
-            // TODO: [LspCoreRefactor] Before handling of open/close req's was done by `CoqProofChecker` itself
+            // TODO: [@Gleb Solovev] Pay Atteniton that it was previously done by the CoqProofChecker
             await coqLspClient.openTextDocument(fileUri);
 
             const proofCheckResults = await coqProofChecker.checkProofs(
