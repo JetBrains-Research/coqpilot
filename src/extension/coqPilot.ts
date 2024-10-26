@@ -297,35 +297,21 @@ export class CoqPilot {
     @logExecutionTime
     private async prepareForCompletions(
         shouldCompleteHole: (hole: ProofStep) => boolean,
-        fileVersion: number,
+        documentVersion: number,
         filePath: string,
         abortSignal: AbortSignal
     ): Promise<
         [CompletionContext[], SourceFileEnvironment, ProcessEnvironment]
     > {
         const fileUri = Uri.fromPath(filePath);
-        // const coqLspServerPath = parseCoqLspServerPath();
-        // TODO: [LspCoreRefactor] Now a tone of Coq-LSPs are created and destroyed for each completion.
-        // It is not efficient. Refactor it to create a single Coq-LSP client for the whole session.
-        // But allow restarting it when issues occur.
-
-        // TODO: [LspCoreRefactor] Check hypothesis that we do not really need
-        // to send any events when user uses the plugin.
-
-        // TODO: [LspCoreRefactor] Check what happens in plugin runtime when file not prepared, but goals requested.
-        // const client = await createCoqLspClient(
-        //     coqLspServerPath,
-        //     this.globalExtensionState.logOutputChannel
-        // );
         const contextTheoremsRanker = buildTheoremsRankerFromConfig();
 
         const coqProofChecker = new CoqProofChecker(
             this.globalExtensionState.coqLspClient
         );
-        // TODO: [LspCoreRefactor] Unclear double dependency on Coq-LSP client.
         const [completionContexts, sourceFileEnvironment] =
             await inspectSourceFile(
-                fileVersion,
+                documentVersion,
                 shouldCompleteHole,
                 fileUri,
                 this.globalExtensionState.coqLspClient,

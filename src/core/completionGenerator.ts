@@ -1,9 +1,6 @@
-import { OutputChannel } from "vscode";
-
 import { LLMSequentialIterator } from "../llm/llmIterator";
 import { GeneratedProof } from "../llm/llmServices/generatedProof";
 
-import { createCoqLspClient } from "../coqLsp/coqLspBuilders";
 import { CoqLspTimeoutError } from "../coqLsp/coqLspTypes";
 
 import { EventLogger } from "../logging/eventLogger";
@@ -15,7 +12,7 @@ import {
     ProcessEnvironment,
     SourceFileEnvironment,
 } from "./completionGenerationContext";
-import { CoqProofChecker, ProofCheckResult } from "./coqProofChecker";
+import { ProofCheckResult } from "./coqProofChecker";
 import {
     buildProofGenerationContext,
     prepareProofToCheck,
@@ -51,7 +48,6 @@ export async function generateCompletion(
     abortSignal: AbortSignal,
     logOutputChannel?: OutputChannel,
     eventLogger?: EventLogger,
-    workspaceRootPath?: string,
     perProofTimeoutMillis: number = 15000
 ): Promise<GenerationResult> {
     const context = buildProofGenerationContext(
@@ -91,9 +87,7 @@ export async function generateCompletion(
                 completionContext,
                 sourceFileEnvironment,
                 processEnvironment,
-                logOutputChannel,
                 eventLogger,
-                workspaceRootPath,
                 perProofTimeoutMillis
             );
             if (fixedProofsOrCompletion instanceof SuccessGenerationResult) {
@@ -108,9 +102,7 @@ export async function generateCompletion(
                 completionContext,
                 sourceFileEnvironment,
                 processEnvironment,
-                logOutputChannel,
                 eventLogger,
-                workspaceRootPath,
                 perProofTimeoutMillis
             );
             if (fixedProofsOrCompletion instanceof SuccessGenerationResult) {
@@ -152,9 +144,7 @@ async function checkAndFixProofs(
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
-    logOutputChannel?: OutputChannel,
     eventLogger?: EventLogger,
-    workspaceRootPath?: string,
     perProofTimeoutMillis: number = 15000
 ): Promise<GeneratedProof[] | SuccessGenerationResult> {
     // check proofs and finish with success if at least one is valid
@@ -163,8 +153,6 @@ async function checkAndFixProofs(
         completionContext,
         sourceFileEnvironment,
         processEnvironment,
-        logOutputChannel,
-        workspaceRootPath,
         perProofTimeoutMillis
     );
     const completion = getFirstValidProof(proofCheckResults);
@@ -199,8 +187,6 @@ async function checkGeneratedProofs(
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
-    logOutputChannel?: OutputChannel,
-    workspaceRootPath?: string,
     perProofTimeoutMillis = 15000
 ): Promise<ProofCheckResult[]> {
     const preparedProofBatch = generatedProofs.map(
@@ -208,20 +194,20 @@ async function checkGeneratedProofs(
             prepareProofToCheck(generatedProof.proof())
     );
 
-    // TODO: [LspCoreRefactor] Why is it happening every time?
-    if (workspaceRootPath) {
-        processEnvironment.coqProofChecker.dispose();
-        const client = await createCoqLspClient(
-            workspaceRootPath,
-            logOutputChannel
-        );
-        const coqProofChecker = new CoqProofChecker(client);
-        processEnvironment.coqProofChecker = coqProofChecker;
-    }
+    // TODO: Why is it happening every time?
+    // if (workspaceRootPath) {
+    //     processEnvironment.coqProofChecker.dispose();
+    //     const client = await createCoqLspClient(
+    //         workspaceRootPath,
+    //         logOutputChannel
+    //     );
+    //     const coqProofChecker = new CoqProofChecker(client);
+    //     processEnvironment.coqProofChecker = coqProofChecker;
+    // }
 
     return processEnvironment.coqProofChecker.checkProofs(
         sourceFileEnvironment.fileUri,
-        sourceFileEnvironment.fileVersion,
+        sourceFileEnvironment.documentVersion,
         completionContext.admitRange.start,
         preparedProofBatch,
         perProofTimeoutMillis

@@ -28,7 +28,7 @@ export namespace ProofsCheckerUtils {
                 ? undefined
                 : workspaceRoot.directoryPath,
             fileUri: sourceFileEnvironment.fileUri.toString(),
-            documentVersion: sourceFileEnvironment.fileVersion,
+            documentVersion: sourceFileEnvironment.documentVersion,
             checkAtPosition: completionContext.admitRange.start,
             preparedProofs: preparedProofs,
         };

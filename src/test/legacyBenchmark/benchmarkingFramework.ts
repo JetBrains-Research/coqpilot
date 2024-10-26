@@ -98,7 +98,6 @@ export async function runTestBenchmark(
             eventLogger,
             maxPremisesNumber,
             reportHolder,
-            workspaceRootPath,
             perProofTimeoutMillis
         );
         consoleLog(
@@ -123,7 +122,6 @@ export async function runTestBenchmark(
             eventLogger,
             maxPremisesNumber,
             reportHolder,
-            workspaceRootPath,
             perProofTimeoutMillis
         );
         consoleLog(
@@ -200,7 +198,6 @@ export async function benchmarkTargets(
     eventLogger: EventLogger,
     maxPremisesNumber?: number,
     reportHolder?: BenchmarkReportHolder,
-    workspaceRootPath?: string,
     perProofTimeoutMillis: number = 15000
 ): Promise<BenchmarkResult> {
     const totalCompletionsNumber = targets.length;
@@ -216,7 +213,6 @@ export async function benchmarkTargets(
             eventLogger,
             maxPremisesNumber,
             reportHolder,
-            workspaceRootPath,
             perProofTimeoutMillis
         );
         if (success) {
@@ -239,7 +235,6 @@ async function benchmarkCompletionGeneration(
     eventLogger: EventLogger,
     maxPremisesNumber?: number,
     reportHolder?: BenchmarkReportHolder,
-    workspaceRootPath?: string,
     perProofTimeoutMillis: number = 15000
 ): Promise<boolean> {
     const completionPosition = completionContext.admitRange.start;
@@ -278,8 +273,6 @@ async function benchmarkCompletionGeneration(
         processEnvironmentWithPremisesNumber,
         abortController.signal,
         undefined,
-        undefined,
-        workspaceRootPath,
         perProofTimeoutMillis
     );
     let message = "unknown";
@@ -395,10 +388,10 @@ async function prepareForBenchmarkCompletions(
     await client.openTextDocument(fileUri);
 
     const coqProofChecker = new CoqProofChecker(client);
-    const mockFileVersion = 1;
+    const mockDocumentVersion = 1;
     const [completionTargets, sourceFileEnvironment] =
         await extractCompletionTargets(
-            mockFileVersion,
+            mockDocumentVersion,
             shouldCompleteHole,
             fileUri,
             client
@@ -426,20 +419,20 @@ async function prepareForBenchmarkCompletions(
 }
 
 async function extractCompletionTargets(
-    fileVersion: number,
+    documentVersion: number,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileUri: Uri,
     client: CoqLspClientInterface
 ): Promise<[BenchmarkingCompletionTargets, SourceFileEnvironment]> {
     const abortController = new AbortController();
     const sourceFileEnvironment = await createSourceFileEnvironment(
-        fileVersion,
+        documentVersion,
         fileUri,
         client,
         abortController.signal
     );
     const completionTargets = await createCompletionTargets(
-        fileVersion,
+        documentVersion,
         shouldCompleteHole,
         sourceFileEnvironment.fileTheorems,
         fileUri,
@@ -461,7 +454,7 @@ interface ParentedProofStep {
 }
 
 async function createCompletionTargets(
-    fileVersion: number,
+    documentVersion: number,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileTheorems: Theorem[],
     fileUri: Uri,
@@ -491,13 +484,13 @@ async function createCompletionTargets(
     return {
         admitTargets: await resolveProofStepsToCompletionContexts(
             admitHolesToComplete,
-            fileVersion,
+            documentVersion,
             fileUri,
             client
         ),
         theoremTargets: await resolveProofStepsToCompletionContexts(
             firstProofSteps,
-            fileVersion,
+            documentVersion,
             fileUri,
             client
         ),
@@ -506,7 +499,7 @@ async function createCompletionTargets(
 
 async function resolveProofStepsToCompletionContexts(
     parentedProofSteps: ParentedProofStep[],
-    fileVersion: number,
+    documentVersion: number,
     fileUri: Uri,
     client: CoqLspClientInterface
 ): Promise<BenchmarkingCompletionContext[]> {
@@ -515,7 +508,7 @@ async function resolveProofStepsToCompletionContexts(
         const goals = await client.getGoalsAtPoint(
             parentedProofStep.proofStep.range.start,
             fileUri,
-            fileVersion
+            documentVersion
         );
         if (goals.ok) {
             const firstGoal = goals.val.shift();
