@@ -19,7 +19,8 @@ export async function parseTheoremsFromCoqFile(
     const client = await createTestCoqLspClient(rootDir);
 
     await client.openTextDocument(fileUri);
-    const document = await parseCoqFile(fileUri, client);
+    const abortController = new AbortController();
+    const document = await parseCoqFile(fileUri, client, abortController.signal);
     await client.closeTextDocument(fileUri);
 
     return document;

@@ -17,6 +17,7 @@ import {
     buildProofGenerationContext,
     prepareProofToCheck,
 } from "./exposedCompletionGeneratorUtils";
+import { throwOnAbort } from "../extension/extensionAbortUtils";
 
 export interface GenerationResult {}
 
@@ -44,6 +45,8 @@ export async function generateCompletion(
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
+    abortSignal: AbortSignal,
+    logOutputChannel?: OutputChannel,
     eventLogger?: EventLogger,
     perProofTimeoutMillis: number = 15000
 ): Promise<GenerationResult> {
@@ -72,6 +75,7 @@ export async function generateCompletion(
         let newlyGeneratedProofs: GeneratedProof[] = [];
 
         for await (const generatedProofsBatch of iterator) {
+            throwOnAbort(abortSignal);
             newlyGeneratedProofs.push(...generatedProofsBatch);
             eventLogger?.log(
                 "core-new-proofs-ready-for-checking",
