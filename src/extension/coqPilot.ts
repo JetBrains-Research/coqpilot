@@ -82,7 +82,7 @@ export class CoqPilot {
         );
         this.registerEditorCommand(
             "toggle_current_session",
-            this.performCompletionForAllAdmits.bind(this)
+            this.toggleCurrentSession.bind(this)
         );
 
         this.vscodeExtensionContext.subscriptions.push(this);
