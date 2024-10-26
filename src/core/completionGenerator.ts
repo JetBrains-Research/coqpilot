@@ -46,7 +46,6 @@ export async function generateCompletion(
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
     abortSignal: AbortSignal,
-    logOutputChannel?: OutputChannel,
     eventLogger?: EventLogger,
     perProofTimeoutMillis: number = 15000
 ): Promise<GenerationResult> {

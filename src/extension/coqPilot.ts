@@ -239,7 +239,6 @@ export class CoqPilot {
             sourceFileEnvironment,
             processEnvironment,
             abortSignal,
-            this.globalExtensionState.logOutputChannel,
             this.globalExtensionState.eventLogger
         );
 
