@@ -138,6 +138,8 @@ export class TheoremProof {
     }
 }
 
+// TODO: [LspCoreRefactor] Refactor Theorem -> Premise
+// TODO: [LspCoreRefactor] Make Theorem.proof non nullable
 export class Theorem {
     constructor(
         public name: string,

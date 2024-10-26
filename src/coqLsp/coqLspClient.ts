@@ -36,6 +36,7 @@ import {
     PpString,
 } from "./coqLspTypes";
 
+// TODO: [LspCoreRefactor] Leave comments on invariants preserved by the client
 export interface CoqLspClientInterface extends Disposable {
     getGoalsAtPoint(
         position: Position,
