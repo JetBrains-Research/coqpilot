@@ -132,8 +132,8 @@ export class CoqPilot {
     async toggleCurrentSession() {
         if (this.globalExtensionState.hasActiveSession) {
             this.sessionExtensionState.abort();
-            // TODO: [LspCoreRefactor] Change this. Need to reach the throwOnAbort 
-            // checkpoint before disposing the LSP client.
+            // TODO: [LspCoreRefactor] Change this. Need to reach the throwOnAbort
+            // checkpoint before disposing the LSP client
             await sleep(500);
             this.sessionExtensionState.dispose();
             this.globalExtensionState.hasActiveSession = false;

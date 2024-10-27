@@ -2,14 +2,14 @@ import { OutputChannel, window } from "vscode";
 
 import { EventLogger } from "../logging/eventLogger";
 
-import { CoqLspClient, CoqLspClientInterface } from "./coqLspClient";
+import { CoqLspClient, CoqLspClientImpl } from "./coqLspClient";
 import { CoqLspClientConfig, CoqLspConfig } from "./coqLspConfig";
 
 export async function createCoqLspClient(
     coqLspServerPath: string,
     logOutputChannel?: OutputChannel,
     eventLogger?: EventLogger
-): Promise<CoqLspClientInterface> {
+): Promise<CoqLspClient> {
     return createAbstractCoqLspClient(
         CoqLspConfig.createClientConfig(coqLspServerPath),
         logOutputChannel,
@@ -19,7 +19,7 @@ export async function createCoqLspClient(
 
 export async function createTestCoqLspClient(
     workspaceRootPath?: string
-): Promise<CoqLspClientInterface> {
+): Promise<CoqLspClient> {
     return createAbstractCoqLspClient(
         CoqLspConfig.createClientConfig(
             process.env.COQ_LSP_PATH || "coq-lsp",
@@ -34,9 +34,9 @@ async function createAbstractCoqLspClient(
         "CoqPilot: coq-lsp events"
     ),
     eventLogger?: EventLogger
-): Promise<CoqLspClientInterface> {
+): Promise<CoqLspClient> {
     const coqLspServerConfig = CoqLspConfig.createServerConfig();
-    return await CoqLspClient.create(
+    return await CoqLspClientImpl.create(
         coqLspServerConfig,
         coqLspClientConfig,
         logOutputChannel,

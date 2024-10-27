@@ -1,7 +1,7 @@
 import { Disposable, OutputChannel } from "vscode";
 
 import { createCoqLspClient } from "../coqLsp/coqLspBuilders";
-import { CoqLspClientInterface } from "../coqLsp/coqLspClient";
+import { CoqLspClient } from "../coqLsp/coqLspClient";
 
 import { EventLogger } from "../logging/eventLogger";
 
@@ -11,7 +11,7 @@ import { CompletionAbortError } from "./extensionAbortUtils";
 export class SessionExtensionState implements Disposable {
     public abortController: AbortController = new AbortController();
 
-    private constructor(public readonly coqLspClient: CoqLspClientInterface) {}
+    private constructor(public readonly coqLspClient: CoqLspClient) {}
 
     static async create(
         logOutputChannel: OutputChannel,

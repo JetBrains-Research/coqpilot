@@ -1,4 +1,4 @@
-import { CoqLspClientInterface } from "../coqLsp/coqLspClient";
+import { CoqLspClient } from "../coqLsp/coqLspClient";
 
 import { parseCoqFile } from "../coqParser/parseCoqFile";
 import { ProofStep, Theorem } from "../coqParser/parsedTypes";
@@ -16,7 +16,7 @@ export async function inspectSourceFile(
     documentVersion: number,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileUri: Uri,
-    client: CoqLspClientInterface,
+    client: CoqLspClient,
     abortSignal: AbortSignal,
     rankerNeedsInitialGoals: boolean = true
 ): Promise<AnalyzedFile> {
@@ -50,7 +50,7 @@ async function createCompletionContexts(
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileTheorems: Theorem[],
     fileUri: Uri,
-    client: CoqLspClientInterface,
+    client: CoqLspClient,
     abortSignal: AbortSignal
 ): Promise<CompletionContext[]> {
     const holesToComplete = fileTheorems
@@ -84,7 +84,7 @@ async function createCompletionContexts(
 export async function createSourceFileEnvironment(
     documentVersion: number,
     fileUri: Uri,
-    client: CoqLspClientInterface,
+    client: CoqLspClient,
     abortSignal: AbortSignal,
     rankerNeedsInitialGoals: boolean = true
 ): Promise<SourceFileEnvironment> {

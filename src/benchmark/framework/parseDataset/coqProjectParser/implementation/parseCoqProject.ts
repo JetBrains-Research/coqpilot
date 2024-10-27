@@ -1,5 +1,5 @@
 import { createTestCoqLspClient } from "../../../../../coqLsp/coqLspBuilders";
-import { CoqLspClientInterface } from "../../../../../coqLsp/coqLspClient";
+import { CoqLspClient } from "../../../../../coqLsp/coqLspClient";
 
 import { createSourceFileEnvironment } from "../../../../../core/inspectSourceFile";
 
@@ -71,7 +71,7 @@ export namespace ParseCoqProjectImpl {
 
     async function openAndParseSourceFile(
         filePath: string,
-        coqLspClient: CoqLspClientInterface,
+        coqLspClient: CoqLspClient,
         logger: Logger
     ): Promise<SerializedParsedCoqFile> {
         const mockDocumentVersion = 1;
@@ -106,7 +106,7 @@ export namespace ParseCoqProjectImpl {
     async function extractFileTargetsFromFile(
         fileTargets: Signature.ArgsModels.FileTarget[],
         serializedParsedFile: SerializedParsedCoqFile,
-        coqLspClient: CoqLspClientInterface,
+        coqLspClient: CoqLspClient,
         logger: Logger
     ): Promise<Signature.ResultModels.ParsedFileTarget[]> {
         const parsedTargetsSets: Signature.ResultModels.ParsedFileTarget[][] =
@@ -154,7 +154,7 @@ export namespace ParseCoqProjectImpl {
         theorem: SerializedTheorem,
         requestType: TargetRequestType,
         serializedParsedFile: SerializedParsedCoqFile,
-        coqLspClient: CoqLspClientInterface,
+        coqLspClient: CoqLspClient,
         logger: Logger
     ): Promise<Signature.ResultModels.ParsedFileTarget[]> {
         const targetBuilder: (
@@ -201,7 +201,7 @@ export namespace ParseCoqProjectImpl {
         theoremName: string,
         knownGoal: SerializedGoal | undefined,
         serializedParsedFile: SerializedParsedCoqFile,
-        coqLspClient: CoqLspClientInterface,
+        coqLspClient: CoqLspClient,
         logger: Logger
     ): Promise<Signature.ResultModels.ParsedFileTarget> {
         let serializedGoal = knownGoal;

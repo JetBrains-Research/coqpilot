@@ -36,7 +36,7 @@ import {
     PpString,
 } from "./coqLspTypes";
 
-export interface CoqLspClientInterface extends Disposable {
+export interface CoqLspClient extends Disposable {
     /**
      * Fetches all goals present at the given position in the document.
      * This method doesn't open the document implicitly, therefore
@@ -78,7 +78,7 @@ const flecheDocReqType = new RequestType<
 
 export type DiagnosticMessage = string | undefined;
 
-export class CoqLspClient implements CoqLspClientInterface {
+export class CoqLspClientImpl implements CoqLspClient {
     private client: BaseLanguageClient;
     private subscriptions: Disposable[] = [];
     private mutex = new Mutex();
@@ -95,7 +95,7 @@ export class CoqLspClient implements CoqLspClientInterface {
         clientConfig: CoqLspClientConfig,
         logOutputChannel: OutputChannel,
         eventLogger?: EventLogger
-    ): Promise<CoqLspClient> {
+    ): Promise<CoqLspClientImpl> {
         const connector = new CoqLspConnector(
             serverConfig,
             clientConfig,
@@ -107,7 +107,7 @@ export class CoqLspClient implements CoqLspClientInterface {
                 clientConfig.coq_lsp_server_path
             );
         });
-        return new CoqLspClient(connector, eventLogger);
+        return new CoqLspClientImpl(connector, eventLogger);
     }
 
     async getGoalsAtPoint(

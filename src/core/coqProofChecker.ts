@@ -1,7 +1,7 @@
 import { Mutex } from "async-mutex";
 import { Position } from "vscode-languageclient";
 
-import { CoqLspClientInterface } from "../coqLsp/coqLspClient";
+import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { CoqLspTimeoutError } from "../coqLsp/coqLspTypes";
 
 import { Uri } from "../utils/uri";
@@ -29,7 +29,7 @@ export interface CoqProofCheckerInterface {
 export class CoqProofChecker implements CoqProofCheckerInterface {
     private mutex: Mutex = new Mutex();
 
-    constructor(private coqLspClient: CoqLspClientInterface) {}
+    constructor(private coqLspClient: CoqLspClient) {}
 
     async checkProofs(
         fileUri: Uri,
