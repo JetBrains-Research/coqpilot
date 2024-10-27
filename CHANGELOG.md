@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.3.1
+
+The version increment is minor, yet the changes are significant. The main focus of this release was to improve interaction with the `coq-lsp` server. We now completely got rid of temporary files in the `extension` part of `CoqPilot`. This was done thanks to [ejgallego](https://github.com/ejgallego) and his improvements in `coq-lsp`. Now checking of proofs is done via the `proof/goals` request via `command` parameter, which is much more reliable and faster. Now a single `lsp` server is created for the plugin until being explicitly closed, and it tracks changes in the file. If you are using `coq-lsp` plugin itself, it will help you to always keep track of whether file is checked or not. When `CoqPilot` is ran on a completely checked file, it will not bring any significant overhead apart from requests to the Completion Services. 
+
+### Public changes
+- Added a toggle button to enable/disable the extension
+- Using the toggle switch, user can now abort the proof generation process
+- Significant performance improvements in proof checking that are especially easy to see for large files
+
+### Internal changes
+- Get rid of temporary files in the `extension` part of `CoqPilot`
+- Refactor `CoqLspClient` 
+- Make computation of `initialGoal` for premises optional to avoid unnecessary requests to `coq-lsp`
+
 ## 2.3.0
 
 **A major upgrade of the benchmarking system**: At the moment, only a little **new** functionality is provided; moreover, the ability to run benchmarks on Tactician/CoqHammer is temporarily unavailable. However, it will soon be restored and improved. Excessive work has been done to make the benchmarking system more flexible, secure, robust, self-contained, and easy to use. Experiments via our benchmarking framework have been made more accessible than ever. The configurability and reliability of the pipeline have been improved drastically. In a nutshell, the main features of the improved benchmarking system include:
