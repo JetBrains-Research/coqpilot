@@ -9,22 +9,26 @@ import { parseCoqLspServerPath } from "./configReaders";
 import { CompletionAbortError } from "./extensionAbortUtils";
 
 export class SessionExtensionState implements Disposable {
-    public abortController: AbortController = new AbortController();
-
-    private constructor(public readonly coqLspClient: CoqLspClient) {}
+    private constructor(
+        readonly coqLspClient: CoqLspClient,
+        readonly abortController: AbortController
+    ) {}
 
     static async create(
         logOutputChannel: OutputChannel,
         eventLogger: EventLogger
     ): Promise<SessionExtensionState> {
+        const abortController = new AbortController();
         const coqLspServerPath = parseCoqLspServerPath();
+
         const coqLspClient = await createCoqLspClient(
             coqLspServerPath,
             logOutputChannel,
-            eventLogger
+            eventLogger,
+            abortController
         );
 
-        return new SessionExtensionState(coqLspClient);
+        return new SessionExtensionState(coqLspClient, abortController);
     }
 
     abort(): void {

@@ -4,11 +4,12 @@ export class CompletionAbortError extends Error {
 
     constructor() {
         super(CompletionAbortError.abortMessage);
+        this.name = "CompletionAbortError";
     }
 }
 
-export function throwOnAbort(abortSignal: AbortSignal) {
-    if (abortSignal.aborted) {
+export function throwOnAbort(abortSignal?: AbortSignal) {
+    if (abortSignal?.aborted) {
         throw abortSignal.reason;
     }
 }

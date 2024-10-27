@@ -19,8 +19,8 @@ import {
     VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
 
+import { throwOnAbort } from "../extension/extensionAbortUtils";
 import { EventLogger } from "../logging/eventLogger";
-import { sleep } from "../utils/sleep";
 import { Uri } from "../utils/uri";
 
 import { CoqLspClientConfig, CoqLspServerConfig } from "./coqLspConfig";
@@ -85,7 +85,8 @@ export class CoqLspClientImpl implements CoqLspClient {
 
     private constructor(
         coqLspConnector: CoqLspConnector,
-        public readonly eventLogger?: EventLogger
+        public readonly eventLogger?: EventLogger,
+        public readonly abortController?: AbortController
     ) {
         this.client = coqLspConnector;
     }
@@ -94,7 +95,8 @@ export class CoqLspClientImpl implements CoqLspClient {
         serverConfig: CoqLspServerConfig,
         clientConfig: CoqLspClientConfig,
         logOutputChannel: OutputChannel,
-        eventLogger?: EventLogger
+        eventLogger?: EventLogger,
+        abortController?: AbortController
     ): Promise<CoqLspClientImpl> {
         const connector = new CoqLspConnector(
             serverConfig,
@@ -107,7 +109,7 @@ export class CoqLspClientImpl implements CoqLspClient {
                 clientConfig.coq_lsp_server_path
             );
         });
-        return new CoqLspClientImpl(connector, eventLogger);
+        return new CoqLspClientImpl(connector, eventLogger, abortController);
     }
 
     async getGoalsAtPoint(
@@ -117,6 +119,7 @@ export class CoqLspClientImpl implements CoqLspClient {
         command?: string
     ): Promise<Result<Goal<PpString>[], Error>> {
         return await this.mutex.runExclusive(async () => {
+            throwOnAbort(this.abortController?.signal);
             return this.getGoalsAtPointUnsafe(
                 position,
                 documentUri,
@@ -131,18 +134,21 @@ export class CoqLspClientImpl implements CoqLspClient {
         version: number = 1
     ): Promise<DiagnosticMessage> {
         return await this.mutex.runExclusive(async () => {
+            throwOnAbort(this.abortController?.signal);
             return this.openTextDocumentUnsafe(uri, version);
         });
     }
 
     async closeTextDocument(uri: Uri): Promise<void> {
         return await this.mutex.runExclusive(async () => {
+            throwOnAbort(this.abortController?.signal);
             return this.closeTextDocumentUnsafe(uri);
         });
     }
 
     async getFlecheDocument(uri: Uri): Promise<FlecheDocument> {
         return await this.mutex.runExclusive(async () => {
+            throwOnAbort(this.abortController?.signal);
             return this.getFlecheDocumentUnsafe(uri);
         });
     }
@@ -237,6 +243,10 @@ export class CoqLspClientImpl implements CoqLspClient {
         }
     }
 
+    private sleep(ms: number): Promise<ReturnType<typeof setTimeout>> {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
     private async waitUntilFileFullyChecked(
         requestType: ProtocolNotificationType<any, any>,
         params: any,
@@ -285,7 +295,7 @@ export class CoqLspClientImpl implements CoqLspClient {
         );
 
         while (timeout > 0 && (pendingProgress || pendingDiagnostic)) {
-            await sleep(100);
+            await this.sleep(100);
             timeout -= 100;
         }
 

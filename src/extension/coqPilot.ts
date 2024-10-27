@@ -23,7 +23,6 @@ import { inspectSourceFile } from "../core/inspectSourceFile";
 
 import { ProofStep } from "../coqParser/parsedTypes";
 import { buildErrorCompleteLog } from "../utils/errorsUtils";
-import { sleep } from "../utils/sleep";
 import { Uri } from "../utils/uri";
 
 import {
@@ -131,12 +130,9 @@ export class CoqPilot {
 
     async toggleCurrentSession() {
         if (this.globalExtensionState.hasActiveSession) {
-            this.sessionExtensionState.abort();
-            // TODO: [LspCoreRefactor] Change this. Need to reach the throwOnAbort
-            // checkpoint before disposing the LSP client
-            await sleep(500);
-            this.sessionExtensionState.dispose();
             this.globalExtensionState.hasActiveSession = false;
+            this.sessionExtensionState.abort();
+            this.sessionExtensionState.dispose();
             this.healthStatusIndicator.updateStatusBar(false);
         } else {
             this.sessionExtensionState = await SessionExtensionState.create(
@@ -157,7 +153,6 @@ export class CoqPilot {
             showMessageToUser(EditorMessages.extensionIsPaused, "warning");
             return;
         }
-        let isSessionHealthy = true;
         try {
             this.healthStatusIndicator.showSpinner();
 
@@ -175,9 +170,11 @@ export class CoqPilot {
                     "error",
                     `${pluginId}.coqLspServerPath`
                 );
-            } else if (e instanceof CompletionAbortError) {
+            } else if (
+                e instanceof CompletionAbortError ||
+                !this.globalExtensionState.hasActiveSession
+            ) {
                 showMessageToUser(EditorMessages.completionAborted, "info");
-                isSessionHealthy = false;
             } else {
                 showMessageToUser(
                     e instanceof Error
@@ -188,7 +185,9 @@ export class CoqPilot {
                 console.error(buildErrorCompleteLog(e));
             }
         } finally {
-            this.healthStatusIndicator.hideSpinner(isSessionHealthy);
+            this.healthStatusIndicator.hideSpinner(
+                this.globalExtensionState.hasActiveSession
+            );
         }
     }
 

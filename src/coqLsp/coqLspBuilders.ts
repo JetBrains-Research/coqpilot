@@ -8,12 +8,14 @@ import { CoqLspClientConfig, CoqLspConfig } from "./coqLspConfig";
 export async function createCoqLspClient(
     coqLspServerPath: string,
     logOutputChannel?: OutputChannel,
-    eventLogger?: EventLogger
+    eventLogger?: EventLogger,
+    abortController?: AbortController
 ): Promise<CoqLspClient> {
     return createAbstractCoqLspClient(
         CoqLspConfig.createClientConfig(coqLspServerPath),
         logOutputChannel,
-        eventLogger
+        eventLogger,
+        abortController
     );
 }
 
@@ -33,13 +35,15 @@ async function createAbstractCoqLspClient(
     logOutputChannel: OutputChannel = window.createOutputChannel(
         "CoqPilot: coq-lsp events"
     ),
-    eventLogger?: EventLogger
+    eventLogger?: EventLogger,
+    abortController?: AbortController
 ): Promise<CoqLspClient> {
     const coqLspServerConfig = CoqLspConfig.createServerConfig();
     return await CoqLspClientImpl.create(
         coqLspServerConfig,
         coqLspClientConfig,
         logOutputChannel,
-        eventLogger
+        eventLogger,
+        abortController
     );
 }
