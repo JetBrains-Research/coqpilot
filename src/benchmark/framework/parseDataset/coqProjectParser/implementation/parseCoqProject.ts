@@ -99,9 +99,7 @@ export namespace ParseCoqProjectImpl {
             filePath: filePath,
         };
         const foundTheoremsLog = `found ${Object.keys(serializedParsedFile.serializedTheoremsByNames).length} theorem(s)`;
-        logger.debug(
-            `Successfully parsed "${filePath}": ${foundTheoremsLog}`
-        );
+        logger.debug(`Successfully parsed "${filePath}": ${foundTheoremsLog}`);
         return serializedParsedFile;
     }
 

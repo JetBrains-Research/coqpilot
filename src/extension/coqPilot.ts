@@ -22,8 +22,8 @@ import { CoqProofChecker } from "../core/coqProofChecker";
 import { inspectSourceFile } from "../core/inspectSourceFile";
 
 import { ProofStep } from "../coqParser/parsedTypes";
-import { logExecutionTime } from "../logging/timeMeasureDecorator";
 import { buildErrorCompleteLog } from "../utils/errorsUtils";
+import { sleep } from "../utils/sleep";
 import { Uri } from "../utils/uri";
 
 import {
@@ -40,34 +40,29 @@ import {
     showMessageToUser,
     showMessageToUserWithSettingsHint,
 } from "./editorMessages";
+import { CompletionAbortError, throwOnAbort } from "./extensionAbortUtils";
 import { GlobalExtensionState } from "./globalExtensionState";
+import { HealthStatusIndicator } from "./healthStatusIndicator";
 import { subscribeToHandleLLMServicesEvents } from "./llmServicesEventsHandler";
 import {
     positionInRange,
     toVSCodePosition,
     toVSCodeRange,
 } from "./positionRangeUtils";
+import { SessionExtensionState } from "./sessionExtensionState";
 import { SettingsValidationError } from "./settingsValidationError";
-import { StatusBarButton } from "./statusBarButton";
-import { CompletionAbortError, throwOnAbort } from "./extensionAbortUtils";
 
 export const pluginId = "coqpilot";
 export const pluginName = "CoqPilot";
 
 export class CoqPilot {
-    private readonly globalExtensionState: GlobalExtensionState;
-    private readonly vscodeExtensionContext: ExtensionContext;
-    private subscriptions: { dispose(): any }[] = [];
-    private abortController = new AbortController();
+    private readonly healthStatusIndicator: HealthStatusIndicator;
 
     private constructor(
-        vscodeExtensionContext: ExtensionContext,
-        globalExtensionState: GlobalExtensionState,
-        private readonly statusBarButton: StatusBarButton
+        private readonly vscodeExtensionContext: ExtensionContext,
+        private readonly globalExtensionState: GlobalExtensionState,
+        private sessionExtensionState: SessionExtensionState
     ) {
-        this.vscodeExtensionContext = vscodeExtensionContext;
-        this.globalExtensionState = globalExtensionState;
-
         this.registerEditorCommand(
             "perform_completion_under_cursor",
             this.performCompletionUnderCursor.bind(this)
@@ -80,23 +75,31 @@ export class CoqPilot {
             "perform_completion_for_all_admits",
             this.performCompletionForAllAdmits.bind(this)
         );
+
+        const toggleCommand = `toggle_current_session`;
         this.registerEditorCommand(
-            "toggle_current_session",
+            toggleCommand,
             this.toggleCurrentSession.bind(this)
         );
+        this.healthStatusIndicator = new HealthStatusIndicator(
+            `${pluginId}.${toggleCommand}`,
+            vscodeExtensionContext
+        );
+        this.healthStatusIndicator.updateStatusBar(true);
 
         this.vscodeExtensionContext.subscriptions.push(this);
     }
 
-    static async create(
-        vscodeExtensionContext: ExtensionContext,
-        statusBarItem: StatusBarButton
-    ) {
-        const globalExtensionState = await GlobalExtensionState.create();
+    static async create(vscodeExtensionContext: ExtensionContext) {
+        const globalExtensionState = new GlobalExtensionState();
+        const sessionExtensionState = await SessionExtensionState.create(
+            globalExtensionState.logOutputChannel,
+            globalExtensionState.eventLogger
+        );
         return new CoqPilot(
             vscodeExtensionContext,
             globalExtensionState,
-            statusBarItem
+            sessionExtensionState
         );
     }
 
@@ -105,7 +108,7 @@ export class CoqPilot {
         this.performSpecificCompletionsWithProgress(
             (hole) => positionInRange(cursorPosition, hole.range),
             editor,
-            this.abortController.signal
+            this.sessionExtensionState.abortController.signal
         );
     }
 
@@ -114,21 +117,35 @@ export class CoqPilot {
         this.performSpecificCompletionsWithProgress(
             (hole) => selection.contains(toVSCodePosition(hole.range.start)),
             editor,
-            this.abortController.signal
+            this.sessionExtensionState.abortController.signal
         );
     }
 
     async performCompletionForAllAdmits(editor: TextEditor) {
         this.performSpecificCompletionsWithProgress(
-            (_hole) => true, 
-            editor, 
-            this.abortController.signal
+            (_hole) => true,
+            editor,
+            this.sessionExtensionState.abortController.signal
         );
     }
 
     async toggleCurrentSession() {
-        console.log("Toggle current session");
-        this.abortController.abort(new CompletionAbortError());
+        if (this.globalExtensionState.hasActiveSession) {
+            this.sessionExtensionState.abort();
+            // TODO: [LspCoreRefactor] Change this. Need to reach the throwOnAbort 
+            // checkpoint before disposing the LSP client.
+            await sleep(500);
+            this.sessionExtensionState.dispose();
+            this.globalExtensionState.hasActiveSession = false;
+            this.healthStatusIndicator.updateStatusBar(false);
+        } else {
+            this.sessionExtensionState = await SessionExtensionState.create(
+                this.globalExtensionState.logOutputChannel,
+                this.globalExtensionState.eventLogger
+            );
+            this.globalExtensionState.hasActiveSession = true;
+            this.healthStatusIndicator.updateStatusBar(true);
+        }
     }
 
     private async performSpecificCompletionsWithProgress(
@@ -136,10 +153,19 @@ export class CoqPilot {
         editor: TextEditor,
         abortSignal: AbortSignal
     ) {
+        if (!this.globalExtensionState.hasActiveSession) {
+            showMessageToUser(EditorMessages.extensionIsPaused, "warning");
+            return;
+        }
+        let isSessionHealthy = true;
         try {
-            this.statusBarButton.showSpinner();
+            this.healthStatusIndicator.showSpinner();
 
-            await this.performSpecificCompletions(shouldCompleteHole, editor, abortSignal);
+            await this.performSpecificCompletions(
+                shouldCompleteHole,
+                editor,
+                abortSignal
+            );
         } catch (e) {
             if (e instanceof SettingsValidationError) {
                 e.showAsMessageToUser();
@@ -151,6 +177,7 @@ export class CoqPilot {
                 );
             } else if (e instanceof CompletionAbortError) {
                 showMessageToUser(EditorMessages.completionAborted, "info");
+                isSessionHealthy = false;
             } else {
                 showMessageToUser(
                     e instanceof Error
@@ -161,7 +188,7 @@ export class CoqPilot {
                 console.error(buildErrorCompleteLog(e));
             }
         } finally {
-            this.statusBarButton.hideSpinner();
+            this.healthStatusIndicator.hideSpinner(isSessionHealthy);
         }
     }
 
@@ -225,7 +252,6 @@ export class CoqPilot {
         }
     }
 
-    @logExecutionTime
     private async performSingleCompletion(
         completionContext: CompletionContext,
         sourceFileEnvironment: SourceFileEnvironment,
@@ -293,7 +319,6 @@ export class CoqPilot {
             .trim();
     }
 
-    @logExecutionTime
     private async prepareForCompletions(
         shouldCompleteHole: (hole: ProofStep) => boolean,
         documentVersion: number,
@@ -306,14 +331,14 @@ export class CoqPilot {
         const contextTheoremsRanker = buildTheoremsRankerFromConfig();
 
         const coqProofChecker = new CoqProofChecker(
-            this.globalExtensionState.coqLspClient
+            this.sessionExtensionState.coqLspClient
         );
         const [completionContexts, sourceFileEnvironment] =
             await inspectSourceFile(
                 documentVersion,
                 shouldCompleteHole,
                 fileUri,
-                this.globalExtensionState.coqLspClient,
+                this.sessionExtensionState.coqLspClient,
                 abortSignal,
                 contextTheoremsRanker.needsUnwrappedNotations
             );
@@ -339,13 +364,11 @@ export class CoqPilot {
             fn
         );
         this.vscodeExtensionContext.subscriptions.push(disposable);
-        this.subscriptions.push(disposable);
     }
 
     dispose(): void {
-        // This is not the same as vscodeExtensionContext.subscriptions
-        // As it doesn't contain the statusBar item and the toggle command
-        this.subscriptions.forEach((d) => d.dispose());
+        this.vscodeExtensionContext.subscriptions.forEach((d) => d.dispose());
         this.globalExtensionState.dispose();
+        this.sessionExtensionState.dispose();
     }
 }

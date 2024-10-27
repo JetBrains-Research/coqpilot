@@ -11,10 +11,10 @@ import {
     RangedSpan,
 } from "../coqLsp/coqLspTypes";
 
+import { throwOnAbort } from "../extension/extensionAbortUtils";
 import { Uri } from "../utils/uri";
 
 import { ProofStep, Theorem, TheoremProof, Vernacexpr } from "./parsedTypes";
-import { throwOnAbort } from "../extension/extensionAbortUtils";
 
 /**
  * TODO: [@Gleb Solovev] Refactor retrieveInitialGoal param

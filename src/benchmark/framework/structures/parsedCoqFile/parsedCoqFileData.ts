@@ -87,11 +87,7 @@ export const serializedParsedCoqFileSchema: JSONSchemaType<SerializedParsedCoqFi
                 type: "string",
             },
         },
-        required: [
-            "serializedTheoremsByNames",
-            "documentVersion",
-            "filePath",
-        ],
+        required: ["serializedTheoremsByNames", "documentVersion", "filePath"],
         additionalProperties: false,
     };
 

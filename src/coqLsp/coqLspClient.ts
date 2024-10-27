@@ -20,7 +20,7 @@ import {
 } from "vscode-languageclient";
 
 import { EventLogger } from "../logging/eventLogger";
-import { logExecutionTime } from "../logging/timeMeasureDecorator";
+import { sleep } from "../utils/sleep";
 import { Uri } from "../utils/uri";
 
 import { CoqLspClientConfig, CoqLspServerConfig } from "./coqLspConfig";
@@ -36,8 +36,17 @@ import {
     PpString,
 } from "./coqLspTypes";
 
-// TODO: [LspCoreRefactor] Leave comments on invariants preserved by the client
 export interface CoqLspClientInterface extends Disposable {
+    /**
+     * Fetches all goals present at the given position in the document.
+     * This method doesn't open the document implicitly, therefore
+     * it assumes that openTextDocument has been called before.
+     * @param position Position in the document where to fetch the goals
+     * @param documentUri Uri of the document
+     * @param version Version of the document
+     * @param command Optional command to execute before fetching the goals
+     * @returns All goals present at the given position, not only the first one
+     */
     getGoalsAtPoint(
         position: Position,
         documentUri: Uri,
@@ -45,11 +54,16 @@ export interface CoqLspClientInterface extends Disposable {
         command?: string
     ): Promise<Result<Goal<PpString>[], Error>>;
 
+    /**
+     * Returns a FlecheDocument for the given uri.
+     * This method doesn't open the document implicitly, therefore
+     * it assumes that openTextDocument has been called before.
+     */
+    getFlecheDocument(uri: Uri): Promise<FlecheDocument>;
+
     openTextDocument(uri: Uri, version?: number): Promise<DiagnosticMessage>;
 
     closeTextDocument(uri: Uri): Promise<void>;
-
-    getFlecheDocument(uri: Uri): Promise<FlecheDocument>;
 }
 
 const goalReqType = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
@@ -96,7 +110,6 @@ export class CoqLspClient implements CoqLspClientInterface {
         return new CoqLspClient(connector, eventLogger);
     }
 
-    @logExecutionTime
     async getGoalsAtPoint(
         position: Position,
         documentUri: Uri,
@@ -128,7 +141,6 @@ export class CoqLspClient implements CoqLspClientInterface {
         });
     }
 
-    @logExecutionTime
     async getFlecheDocument(uri: Uri): Promise<FlecheDocument> {
         return await this.mutex.runExclusive(async () => {
             return this.getFlecheDocumentUnsafe(uri);
@@ -225,10 +237,6 @@ export class CoqLspClient implements CoqLspClientInterface {
         }
     }
 
-    private sleep(ms: number): Promise<ReturnType<typeof setTimeout>> {
-        return new Promise((resolve) => setTimeout(resolve, ms));
-    }
-
     private async waitUntilFileFullyChecked(
         requestType: ProtocolNotificationType<any, any>,
         params: any,
@@ -277,7 +285,7 @@ export class CoqLspClient implements CoqLspClientInterface {
         );
 
         while (timeout > 0 && (pendingProgress || pendingDiagnostic)) {
-            await this.sleep(100);
+            await sleep(100);
             timeout -= 100;
         }
 

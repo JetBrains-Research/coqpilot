@@ -20,7 +20,11 @@ export async function parseTheoremsFromCoqFile(
 
     await client.openTextDocument(fileUri);
     const abortController = new AbortController();
-    const document = await parseCoqFile(fileUri, client, abortController.signal);
+    const document = await parseCoqFile(
+        fileUri,
+        client,
+        abortController.signal
+    );
     await client.closeTextDocument(fileUri);
 
     return document;

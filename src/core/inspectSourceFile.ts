@@ -2,13 +2,13 @@ import { CoqLspClientInterface } from "../coqLsp/coqLspClient";
 
 import { parseCoqFile } from "../coqParser/parseCoqFile";
 import { ProofStep, Theorem } from "../coqParser/parsedTypes";
+import { throwOnAbort } from "../extension/extensionAbortUtils";
 import { Uri } from "../utils/uri";
 
 import {
     CompletionContext,
     SourceFileEnvironment,
 } from "./completionGenerationContext";
-import { throwOnAbort } from "../extension/extensionAbortUtils";
 
 type AnalyzedFile = [CompletionContext[], SourceFileEnvironment];
 
@@ -25,7 +25,7 @@ export async function inspectSourceFile(
         fileUri,
         client,
         abortSignal,
-        rankerNeedsInitialGoals,
+        rankerNeedsInitialGoals
     );
     const completionContexts = await createCompletionContexts(
         documentVersion,

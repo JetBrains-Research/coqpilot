@@ -1,12 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as tmp from "tmp";
-import {
-    OutputChannel,
-    WorkspaceConfiguration,
-    window,
-    workspace,
-} from "vscode";
+import { Disposable, WorkspaceConfiguration, window, workspace } from "vscode";
 
 import { LLMServices, disposeServices } from "../llm/llmServices";
 import { GrazieService } from "../llm/llmServices/grazie/grazieService";
@@ -14,45 +9,21 @@ import { LMStudioService } from "../llm/llmServices/lmStudio/lmStudioService";
 import { OpenAiService } from "../llm/llmServices/openai/openAiService";
 import { PredefinedProofsService } from "../llm/llmServices/predefinedProofs/predefinedProofsService";
 
-import { createCoqLspClient } from "../coqLsp/coqLspBuilders";
-import { CoqLspClientInterface } from "../coqLsp/coqLspClient";
-
 import { EventLogger, Severity } from "../logging/eventLogger";
 
-import { parseCoqLspServerPath } from "./configReaders";
 import { pluginId } from "./coqPilot";
 import VSCodeLogWriter from "./vscodeLogWriter";
 
-export class GlobalExtensionState {
+export class GlobalExtensionState implements Disposable {
+    public readonly eventLogger: EventLogger = new EventLogger();
+    public hasActiveSession = true;
     public readonly logWriter: VSCodeLogWriter = new VSCodeLogWriter(
         this.eventLogger,
         this.parseLoggingVerbosity(workspace.getConfiguration(pluginId))
     );
-
-    private constructor(
-        public readonly coqLspClient: CoqLspClientInterface,
-        public readonly logOutputChannel: OutputChannel,
-        public readonly eventLogger: EventLogger
-    ) {}
-
-    static async create(): Promise<GlobalExtensionState> {
-        const coqLspServerPath = parseCoqLspServerPath();
-        const logOutputChannel = window.createOutputChannel(
-            "CoqPilot: coq-lsp events"
-        );
-        const eventLogger = new EventLogger();
-        const coqLspClient = await createCoqLspClient(
-            coqLspServerPath,
-            logOutputChannel,
-            eventLogger
-        );
-
-        return new GlobalExtensionState(
-            coqLspClient,
-            logOutputChannel,
-            eventLogger
-        );
-    }
+    public readonly logOutputChannel = window.createOutputChannel(
+        "CoqPilot: coq-lsp events"
+    );
 
     public readonly llmServicesLogsDir = path.join(
         tmp.dirSync().name,
@@ -95,7 +66,6 @@ export class GlobalExtensionState {
     }
 
     dispose(): void {
-        this.coqLspClient.dispose();
         disposeServices(this.llmServices);
         this.logWriter.dispose();
         fs.rmSync(this.llmServicesLogsDir, { recursive: true, force: true });
