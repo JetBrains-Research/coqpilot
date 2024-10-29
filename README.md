@@ -253,7 +253,7 @@ The process of running the benchmark is not perfectly automated and we are worki
     npm run benchmark
     ```    
 
-If you aim to run the benchmark with the use of `Tactician`, you should install the `imm` project and `Tactician` with `opam`. For `opam` installation instrustion, you can refer to the [Tactician website](https://coq-tactician.github.io/manual/installation/) and [imm repository](https://github.com/weakmemory/imm/tree/master?tab=readme-ov-file#installation-via-opam-supported-up-to-the-15-version-of-imm) (this part of the README file is a little outdated, but the installation process for `coq-8.19.0` is still the same).
+If you aim to run the benchmark with the use of `Tactician`, you should install the `imm` project and `Tactician` with `opam`. For `opam` installation instruction, you can refer to the [Tactician website](https://coq-tactician.github.io/manual/installation/) and [imm repository](https://github.com/weakmemory/imm/tree/master?tab=readme-ov-file#installation-via-opam-supported-up-to-the-15-version-of-imm) (this part of the README file is a little outdated, but the installation process for `coq-8.19.0` is still the same).
 
 ## Integrating other solutions
 
