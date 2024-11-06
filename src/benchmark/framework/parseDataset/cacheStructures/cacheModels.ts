@@ -21,9 +21,7 @@ export namespace DatasetCacheModels {
          * Ones that don't end with `Qed.` are also included.
          */
         allFileTheorems: CachedTheoremsByNames;
-
-        fileLines: string[];
-        fileVersion: number;
+        documentVersion: number;
         filePathRelativeToWorkspace: string;
     }
 
@@ -95,13 +93,7 @@ export namespace DatasetCacheModels {
         type: "object",
         properties: {
             allFileTheorems: cachedTheoremsByNamesSchema,
-            fileLines: {
-                type: "array",
-                items: {
-                    type: "string",
-                },
-            },
-            fileVersion: {
+            documentVersion: {
                 type: "number",
             },
             filePathRelativeToWorkspace: {
@@ -110,8 +102,7 @@ export namespace DatasetCacheModels {
         },
         required: [
             "allFileTheorems",
-            "fileLines",
-            "fileVersion",
+            "documentVersion",
             "filePathRelativeToWorkspace",
         ],
         additionalProperties: false,

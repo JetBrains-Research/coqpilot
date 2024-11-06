@@ -38,11 +38,13 @@ export async function prepareEnvironment(
     const coqProofChecker = new CoqProofChecker(client);
 
     await client.openTextDocument(fileUri);
+    const abortController = new AbortController();
     const [completionContexts, sourceFileEnvironment] = await inspectSourceFile(
         1,
         (_hole) => true,
         fileUri,
-        client
+        client,
+        abortController.signal
     );
     await client.closeTextDocument(fileUri);
 

@@ -33,7 +33,7 @@ export interface SerializedTheorem {
     name: string;
     statement_range: SerializedCodeElementRange;
     statement: string;
-    proof: SerializedTheoremProof | undefined;
+    proof: SerializedTheoremProof;
     initial_goal: SerializedGoal | undefined;
     fileTheoremsIndex: number;
 }
@@ -100,7 +100,6 @@ export const serializedTheoremSchema: JSONSchemaType<SerializedTheorem> = {
         proof: {
             type: "object",
             oneOf: [serializedTheoremProofSchema],
-            nullable: true,
         },
         initial_goal: {
             type: "string",
@@ -118,15 +117,12 @@ export function deserializeTheoremData(
     serializedTheorem: SerializedTheorem
 ): TheoremData {
     const serializedTheoremProof = serializedTheorem.proof;
-    let theoremProof: TheoremProof | null = null;
-    if (serializedTheoremProof !== undefined) {
-        theoremProof = new TheoremProof(
-            serializedTheoremProof.proof_steps.map(deserializeProofStep),
-            deserializeCodeElementRange(serializedTheoremProof.end_pos),
-            serializedTheoremProof.is_incomplete,
-            serializedTheoremProof.holes.map(deserializeProofStep)
-        );
-    }
+    const theoremProof = new TheoremProof(
+        serializedTheoremProof.proof_steps.map(deserializeProofStep),
+        deserializeCodeElementRange(serializedTheoremProof.end_pos),
+        serializedTheoremProof.is_incomplete,
+        serializedTheoremProof.holes.map(deserializeProofStep)
+    );
     const serializedInitialGoal = serializedTheorem.initial_goal;
     const initialGoal =
         serializedInitialGoal === undefined
@@ -148,15 +144,12 @@ export function serializeTheoremData(
     theoremData: TheoremData
 ): SerializedTheorem {
     const theoremProof = theoremData.proof;
-    let serializedTheoremProof: SerializedTheoremProof | undefined = undefined;
-    if (theoremProof !== null) {
-        serializedTheoremProof = {
-            proof_steps: theoremProof.proof_steps.map(serializeProofStep),
-            end_pos: serializeCodeElementRange(theoremProof.end_pos),
-            is_incomplete: theoremProof.is_incomplete,
-            holes: theoremProof.holes.map(serializeProofStep),
-        };
-    }
+    const serializedTheoremProof = {
+        proof_steps: theoremProof.proof_steps.map(serializeProofStep),
+        end_pos: serializeCodeElementRange(theoremProof.end_pos),
+        is_incomplete: theoremProof.is_incomplete,
+        holes: theoremProof.holes.map(serializeProofStep),
+    };
     const initialGoal = theoremData.sourceTheorem.initial_goal;
     const serializedInitialGoal =
         initialGoal === null ? undefined : serializeGoal(initialGoal);

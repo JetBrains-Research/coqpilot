@@ -100,13 +100,8 @@ suite("Coq file parser tests", () => {
             "test_7",
         ];
 
-        const theoremsWithoutProof = doc.filter((theorem) => !theorem.proof);
-        const theoremsWithProof = doc.filter((theorem) => theorem.proof);
-        const theoremNames = theoremsWithProof.map((theorem) => theorem.name);
-
+        const theoremNames = doc.map((theorem) => theorem.name);
         expect(theoremNames).toEqual(theoremData);
-        expect(theoremsWithoutProof).toHaveLength(1);
-        expect(theoremsWithoutProof[0].name).toEqual("test_5");
     });
 
     test("Test parse file which is part of project", async () => {

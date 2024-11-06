@@ -98,7 +98,6 @@ export async function runTestBenchmark(
             eventLogger,
             maxPremisesNumber,
             reportHolder,
-            workspaceRootPath,
             perProofTimeoutMillis
         );
         consoleLog(
@@ -123,7 +122,6 @@ export async function runTestBenchmark(
             eventLogger,
             maxPremisesNumber,
             reportHolder,
-            workspaceRootPath,
             perProofTimeoutMillis
         );
         consoleLog(
@@ -200,7 +198,6 @@ export async function benchmarkTargets(
     eventLogger: EventLogger,
     maxPremisesNumber?: number,
     reportHolder?: BenchmarkReportHolder,
-    workspaceRootPath?: string,
     perProofTimeoutMillis: number = 15000
 ): Promise<BenchmarkResult> {
     const totalCompletionsNumber = targets.length;
@@ -216,7 +213,6 @@ export async function benchmarkTargets(
             eventLogger,
             maxPremisesNumber,
             reportHolder,
-            workspaceRootPath,
             perProofTimeoutMillis
         );
         if (success) {
@@ -239,10 +235,9 @@ async function benchmarkCompletionGeneration(
     eventLogger: EventLogger,
     maxPremisesNumber?: number,
     reportHolder?: BenchmarkReportHolder,
-    workspaceRootPath?: string,
     perProofTimeoutMillis: number = 15000
 ): Promise<boolean> {
-    const completionPosition = completionContext.admitEndPosition;
+    const completionPosition = completionContext.admitRange.start;
     consoleLog(
         `Completion position: ${completionPosition.line}:${completionPosition.character}`
     );
@@ -271,12 +266,13 @@ async function benchmarkCompletionGeneration(
         premisesNumber: maxPremisesNumber,
     };
 
+    const abortController = new AbortController();
     const result = await generateCompletion(
         completionContext,
         sourceFileEnvironmentWithFilteredContext,
         processEnvironmentWithPremisesNumber,
+        abortController.signal,
         undefined,
-        workspaceRootPath,
         perProofTimeoutMillis
     );
     let message = "unknown";
@@ -392,10 +388,10 @@ async function prepareForBenchmarkCompletions(
     await client.openTextDocument(fileUri);
 
     const coqProofChecker = new CoqProofChecker(client);
-    const mockFileVersion = 1;
+    const mockDocumentVersion = 1;
     const [completionTargets, sourceFileEnvironment] =
         await extractCompletionTargets(
-            mockFileVersion,
+            mockDocumentVersion,
             shouldCompleteHole,
             fileUri,
             client
@@ -423,18 +419,20 @@ async function prepareForBenchmarkCompletions(
 }
 
 async function extractCompletionTargets(
-    fileVersion: number,
+    documentVersion: number,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileUri: Uri,
     client: CoqLspClient
 ): Promise<[BenchmarkingCompletionTargets, SourceFileEnvironment]> {
+    const abortController = new AbortController();
     const sourceFileEnvironment = await createSourceFileEnvironment(
-        fileVersion,
+        documentVersion,
         fileUri,
-        client
+        client,
+        abortController.signal
     );
     const completionTargets = await createCompletionTargets(
-        fileVersion,
+        documentVersion,
         shouldCompleteHole,
         sourceFileEnvironment.fileTheorems,
         fileUri,
@@ -443,7 +441,7 @@ async function extractCompletionTargets(
     const sourceFileEnvironmentWithCompleteProofs: SourceFileEnvironment = {
         ...sourceFileEnvironment,
         fileTheorems: sourceFileEnvironment.fileTheorems.filter(
-            (thr) => thr.proof && !thr.proof.is_incomplete
+            (thr) => !thr.proof.is_incomplete
         ),
     };
 
@@ -456,7 +454,7 @@ interface ParentedProofStep {
 }
 
 async function createCompletionTargets(
-    fileVersion: number,
+    documentVersion: number,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileTheorems: Theorem[],
     fileUri: Uri,
@@ -486,13 +484,13 @@ async function createCompletionTargets(
     return {
         admitTargets: await resolveProofStepsToCompletionContexts(
             admitHolesToComplete,
-            fileVersion,
+            documentVersion,
             fileUri,
             client
         ),
         theoremTargets: await resolveProofStepsToCompletionContexts(
             firstProofSteps,
-            fileVersion,
+            documentVersion,
             fileUri,
             client
         ),
@@ -501,24 +499,26 @@ async function createCompletionTargets(
 
 async function resolveProofStepsToCompletionContexts(
     parentedProofSteps: ParentedProofStep[],
-    fileVersion: number,
+    documentVersion: number,
     fileUri: Uri,
     client: CoqLspClient
 ): Promise<BenchmarkingCompletionContext[]> {
     let completionContexts: BenchmarkingCompletionContext[] = [];
     for (const parentedProofStep of parentedProofSteps) {
-        const goal = await client.getFirstGoalAtPoint(
+        const goals = await client.getGoalsAtPoint(
             parentedProofStep.proofStep.range.start,
             fileUri,
-            fileVersion
+            documentVersion
         );
-        if (!(goal instanceof Error)) {
-            completionContexts.push({
-                proofGoal: goal,
-                prefixEndPosition: parentedProofStep.proofStep.range.start,
-                admitEndPosition: parentedProofStep.proofStep.range.end,
-                parentTheorem: parentedProofStep.parentTheorem,
-            });
+        if (goals.ok) {
+            const firstGoal = goals.val.shift();
+            if (firstGoal) {
+                completionContexts.push({
+                    proofGoal: firstGoal,
+                    admitRange: parentedProofStep.proofStep.range,
+                    parentTheorem: parentedProofStep.parentTheorem,
+                });
+            }
         }
     }
     return completionContexts;

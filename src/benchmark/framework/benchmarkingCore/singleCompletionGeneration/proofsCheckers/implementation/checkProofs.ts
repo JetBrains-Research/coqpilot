@@ -7,6 +7,7 @@ import {
 } from "../../../../../../core/coqProofChecker";
 
 import { stringifyAnyValue } from "../../../../../../utils/printers";
+import { Uri } from "../../../../../../utils/uri";
 import { BenchmarkingLogger } from "../../../../logging/benchmarkingLogger";
 import { LogsIPCSender } from "../../../../utils/subprocessUtils/ipc/onParentProcessCallExecutor/logsIpcSender";
 import { TimeMark } from "../../measureUtils";
@@ -37,12 +38,20 @@ export namespace CheckProofsImpl {
 
         try {
             const timeMark = new TimeMark();
+            const fileUri = Uri.fromPath(args.fileUri);
+
+            // TODO: [@Gleb Solovev] Pay Atteniton that it was previously done by the CoqProofChecker
+            await coqLspClient.openTextDocument(fileUri);
+
             const proofCheckResults = await coqProofChecker.checkProofs(
-                args.sourceFileDirPath,
-                args.sourceFileContentPrefix,
-                args.prefixEndPosition,
+                fileUri,
+                args.documentVersion,
+                args.checkAtPosition,
                 args.preparedProofs
             );
+
+            await coqLspClient.closeTextDocument(fileUri);
+
             const proofsValidationMillis = timeMark.measureElapsedMillis();
             return buildSuccessResult(
                 proofCheckResults,

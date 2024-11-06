@@ -77,13 +77,12 @@ namespace UpdateCacheHolders {
             );
         }
 
-        if (cachedFile.getFileVersion() !== parsedFile.fileVersion) {
+        if (cachedFile.getDocumentVersion() !== parsedFile.documentVersion) {
             cacheUpdaterLogger.debug(
-                `* file version update: ${cachedFile.getFileVersion()} -> ${parsedFile.fileVersion}`
+                `* file version update: ${cachedFile.getDocumentVersion()} -> ${parsedFile.documentVersion}`
             );
         }
-        cachedFile.updateFileLines(parsedFile.fileLines);
-        cachedFile.updateFileVersion(parsedFile.fileVersion);
+        cachedFile.updateDocumentVersion(parsedFile.documentVersion);
 
         for (const fileTarget of parsedFileHolder.targets()) {
             let cachedTheorem = cachedFile.getCachedTheorem(
@@ -161,8 +160,7 @@ namespace UpdateCacheHolders {
         return new CacheHolderData.CachedCoqFileData(
             cachedTheoremsMap,
             relativizeAbsolutePaths(workspacePath, parsedFile.filePath),
-            parsedFile.fileLines,
-            parsedFile.fileVersion,
+            parsedFile.documentVersion,
             workspacePath
         );
     }

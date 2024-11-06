@@ -7,9 +7,10 @@ export namespace CheckProofsInternalSignature {
 
     export interface Args {
         workspaceRootPath: string | undefined;
-        sourceFileDirPath: string;
-        sourceFileContentPrefix: string[];
-        prefixEndPosition: Position;
+        fileUri: string;
+        documentVersion: number;
+        checkAtPosition: Position;
+
         preparedProofs: string[];
     }
 
@@ -79,16 +80,13 @@ export namespace CheckProofsInternalSignature {
                 type: "string",
                 nullable: true,
             },
-            sourceFileDirPath: {
+            fileUri: {
                 type: "string",
             },
-            sourceFileContentPrefix: {
-                type: "array",
-                items: {
-                    type: "string",
-                },
+            documentVersion: {
+                type: "number",
             },
-            prefixEndPosition: positionSchema,
+            checkAtPosition: positionSchema,
             preparedProofs: {
                 type: "array",
                 items: {
@@ -96,12 +94,7 @@ export namespace CheckProofsInternalSignature {
                 },
             },
         },
-        required: [
-            "sourceFileDirPath",
-            "sourceFileContentPrefix",
-            "prefixEndPosition",
-            "preparedProofs",
-        ],
+        required: ["fileUri", "documentVersion", "preparedProofs"],
         additionalProperties: false,
     };
 

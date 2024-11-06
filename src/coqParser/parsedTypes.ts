@@ -143,23 +143,19 @@ export class Theorem {
         public name: string,
         public statement_range: Range,
         public statement: string,
-        public proof: TheoremProof | null = null,
+        public proof: TheoremProof,
         public initial_goal: Goal<PpString> | null = null
     ) {}
 
     public toString(): string {
         let text = this.statement;
-        if (this.proof !== null) {
-            text += "\n" + this.proof.toString();
-        }
+        text += "\n" + this.proof.toString();
         return text;
     }
 
     public onlyText(): string {
         let text = this.statement;
-        if (this.proof !== null) {
-            text += "\n" + this.proof.onlyText();
-        }
+        text += "\n" + this.proof.onlyText();
         return text;
     }
 }

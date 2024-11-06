@@ -1,17 +1,21 @@
 import { OutputChannel, window } from "vscode";
 
-import { CoqLspClient } from "./coqLspClient";
+import { EventLogger } from "../logging/eventLogger";
+
+import { CoqLspClient, CoqLspClientImpl } from "./coqLspClient";
 import { CoqLspClientConfig, CoqLspConfig } from "./coqLspConfig";
 
 export async function createCoqLspClient(
     coqLspServerPath: string,
-    logOutputChannel: OutputChannel = window.createOutputChannel(
-        "CoqPilot: coq-lsp events"
-    )
+    logOutputChannel?: OutputChannel,
+    eventLogger?: EventLogger,
+    abortController?: AbortController
 ): Promise<CoqLspClient> {
     return createAbstractCoqLspClient(
         CoqLspConfig.createClientConfig(coqLspServerPath),
-        logOutputChannel
+        logOutputChannel,
+        eventLogger,
+        abortController
     );
 }
 
@@ -30,12 +34,16 @@ async function createAbstractCoqLspClient(
     coqLspClientConfig: CoqLspClientConfig,
     logOutputChannel: OutputChannel = window.createOutputChannel(
         "CoqPilot: coq-lsp events"
-    )
+    ),
+    eventLogger?: EventLogger,
+    abortController?: AbortController
 ): Promise<CoqLspClient> {
     const coqLspServerConfig = CoqLspConfig.createServerConfig();
-    return await CoqLspClient.create(
+    return await CoqLspClientImpl.create(
         coqLspServerConfig,
         coqLspClientConfig,
-        logOutputChannel
+        logOutputChannel,
+        eventLogger,
+        abortController
     );
 }

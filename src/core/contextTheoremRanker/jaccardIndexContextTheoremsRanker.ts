@@ -14,6 +14,8 @@ import { goalAsTheoremString } from "./tokenUtils";
 export class JaccardIndexContextTheoremsRanker
     implements ContextTheoremsRanker
 {
+    readonly needsUnwrappedNotations = true;
+
     rankContextTheorems(
         theorems: Theorem[],
         completionContext: CompletionContext

@@ -74,13 +74,17 @@ export namespace ParseCoqProjectImpl {
         coqLspClient: CoqLspClient,
         logger: Logger
     ): Promise<SerializedParsedCoqFile> {
-        const mockFileVersion = 1;
+        const mockDocumentVersion = 1;
         const sourceFileUri = Uri.fromPath(filePath);
         await coqLspClient.openTextDocument(sourceFileUri);
+        // TODO: [@Gleb Solovev] Do not create this Abort Controller but pass
+        // the one created at the top
+        const abortController = new AbortController();
         const sourceFileEnvironment = await createSourceFileEnvironment(
-            mockFileVersion,
+            mockDocumentVersion,
             sourceFileUri,
-            coqLspClient
+            coqLspClient,
+            abortController.signal
         );
         const serializedParsedFile: SerializedParsedCoqFile = {
             serializedTheoremsByNames: packIntoMappedObject(
@@ -93,15 +97,11 @@ export namespace ParseCoqProjectImpl {
                 (serializedTheorem) => serializedTheorem.name,
                 (serializedTheorem) => serializedTheorem
             ),
-            fileLines: sourceFileEnvironment.fileLines,
-            fileVersion: sourceFileEnvironment.fileVersion,
+            documentVersion: sourceFileEnvironment.documentVersion,
             filePath: filePath,
         };
         const foundTheoremsLog = `found ${Object.keys(serializedParsedFile.serializedTheoremsByNames).length} theorem(s)`;
-        const readLinesLog = `read ${serializedParsedFile.fileLines.length} lines`;
-        logger.debug(
-            `Successfully parsed "${filePath}": ${foundTheoremsLog}, ${readLinesLog}`
-        );
+        logger.debug(`Successfully parsed "${filePath}": ${foundTheoremsLog}`);
         return serializedParsedFile;
     }
 
@@ -208,26 +208,28 @@ export namespace ParseCoqProjectImpl {
     ): Promise<Signature.ResultModels.ParsedFileTarget> {
         let serializedGoal = knownGoal;
         if (serializedGoal === undefined) {
-            const goal = await coqLspClient.getFirstGoalAtPoint(
+            const goals = await coqLspClient.getGoalsAtPoint(
                 proofStep.range.start,
                 Uri.fromPath(serializedParsedFile.filePath),
-                serializedParsedFile.fileVersion
+                serializedParsedFile.documentVersion
             );
             const startPosition = deserializeCodeElementPosition(
                 proofStep.range.start
             );
-            if (goal instanceof Error) {
+            if (goals.err) {
+                const goal = goals.val;
                 const stack = goal.stack === undefined ? "" : `\n${goal.stack}`;
                 logger.error(
                     `Failed to retrieve target goal at point: "${goal.message}" at ${startPosition}, "${serializedParsedFile.filePath}"${stack}`
                 );
                 throw goal;
             } else {
+                const goal = coqLspClient.getFirstGoalOrThrow(goals);
                 logger.debug(
                     `Successfully retrieved target goal at point: "${goal.ty}" at ${startPosition}, "${serializedParsedFile.filePath}"`
                 );
+                serializedGoal = serializeGoal(goal);
             }
-            serializedGoal = serializeGoal(goal);
         }
 
         return {

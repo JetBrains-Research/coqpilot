@@ -7,5 +7,6 @@
     "printWidth": 80,
     "importOrder": ["^[./]*llm/(.*)$", "^[./]*coqLsp/(.*)$", "^[./]*core/(.*)$", "^../", "^./"],
     "importOrderSeparation": true,
-    "importOrderSortSpecifiers": true
+    "importOrderSortSpecifiers": true,
+    "importOrderParserPlugins": ["typescript", "@trivago/prettier-plugin-sort-imports", "decorators-legacy"]
 }

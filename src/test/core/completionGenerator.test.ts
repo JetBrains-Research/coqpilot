@@ -32,21 +32,32 @@ suite("Completion generation tests", () => {
             modelsParams: createPredefinedProofsModelsParams(predefinedProofs),
             services: createDefaultServices(),
         };
+        const abortController = new AbortController();
         try {
-            return await Promise.all(
+            await environment.coqLspClient.openTextDocument(
+                environment.sourceFileEnvironment.fileUri
+            );
+
+            const generationResult = await Promise.all(
                 environment.completionContexts.map(
                     async (completionContext) => {
                         const result = await generateCompletion(
                             completionContext,
                             environment.sourceFileEnvironment,
-                            processEnvironment
+                            processEnvironment,
+                            abortController.signal
                         );
                         return result;
                     }
                 )
             );
+
+            return generationResult;
         } finally {
             disposeServices(processEnvironment.services);
+            await environment.coqLspClient.closeTextDocument(
+                environment.sourceFileEnvironment.fileUri
+            );
         }
     }
 

@@ -21,7 +21,7 @@ export interface CoqLspClientConfig {
 export namespace CoqLspConfig {
     export function createServerConfig(): CoqLspServerConfig {
         return {
-            client_version: "0.1.9",
+            client_version: "0.2.2",
             eager_diagnostics: true,
             goal_after_tactic: false,
             show_coq_info_messages: false,

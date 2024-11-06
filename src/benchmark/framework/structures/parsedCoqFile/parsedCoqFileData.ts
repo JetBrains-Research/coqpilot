@@ -3,12 +3,12 @@ import { JSONSchemaType } from "ajv";
 import { SourceFileEnvironment } from "../../../../core/completionGenerationContext";
 
 import { Theorem } from "../../../../coqParser/parsedTypes";
+import { Uri } from "../../../../utils/uri";
 import {
     fromMappedObject,
     mapValues,
     toMappedObject,
 } from "../../utils/collectionUtils/mapUtils";
-import { getDirectoryPath } from "../../utils/fileUtils/fs";
 
 import {
     SerializedTheorem,
@@ -25,8 +25,7 @@ export class ParsedCoqFileData {
          * Ones that don't end with `Qed.` are also included.
          */
         readonly theoremsByNames: Map<string, TheoremData>,
-        readonly fileLines: string[],
-        readonly fileVersion: number,
+        readonly documentVersion: number,
         readonly filePath: string
     ) {}
 
@@ -43,11 +42,10 @@ export class ParsedCoqFileData {
     constructSourceFileEnvironment(): SourceFileEnvironment {
         return {
             fileTheorems: this.getOrderedFileTheorems().filter(
-                (theorem) => theorem.proof && !theorem.proof.is_incomplete
+                (theorem) => !theorem.proof.is_incomplete
             ),
-            fileLines: this.fileLines,
-            fileVersion: this.fileVersion,
-            dirPath: getDirectoryPath(this.filePath),
+            documentVersion: this.documentVersion,
+            fileUri: Uri.fromPath(this.filePath),
         };
     }
 }
@@ -58,9 +56,7 @@ export interface SerializedParsedCoqFile {
      * Ones that don't end with `Qed.` are also included.
      */
     serializedTheoremsByNames: SerializedTheoremsByNames;
-
-    fileLines: string[];
-    fileVersion: number;
+    documentVersion: number;
     filePath: string;
 }
 
@@ -84,25 +80,14 @@ export const serializedParsedCoqFileSchema: JSONSchemaType<SerializedParsedCoqFi
         type: "object",
         properties: {
             serializedTheoremsByNames: serializedTheoremsByNamesSchema,
-            fileLines: {
-                type: "array",
-                items: {
-                    type: "string",
-                },
-            },
-            fileVersion: {
+            documentVersion: {
                 type: "number",
             },
             filePath: {
                 type: "string",
             },
         },
-        required: [
-            "serializedTheoremsByNames",
-            "fileLines",
-            "fileVersion",
-            "filePath",
-        ],
+        required: ["serializedTheoremsByNames", "documentVersion", "filePath"],
         additionalProperties: false,
     };
 
@@ -115,8 +100,7 @@ export function deserializeParsedCoqFile(
             (_: string, serializedTheorem: SerializedTheorem) =>
                 deserializeTheoremData(serializedTheorem)
         ),
-        serializedParsedCoqFile.fileLines,
-        serializedParsedCoqFile.fileVersion,
+        serializedParsedCoqFile.documentVersion,
         serializedParsedCoqFile.filePath
     );
 }
@@ -132,8 +116,7 @@ export function serializeParsedCoqFile(
                     serializeTheoremData(theoremData)
             )
         ),
-        fileLines: parsedCoqFileData.fileLines,
-        fileVersion: parsedCoqFileData.fileVersion,
+        documentVersion: parsedCoqFileData.documentVersion,
         filePath: parsedCoqFileData.filePath,
     };
 }

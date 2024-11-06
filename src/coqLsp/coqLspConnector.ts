@@ -79,8 +79,4 @@ export class CoqLspConnector extends LanguageClient {
     private logStatusUpdate = (status: "started" | "stopped") => {
         this.eventLogger?.log("coq-lsp-status-change", status);
     };
-
-    restartLspClient() {
-        this.stop().then(() => this.start());
-    }
 }

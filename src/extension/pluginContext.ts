@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as tmp from "tmp";
-import { WorkspaceConfiguration, window, workspace } from "vscode";
+import { Disposable, WorkspaceConfiguration, window, workspace } from "vscode";
 
 import { LLMServices, disposeServices } from "../llm/llmServices";
 import { GrazieService } from "../llm/llmServices/grazie/grazieService";
@@ -14,7 +14,7 @@ import { EventLogger, Severity } from "../logging/eventLogger";
 import { pluginId } from "./coqPilot";
 import VSCodeLogWriter from "./vscodeLogWriter";
 
-export class GlobalExtensionState {
+export class PluginContext implements Disposable {
     public readonly eventLogger: EventLogger = new EventLogger();
     public readonly logWriter: VSCodeLogWriter = new VSCodeLogWriter(
         this.eventLogger,

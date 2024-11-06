@@ -6,4 +6,6 @@ export interface ContextTheoremsRanker {
         theorems: Theorem[],
         completionContext: CompletionContext
     ): Theorem[];
+
+    needsUnwrappedNotations: boolean;
 }
