@@ -2,7 +2,6 @@ import { CoqLspClient } from "../coqLsp/coqLspClient";
 
 import { parseCoqFile } from "../coqParser/parseCoqFile";
 import { ProofStep, Theorem } from "../coqParser/parsedTypes";
-import { throwOnAbort } from "../extension/extensionAbortUtils";
 import { EventLogger } from "../logging/eventLogger";
 import { Uri } from "../utils/uri";
 
@@ -35,8 +34,7 @@ export async function inspectSourceFile(
         shouldCompleteHole,
         sourceFileEnvironment.fileTheorems,
         fileUri,
-        client,
-        abortSignal
+        client
     );
     const sourceFileEnvironmentWithCompleteProofs: SourceFileEnvironment = {
         ...sourceFileEnvironment,
@@ -53,8 +51,7 @@ async function createCompletionContexts(
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileTheorems: Theorem[],
     fileUri: Uri,
-    client: CoqLspClient,
-    abortSignal: AbortSignal
+    client: CoqLspClient
 ): Promise<CompletionContext[]> {
     const holesToComplete = fileTheorems
         .filter((thr) => thr.proof)
@@ -64,7 +61,6 @@ async function createCompletionContexts(
 
     let completionContexts: CompletionContext[] = [];
     for (const hole of holesToComplete) {
-        throwOnAbort(abortSignal);
         const goals = await client.getGoalsAtPoint(
             hole.range.start,
             fileUri,

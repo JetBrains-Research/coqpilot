@@ -41,7 +41,7 @@ import {
 } from "./editorMessages";
 import { CompletionAbortError, throwOnAbort } from "./extensionAbortUtils";
 import { GlobalExtensionState } from "./globalExtensionState";
-import { HealthStatusIndicator } from "./healthStatusIndicator";
+import { PluginStatusIndicator } from "./pluginStatusIndicator";
 import { subscribeToHandleLLMServicesEvents } from "./llmServicesEventsHandler";
 import {
     positionInRange,
@@ -55,7 +55,7 @@ export const pluginId = "coqpilot";
 export const pluginName = "CoqPilot";
 
 export class CoqPilot {
-    private readonly healthStatusIndicator: HealthStatusIndicator;
+    private readonly pluginStatusIndicator: PluginStatusIndicator;
 
     private constructor(
         private readonly vscodeExtensionContext: ExtensionContext,
@@ -80,11 +80,11 @@ export class CoqPilot {
             toggleCommand,
             this.toggleCurrentSession.bind(this)
         );
-        this.healthStatusIndicator = new HealthStatusIndicator(
+        this.pluginStatusIndicator = new PluginStatusIndicator(
             `${pluginId}.${toggleCommand}`,
             vscodeExtensionContext
         );
-        this.healthStatusIndicator.updateStatusBar(true);
+        this.pluginStatusIndicator.updateStatusBar(true);
 
         this.vscodeExtensionContext.subscriptions.push(this);
     }
@@ -133,14 +133,14 @@ export class CoqPilot {
             this.globalExtensionState.hasActiveSession = false;
             this.sessionExtensionState.abort();
             this.sessionExtensionState.dispose();
-            this.healthStatusIndicator.updateStatusBar(false);
+            this.pluginStatusIndicator.updateStatusBar(false);
         } else {
             this.sessionExtensionState = await SessionExtensionState.create(
                 this.globalExtensionState.logOutputChannel,
                 this.globalExtensionState.eventLogger
             );
             this.globalExtensionState.hasActiveSession = true;
-            this.healthStatusIndicator.updateStatusBar(true);
+            this.pluginStatusIndicator.updateStatusBar(true);
         }
     }
 
@@ -154,7 +154,7 @@ export class CoqPilot {
             return;
         }
         try {
-            this.healthStatusIndicator.showSpinner();
+            this.pluginStatusIndicator.showInProgressSpinner();
 
             await this.performSpecificCompletions(
                 shouldCompleteHole,
@@ -185,7 +185,7 @@ export class CoqPilot {
                 console.error(buildErrorCompleteLog(e));
             }
         } finally {
-            this.healthStatusIndicator.hideSpinner(
+            this.pluginStatusIndicator.hideInProgressSpinner(
                 this.globalExtensionState.hasActiveSession
             );
         }

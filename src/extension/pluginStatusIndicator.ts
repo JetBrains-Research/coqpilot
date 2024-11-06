@@ -7,8 +7,8 @@ import {
 
 import { pluginName } from "./coqPilot";
 
-export class HealthStatusIndicator {
-    private statusBarItem: StatusBarItem;
+export class PluginStatusIndicator {
+    private readonly statusBarItem: StatusBarItem;
 
     constructor(
         invocationCommand: string,
@@ -34,12 +34,12 @@ export class HealthStatusIndicator {
         }
     }
 
-    showSpinner() {
+    showInProgressSpinner() {
         this.statusBarItem.text = `$(sync~spin) ${pluginName}: In progress`;
         this.statusBarItem.tooltip = "Operation in progress...";
     }
 
-    hideSpinner(isActive: boolean) {
+    hideInProgressSpinner(isActive: boolean) {
         this.updateStatusBar(isActive);
     }
 
