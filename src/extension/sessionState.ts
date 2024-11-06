@@ -14,7 +14,7 @@ export class SessionState implements Disposable {
     private _coqLspClient: CoqLspClient;
     private _abortController: AbortController;
 
-    // When user triggers abort for completions 
+    // When user triggers abort for completions
     // and there are multiple completions in progress,
     // we want to notify the user only once.
     private _userNotifiedAboutAbort = false;

@@ -52,13 +52,12 @@ suite("Completion generation tests", () => {
                 )
             );
 
-            await environment.coqLspClient.closeTextDocument(
-                environment.sourceFileEnvironment.fileUri
-            );
-
             return generationResult;
         } finally {
             disposeServices(processEnvironment.services);
+            await environment.coqLspClient.closeTextDocument(
+                environment.sourceFileEnvironment.fileUri
+            );
         }
     }
 

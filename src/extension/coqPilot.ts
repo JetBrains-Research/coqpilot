@@ -39,6 +39,7 @@ import {
     showMessageToUser,
     showMessageToUserWithSettingsHint,
 } from "./editorMessages";
+import { CompletionAbortError } from "./extensionAbortUtils";
 import { subscribeToHandleLLMServicesEvents } from "./llmServicesEventsHandler";
 import { PluginContext } from "./pluginContext";
 import { PluginStatusIndicator } from "./pluginStatusIndicator";
@@ -49,7 +50,6 @@ import {
 } from "./positionRangeUtils";
 import { SessionState } from "./sessionState";
 import { SettingsValidationError } from "./settingsValidationError";
-import { CompletionAbortError } from "./extensionAbortUtils";
 
 export const pluginId = "coqpilot";
 export const pluginName = "CoqPilot";
