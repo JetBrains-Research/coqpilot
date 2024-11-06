@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.3.1
+## 2.4.0
 
 The version increment is minor, yet the changes are significant. The main focus of this release was to improve interaction with the `coq-lsp` server. We now completely got rid of temporary files in the `extension` part of `CoqPilot`. This was done thanks to [ejgallego](https://github.com/ejgallego) and his improvements in `coq-lsp`. Now checking of proofs is done via the `proof/goals` request via `command` parameter, which is much more reliable and faster. Now a single `lsp` server is created for the plugin until being explicitly closed, and it tracks changes in the file. If you are using `coq-lsp` plugin itself, it will help you to always keep track of whether file is checked or not. When `CoqPilot` is ran on a completely checked file, it will not bring any significant overhead apart from requests to the Completion Services. 
 
