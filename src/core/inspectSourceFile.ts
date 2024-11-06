@@ -18,7 +18,7 @@ export async function inspectSourceFile(
     fileUri: Uri,
     client: CoqLspClient,
     abortSignal: AbortSignal,
-    rankerNeedsInitialGoals: boolean = true,
+    needsTheoremInitialGoals: boolean = true,
     eventLogger?: EventLogger
 ): Promise<AnalyzedFile> {
     const sourceFileEnvironment = await createSourceFileEnvironment(
@@ -26,7 +26,7 @@ export async function inspectSourceFile(
         fileUri,
         client,
         abortSignal,
-        rankerNeedsInitialGoals,
+        needsTheoremInitialGoals,
         eventLogger
     );
     const completionContexts = await createCompletionContexts(
@@ -85,14 +85,14 @@ export async function createSourceFileEnvironment(
     fileUri: Uri,
     client: CoqLspClient,
     abortSignal: AbortSignal,
-    rankerNeedsInitialGoals: boolean = true,
+    needsTheoremInitialGoals: boolean = true,
     eventLogger?: EventLogger
 ): Promise<SourceFileEnvironment> {
     const fileTheorems = await parseCoqFile(
         fileUri,
         client,
         abortSignal,
-        rankerNeedsInitialGoals,
+        needsTheoremInitialGoals,
         eventLogger
     );
 

@@ -8,7 +8,7 @@ import { EventLogger } from "../logging/eventLogger";
 import { parseCoqLspServerPath } from "./configReaders";
 import { CompletionAbortError } from "./extensionAbortUtils";
 
-export class SessionExtensionState implements Disposable {
+export class SessionState implements Disposable {
     private constructor(
         readonly coqLspClient: CoqLspClient,
         readonly abortController: AbortController
@@ -17,7 +17,7 @@ export class SessionExtensionState implements Disposable {
     static async create(
         logOutputChannel: OutputChannel,
         eventLogger: EventLogger
-    ): Promise<SessionExtensionState> {
+    ): Promise<SessionState> {
         const abortController = new AbortController();
         const coqLspServerPath = parseCoqLspServerPath();
 
@@ -28,7 +28,7 @@ export class SessionExtensionState implements Disposable {
             abortController
         );
 
-        return new SessionExtensionState(coqLspClient, abortController);
+        return new SessionState(coqLspClient, abortController);
     }
 
     abort(): void {

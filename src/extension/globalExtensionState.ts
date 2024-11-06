@@ -14,7 +14,7 @@ import { EventLogger, Severity } from "../logging/eventLogger";
 import { pluginId } from "./coqPilot";
 import VSCodeLogWriter from "./vscodeLogWriter";
 
-export class GlobalExtensionState implements Disposable {
+export class PluginState implements Disposable {
     public readonly eventLogger: EventLogger = new EventLogger();
     public hasActiveSession = true;
     public readonly logWriter: VSCodeLogWriter = new VSCodeLogWriter(
