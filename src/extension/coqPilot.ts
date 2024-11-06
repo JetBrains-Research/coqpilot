@@ -1,6 +1,6 @@
 import {
-    ExtensionContext as VSCodeContext,
     TextEditor,
+    ExtensionContext as VSCodeContext,
     commands,
     workspace,
 } from "vscode";
@@ -39,28 +39,27 @@ import {
     showMessageToUser,
     showMessageToUserWithSettingsHint,
 } from "./editorMessages";
-import { CompletionAbortError, throwOnAbort } from "./extensionAbortUtils";
-import { PluginState } from "./globalExtensionState";
-import { PluginStatusIndicator } from "./pluginStatusIndicator";
 import { subscribeToHandleLLMServicesEvents } from "./llmServicesEventsHandler";
+import { PluginContext } from "./pluginContext";
+import { PluginStatusIndicator } from "./pluginStatusIndicator";
 import {
     positionInRange,
     toVSCodePosition,
     toVSCodeRange,
 } from "./positionRangeUtils";
-import { SessionState } from "./sessionExtensionState";
+import { SessionState } from "./sessionState";
 import { SettingsValidationError } from "./settingsValidationError";
+import { CompletionAbortError } from "./extensionAbortUtils";
 
 export const pluginId = "coqpilot";
 export const pluginName = "CoqPilot";
 
 export class CoqPilot {
-    private readonly pluginStatusIndicator: PluginStatusIndicator;
-
     private constructor(
         private readonly vscodeContext: VSCodeContext,
-        private readonly pluginState: PluginState,
-        private sessionState: SessionState
+        private readonly pluginContext: PluginContext,
+        private sessionState: SessionState,
+        toggleCommand: string
     ) {
         this.registerEditorCommand(
             "perform_completion_under_cursor",
@@ -75,30 +74,34 @@ export class CoqPilot {
             this.performCompletionForAllAdmits.bind(this)
         );
 
-        const toggleCommand = `toggle_current_session`;
         this.registerEditorCommand(
             toggleCommand,
-            this.toggleCurrentSession.bind(this)
+            this.sessionState.toggleCurrentSession.bind(this.sessionState)
         );
-        this.pluginStatusIndicator = new PluginStatusIndicator(
-            `${pluginId}.${toggleCommand}`,
-            vscodeContext
-        );
-        this.pluginStatusIndicator.updateStatusBar(true);
 
         this.vscodeContext.subscriptions.push(this);
     }
 
-    static async create(vscodeExtensionContext: VSCodeContext) {
-        const globalExtensionState = new PluginState();
+    static async create(vscodeContext: VSCodeContext) {
+        const globalExtensionState = new PluginContext();
+
+        const toggleCommand = `toggle_current_session`;
+        const pluginStatusIndicator = new PluginStatusIndicator(
+            `${pluginId}.${toggleCommand}`,
+            vscodeContext
+        );
+
         const sessionExtensionState = await SessionState.create(
             globalExtensionState.logOutputChannel,
-            globalExtensionState.eventLogger
+            globalExtensionState.eventLogger,
+            pluginStatusIndicator
         );
+
         return new CoqPilot(
-            vscodeExtensionContext,
+            vscodeContext,
             globalExtensionState,
-            sessionExtensionState
+            sessionExtensionState,
+            toggleCommand
         );
     }
 
@@ -106,8 +109,7 @@ export class CoqPilot {
         const cursorPosition = editor.selection.active;
         this.performSpecificCompletionsWithProgress(
             (hole) => positionInRange(cursorPosition, hole.range),
-            editor,
-            this.sessionState.abortController.signal
+            editor
         );
     }
 
@@ -115,51 +117,29 @@ export class CoqPilot {
         const selection = editor.selection;
         this.performSpecificCompletionsWithProgress(
             (hole) => selection.contains(toVSCodePosition(hole.range.start)),
-            editor,
-            this.sessionState.abortController.signal
+            editor
         );
     }
 
     async performCompletionForAllAdmits(editor: TextEditor) {
-        this.performSpecificCompletionsWithProgress(
-            (_hole) => true,
-            editor,
-            this.sessionState.abortController.signal
-        );
-    }
-
-    async toggleCurrentSession() {
-        if (this.pluginState.hasActiveSession) {
-            this.pluginState.hasActiveSession = false;
-            this.sessionState.abort();
-            this.sessionState.dispose();
-            this.pluginStatusIndicator.updateStatusBar(false);
-        } else {
-            this.sessionState = await SessionState.create(
-                this.pluginState.logOutputChannel,
-                this.pluginState.eventLogger
-            );
-            this.pluginState.hasActiveSession = true;
-            this.pluginStatusIndicator.updateStatusBar(true);
-        }
+        this.performSpecificCompletionsWithProgress((_hole) => true, editor);
     }
 
     private async performSpecificCompletionsWithProgress(
         shouldCompleteHole: (hole: ProofStep) => boolean,
-        editor: TextEditor,
-        abortSignal: AbortSignal
+        editor: TextEditor
     ) {
-        if (!this.pluginState.hasActiveSession) {
+        if (!this.sessionState.isSessionActive) {
             showMessageToUser(EditorMessages.extensionIsPaused, "warning");
             return;
         }
         try {
-            this.pluginStatusIndicator.showInProgressSpinner();
+            this.sessionState.showInProgressSpinner();
 
             await this.performSpecificCompletions(
                 shouldCompleteHole,
                 editor,
-                abortSignal
+                this.sessionState.abortController.signal
             );
         } catch (e) {
             if (e instanceof SettingsValidationError) {
@@ -170,11 +150,11 @@ export class CoqPilot {
                     "error",
                     `${pluginId}.coqLspServerPath`
                 );
-            } else if (
-                e instanceof CompletionAbortError ||
-                !this.pluginState.hasActiveSession
-            ) {
-                showMessageToUser(EditorMessages.completionAborted, "info");
+            } else if (e instanceof CompletionAbortError) {
+                if (!this.sessionState.userNotifiedAboutAbort) {
+                    showMessageToUser(EditorMessages.completionAborted, "info");
+                    this.sessionState.userReceivedAbortNotification();
+                }
             } else {
                 showMessageToUser(
                     e instanceof Error
@@ -185,9 +165,7 @@ export class CoqPilot {
                 console.error(buildErrorCompleteLog(e));
             }
         } finally {
-            this.pluginStatusIndicator.hideInProgressSpinner(
-                this.pluginState.hasActiveSession
-            );
+            this.sessionState.hideInProgressSpinner();
         }
     }
 
@@ -196,7 +174,7 @@ export class CoqPilot {
         editor: TextEditor,
         abortSignal: AbortSignal
     ) {
-        this.pluginState.eventLogger.log(
+        this.pluginContext.eventLogger.log(
             "completion-started",
             "CoqPilot has started the completion process"
         );
@@ -216,7 +194,7 @@ export class CoqPilot {
                 editor.document.uri.fsPath,
                 abortSignal
             );
-        this.pluginState.eventLogger.log(
+        this.pluginContext.eventLogger.log(
             "completion-preparation-finished",
             `CoqPilot has successfully parsed the file with ${sourceFileEnvironment.fileTheorems.length} theorems and has found ${completionContexts.length} admits inside chosen selection`
         );
@@ -228,8 +206,8 @@ export class CoqPilot {
 
         const unsubscribeFromLLMServicesEventsCallback =
             subscribeToHandleLLMServicesEvents(
-                this.pluginState.llmServices,
-                this.pluginState.eventLogger
+                this.pluginContext.llmServices,
+                this.pluginContext.eventLogger
             );
 
         try {
@@ -258,13 +236,12 @@ export class CoqPilot {
         editor: TextEditor,
         abortSignal: AbortSignal
     ) {
-        throwOnAbort(abortSignal);
         const result = await generateCompletion(
             completionContext,
             sourceFileEnvironment,
             processEnvironment,
             abortSignal,
-            this.pluginState.eventLogger
+            this.pluginContext.eventLogger
         );
 
         if (result instanceof SuccessGenerationResult) {
@@ -340,15 +317,15 @@ export class CoqPilot {
                 this.sessionState.coqLspClient,
                 abortSignal,
                 contextTheoremsRanker.needsUnwrappedNotations,
-                this.pluginState.eventLogger
+                this.pluginContext.eventLogger
             );
         const processEnvironment: ProcessEnvironment = {
             coqProofChecker: coqProofChecker,
             modelsParams: readAndValidateUserModelsParams(
                 workspace.getConfiguration(pluginId),
-                this.pluginState.llmServices
+                this.pluginContext.llmServices
             ),
-            services: this.pluginState.llmServices,
+            services: this.pluginContext.llmServices,
             theoremRanker: contextTheoremsRanker,
         };
 
@@ -369,6 +346,6 @@ export class CoqPilot {
     dispose(): void {
         this.vscodeContext.subscriptions.forEach((d) => d.dispose());
         this.sessionState.dispose();
-        this.pluginState.dispose();
+        this.pluginContext.dispose();
     }
 }

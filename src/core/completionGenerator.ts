@@ -3,7 +3,7 @@ import { GeneratedProof } from "../llm/llmServices/generatedProof";
 
 import { CoqLspTimeoutError } from "../coqLsp/coqLspTypes";
 
-import { throwOnAbort } from "../extension/extensionAbortUtils";
+import { CompletionAbortError, throwOnAbort } from "../extension/extensionAbortUtils";
 import { EventLogger } from "../logging/eventLogger";
 import { asErrorOrRethrow, buildErrorCompleteLog } from "../utils/errorsUtils";
 import { stringifyAnyValue } from "../utils/printers";
@@ -132,6 +132,8 @@ export async function generateCompletion(
                 FailureGenerationStatus.TIMEOUT_EXCEEDED,
                 error.message
             );
+        } else if (error instanceof CompletionAbortError) {
+            throw error;
         } else {
             return new FailureGenerationResult(
                 FailureGenerationStatus.ERROR_OCCURRED,
