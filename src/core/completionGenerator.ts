@@ -86,6 +86,7 @@ export async function generateCompletion(
                 completionContext,
                 sourceFileEnvironment,
                 processEnvironment,
+                abortSignal,
                 eventLogger,
                 perProofTimeoutMillis
             );
@@ -96,11 +97,13 @@ export async function generateCompletion(
         }
 
         while (newlyGeneratedProofs.length > 0) {
+            throwOnAbort(abortSignal);
             const fixedProofsOrCompletion = await checkAndFixProofs(
                 newlyGeneratedProofs,
                 completionContext,
                 sourceFileEnvironment,
                 processEnvironment,
+                abortSignal,
                 eventLogger,
                 perProofTimeoutMillis
             );
@@ -143,6 +146,7 @@ async function checkAndFixProofs(
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
+    abortSignal: AbortSignal,
     eventLogger?: EventLogger,
     perProofTimeoutMillis: number = 15000
 ): Promise<GeneratedProof[] | SuccessGenerationResult> {
@@ -169,7 +173,7 @@ async function checkAndFixProofs(
             };
         }
     );
-    const fixedProofs = await fixProofs(proofsWithFeedback);
+    const fixedProofs = await fixProofs(proofsWithFeedback, abortSignal);
     eventLogger?.log(
         "core-proofs-fixed",
         "Proofs were fixed",
@@ -193,17 +197,6 @@ async function checkGeneratedProofs(
             prepareProofToCheck(generatedProof.proof())
     );
 
-    // TODO: Why is it happening every time?
-    // if (workspaceRootPath) {
-    //     processEnvironment.coqProofChecker.dispose();
-    //     const client = await createCoqLspClient(
-    //         workspaceRootPath,
-    //         logOutputChannel
-    //     );
-    //     const coqProofChecker = new CoqProofChecker(client);
-    //     processEnvironment.coqProofChecker = coqProofChecker;
-    // }
-
     return processEnvironment.coqProofChecker.checkProofs(
         sourceFileEnvironment.fileUri,
         sourceFileEnvironment.documentVersion,
@@ -219,12 +212,14 @@ interface ProofWithFeedback {
 }
 
 async function fixProofs(
-    proofsWithFeedback: ProofWithFeedback[]
+    proofsWithFeedback: ProofWithFeedback[],
+    abortSignal: AbortSignal
 ): Promise<GeneratedProof[]> {
     const fixProofsPromises = [];
 
     // build fix promises
     for (const proofWithFeedback of proofsWithFeedback) {
+        throwOnAbort(abortSignal);
         const generatedProof = proofWithFeedback.generatedProof;
         if (!generatedProof.canBeFixed()) {
             continue;

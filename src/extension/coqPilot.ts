@@ -1,7 +1,7 @@
 import {
-    ExtensionContext, // ProgressLocation,
+    ExtensionContext,
     TextEditor,
-    commands, // window,
+    commands,
     workspace,
 } from "vscode";
 

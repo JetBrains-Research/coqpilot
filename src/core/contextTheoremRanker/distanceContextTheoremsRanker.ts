@@ -4,7 +4,7 @@ import { CompletionContext } from "../completionGenerationContext";
 import { ContextTheoremsRanker } from "./contextTheoremsRanker";
 
 export class DistanceContextTheoremsRanker implements ContextTheoremsRanker {
-    public readonly needsUnwrappedNotations = false;
+    readonly needsUnwrappedNotations = false;
 
     rankContextTheorems(
         theorems: Theorem[],
