@@ -42,7 +42,7 @@ export class ParsedCoqFileData {
     constructSourceFileEnvironment(): SourceFileEnvironment {
         return {
             fileTheorems: this.getOrderedFileTheorems().filter(
-                (theorem) => theorem.proof && !theorem.proof.is_incomplete
+                (theorem) => !theorem.proof.is_incomplete
             ),
             documentVersion: this.documentVersion,
             fileUri: Uri.fromPath(this.filePath),

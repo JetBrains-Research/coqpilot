@@ -12,19 +12,22 @@ import {
 } from "../coqLsp/coqLspTypes";
 
 import { throwOnAbort } from "../extension/extensionAbortUtils";
+import { EventLogger } from "../logging/eventLogger";
 import { Uri } from "../utils/uri";
 
 import { ProofStep, Theorem, TheoremProof, Vernacexpr } from "./parsedTypes";
 
 /**
- * TODO: [@Gleb Solovev] Refactor retrieveInitialGoal param
- * to be something more reasonable and readable.
+ * As we have decided that premises = only theorems/definitions
+ * with existing proofs, parseCoqFile ignores items without proofs
+ * and does not add them into the resulting array.
  */
 export async function parseCoqFile(
     uri: Uri,
     client: CoqLspClient,
     abortSignal: AbortSignal,
-    retrieveInitialGoal: boolean = true
+    extractTheoremInitialGoal: boolean = true,
+    eventLogger?: EventLogger
 ): Promise<Theorem[]> {
     return client
         .getFlecheDocument(uri)
@@ -38,7 +41,8 @@ export async function parseCoqFile(
                 client,
                 uri,
                 abortSignal,
-                retrieveInitialGoal
+                extractTheoremInitialGoal,
+                eventLogger
             );
         })
         .catch((error) => {
@@ -54,7 +58,8 @@ async function parseFlecheDocument(
     client: CoqLspClient,
     uri: Uri,
     abortSignal: AbortSignal,
-    retrieveInitialGoal: boolean
+    extractTheoremInitialGoal: boolean,
+    eventLogger?: EventLogger
 ): Promise<Theorem[]> {
     if (doc === null) {
         throw Error("could not parse file");
@@ -84,14 +89,9 @@ async function parseFlecheDocument(
 
                 const nextExprVernac = getVernacexpr(getExpr(doc.spans[i + 1]));
                 if (i + 1 >= doc.spans.length) {
-                    theorems.push(
-                        new Theorem(
-                            thrName,
-                            doc.spans[i].range,
-                            thrStatement,
-                            null,
-                            null
-                        )
+                    eventLogger?.log(
+                        "premise-has-no-proof",
+                        `Could not parse the proof in theorem/definition ${thrName}.`
                     );
                 } else if (!nextExprVernac) {
                     throw new CoqParsingError("unable to parse proof");
@@ -102,21 +102,16 @@ async function parseFlecheDocument(
                         Vernacexpr.VernacEndProof,
                     ].includes(nextExprVernac)
                 ) {
-                    theorems.push(
-                        new Theorem(
-                            thrName,
-                            doc.spans[i].range,
-                            thrStatement,
-                            null,
-                            null
-                        )
+                    eventLogger?.log(
+                        "premise-has-no-proof",
+                        `Could not parse the proof in theorem/definition ${thrName}.`
                     );
                 } else {
-                    // TODO: Might be a source of bugs if somewhere absense of initialGoal
-                    // is not handled properly or invariants are broken
+                    // TODO: Cover with tests, might be a source of bugs if somewhere
+                    // absense of initialGoal is not handled properly or invariants are broken
                     let initialGoal: Result<Goal<PpString>[], Error> | null =
                         null;
-                    if (retrieveInitialGoal) {
+                    if (extractTheoremInitialGoal) {
                         initialGoal = await client.getGoalsAtPoint(
                             doc.spans[i + 1].range.start,
                             uri,

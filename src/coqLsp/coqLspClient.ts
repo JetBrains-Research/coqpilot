@@ -64,6 +64,12 @@ export interface CoqLspClient extends Disposable {
     openTextDocument(uri: Uri, version?: number): Promise<DiagnosticMessage>;
 
     closeTextDocument(uri: Uri): Promise<void>;
+
+    /**
+     *
+     * @param goals
+     */
+    getFirstGoalOrThrow(goals: Result<Goal<PpString>[], Error>): Goal<PpString>;
 }
 
 const goalReqType = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
@@ -151,6 +157,22 @@ export class CoqLspClientImpl implements CoqLspClient {
             throwOnAbort(this.abortController?.signal);
             return this.getFlecheDocumentUnsafe(uri);
         });
+    }
+
+    getFirstGoalOrThrow(
+        goals: Result<Goal<PpString>[], Error>
+    ): Goal<PpString> {
+        if (goals.err) {
+            throw new CoqLspError(
+                "Call to `getFirstGoalOrThrow` with a Error type"
+            );
+        } else if (goals.val.length === 0) {
+            throw new CoqLspError(
+                "Call to `getFirstGoalOrThrow` with an empty set of goals"
+            );
+        }
+
+        return goals.val[0];
     }
 
     /**

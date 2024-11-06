@@ -3,6 +3,7 @@ import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { parseCoqFile } from "../coqParser/parseCoqFile";
 import { ProofStep, Theorem } from "../coqParser/parsedTypes";
 import { throwOnAbort } from "../extension/extensionAbortUtils";
+import { EventLogger } from "../logging/eventLogger";
 import { Uri } from "../utils/uri";
 
 import {
@@ -18,14 +19,16 @@ export async function inspectSourceFile(
     fileUri: Uri,
     client: CoqLspClient,
     abortSignal: AbortSignal,
-    rankerNeedsInitialGoals: boolean = true
+    rankerNeedsInitialGoals: boolean = true,
+    eventLogger?: EventLogger
 ): Promise<AnalyzedFile> {
     const sourceFileEnvironment = await createSourceFileEnvironment(
         documentVersion,
         fileUri,
         client,
         abortSignal,
-        rankerNeedsInitialGoals
+        rankerNeedsInitialGoals,
+        eventLogger
     );
     const completionContexts = await createCompletionContexts(
         documentVersion,
@@ -38,7 +41,7 @@ export async function inspectSourceFile(
     const sourceFileEnvironmentWithCompleteProofs: SourceFileEnvironment = {
         ...sourceFileEnvironment,
         fileTheorems: sourceFileEnvironment.fileTheorems.filter(
-            (thr) => thr.proof && !thr.proof.is_incomplete
+            (thr) => !thr.proof.is_incomplete
         ),
     };
 
@@ -86,13 +89,15 @@ export async function createSourceFileEnvironment(
     fileUri: Uri,
     client: CoqLspClient,
     abortSignal: AbortSignal,
-    rankerNeedsInitialGoals: boolean = true
+    rankerNeedsInitialGoals: boolean = true,
+    eventLogger?: EventLogger
 ): Promise<SourceFileEnvironment> {
     const fileTheorems = await parseCoqFile(
         fileUri,
         client,
         abortSignal,
-        rankerNeedsInitialGoals
+        rankerNeedsInitialGoals,
+        eventLogger
     );
 
     return {

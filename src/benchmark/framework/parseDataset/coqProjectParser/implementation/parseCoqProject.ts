@@ -77,6 +77,8 @@ export namespace ParseCoqProjectImpl {
         const mockDocumentVersion = 1;
         const sourceFileUri = Uri.fromPath(filePath);
         await coqLspClient.openTextDocument(sourceFileUri);
+        // TODO: [@Gleb Solovev] Do not create this Abort Controller but pass
+        // the one created at the top
         const abortController = new AbortController();
         const sourceFileEnvironment = await createSourceFileEnvironment(
             mockDocumentVersion,
@@ -222,7 +224,7 @@ export namespace ParseCoqProjectImpl {
                 );
                 throw goal;
             } else {
-                const goal = goals.val[0];
+                const goal = coqLspClient.getFirstGoalOrThrow(goals);
                 logger.debug(
                     `Successfully retrieved target goal at point: "${goal.ty}" at ${startPosition}, "${serializedParsedFile.filePath}"`
                 );

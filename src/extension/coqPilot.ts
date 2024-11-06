@@ -339,7 +339,8 @@ export class CoqPilot {
                 fileUri,
                 this.sessionExtensionState.coqLspClient,
                 abortSignal,
-                contextTheoremsRanker.needsUnwrappedNotations
+                contextTheoremsRanker.needsUnwrappedNotations,
+                this.globalExtensionState.eventLogger
             );
         const processEnvironment: ProcessEnvironment = {
             coqProofChecker: coqProofChecker,

@@ -94,11 +94,7 @@ export namespace CheckProofsInternalSignature {
                 },
             },
         },
-        required: [
-            "fileUri",
-            "documentVersion",
-            "preparedProofs",
-        ],
+        required: ["fileUri", "documentVersion", "preparedProofs"],
         additionalProperties: false,
     };
 

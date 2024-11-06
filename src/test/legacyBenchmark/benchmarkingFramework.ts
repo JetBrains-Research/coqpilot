@@ -441,7 +441,7 @@ async function extractCompletionTargets(
     const sourceFileEnvironmentWithCompleteProofs: SourceFileEnvironment = {
         ...sourceFileEnvironment,
         fileTheorems: sourceFileEnvironment.fileTheorems.filter(
-            (thr) => thr.proof && !thr.proof.is_incomplete
+            (thr) => !thr.proof.is_incomplete
         ),
     };
 
