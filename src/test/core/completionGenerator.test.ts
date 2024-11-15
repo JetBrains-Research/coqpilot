@@ -15,7 +15,7 @@ import {
     createDefaultServices,
     createPredefinedProofsModelsParams,
 } from "../commonTestFunctions/defaultLLMServicesBuilder";
-import { prepareEnvironment } from "../commonTestFunctions/prepareEnvironment";
+import { withPreparedEnvironment } from "../commonTestFunctions/prepareEnvironment";
 
 suite("Completion generation tests", () => {
     async function generateCompletionForAdmitsFromFile(
@@ -23,38 +23,39 @@ suite("Completion generation tests", () => {
         predefinedProofs: string[],
         projectRootPath?: string[]
     ): Promise<GenerationResult[]> {
-        const environment = await prepareEnvironment(
+        return withPreparedEnvironment(
             resourcePath,
-            projectRootPath
+            projectRootPath,
+            async (environment) => {
+                const processEnvironment: ProcessEnvironment = {
+                    coqProofChecker: environment.coqProofChecker,
+                    modelsParams:
+                        createPredefinedProofsModelsParams(predefinedProofs),
+                    services: createDefaultServices(),
+                };
+                try {
+                    return await environment.coqLspClient.withTextDocument(
+                        { uri: environment.sourceFileEnvironment.fileUri },
+                        () =>
+                            Promise.all(
+                                environment.completionContexts.map(
+                                    async (completionContext) => {
+                                        const result = await generateCompletion(
+                                            completionContext,
+                                            environment.sourceFileEnvironment,
+                                            processEnvironment,
+                                            new AbortController().signal
+                                        );
+                                        return result;
+                                    }
+                                )
+                            )
+                    );
+                } finally {
+                    disposeServices(processEnvironment.services);
+                }
+            }
         );
-        const processEnvironment: ProcessEnvironment = {
-            coqProofChecker: environment.coqProofChecker,
-            modelsParams: createPredefinedProofsModelsParams(predefinedProofs),
-            services: createDefaultServices(),
-        };
-        const abortController = new AbortController();
-
-        try {
-            return await environment.coqLspClient.withTextDocument(
-                { uri: environment.sourceFileEnvironment.fileUri },
-                () =>
-                    Promise.all(
-                        environment.completionContexts.map(
-                            async (completionContext) => {
-                                const result = await generateCompletion(
-                                    completionContext,
-                                    environment.sourceFileEnvironment,
-                                    processEnvironment,
-                                    abortController.signal
-                                );
-                                return result;
-                            }
-                        )
-                    )
-            );
-        } finally {
-            disposeServices(processEnvironment.services);
-        }
     }
 
     function unpackProof(text: string): string {

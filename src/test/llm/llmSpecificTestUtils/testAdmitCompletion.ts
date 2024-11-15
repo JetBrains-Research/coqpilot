@@ -6,7 +6,7 @@ import { ModelParams } from "../../../llm/llmServices/modelParams";
 import { UserModelParams } from "../../../llm/userModelParams";
 
 import { checkTheoremProven } from "../../commonTestFunctions/checkProofs";
-import { prepareEnvironmentWithContexts } from "../../commonTestFunctions/prepareEnvironment";
+import { withPreparedEnvironmentAndItsFirstContext } from "../../commonTestFunctions/prepareEnvironment";
 import { withLLMServiceAndParams } from "../../commonTestFunctions/withLLMService";
 
 export async function testLLMServiceCompletesAdmitFromFile<
@@ -22,22 +22,30 @@ export async function testLLMServiceCompletesAdmitFromFile<
         service,
         inputParams,
         async (service, resolvedParams: ResolvedModelParams) => {
-            const [environment, [[completionContext, proofGenerationContext]]] =
-                await prepareEnvironmentWithContexts(resourcePath);
-            const generatedProofs = await service.generateProof(
-                proofGenerationContext,
-                resolvedParams,
-                choices,
-                ErrorsHandlingMode.RETHROW_ERRORS
-            );
-            expect(generatedProofs).toHaveLength(choices);
-            expect(
-                checkTheoremProven(
-                    generatedProofs,
+            withPreparedEnvironmentAndItsFirstContext(
+                resourcePath,
+                undefined,
+                async (
+                    environment,
                     completionContext,
-                    environment
-                )
-            ).toBeTruthy();
+                    proofGenerationContext
+                ) => {
+                    const generatedProofs = await service.generateProof(
+                        proofGenerationContext,
+                        resolvedParams,
+                        choices,
+                        ErrorsHandlingMode.RETHROW_ERRORS
+                    );
+                    expect(generatedProofs).toHaveLength(choices);
+                    expect(
+                        checkTheoremProven(
+                            generatedProofs,
+                            completionContext,
+                            environment
+                        )
+                    ).toBeTruthy();
+                }
+            );
         }
     );
 }

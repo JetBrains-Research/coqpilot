@@ -1,6 +1,6 @@
 import { expect } from "earl";
 
-import { createTestCoqLspClient } from "../../coqLsp/coqLspBuilders";
+import { withDocumentOpenedByTestCoqLsp } from "../../coqLsp/coqLspBuilders";
 
 import { CoqProofChecker } from "../../core/coqProofChecker";
 import { ProofCheckResult } from "../../core/coqProofChecker";
@@ -22,11 +22,11 @@ suite("`CoqProofChecker` tests", () => {
         const fileUri = Uri.fromPath(filePath);
         const documentVersion = 1;
 
-        const client = await createTestCoqLspClient(rootDir);
-        const coqProofChecker = new CoqProofChecker(client);
-
-        try {
-            return await client.withTextDocument({ uri: fileUri }, () => {
+        return withDocumentOpenedByTestCoqLsp(
+            { uri: fileUri, version: documentVersion },
+            rootDir,
+            (coqLspClient) => {
+                const coqProofChecker = new CoqProofChecker(coqLspClient);
                 const preparedProofs = proofsToCheck.map((proofs) =>
                     proofs.map(prepareProofBeforeCheck)
                 );
@@ -46,10 +46,8 @@ suite("`CoqProofChecker` tests", () => {
                         });
                     })
                 );
-            });
-        } finally {
-            client.dispose();
-        }
+            }
+        );
     }
 
     function prepareProofBeforeCheck(proof: string) {

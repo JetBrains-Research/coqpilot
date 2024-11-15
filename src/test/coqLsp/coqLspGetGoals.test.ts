@@ -1,7 +1,7 @@
 import { expect } from "earl";
 import { Result } from "ts-results";
 
-import { createTestCoqLspClient } from "../../coqLsp/coqLspBuilders";
+import { withDocumentOpenedByTestCoqLsp } from "../../coqLsp/coqLspBuilders";
 import { ProofGoal } from "../../coqLsp/coqLspTypes";
 
 import { Uri } from "../../utils/uri";
@@ -19,16 +19,20 @@ suite("Retrieve goals from Coq file", () => {
         );
         const fileUri = Uri.fromPath(filePath);
 
-        const client = await createTestCoqLspClient(rootDir);
-        const goals = await client.withTextDocument({ uri: fileUri }, () =>
-            Promise.all(
-                points.map(async (point) => {
-                    return await client.getGoalsAtPoint(point, fileUri, 1);
-                })
-            )
+        return withDocumentOpenedByTestCoqLsp(
+            { uri: fileUri },
+            rootDir,
+            (coqLspClient) =>
+                Promise.all(
+                    points.map(async (point) => {
+                        return await coqLspClient.getGoalsAtPoint(
+                            point,
+                            fileUri,
+                            1
+                        );
+                    })
+                )
         );
-
-        return goals;
     }
 
     function unpackGoal(goal: ProofGoal): { hyps: string[]; ty: string } {

@@ -1,4 +1,4 @@
-import { createTestCoqLspClient } from "../../../../../../coqLsp/coqLspBuilders";
+import { withDocumentOpenedByTestCoqLsp } from "../../../../../../coqLsp/coqLspBuilders";
 import { CoqLspTimeoutError } from "../../../../../../coqLsp/coqLspTypes";
 
 import {
@@ -30,28 +30,23 @@ export namespace CheckProofsImpl {
         args: Signature.Args,
         providedLogger: ProvidedLogger
     ): Promise<Signature.Result> {
-        const coqLspClient = await createTestCoqLspClient(
-            args.workspaceRootPath
-        );
-        const coqProofChecker = new CoqProofChecker(coqLspClient);
-        // TODO: each coq proof checker should use its own prefix to work good in parallel (many checkers for the same theorem in the same file)
+        const fileUri = Uri.fromPath(args.fileUri);
+        const timeMark = new TimeMark();
 
         try {
-            const timeMark = new TimeMark();
-            const fileUri = Uri.fromPath(args.fileUri);
-
-            const proofCheckResults = await coqLspClient.withTextDocument(
+            const proofCheckResults = await withDocumentOpenedByTestCoqLsp(
                 { uri: fileUri, version: args.documentVersion },
-                () =>
-                    coqProofChecker.checkProofs(
+                args.workspaceRootPath,
+                (coqLspClient) =>
+                    new CoqProofChecker(coqLspClient).checkProofs(
                         fileUri,
                         args.documentVersion,
                         args.checkAtPosition,
                         args.preparedProofs
                     )
             );
-
             const proofsValidationMillis = timeMark.measureElapsedMillis();
+
             return buildSuccessResult(
                 proofCheckResults,
                 proofsValidationMillis,

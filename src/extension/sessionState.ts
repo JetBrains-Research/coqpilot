@@ -132,7 +132,7 @@ export class SessionState implements Disposable {
     }
 
     dispose(): void {
-        this._abortController.abort();
+        this._abortController.abort(); // TODO @K-dizzled: why `new CompletionAbortError()` is not passed here?
         this._coqLspClient.dispose();
     }
 }

@@ -425,6 +425,6 @@ export class CoqLspClientImpl implements CoqLspClient {
 
     dispose(): void {
         this.subscriptions.forEach((d) => d.dispose());
-        this.client.stop();
+        this.client.stop(); // TODO: shouldn't this operation be awaited?
     }
 }

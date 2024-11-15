@@ -2,7 +2,12 @@ import { OutputChannel, window } from "vscode";
 
 import { EventLogger } from "../logging/eventLogger";
 
-import { CoqLspClient, CoqLspClientImpl } from "./coqLspClient";
+import {
+    CoqLspClient,
+    CoqLspClientImpl,
+    DiagnosticMessage,
+    DocumentSpec,
+} from "./coqLspClient";
 import { CoqLspClientConfig, CoqLspConfig } from "./coqLspConfig";
 
 export async function createCoqLspClient(
@@ -26,6 +31,33 @@ export async function createTestCoqLspClient(
         CoqLspConfig.createClientConfig(
             process.env.COQ_LSP_PATH || "coq-lsp",
             workspaceRootPath
+        )
+    );
+}
+
+export async function withTestCoqLspClient<T>(
+    workspaceRootPath: string | undefined,
+    block: (coqLspClient: CoqLspClient) => Promise<T>
+) {
+    const coqLspClient = await createTestCoqLspClient(workspaceRootPath);
+    try {
+        return await block(coqLspClient);
+    } finally {
+        coqLspClient.dispose();
+    }
+}
+
+export async function withDocumentOpenedByTestCoqLsp<T>(
+    documentSpec: DocumentSpec,
+    workspaceRootPath: string | undefined,
+    block: (
+        coqLspClient: CoqLspClient,
+        openedDocDiagnostic: DiagnosticMessage
+    ) => Promise<T>
+): Promise<T> {
+    return withTestCoqLspClient(workspaceRootPath, (coqLspClient) =>
+        coqLspClient.withTextDocument(documentSpec, (openedDocDiagnostic) =>
+            block(coqLspClient, openedDocDiagnostic)
         )
     );
 }

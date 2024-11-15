@@ -21,13 +21,15 @@ export interface PreparedEnvironment {
     completionContexts: CompletionContext[];
     sourceFileEnvironment: SourceFileEnvironment;
 }
+
 /**
  * Note: both paths should be relative to `src/test/resources/` folder.
  */
-export async function prepareEnvironment(
+export async function withPreparedEnvironment<T>(
     resourcePath: string[],
-    projectRootPath?: string[]
-): Promise<PreparedEnvironment> {
+    projectRootPath: string[] | undefined,
+    block: (preparedEnvironment: PreparedEnvironment) => Promise<T>
+) {
     const [filePath, rootDir] = resolveResourcesDir(
         resourcePath,
         projectRootPath
@@ -36,42 +38,49 @@ export async function prepareEnvironment(
 
     const client = await createTestCoqLspClient(rootDir);
     const coqProofChecker = new CoqProofChecker(client);
-
-    const [completionContexts, sourceFileEnvironment] =
-        await client.withTextDocument({ uri: fileUri }, () => {
-            const abortController = new AbortController();
-            return inspectSourceFile(
-                1,
-                (_hole) => true,
-                fileUri,
-                client,
-                abortController.signal
+    try {
+        const [completionContexts, sourceFileEnvironment] =
+            await client.withTextDocument({ uri: fileUri }, () =>
+                inspectSourceFile(
+                    1,
+                    (_hole) => true,
+                    fileUri,
+                    client,
+                    new AbortController().signal
+                )
             );
-        });
-
-    return {
-        coqLspClient: client,
-        coqProofChecker: coqProofChecker,
-        completionContexts: completionContexts,
-        sourceFileEnvironment: sourceFileEnvironment,
-    };
+        const preparedEnvironment = {
+            coqLspClient: client,
+            coqProofChecker: coqProofChecker,
+            completionContexts: completionContexts,
+            sourceFileEnvironment: sourceFileEnvironment,
+        };
+        return await block(preparedEnvironment);
+    } finally {
+        client.dispose();
+    }
 }
 
-export async function prepareEnvironmentWithContexts(
+export async function withPreparedEnvironmentAndItsFirstContext<T>(
     resourcePath: string[],
-    projectRootPath?: string[]
-): Promise<
-    [PreparedEnvironment, [CompletionContext, ProofGenerationContext][]]
-> {
-    const environment = await prepareEnvironment(resourcePath, projectRootPath);
-    return [
-        environment,
-        environment.completionContexts.map((completionContext) => [
-            completionContext,
-            buildProofGenerationContext(
-                completionContext,
-                environment.sourceFileEnvironment.fileTheorems
-            ),
-        ]),
-    ];
+    projectRootPath: string[] | undefined,
+    block: (
+        preparedEnvironment: PreparedEnvironment,
+        completionContext: CompletionContext,
+        proofGenerationContext: ProofGenerationContext
+    ) => Promise<T>
+): Promise<T> {
+    return withPreparedEnvironment(
+        resourcePath,
+        projectRootPath,
+        (environment) =>
+            block(
+                environment,
+                environment.completionContexts[0],
+                buildProofGenerationContext(
+                    environment.completionContexts[0],
+                    environment.sourceFileEnvironment.fileTheorems
+                )
+            )
+    );
 }
