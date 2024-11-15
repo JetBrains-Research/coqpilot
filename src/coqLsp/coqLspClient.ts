@@ -55,6 +55,17 @@ export interface CoqLspClient extends Disposable {
     ): Promise<Result<ProofGoal[], Error>>;
 
     /**
+     * The wrapper for the `getGoalsAtPoint` method returning only the first goal of the extracted ones.
+     * If the goals extraction is not successfull, this method will throw a `CoqLspError`.
+     */
+    getFirstGoalAtPointOrThrow(
+        position: Position,
+        documentUri: Uri,
+        version: number,
+        command?: string
+    ): Promise<ProofGoal>;
+
+    /**
      * Returns a FlecheDocument for the given uri.
      * This method doesn't open the document implicitly, therefore
      * it assumes that openTextDocument has been called before.
@@ -64,12 +75,6 @@ export interface CoqLspClient extends Disposable {
     openTextDocument(uri: Uri, version?: number): Promise<DiagnosticMessage>;
 
     closeTextDocument(uri: Uri): Promise<void>;
-
-    /**
-     *
-     * @param goals
-     */
-    getFirstGoalOrThrow(goals: Result<Goal<PpString>[], Error>): Goal<PpString>;
 }
 
 const goalReqType = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
@@ -135,6 +140,31 @@ export class CoqLspClientImpl implements CoqLspClient {
         });
     }
 
+    async getFirstGoalAtPointOrThrow(
+        position: Position,
+        documentUri: Uri,
+        version: number,
+        command?: string
+    ): Promise<ProofGoal> {
+        return await this.mutex.runExclusive(async () => {
+            throwOnAbort(this.abortController?.signal);
+            const goals = await this.getGoalsAtPointUnsafe(
+                position,
+                documentUri,
+                version,
+                command
+            );
+            if (goals.err) {
+                throw goals.val;
+            } else if (goals.val.length === 0) {
+                throw new CoqLspError(
+                    `Failed to get the first goal: list of goals is empty at the position ${position} of ${documentUri.fsPath}`
+                );
+            }
+            return goals.val[0];
+        });
+    }
+
     async openTextDocument(
         uri: Uri,
         version: number = 1
@@ -157,22 +187,6 @@ export class CoqLspClientImpl implements CoqLspClient {
             throwOnAbort(this.abortController?.signal);
             return this.getFlecheDocumentUnsafe(uri);
         });
-    }
-
-    getFirstGoalOrThrow(
-        goals: Result<Goal<PpString>[], Error>
-    ): Goal<PpString> {
-        if (goals.err) {
-            throw new CoqLspError(
-                "Call to `getFirstGoalOrThrow` with a Error type"
-            );
-        } else if (goals.val.length === 0) {
-            throw new CoqLspError(
-                "Call to `getFirstGoalOrThrow` with an empty set of goals"
-            );
-        }
-
-        return goals.val[0];
     }
 
     /**

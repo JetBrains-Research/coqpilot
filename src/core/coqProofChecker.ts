@@ -84,7 +84,7 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
                 continue;
             }
 
-            const goalResult = await this.coqLspClient.getGoalsAtPoint(
+            const goalsResult = await this.coqLspClient.getGoalsAtPoint(
                 checkAtPosition,
                 fileUri,
                 documentVersion,
@@ -93,8 +93,10 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
 
             results.push({
                 proof: proof,
-                isValid: goalResult.ok,
-                diagnostic: goalResult.err ? goalResult.val.message : undefined,
+                isValid: goalsResult.ok,
+                diagnostic: goalsResult.err
+                    ? goalsResult.val.message
+                    : undefined,
             });
         }
 

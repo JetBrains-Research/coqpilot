@@ -510,15 +510,12 @@ async function resolveProofStepsToCompletionContexts(
             fileUri,
             documentVersion
         );
-        if (goals.ok) {
-            const firstGoal = goals.val.shift();
-            if (firstGoal) {
-                completionContexts.push({
-                    proofGoal: firstGoal,
-                    admitRange: parentedProofStep.proofStep.range,
-                    parentTheorem: parentedProofStep.parentTheorem,
-                });
-            }
+        if (goals.ok && goals.val.length !== 0) {
+            completionContexts.push({
+                proofGoal: goals.val[0],
+                admitRange: parentedProofStep.proofStep.range,
+                parentTheorem: parentedProofStep.parentTheorem,
+            });
         }
     }
     return completionContexts;

@@ -66,14 +66,11 @@ async function createCompletionContexts(
             fileUri,
             documentVersion
         );
-        if (goals.ok) {
-            const firstGoal = goals.val.shift();
-            if (firstGoal) {
-                completionContexts.push({
-                    proofGoal: firstGoal,
-                    admitRange: hole.range,
-                });
-            }
+        if (goals.ok && goals.val.length !== 0) {
+            completionContexts.push({
+                proofGoal: goals.val[0],
+                admitRange: hole.range,
+            });
         }
     }
 

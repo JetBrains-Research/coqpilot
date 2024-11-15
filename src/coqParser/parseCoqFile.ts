@@ -1,18 +1,17 @@
 import { readFileSync } from "fs";
-import { Result } from "ts-results";
 import { Position, Range } from "vscode-languageclient";
 
 import { CoqLspClient } from "../coqLsp/coqLspClient";
 import {
     CoqParsingError,
     FlecheDocument,
-    Goal,
-    PpString,
+    ProofGoal,
     RangedSpan,
 } from "../coqLsp/coqLspTypes";
 
 import { throwOnAbort } from "../extension/extensionAbortUtils";
 import { EventLogger } from "../logging/eventLogger";
+import { asErrorOrRethrow } from "../utils/errorsUtils";
 import { Uri } from "../utils/uri";
 
 import { ProofStep, Theorem, TheoremProof, Vernacexpr } from "./parsedTypes";
@@ -109,18 +108,18 @@ async function parseFlecheDocument(
                 } else {
                     // TODO: Cover with tests, might be a source of bugs if somewhere
                     // absense of initialGoal is not handled properly or invariants are broken
-                    let initialGoal: Result<Goal<PpString>[], Error> | null =
-                        null;
+                    let initialGoal: ProofGoal | null = null;
                     if (extractTheoremInitialGoal) {
-                        initialGoal = await client.getGoalsAtPoint(
-                            doc.spans[i + 1].range.start,
-                            uri,
-                            1
-                        );
-
-                        if (initialGoal.err) {
+                        try {
+                            initialGoal =
+                                await client.getFirstGoalAtPointOrThrow(
+                                    doc.spans[i + 1].range.start,
+                                    uri,
+                                    1
+                                );
+                        } catch (err) {
                             throw new CoqParsingError(
-                                `unable to get initial goal for theorem: ${thrName}`
+                                `Unable to get initial goal for theorem: ${thrName}\nCause: ${asErrorOrRethrow(err).message}`
                             );
                         }
                     }
@@ -132,7 +131,7 @@ async function parseFlecheDocument(
                             doc.spans[i].range,
                             thrStatement,
                             proof,
-                            initialGoal?.val[0]
+                            initialGoal
                         )
                     );
                 }
