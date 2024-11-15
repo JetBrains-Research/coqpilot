@@ -18,9 +18,9 @@ import {
 } from "../llm/userModelParams";
 
 import { ContextTheoremsRanker } from "../core/contextTheoremRanker/contextTheoremsRanker";
-import { DistanceContextTheoremsRanker } from "../core/contextTheoremRanker/distanceContextTheoremsRanker";
-import { JaccardIndexContextTheoremsRanker } from "../core/contextTheoremRanker/jaccardIndexContextTheoremsRanker";
-import { RandomContextTheoremsRanker } from "../core/contextTheoremRanker/randomContextTheoremsRanker";
+import { DistanceContextTheoremsRanker } from "../core/contextTheoremRanker/actualRankers/distanceContextTheoremsRanker";
+import { JaccardIndexContextTheoremsRanker } from "../core/contextTheoremRanker/actualRankers/jaccardIndexContextTheoremsRanker";
+import { RandomContextTheoremsRanker } from "../core/contextTheoremRanker/actualRankers/randomContextTheoremsRanker";
 
 import { AjvMode, buildAjv } from "../utils/ajvErrorsHandling";
 import { stringifyAnyValue, stringifyDefinedValue } from "../utils/printers";
