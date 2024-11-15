@@ -129,7 +129,7 @@ export class CoqPilot {
         shouldCompleteHole: (hole: ProofStep) => boolean,
         editor: TextEditor
     ) {
-        if (!this.sessionState.isSessionActive) {
+        if (!this.sessionState.isActive) {
             showMessageToUser(EditorMessages.extensionIsPaused, "warning");
             return;
         }
@@ -152,8 +152,9 @@ export class CoqPilot {
                 );
             } else if (e instanceof CompletionAbortError) {
                 if (!this.sessionState.userNotifiedAboutAbort) {
+                    // TODO: potential race condition causeing notification shown twice
+                    this.sessionState.markAbortNotificationAsShown();
                     showMessageToUser(EditorMessages.completionAborted, "info");
-                    this.sessionState.userReceivedAbortNotification();
                 }
             } else {
                 showMessageToUser(

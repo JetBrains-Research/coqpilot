@@ -10,7 +10,7 @@ import { CompletionAbortError } from "./extensionAbortUtils";
 import { PluginStatusIndicator } from "./pluginStatusIndicator";
 
 export class SessionState implements Disposable {
-    private _isSessionActive = true;
+    private _isActive = true;
     private _coqLspClient: CoqLspClient;
     private _abortController: AbortController;
 
@@ -20,13 +20,13 @@ export class SessionState implements Disposable {
     private _userNotifiedAboutAbort = false;
 
     throwOnInactiveSession(): void {
-        if (!this._isSessionActive) {
+        if (!this._isActive) {
             throw new Error("Trying to access a disposed session state");
         }
     }
 
-    get isSessionActive(): boolean {
-        return this._isSessionActive;
+    get isActive(): boolean {
+        return this._isActive;
     }
 
     get userNotifiedAboutAbort(): boolean {
@@ -80,7 +80,7 @@ export class SessionState implements Disposable {
         );
     }
 
-    userReceivedAbortNotification(): void {
+    markAbortNotificationAsShown(): void {
         this._userNotifiedAboutAbort = true;
     }
 
@@ -89,11 +89,11 @@ export class SessionState implements Disposable {
     }
 
     hideInProgressSpinner(): void {
-        this.pluginStatusIndicator.hideInProgressSpinner(this._isSessionActive);
+        this.pluginStatusIndicator.hideInProgressSpinner(this._isActive);
     }
 
     async toggleCurrentSession(): Promise<void> {
-        if (this._isSessionActive) {
+        if (this._isActive) {
             this.abort();
         } else {
             await this.startNewSession();
@@ -101,7 +101,7 @@ export class SessionState implements Disposable {
     }
 
     abort(): void {
-        this._isSessionActive = false;
+        this._isActive = false;
         this._abortController.abort(new CompletionAbortError());
         this._coqLspClient.dispose();
 
@@ -114,7 +114,8 @@ export class SessionState implements Disposable {
     }
 
     async startNewSession(): Promise<void> {
-        this._isSessionActive = true;
+        // TODO @K-dizzled: _userNotifiedAboutAbort is not updated here, seems like a bug
+        this._isActive = true;
         this._abortController = new AbortController();
 
         const coqLspServerPath = parseCoqLspServerPath();
