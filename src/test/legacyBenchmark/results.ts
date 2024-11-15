@@ -84,7 +84,7 @@ export namespace Results {
 
         readonly name = this.theorem.name;
         readonly proofLength: LengthMetrics = {
-            inSteps: this.theorem.proof?.proof_steps.length,
+            inSteps: this.theorem.proof.proof_steps.length,
         };
 
         // TODO

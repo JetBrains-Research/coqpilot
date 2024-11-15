@@ -55,7 +55,7 @@ async function createCompletionContexts(
 ): Promise<CompletionContext[]> {
     const holesToComplete = fileTheorems
         .filter((thr) => thr.proof)
-        .map((thr) => thr.proof!.holes)
+        .map((thr) => thr.proof.holes)
         .flat()
         .filter(shouldCompleteHole);
 

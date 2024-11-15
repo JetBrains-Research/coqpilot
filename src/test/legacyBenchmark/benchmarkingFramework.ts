@@ -463,7 +463,7 @@ async function createCompletionTargets(
     const theoremsWithProofs = fileTheorems.filter((thr) => thr.proof);
     const admitHolesToComplete = theoremsWithProofs
         .map((thr) =>
-            thr.proof!.holes.map((hole) => {
+            thr.proof.holes.map((hole) => {
                 return {
                     parentTheorem: thr,
                     proofStep: hole,
@@ -477,7 +477,7 @@ async function createCompletionTargets(
     const firstProofSteps = theoremsWithProofs.map((thr) => {
         return {
             parentTheorem: thr,
-            proofStep: thr.proof!.proof_steps[1],
+            proofStep: thr.proof.proof_steps[1],
         };
     });
 

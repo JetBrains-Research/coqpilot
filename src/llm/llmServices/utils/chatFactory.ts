@@ -189,7 +189,7 @@ export function createProofFixMessage(
 export function theoremToChatItem(theorem: Theorem): UserAssistantChatItem {
     return {
         userMessage: theorem.statement,
-        assistantMessage: theorem.proof?.onlyText() ?? "Admitted.",
+        assistantMessage: theorem.proof.onlyText(),
     };
 }
 

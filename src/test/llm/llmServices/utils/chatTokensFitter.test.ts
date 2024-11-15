@@ -95,7 +95,7 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
     test("Two theorems, overflow after first", async () => {
         const twoTheorems = await readTwoTheorems();
         const statementTokens = approxCalculateTokens(twoTheorems[0].statement);
-        const theoremProof = twoTheorems[0].proof?.onlyText() ?? "";
+        const theoremProof = twoTheorems[0].proof.onlyText();
         const proofTokens = approxCalculateTokens(theoremProof);
         const fittedTheoremsNumber = countTheoremsPickedFromContext({
             maxTokensToGenerate: 1000,
@@ -110,7 +110,7 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
     test("Two theorems, overflow almost before first", async () => {
         const twoTheorems = await readTwoTheorems();
         const statementTokens = approxCalculateTokens(twoTheorems[0].statement);
-        const theoremProof = twoTheorems[0].proof?.onlyText() ?? "";
+        const theoremProof = twoTheorems[0].proof.onlyText();
         const proofTokens = approxCalculateTokens(theoremProof);
         const fittedTheoremsNumber = countTheoremsPickedFromContext({
             maxTokensToGenerate: 1000,
@@ -128,7 +128,7 @@ suite("[LLMService-s utils] ChatTokensFitter test", () => {
             twoTheorems[0].statement,
             gptModelName
         );
-        const theoremProof = twoTheorems[0].proof?.onlyText() ?? "";
+        const theoremProof = twoTheorems[0].proof.onlyText();
         const proofTokens = calculateTokensViaTikToken(
             theoremProof,
             gptModelName

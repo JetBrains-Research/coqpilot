@@ -34,15 +34,14 @@ suite("Coq file parser tests", () => {
             expect(theorem.name).toEqual(theoremData[i].name);
             expect(theorem.statement).toEqual(theoremData[i].statement);
             expect(theorem.statement_range.start).toEqual(theoremData[i].start);
-            expect(theorem.proof).not.toBeNullish();
-            expect(theorem.proof?.end_pos.end).toEqual(theoremData[i].end);
-            expect(theorem.proof?.is_incomplete).toEqual(
+            expect(theorem.proof.end_pos.end).toEqual(theoremData[i].end);
+            expect(theorem.proof.is_incomplete).toEqual(
                 theoremData[i].isIncomplete
             );
-            expect(theorem.proof!.holes).toHaveLength(
+            expect(theorem.proof.holes).toHaveLength(
                 theoremData[i].holesStartPoints.length
             );
-            for (const [j, hole] of theorem.proof!.holes.entries()) {
+            for (const [j, hole] of theorem.proof.holes.entries()) {
                 expect(hole.range.start).toEqual(
                     theoremData[i].holesStartPoints[j].start
                 );
@@ -80,7 +79,7 @@ suite("Coq file parser tests", () => {
             },
         ];
 
-        const holes = doc.map((theorem) => theorem.proof?.holes ?? []).flat();
+        const holes = doc.map((theorem) => theorem.proof.holes).flat();
         expect(holes).toHaveLength(6);
 
         for (const [i, hole] of holes.entries()) {
@@ -123,8 +122,7 @@ suite("Coq file parser tests", () => {
         for (const [i, theorem] of doc.entries()) {
             expect(theorem.name).toEqual(theoremData[i].name);
             expect(theorem.statement).toEqual(theoremData[i].statement);
-            expect(theorem.proof).not.toBeNullish();
-            expect(theorem.proof?.is_incomplete).toEqual(
+            expect(theorem.proof.is_incomplete).toEqual(
                 theoremData[i].isIncomplete
             );
         }
