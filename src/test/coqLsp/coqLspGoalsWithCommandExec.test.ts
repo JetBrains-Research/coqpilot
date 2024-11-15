@@ -2,7 +2,7 @@ import { expect } from "earl";
 import { Result } from "ts-results";
 
 import { createTestCoqLspClient } from "../../coqLsp/coqLspBuilders";
-import { Goal, PpString } from "../../coqLsp/coqLspTypes";
+import { ProofGoal } from "../../coqLsp/coqLspTypes";
 
 import { Uri } from "../../utils/uri";
 import { resolveResourcesDir } from "../commonTestFunctions/pathsResolver";
@@ -13,7 +13,7 @@ suite("Request goals with `command/pretac` argument", () => {
         resourcePath: string[],
         command: string,
         projectRootPath?: string[]
-    ): Promise<Result<Goal<PpString>[], Error>> {
+    ): Promise<Result<ProofGoal[], Error>> {
         const [filePath, rootDir] = resolveResourcesDir(
             resourcePath,
             projectRootPath
@@ -21,7 +21,7 @@ suite("Request goals with `command/pretac` argument", () => {
         const fileUri = Uri.fromPath(filePath);
 
         const client = await createTestCoqLspClient(rootDir);
-        let goals: Result<Goal<PpString>[], Error> | undefined;
+        let goals: Result<ProofGoal[], Error> | undefined;
 
         try {
             await client.openTextDocument(fileUri);
@@ -39,7 +39,7 @@ suite("Request goals with `command/pretac` argument", () => {
     }
 
     function checkSuccessfullGoalConcls(
-        goals: Result<Goal<PpString>[], Error>,
+        goals: Result<ProofGoal[], Error>,
         goalConclusions: string[]
     ): void {
         expect(goals.ok).toEqual(true);
@@ -52,7 +52,7 @@ suite("Request goals with `command/pretac` argument", () => {
     }
 
     function checkCommandApplicationError(
-        goals: Result<Goal<PpString>[], Error>,
+        goals: Result<ProofGoal[], Error>,
         expectedError: string
     ): void {
         expect(goals.err).toEqual(true);

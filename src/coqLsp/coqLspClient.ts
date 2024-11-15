@@ -30,10 +30,10 @@ import {
     CoqLspStartupError,
     FlecheDocument,
     FlecheDocumentParams,
-    Goal,
     GoalAnswer,
     GoalRequest,
     PpString,
+    ProofGoal,
 } from "./coqLspTypes";
 
 export interface CoqLspClient extends Disposable {
@@ -52,7 +52,7 @@ export interface CoqLspClient extends Disposable {
         documentUri: Uri,
         version: number,
         command?: string
-    ): Promise<Result<Goal<PpString>[], Error>>;
+    ): Promise<Result<ProofGoal[], Error>>;
 
     /**
      * Returns a FlecheDocument for the given uri.
@@ -123,7 +123,7 @@ export class CoqLspClientImpl implements CoqLspClient {
         documentUri: Uri,
         version: number,
         command?: string
-    ): Promise<Result<Goal<PpString>[], Error>> {
+    ): Promise<Result<ProofGoal[], Error>> {
         return await this.mutex.runExclusive(async () => {
             throwOnAbort(this.abortController?.signal);
             return this.getGoalsAtPointUnsafe(
@@ -221,7 +221,7 @@ export class CoqLspClientImpl implements CoqLspClient {
         documentUri: Uri,
         version: number,
         command?: string
-    ): Promise<Result<Goal<PpString>[], Error>> {
+    ): Promise<Result<ProofGoal[], Error>> {
         let goalRequestParams: GoalRequest = {
             textDocument: VersionedTextDocumentIdentifier.create(
                 documentUri.uri,

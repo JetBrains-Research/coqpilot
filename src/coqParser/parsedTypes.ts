@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import { Range } from "vscode-languageclient";
 
-import { Goal, PpString } from "../coqLsp/coqLspTypes";
+import { ProofGoal } from "../coqLsp/coqLspTypes";
 
 export enum Vernacexpr {
     VernacLoad = "VernacLoad",
@@ -144,7 +144,7 @@ export class Theorem {
         readonly statement_range: Range,
         readonly statement: string,
         readonly proof: TheoremProof,
-        readonly initial_goal: Goal<PpString> | null = null
+        readonly initial_goal: ProofGoal | null = null
     ) {}
 
     toString(): string {
