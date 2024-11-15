@@ -20,13 +20,13 @@ suite("Retrieve goals from Coq file", () => {
         const fileUri = Uri.fromPath(filePath);
 
         const client = await createTestCoqLspClient(rootDir);
-        await client.openTextDocument(fileUri);
-        const goals = await Promise.all(
-            points.map(async (point) => {
-                return await client.getGoalsAtPoint(point, fileUri, 1);
-            })
+        const goals = await client.withTextDocument({ uri: fileUri }, () =>
+            Promise.all(
+                points.map(async (point) => {
+                    return await client.getGoalsAtPoint(point, fileUri, 1);
+                })
+            )
         );
-        await client.closeTextDocument(fileUri);
 
         return goals;
     }

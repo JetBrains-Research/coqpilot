@@ -18,14 +18,10 @@ export async function parseTheoremsFromCoqFile(
     const fileUri = Uri.fromPath(filePath);
     const client = await createTestCoqLspClient(rootDir);
 
-    await client.openTextDocument(fileUri);
-    const abortController = new AbortController();
-    const document = await parseCoqFile(
-        fileUri,
-        client,
-        abortController.signal
-    );
-    await client.closeTextDocument(fileUri);
+    const document = await client.withTextDocument({ uri: fileUri }, () => {
+        const abortController = new AbortController();
+        return parseCoqFile(fileUri, client, abortController.signal);
+    });
 
     return document;
 }

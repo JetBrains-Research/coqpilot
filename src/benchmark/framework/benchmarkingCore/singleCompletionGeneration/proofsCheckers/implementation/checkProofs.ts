@@ -40,17 +40,16 @@ export namespace CheckProofsImpl {
             const timeMark = new TimeMark();
             const fileUri = Uri.fromPath(args.fileUri);
 
-            // TODO: [@Gleb Solovev] Pay Atteniton that it was previously done by the CoqProofChecker
-            await coqLspClient.openTextDocument(fileUri);
-
-            const proofCheckResults = await coqProofChecker.checkProofs(
-                fileUri,
-                args.documentVersion,
-                args.checkAtPosition,
-                args.preparedProofs
+            const proofCheckResults = await coqLspClient.withTextDocument(
+                { uri: fileUri, version: args.documentVersion },
+                () =>
+                    coqProofChecker.checkProofs(
+                        fileUri,
+                        args.documentVersion,
+                        args.checkAtPosition,
+                        args.preparedProofs
+                    )
             );
-
-            await coqLspClient.closeTextDocument(fileUri);
 
             const proofsValidationMillis = timeMark.measureElapsedMillis();
             return buildSuccessResult(

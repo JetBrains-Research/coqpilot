@@ -37,16 +37,17 @@ export async function prepareEnvironment(
     const client = await createTestCoqLspClient(rootDir);
     const coqProofChecker = new CoqProofChecker(client);
 
-    await client.openTextDocument(fileUri);
-    const abortController = new AbortController();
-    const [completionContexts, sourceFileEnvironment] = await inspectSourceFile(
-        1,
-        (_hole) => true,
-        fileUri,
-        client,
-        abortController.signal
-    );
-    await client.closeTextDocument(fileUri);
+    const [completionContexts, sourceFileEnvironment] =
+        await client.withTextDocument({ uri: fileUri }, () => {
+            const abortController = new AbortController();
+            return inspectSourceFile(
+                1,
+                (_hole) => true,
+                fileUri,
+                client,
+                abortController.signal
+            );
+        });
 
     return {
         coqLspClient: client,

@@ -21,21 +21,14 @@ suite("Request goals with `command/pretac` argument", () => {
         const fileUri = Uri.fromPath(filePath);
 
         const client = await createTestCoqLspClient(rootDir);
-        let goals: Result<ProofGoal[], Error> | undefined;
 
         try {
-            await client.openTextDocument(fileUri);
-            goals = await client.getGoalsAtPoint(position, fileUri, 1, command);
+            return await client.withTextDocument({ uri: fileUri }, () =>
+                client.getGoalsAtPoint(position, fileUri, 1, command)
+            );
         } finally {
-            await client.closeTextDocument(fileUri);
-            client.dispose();
+            client.dispose(); // TODO: make a wrapper
         }
-
-        if (goals === undefined) {
-            throw new Error("The goals were not received.");
-        }
-
-        return goals;
     }
 
     function checkSuccessfullGoalConclusions(

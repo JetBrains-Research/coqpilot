@@ -36,6 +36,11 @@ import {
     ProofGoal,
 } from "./coqLspTypes";
 
+export interface DocumentSpec {
+    uri: Uri;
+    version?: number;
+}
+
 export interface CoqLspClient extends Disposable {
     /**
      * Fetches all goals present at the given position in the document.
@@ -75,6 +80,11 @@ export interface CoqLspClient extends Disposable {
     openTextDocument(uri: Uri, version?: number): Promise<DiagnosticMessage>;
 
     closeTextDocument(uri: Uri): Promise<void>;
+
+    withTextDocument<T>(
+        documentSpec: DocumentSpec,
+        block: (openedDocDiagnostic: DiagnosticMessage) => Promise<T>
+    ): Promise<T>;
 }
 
 const goalReqType = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
@@ -180,6 +190,23 @@ export class CoqLspClientImpl implements CoqLspClient {
             throwOnAbort(this.abortController?.signal);
             return this.closeTextDocumentUnsafe(uri);
         });
+    }
+
+    async withTextDocument<T>(
+        documentSpec: DocumentSpec,
+        block: (openedDocDiagnostic: DiagnosticMessage) => Promise<T>
+    ): Promise<T> {
+        const diagnostic = await this.openTextDocument(
+            documentSpec.uri,
+            documentSpec.version
+        );
+        // TODO: discuss whether coq-lsp is capable of maintaining several docs opened
+        // or we need a common lock for open-close here
+        try {
+            return await block(diagnostic);
+        } finally {
+            await this.closeTextDocument(documentSpec.uri);
+        }
     }
 
     async getFlecheDocument(uri: Uri): Promise<FlecheDocument> {

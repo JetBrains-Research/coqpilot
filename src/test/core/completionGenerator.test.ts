@@ -33,31 +33,27 @@ suite("Completion generation tests", () => {
             services: createDefaultServices(),
         };
         const abortController = new AbortController();
+
         try {
-            await environment.coqLspClient.openTextDocument(
-                environment.sourceFileEnvironment.fileUri
+            return await environment.coqLspClient.withTextDocument(
+                { uri: environment.sourceFileEnvironment.fileUri },
+                () =>
+                    Promise.all(
+                        environment.completionContexts.map(
+                            async (completionContext) => {
+                                const result = await generateCompletion(
+                                    completionContext,
+                                    environment.sourceFileEnvironment,
+                                    processEnvironment,
+                                    abortController.signal
+                                );
+                                return result;
+                            }
+                        )
+                    )
             );
-
-            const generationResult = await Promise.all(
-                environment.completionContexts.map(
-                    async (completionContext) => {
-                        const result = await generateCompletion(
-                            completionContext,
-                            environment.sourceFileEnvironment,
-                            processEnvironment,
-                            abortController.signal
-                        );
-                        return result;
-                    }
-                )
-            );
-
-            return generationResult;
         } finally {
             disposeServices(processEnvironment.services);
-            await environment.coqLspClient.closeTextDocument(
-                environment.sourceFileEnvironment.fileUri
-            );
         }
     }
 

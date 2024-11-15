@@ -24,33 +24,32 @@ suite("`CoqProofChecker` tests", () => {
 
         const client = await createTestCoqLspClient(rootDir);
         const coqProofChecker = new CoqProofChecker(client);
-        await client.openTextDocument(fileUri);
 
-        const preparedProofs = proofsToCheck.map((proofs) =>
-            proofs.map(prepareProofBeforeCheck)
-        );
-
-        const proofRes = await Promise.all(
-            positions.map(async (position, i) => {
-                const proofCheckRes = await coqProofChecker.checkProofs(
-                    fileUri,
-                    documentVersion,
-                    position,
-                    preparedProofs[i]
+        try {
+            return await client.withTextDocument({ uri: fileUri }, () => {
+                const preparedProofs = proofsToCheck.map((proofs) =>
+                    proofs.map(prepareProofBeforeCheck)
                 );
-                return proofCheckRes.map((res) => {
-                    return {
-                        ...res,
-                        proof: unpackProof(res.proof),
-                    };
-                });
-            })
-        );
-
-        await client.closeTextDocument(fileUri);
-        client.dispose();
-
-        return proofRes;
+                return Promise.all(
+                    positions.map(async (position, i) => {
+                        const proofCheckRes = await coqProofChecker.checkProofs(
+                            fileUri,
+                            documentVersion,
+                            position,
+                            preparedProofs[i]
+                        );
+                        return proofCheckRes.map((res) => {
+                            return {
+                                ...res,
+                                proof: unpackProof(res.proof),
+                            };
+                        });
+                    })
+                );
+            });
+        } finally {
+            client.dispose();
+        }
     }
 
     function prepareProofBeforeCheck(proof: string) {
