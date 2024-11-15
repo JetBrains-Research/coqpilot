@@ -1,7 +1,7 @@
-import { ContextTheoremsRanker } from "../../../../core/contextTheoremRanker/contextTheoremsRanker";
 import { DistanceContextTheoremsRanker } from "../../../../core/contextTheoremRanker/actualRankers/distanceContextTheoremsRanker";
 import { JaccardIndexContextTheoremsRanker } from "../../../../core/contextTheoremRanker/actualRankers/jaccardIndexContextTheoremsRanker";
 import { RandomContextTheoremsRanker } from "../../../../core/contextTheoremRanker/actualRankers/randomContextTheoremsRanker";
+import { ContextTheoremsRanker } from "../../../../core/contextTheoremRanker/contextTheoremsRanker";
 
 import { RankerType } from "../../structures/inputParameters/inputBenchmarkingModelParams";
 

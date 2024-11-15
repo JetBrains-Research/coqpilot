@@ -1,6 +1,5 @@
 import { Theorem } from "../../../coqParser/parsedTypes";
 import { CompletionContext } from "../../completionGenerationContext";
-
 import { ContextTheoremsRanker } from "../contextTheoremsRanker";
 
 export class RandomContextTheoremsRanker implements ContextTheoremsRanker {
