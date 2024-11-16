@@ -423,8 +423,17 @@ export class CoqLspClientImpl implements CoqLspClient {
         return doc;
     }
 
+    /**
+     * _Implementation note:_ although this `dispose` implementation calls an async method,
+     * we are not tend to await it, as well as `CoqLspClient.dispose()` in general.
+     *
+     * Since different coq-lsp clients correspond to different processes,
+     * they don't have any shared resources; therefore, a new client can be started without
+     * waiting for the previous one to finish. Thus, we don't await for this `dispose()` call
+     * to finish, the client and its process will be disposed at some point asynchronously.
+     */
     dispose(): void {
         this.subscriptions.forEach((d) => d.dispose());
-        this.client.stop(); // TODO: shouldn't this operation be awaited?
+        this.client.stop();
     }
 }

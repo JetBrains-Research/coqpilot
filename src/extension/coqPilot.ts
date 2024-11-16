@@ -312,6 +312,8 @@ export class CoqPilot {
         const coqProofChecker = new CoqProofChecker(
             this.sessionState.coqLspClient
         );
+        // Note: here and later the target file is expected to be opened by the user,
+        // so no explicit `coqLspClient.openTextDocument(...)` call is needed
         const [completionContexts, sourceFileEnvironment] =
             await inspectSourceFile(
                 documentVersion,

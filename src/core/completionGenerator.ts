@@ -44,6 +44,10 @@ export enum FailureGenerationStatus {
     SEARCH_FAILED,
 }
 
+/**
+ * _Implementation note:_ when this method is called, the target file is expected to be opened by the user.
+ * Therefore, no explicit `coqLspClient.openTextDocument(...)` call is made.
+ */
 export async function generateCompletion(
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
