@@ -7,6 +7,7 @@ import {
 
 import { CoqLspStartupError } from "../coqLsp/coqLspTypes";
 
+import { CompletionAbortError } from "../core/abortUtils";
 import {
     CompletionContext,
     ProcessEnvironment,
@@ -39,7 +40,6 @@ import {
     showMessageToUser,
     showMessageToUserWithSettingsHint,
 } from "./editorMessages";
-import { CompletionAbortError } from "./extensionAbortUtils";
 import { subscribeToHandleLLMServicesEvents } from "./llmServicesEventsHandler";
 import { PluginContext } from "./pluginContext";
 import { PluginStatusIndicator } from "./pluginStatusIndicator";

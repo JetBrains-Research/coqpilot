@@ -3,14 +3,11 @@ import { GeneratedProof } from "../llm/llmServices/generatedProof";
 
 import { CoqLspTimeoutError } from "../coqLsp/coqLspTypes";
 
-import {
-    CompletionAbortError,
-    throwOnAbort,
-} from "../extension/extensionAbortUtils";
 import { EventLogger } from "../logging/eventLogger";
 import { asErrorOrRethrow, buildErrorCompleteLog } from "../utils/errorsUtils";
 import { stringifyAnyValue } from "../utils/printers";
 
+import { CompletionAbortError, throwOnAbort } from "./abortUtils";
 import {
     CompletionContext,
     ProcessEnvironment,

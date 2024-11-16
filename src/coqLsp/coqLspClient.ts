@@ -19,7 +19,8 @@ import {
     VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
 
-import { throwOnAbort } from "../extension/extensionAbortUtils";
+import { throwOnAbort } from "../core/abortUtils";
+
 import { EventLogger } from "../logging/eventLogger";
 import { Uri } from "../utils/uri";
 

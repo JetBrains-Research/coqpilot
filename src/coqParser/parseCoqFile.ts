@@ -9,7 +9,8 @@ import {
     RangedSpan,
 } from "../coqLsp/coqLspTypes";
 
-import { throwOnAbort } from "../extension/extensionAbortUtils";
+import { throwOnAbort } from "../core/abortUtils";
+
 import { EventLogger } from "../logging/eventLogger";
 import { asErrorOrRethrow } from "../utils/errorsUtils";
 import { Uri } from "../utils/uri";

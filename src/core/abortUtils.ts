@@ -1,6 +1,6 @@
 export class CompletionAbortError extends Error {
     private static readonly abortMessage =
-        "User has triggered a session abort: Stopping all completions";
+        "Session abort has been triggered: stopping all completions";
 
     constructor() {
         super(CompletionAbortError.abortMessage);

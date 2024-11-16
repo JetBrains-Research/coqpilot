@@ -3,10 +3,11 @@ import { Disposable, OutputChannel } from "vscode";
 import { createCoqLspClient } from "../coqLsp/coqLspBuilders";
 import { CoqLspClient } from "../coqLsp/coqLspClient";
 
+import { CompletionAbortError } from "../core/abortUtils";
+
 import { EventLogger } from "../logging/eventLogger";
 
 import { parseCoqLspServerPath } from "./configReaders";
-import { CompletionAbortError } from "./extensionAbortUtils";
 import { PluginStatusIndicator } from "./pluginStatusIndicator";
 
 export class SessionState implements Disposable {
