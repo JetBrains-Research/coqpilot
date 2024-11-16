@@ -79,7 +79,7 @@ namespace UpdateCacheHolders {
 
         if (cachedFile.getDocumentVersion() !== parsedFile.documentVersion) {
             cacheUpdaterLogger.debug(
-                `* file version update: ${cachedFile.getDocumentVersion()} -> ${parsedFile.documentVersion}`
+                `* document version update: ${cachedFile.getDocumentVersion()} -> ${parsedFile.documentVersion}`
             );
         }
         cachedFile.updateDocumentVersion(parsedFile.documentVersion);

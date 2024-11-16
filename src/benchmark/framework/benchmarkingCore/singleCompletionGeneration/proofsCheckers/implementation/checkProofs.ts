@@ -7,8 +7,8 @@ import {
 } from "../../../../../../core/coqProofChecker";
 
 import { stringifyAnyValue } from "../../../../../../utils/printers";
-import { Uri } from "../../../../../../utils/uri";
 import { BenchmarkingLogger } from "../../../../logging/benchmarkingLogger";
+import { deserializeUri } from "../../../../structures/common/serializedUri";
 import { LogsIPCSender } from "../../../../utils/subprocessUtils/ipc/onParentProcessCallExecutor/logsIpcSender";
 import { TimeMark } from "../../measureUtils";
 
@@ -30,7 +30,7 @@ export namespace CheckProofsImpl {
         args: Signature.Args,
         providedLogger: ProvidedLogger
     ): Promise<Signature.Result> {
-        const fileUri = Uri.fromPath(args.fileUri);
+        const fileUri = deserializeUri(args.serializedFileUri);
         const timeMark = new TimeMark();
 
         try {
@@ -41,7 +41,7 @@ export namespace CheckProofsImpl {
                     new CoqProofChecker(coqLspClient).checkProofs(
                         fileUri,
                         args.documentVersion,
-                        args.checkAtPosition,
+                        args.positionToCheckAt,
                         args.preparedProofs
                     )
             );

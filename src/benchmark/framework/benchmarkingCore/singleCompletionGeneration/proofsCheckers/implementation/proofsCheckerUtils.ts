@@ -3,6 +3,7 @@ import {
     SourceFileEnvironment,
 } from "../../../../../../core/completionGenerationContext";
 
+import { serializeUri } from "../../../../structures/common/serializedUri";
 import {
     WorkspaceRoot,
     isStandaloneFilesRoot,
@@ -27,9 +28,9 @@ export namespace ProofsCheckerUtils {
             workspaceRootPath: isStandaloneFilesRoot(workspaceRoot)
                 ? undefined
                 : workspaceRoot.directoryPath,
-            fileUri: sourceFileEnvironment.fileUri.toString(),
+            serializedFileUri: serializeUri(sourceFileEnvironment.fileUri),
             documentVersion: sourceFileEnvironment.documentVersion,
-            checkAtPosition: completionContext.admitRange.start,
+            positionToCheckAt: completionContext.admitRange.start,
             preparedProofs: preparedProofs,
         };
     }
