@@ -52,6 +52,8 @@ export class SessionState implements Disposable {
     ) {
         this._coqLspClient = coqLspClient;
         this._abortController = abortController;
+
+        this.eventLogger.log("session-start", "User has started a new session");
     }
 
     static async create(
@@ -96,16 +98,16 @@ export class SessionState implements Disposable {
         if (this._isActive) {
             this.abort();
         } else {
-            await this.startNewSession();
+            await this.restartSession();
         }
     }
 
-    abort(): void {
+    private abort(): void {
         this._isActive = false;
         this._abortController.abort(new CompletionAbortError());
         this._coqLspClient.dispose();
 
-        this.pluginStatusIndicator.updateStatusBar(false);
+        this.pluginStatusIndicator.updateStatusBar(this._isActive);
 
         this.eventLogger.log(
             "session-abort",
@@ -113,10 +115,10 @@ export class SessionState implements Disposable {
         );
     }
 
-    async startNewSession(): Promise<void> {
-        // TODO @K-dizzled: _userNotifiedAboutAbort is not updated here, seems like a bug
+    private async restartSession(): Promise<void> {
         this._isActive = true;
         this._abortController = new AbortController();
+        this._userNotifiedAboutAbort = false;
 
         const coqLspServerPath = parseCoqLspServerPath();
         this._coqLspClient = await createCoqLspClient(
@@ -126,13 +128,15 @@ export class SessionState implements Disposable {
             this._abortController
         );
 
-        this.pluginStatusIndicator.updateStatusBar(true);
+        this.pluginStatusIndicator.updateStatusBar(this._isActive);
 
-        this.eventLogger.log("session-start", "User has started a new session");
+        this.eventLogger.log(
+            "session-restart",
+            "User has restarted the session"
+        );
     }
 
     dispose(): void {
-        this._abortController.abort(); // TODO @K-dizzled: why `new CompletionAbortError()` is not passed here?
         this._coqLspClient.dispose();
     }
 }

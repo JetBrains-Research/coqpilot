@@ -58,7 +58,7 @@ export class CoqPilot {
     private constructor(
         private readonly vscodeContext: VSCodeContext,
         private readonly pluginContext: PluginContext,
-        private sessionState: SessionState,
+        private readonly sessionState: SessionState,
         toggleCommand: string
     ) {
         this.registerEditorCommand(
@@ -74,6 +74,8 @@ export class CoqPilot {
             this.performCompletionForAllAdmits.bind(this)
         );
 
+        // TODO: would it be clearer and safer to initialise a new session
+        // instead of restarting the same object (?)
         this.registerEditorCommand(
             toggleCommand,
             this.sessionState.toggleCurrentSession.bind(this.sessionState)
