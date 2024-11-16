@@ -1,4 +1,4 @@
-import { createTestCoqLspClient } from "../../../../../coqLsp/coqLspBuilders";
+import { withTestCoqLspClient } from "../../../../../coqLsp/coqLspBuilders";
 import { CoqLspClient } from "../../../../../coqLsp/coqLspClient";
 import { CoqLspError } from "../../../../../coqLsp/coqLspTypes";
 
@@ -42,49 +42,67 @@ export namespace ParseCoqProjectImpl {
         args: Signature.ArgsModels.Args,
         logger: Logger
     ): Promise<Signature.ResultModels.Result> {
-        const coqLspClient = await createTestCoqLspClient(
-            args.workspaceRootPath
-        );
         const parsedWorkspace: Signature.ResultModels.Result = {};
-        for (const filePath in args.workspaceTargets) {
-            const fileTargets = args.workspaceTargets[filePath];
-            const serializedParsedFile = await openAndParseSourceFile(
-                filePath,
-                coqLspClient,
-                logger
-            );
-            const parsedFileResults: Signature.ResultModels.ParsedFileResults =
-                {
-                    serializedParsedFile: serializedParsedFile,
-                    parsedFileTargets: await extractFileTargetsFromFile(
-                        fileTargets,
-                        serializedParsedFile,
-                        coqLspClient,
-                        logger
-                    ),
-                };
-            parsedWorkspace[filePath] = parsedFileResults;
-        }
+
+        await withTestCoqLspClient(
+            args.workspaceRootPath,
+            async (coqLspClient) => {
+                for (const filePath in args.workspaceTargets) {
+                    parsedWorkspace[filePath] =
+                        await coqLspClient.withTextDocument(
+                            { uri: Uri.fromPath(filePath) },
+                            () =>
+                                parseFileTargets(
+                                    args.workspaceTargets[filePath],
+                                    filePath,
+                                    coqLspClient,
+                                    logger
+                                )
+                        );
+                }
+            }
+        );
+
         logger.debug(
             `Successfully parsed Coq project: analyzed ${Object.keys(parsedWorkspace).length} files`
         );
         return parsedWorkspace;
     }
 
-    async function openAndParseSourceFile(
+    async function parseFileTargets(
+        fileTargets: Signature.ArgsModels.FileTarget[],
+        filePath: string,
+        coqLspClient: CoqLspClient,
+        logger: Logger
+    ): Promise<Signature.ResultModels.ParsedFileResults> {
+        const serializedParsedFile = await parseSourceFile(
+            filePath,
+            coqLspClient,
+            logger
+        );
+        return {
+            serializedParsedFile: serializedParsedFile,
+            parsedFileTargets: await extractFileTargetsFromFile(
+                fileTargets,
+                serializedParsedFile,
+                coqLspClient,
+                logger
+            ),
+        };
+    }
+
+    async function parseSourceFile(
         filePath: string,
         coqLspClient: CoqLspClient,
         logger: Logger
     ): Promise<SerializedParsedCoqFile> {
         const mockDocumentVersion = 1;
-        const sourceFileUri = Uri.fromPath(filePath);
-        await coqLspClient.openTextDocument(sourceFileUri);
         // TODO: [@Gleb Solovev] Do not create this Abort Controller but pass
         // the one created at the top
         const abortController = new AbortController();
         const sourceFileEnvironment = await createSourceFileEnvironment(
             mockDocumentVersion,
-            sourceFileUri,
+            Uri.fromPath(filePath),
             coqLspClient,
             abortController.signal
         );
