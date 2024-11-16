@@ -11,8 +11,8 @@ import { PredefinedProofsService } from "../llm/llmServices/predefinedProofs/pre
 
 import { EventLogger, Severity } from "../logging/eventLogger";
 
-import { pluginId } from "./coqPilot";
-import VSCodeLogWriter from "./vscodeLogWriter";
+import VSCodeLogWriter from "./ui/vscodeLogWriter";
+import { pluginId } from "./utils/pluginId";
 
 export class PluginContext implements Disposable {
     public readonly eventLogger: EventLogger = new EventLogger();

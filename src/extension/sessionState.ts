@@ -7,8 +7,8 @@ import { CompletionAbortError } from "../core/abortUtils";
 
 import { EventLogger } from "../logging/eventLogger";
 
-import { parseCoqLspServerPath } from "./configReaders";
-import { PluginStatusIndicator } from "./pluginStatusIndicator";
+import { parseCoqLspServerPath } from "./settings/configReaders";
+import { PluginStatusIndicator } from "./ui/pluginStatusIndicator";
 
 export class SessionState implements Disposable {
     private _isActive = true;

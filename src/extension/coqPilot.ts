@@ -26,33 +26,31 @@ import { ProofStep } from "../coqParser/parsedTypes";
 import { buildErrorCompleteLog } from "../utils/errorsUtils";
 import { Uri } from "../utils/uri";
 
+import { PluginContext } from "./pluginContext";
+import { SessionState } from "./sessionState";
 import {
     buildTheoremsRankerFromConfig,
     readAndValidateUserModelsParams,
-} from "./configReaders";
+} from "./settings/configReaders";
+import { SettingsValidationError } from "./settings/settingsValidationError";
 import {
     deleteTextFromRange,
     highlightTextInEditor,
     insertCompletion,
-} from "./documentEditor";
+} from "./ui/documentEditor";
 import {
     EditorMessages,
     showMessageToUser,
     showMessageToUserWithSettingsHint,
-} from "./editorMessages";
-import { subscribeToHandleLLMServicesEvents } from "./llmServicesEventsHandler";
-import { PluginContext } from "./pluginContext";
-import { PluginStatusIndicator } from "./pluginStatusIndicator";
+} from "./ui/messages/editorMessages";
+import { subscribeToHandleLLMServicesEvents } from "./ui/messages/llmServicesEventsHandler";
+import { PluginStatusIndicator } from "./ui/pluginStatusIndicator";
+import { pluginId } from "./utils/pluginId";
 import {
     positionInRange,
     toVSCodePosition,
     toVSCodeRange,
-} from "./positionRangeUtils";
-import { SessionState } from "./sessionState";
-import { SettingsValidationError } from "./settingsValidationError";
-
-export const pluginId = "coqpilot";
-export const pluginName = "CoqPilot";
+} from "./utils/positionRangeUtils";
 
 export class CoqPilot {
     private constructor(

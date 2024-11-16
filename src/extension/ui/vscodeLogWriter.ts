@@ -1,7 +1,11 @@
 import pino, { DestinationStream, LoggerOptions } from "pino";
 import { OutputChannel, window } from "vscode";
 
-import { EventLogger, Severity, anyEventKeyword } from "../logging/eventLogger";
+import {
+    EventLogger,
+    Severity,
+    anyEventKeyword,
+} from "../../logging/eventLogger";
 
 class VSCodeLogWriter {
     private readonly outputStream = new VSCodeOutputChannelDestinationStream(
