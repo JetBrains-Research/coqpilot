@@ -44,10 +44,6 @@ export class BenchmarkReportHolder {
     private readonly groupOrder = ["A", "B", "C"];
 
     constructor(private readonly reportPath: string) {
-        if (!existsSync(reportPath)) {
-            writeFileSync(reportPath, "{}");
-        }
-
         const jsonSchemaValidator = buildAjv(AjvMode.RETURN_AFTER_FIRST_ERROR);
         this.validate = jsonSchemaValidator.compile(theoremProofResultSchema);
     }
@@ -153,10 +149,16 @@ export class BenchmarkReportHolder {
     }
 
     parseReport(): BenchmarkReport {
+        if (!existsSync(this.reportPath)) {
+            writeFileSync(this.reportPath, "{}");
+            return {};
+        }
+
         const reportContent = JSON.parse(
             readFileSync(this.reportPath, { encoding: "utf-8" })
         );
         const report: BenchmarkReport = {};
+
         for (const [theoremName, proofResults] of Object.entries(
             reportContent
         )) {
