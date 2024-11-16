@@ -14,19 +14,7 @@ export interface ProofCheckResult {
 
 type Proof = string;
 
-export interface CoqProofCheckerInterface {
-    checkProofs(
-        fileUri: Uri,
-        documentVersion: number,
-        checkAtPosition: Position,
-        proofs: Proof[],
-        coqLspTimeoutMillis?: number
-    ): Promise<ProofCheckResult[]>;
-
-    dispose(): void;
-}
-
-export class CoqProofChecker implements CoqProofCheckerInterface {
+export class CoqProofChecker {
     private mutex: Mutex = new Mutex();
 
     constructor(private coqLspClient: CoqLspClient) {}
@@ -34,7 +22,7 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
     async checkProofs(
         fileUri: Uri,
         documentVersion: number,
-        checkAtPosition: Position,
+        positionToCheckAt: Position,
         proofs: Proof[],
         coqLspTimeoutMillis: number = 15000
     ): Promise<ProofCheckResult[]> {
@@ -55,7 +43,7 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
                 this.checkProofsUnsafe(
                     fileUri,
                     documentVersion,
-                    checkAtPosition,
+                    positionToCheckAt,
                     proofs
                 ),
                 timeoutPromise,
@@ -70,7 +58,7 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
     private async checkProofsUnsafe(
         fileUri: Uri,
         documentVersion: number,
-        checkAtPosition: Position,
+        positionToCheckAt: Position,
         proofs: Proof[]
     ): Promise<ProofCheckResult[]> {
         const results: ProofCheckResult[] = [];
@@ -85,7 +73,7 @@ export class CoqProofChecker implements CoqProofCheckerInterface {
             }
 
             const goalsResult = await this.coqLspClient.getGoalsAtPoint(
-                checkAtPosition,
+                positionToCheckAt,
                 fileUri,
                 documentVersion,
                 proof
