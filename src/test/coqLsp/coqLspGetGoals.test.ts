@@ -21,7 +21,7 @@ suite("Retrieve goals from Coq file", () => {
 
         return withDocumentOpenedByTestCoqLsp(
             { uri: fileUri },
-            rootDir,
+            { workspaceRootPath: rootDir },
             (coqLspClient) =>
                 Promise.all(
                     points.map(async (point) => {

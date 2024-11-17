@@ -28,7 +28,8 @@ export namespace CheckProofsImpl {
 
     export async function checkProofsMeasured(
         args: Signature.Args,
-        providedLogger: ProvidedLogger
+        providedLogger: ProvidedLogger,
+        abortSignal?: AbortSignal
     ): Promise<Signature.Result> {
         const fileUri = deserializeUri(args.serializedFileUri);
         const timeMark = new TimeMark();
@@ -36,7 +37,10 @@ export namespace CheckProofsImpl {
         try {
             const proofCheckResults = await withDocumentOpenedByTestCoqLsp(
                 { uri: fileUri, version: args.documentVersion },
-                args.workspaceRootPath,
+                {
+                    workspaceRootPath: args.workspaceRootPath,
+                    abortSignal: abortSignal,
+                },
                 (coqLspClient) =>
                     new CoqProofChecker(coqLspClient).checkProofs(
                         fileUri,

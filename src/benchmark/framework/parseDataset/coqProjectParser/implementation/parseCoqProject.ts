@@ -44,8 +44,10 @@ export namespace ParseCoqProjectImpl {
     ): Promise<Signature.ResultModels.Result> {
         const parsedWorkspace: Signature.ResultModels.Result = {};
 
+        // Note: specific abort controller is not passed here, since
+        // the abort behaviour is not supported (and not needed) at the parsing stage.
         await withTestCoqLspClient(
-            args.workspaceRootPath,
+            { workspaceRootPath: args.workspaceRootPath },
             async (coqLspClient) => {
                 for (const filePath in args.workspaceTargets) {
                     parsedWorkspace[filePath] =
@@ -99,6 +101,7 @@ export namespace ParseCoqProjectImpl {
         const mockDocumentVersion = 1;
         // TODO: [@Gleb Solovev] Do not create this Abort Controller but pass
         // the one created at the top
+        // TODO + check coq-lsp creation in benchmarks
         const abortController = new AbortController();
         const sourceFileEnvironment = await createSourceFileEnvironment(
             mockDocumentVersion,

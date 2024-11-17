@@ -24,7 +24,8 @@ import { OnParentProcessCallExecutorUtils } from "./utils";
 import Utils = OnParentProcessCallExecutorUtils;
 
 // TODO: document
-// TODO: design better logging through actual file
+// TODO: design better logging through actual
+// TODO: support abort behaviour
 export async function executeAsFunctionOnParentProcessCall<
     ArgsType,
     ResultType,

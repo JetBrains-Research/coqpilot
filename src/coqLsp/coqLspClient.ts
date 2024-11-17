@@ -108,7 +108,7 @@ export class CoqLspClientImpl implements CoqLspClient {
     private constructor(
         coqLspConnector: CoqLspConnector,
         public readonly eventLogger?: EventLogger,
-        public readonly abortController?: AbortController
+        public readonly abortSignal?: AbortSignal
     ) {
         this.client = coqLspConnector;
     }
@@ -118,7 +118,7 @@ export class CoqLspClientImpl implements CoqLspClient {
         clientConfig: CoqLspClientConfig,
         logOutputChannel: OutputChannel,
         eventLogger?: EventLogger,
-        abortController?: AbortController
+        abortSignal?: AbortSignal
     ): Promise<CoqLspClientImpl> {
         const connector = new CoqLspConnector(
             serverConfig,
@@ -131,7 +131,7 @@ export class CoqLspClientImpl implements CoqLspClient {
                 clientConfig.coq_lsp_server_path
             );
         });
-        return new CoqLspClientImpl(connector, eventLogger, abortController);
+        return new CoqLspClientImpl(connector, eventLogger, abortSignal);
     }
 
     async getGoalsAtPoint(
@@ -141,7 +141,7 @@ export class CoqLspClientImpl implements CoqLspClient {
         command?: string
     ): Promise<Result<ProofGoal[], Error>> {
         return await this.mutex.runExclusive(async () => {
-            throwOnAbort(this.abortController?.signal);
+            throwOnAbort(this.abortSignal);
             return this.getGoalsAtPointUnsafe(
                 position,
                 documentUri,
@@ -158,7 +158,7 @@ export class CoqLspClientImpl implements CoqLspClient {
         command?: string
     ): Promise<ProofGoal> {
         return await this.mutex.runExclusive(async () => {
-            throwOnAbort(this.abortController?.signal);
+            throwOnAbort(this.abortSignal);
             const goals = await this.getGoalsAtPointUnsafe(
                 position,
                 documentUri,
@@ -181,14 +181,14 @@ export class CoqLspClientImpl implements CoqLspClient {
         version: number = 1
     ): Promise<DiagnosticMessage> {
         return await this.mutex.runExclusive(async () => {
-            throwOnAbort(this.abortController?.signal);
+            throwOnAbort(this.abortSignal);
             return this.openTextDocumentUnsafe(uri, version);
         });
     }
 
     async closeTextDocument(uri: Uri): Promise<void> {
         return await this.mutex.runExclusive(async () => {
-            throwOnAbort(this.abortController?.signal);
+            throwOnAbort(this.abortSignal);
             return this.closeTextDocumentUnsafe(uri);
         });
     }
@@ -212,7 +212,7 @@ export class CoqLspClientImpl implements CoqLspClient {
 
     async getFlecheDocument(uri: Uri): Promise<FlecheDocument> {
         return await this.mutex.runExclusive(async () => {
-            throwOnAbort(this.abortController?.signal);
+            throwOnAbort(this.abortSignal);
             return this.getFlecheDocumentUnsafe(uri);
         });
     }

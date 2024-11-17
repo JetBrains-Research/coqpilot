@@ -24,7 +24,7 @@ suite("`CoqProofChecker` tests", () => {
 
         return withDocumentOpenedByTestCoqLsp(
             { uri: fileUri, version: documentVersion },
-            rootDir,
+            { workspaceRootPath: rootDir },
             (coqLspClient) => {
                 const coqProofChecker = new CoqProofChecker(coqLspClient);
                 const preparedProofs = proofsToCheck.map((proofs) =>

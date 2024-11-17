@@ -69,7 +69,7 @@ export class SessionState implements Disposable {
             coqLspServerPath,
             logOutputChannel,
             eventLogger,
-            abortController
+            abortController.signal
         );
 
         pluginStatusIndicator.updateStatusBar(true);
@@ -126,7 +126,7 @@ export class SessionState implements Disposable {
             coqLspServerPath,
             this.logOutputChannel,
             this.eventLogger,
-            this._abortController
+            this._abortController.signal
         );
 
         this.pluginStatusIndicator.updateStatusBar(this._isActive);

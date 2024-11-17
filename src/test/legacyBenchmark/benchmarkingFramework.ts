@@ -82,16 +82,26 @@ export async function runTestBenchmark(
         resolvedOptions.filePath,
         resolvedOptions.additionalImports
     );
+    /**
+     * Note: so far the abort signal is never triggered;
+     * however, such behaviour can be supported:
+     * the same `AbortController` object is passed throughout the run properly.
+     */
+    const abortController = new AbortController();
 
     return withDocumentOpenedByTestCoqLsp(
         { uri: fileUri },
-        inputOptions.workspaceRootPath,
+        {
+            workspaceRootPath: inputOptions.workspaceRootPath,
+            abortSignal: abortController.signal,
+        },
         (coqLspClient) =>
             runTestBenchmarkOnPreparedFile(
                 resolvedOptions,
                 coqLspClient,
                 fileUri,
-                isNewlyCreatedFile
+                isNewlyCreatedFile,
+                abortController
             )
     );
 }
@@ -116,7 +126,8 @@ export async function runTestBenchmarkOnPreparedFile(
     options: TestBenchmarkOptions,
     coqLspClient: CoqLspClient,
     fileUri: Uri,
-    isNewlyCreatedFile: boolean
+    isNewlyCreatedFile: boolean,
+    abortController: AbortController
 ): Promise<BenchmarkReport> {
     consoleLog(`run benchmarks for file: ${options.filePath}\n`, "blue");
     const shouldCompleteHole = (_hole: ProofStep) => true;
@@ -160,6 +171,7 @@ export async function runTestBenchmarkOnPreparedFile(
             getSingleModelId(options.inputModelsParams),
             options.relativePathToFile,
             options.groupName,
+            abortController,
             eventLogger,
             options.maxPremisesNumber,
             options.reportHolder,
@@ -184,6 +196,7 @@ export async function runTestBenchmarkOnPreparedFile(
             getSingleModelId(options.inputModelsParams),
             options.relativePathToFile,
             options.groupName,
+            abortController,
             eventLogger,
             options.maxPremisesNumber,
             options.reportHolder,
@@ -260,6 +273,7 @@ export async function benchmarkTargets(
     modelId: string,
     checkedFilePath: string,
     groupName: string,
+    abortController: AbortController,
     eventLogger: EventLogger,
     maxPremisesNumber?: number,
     reportHolder?: BenchmarkReportHolder,
@@ -275,6 +289,7 @@ export async function benchmarkTargets(
             modelId,
             checkedFilePath,
             groupName,
+            abortController,
             eventLogger,
             maxPremisesNumber,
             reportHolder,
@@ -297,6 +312,7 @@ async function benchmarkCompletionGeneration(
     modelId: string,
     checkedFilePath: string,
     groupName: string,
+    abortController: AbortController,
     eventLogger: EventLogger,
     maxPremisesNumber?: number,
     reportHolder?: BenchmarkReportHolder,
@@ -331,7 +347,6 @@ async function benchmarkCompletionGeneration(
         premisesNumber: maxPremisesNumber,
     };
 
-    const abortController = new AbortController();
     const result = await generateCompletion(
         completionContext,
         sourceFileEnvironmentWithFilteredContext,

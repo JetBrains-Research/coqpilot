@@ -36,7 +36,7 @@ export async function withPreparedEnvironment<T>(
     );
     const fileUri = Uri.fromPath(filePath);
 
-    const client = await createTestCoqLspClient(rootDir);
+    const client = await createTestCoqLspClient({ workspaceRootPath: rootDir });
     const coqProofChecker = new CoqProofChecker(client);
     try {
         const [completionContexts, sourceFileEnvironment] =

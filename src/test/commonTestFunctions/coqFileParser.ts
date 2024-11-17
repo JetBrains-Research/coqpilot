@@ -18,7 +18,7 @@ export async function parseTheoremsFromCoqFile(
 
     return await withDocumentOpenedByTestCoqLsp(
         { uri: fileUri },
-        rootDir,
+        { workspaceRootPath: rootDir },
         (coqLspClient) =>
             parseCoqFile(fileUri, coqLspClient, new AbortController().signal)
     );

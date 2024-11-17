@@ -23,7 +23,8 @@ export class LocalProofsChecker extends AbstractProofsChecker {
         completionContext: CompletionContext,
         sourceFileEnvironment: SourceFileEnvironment,
         workspaceRoot: WorkspaceRoot,
-        logger: BenchmarkingLogger
+        logger: BenchmarkingLogger,
+        abortSignal: AbortSignal
     ): Promise<ProofsCheckResult> {
         const args = ProofsCheckerUtils.buildArgs(
             preparedProofs,
@@ -36,7 +37,8 @@ export class LocalProofsChecker extends AbstractProofsChecker {
             {
                 logger: logger,
                 logSuccess: false,
-            }
+            },
+            abortSignal
         );
         return ProofsCheckerUtils.unpackSuccessResultOrThrow(proofsCheckResult);
     }

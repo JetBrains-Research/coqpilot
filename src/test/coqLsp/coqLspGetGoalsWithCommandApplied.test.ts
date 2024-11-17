@@ -22,7 +22,7 @@ suite("Request goals with `command/pretac` argument", () => {
 
         return withDocumentOpenedByTestCoqLsp(
             { uri: fileUri },
-            rootDir,
+            { workspaceRootPath: rootDir },
             (coqLspClient) =>
                 coqLspClient.getGoalsAtPoint(position, fileUri, 1, command)
         );
