@@ -206,15 +206,16 @@ export namespace ParseCoqProjectImpl {
         };
         switch (requestType) {
             case TargetRequestType.THEOREM_PROOF:
-                return [
-                    await targetBuilder(
-                        extractSerializedTheoremFisrtProofStep(
-                            serializedTheorem
-                        ),
-                        TargetType.PROVE_THEOREM,
-                        serializedTheorem.initial_goal
-                    ),
-                ];
+                const theoremProofTarget = await targetBuilder(
+                    extractSerializedTheoremFisrtProofStep(serializedTheorem),
+                    TargetType.PROVE_THEOREM,
+                    serializedTheorem.initial_goal
+                );
+                if (serializedTheorem.initial_goal === undefined) {
+                    serializedTheorem.initial_goal =
+                        theoremProofTarget.goalToProve;
+                }
+                return [theoremProofTarget];
             case TargetRequestType.ALL_ADMITS:
                 const parsedTargets = [];
                 for (const holeProofStep of serializedTheorem.proof!.holes) {
