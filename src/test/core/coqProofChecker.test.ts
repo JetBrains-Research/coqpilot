@@ -1,6 +1,6 @@
 import { expect } from "earl";
 
-import { createTestCoqLspClient } from "../../coqLsp/coqLspBuilders";
+import { withDocumentOpenedByTestCoqLsp } from "../../coqLsp/coqLspBuilders";
 
 import { CoqProofChecker } from "../../core/coqProofChecker";
 import { ProofCheckResult } from "../../core/coqProofChecker";
@@ -22,35 +22,32 @@ suite("`CoqProofChecker` tests", () => {
         const fileUri = Uri.fromPath(filePath);
         const documentVersion = 1;
 
-        const client = await createTestCoqLspClient(rootDir);
-        const coqProofChecker = new CoqProofChecker(client);
-        await client.openTextDocument(fileUri);
-
-        const preparedProofs = proofsToCheck.map((proofs) =>
-            proofs.map(prepareProofBeforeCheck)
-        );
-
-        const proofRes = await Promise.all(
-            positions.map(async (position, i) => {
-                const proofCheckRes = await coqProofChecker.checkProofs(
-                    fileUri,
-                    documentVersion,
-                    position,
-                    preparedProofs[i]
+        return withDocumentOpenedByTestCoqLsp(
+            { uri: fileUri, version: documentVersion },
+            { workspaceRootPath: rootDir },
+            (coqLspClient) => {
+                const coqProofChecker = new CoqProofChecker(coqLspClient);
+                const preparedProofs = proofsToCheck.map((proofs) =>
+                    proofs.map(prepareProofBeforeCheck)
                 );
-                return proofCheckRes.map((res) => {
-                    return {
-                        ...res,
-                        proof: unpackProof(res.proof),
-                    };
-                });
-            })
+                return Promise.all(
+                    positions.map(async (position, i) => {
+                        const proofCheckRes = await coqProofChecker.checkProofs(
+                            fileUri,
+                            documentVersion,
+                            position,
+                            preparedProofs[i]
+                        );
+                        return proofCheckRes.map((res) => {
+                            return {
+                                ...res,
+                                proof: unpackProof(res.proof),
+                            };
+                        });
+                    })
+                );
+            }
         );
-
-        await client.closeTextDocument(fileUri);
-        client.dispose();
-
-        return proofRes;
     }
 
     function prepareProofBeforeCheck(proof: string) {

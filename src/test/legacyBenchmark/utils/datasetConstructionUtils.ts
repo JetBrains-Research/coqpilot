@@ -2,16 +2,16 @@ import * as fs from "fs";
 
 export class DatasetItem {
     workspaceRootPath: string | undefined;
-    specificTheoremForBenchmark: string[] | undefined;
+    specificTheoremsForBenchmark: string[] | undefined;
 
     /* Paths should be relative to 'dataset' folder */
     constructor(
         public path: string,
-        specificTheoremForBenchmark: string[] | undefined = undefined,
+        specificTheoremsForBenchmark: string[] | undefined = undefined,
         workspaceRootPath: string | undefined = undefined
     ) {
         this.workspaceRootPath = workspaceRootPath;
-        this.specificTheoremForBenchmark = specificTheoremForBenchmark;
+        this.specificTheoremsForBenchmark = specificTheoremsForBenchmark;
     }
 }
 

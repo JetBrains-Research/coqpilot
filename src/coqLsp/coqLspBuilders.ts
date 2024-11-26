@@ -2,30 +2,70 @@ import { OutputChannel, window } from "vscode";
 
 import { EventLogger } from "../logging/eventLogger";
 
-import { CoqLspClient, CoqLspClientImpl } from "./coqLspClient";
+import {
+    CoqLspClient,
+    CoqLspClientImpl,
+    DiagnosticMessage,
+    DocumentSpec,
+} from "./coqLspClient";
 import { CoqLspClientConfig, CoqLspConfig } from "./coqLspConfig";
 
 export async function createCoqLspClient(
     coqLspServerPath: string,
     logOutputChannel?: OutputChannel,
     eventLogger?: EventLogger,
-    abortController?: AbortController
+    abortSignal?: AbortSignal
 ): Promise<CoqLspClient> {
     return createAbstractCoqLspClient(
         CoqLspConfig.createClientConfig(coqLspServerPath),
         logOutputChannel,
         eventLogger,
-        abortController
+        abortSignal
     );
 }
 
+export interface TestCoqLspClientOptions {
+    workspaceRootPath?: string;
+    abortSignal?: AbortSignal;
+}
+
 export async function createTestCoqLspClient(
-    workspaceRootPath?: string
+    options: TestCoqLspClientOptions = {}
 ): Promise<CoqLspClient> {
     return createAbstractCoqLspClient(
         CoqLspConfig.createClientConfig(
             process.env.COQ_LSP_PATH || "coq-lsp",
-            workspaceRootPath
+            options.workspaceRootPath
+        ),
+        undefined,
+        undefined,
+        options.abortSignal
+    );
+}
+
+export async function withTestCoqLspClient<T>(
+    options: TestCoqLspClientOptions,
+    block: (coqLspClient: CoqLspClient) => Promise<T>
+) {
+    const coqLspClient = await createTestCoqLspClient(options);
+    try {
+        return await block(coqLspClient);
+    } finally {
+        coqLspClient.dispose();
+    }
+}
+
+export async function withDocumentOpenedByTestCoqLsp<T>(
+    documentSpec: DocumentSpec,
+    options: TestCoqLspClientOptions,
+    block: (
+        coqLspClient: CoqLspClient,
+        openedDocDiagnostic: DiagnosticMessage
+    ) => Promise<T>
+): Promise<T> {
+    return withTestCoqLspClient(options, (coqLspClient) =>
+        coqLspClient.withTextDocument(documentSpec, (openedDocDiagnostic) =>
+            block(coqLspClient, openedDocDiagnostic)
         )
     );
 }
@@ -36,7 +76,7 @@ async function createAbstractCoqLspClient(
         "CoqPilot: coq-lsp events"
     ),
     eventLogger?: EventLogger,
-    abortController?: AbortController
+    abortSignal?: AbortSignal
 ): Promise<CoqLspClient> {
     const coqLspServerConfig = CoqLspConfig.createServerConfig();
     return await CoqLspClientImpl.create(
@@ -44,6 +84,6 @@ async function createAbstractCoqLspClient(
         coqLspClientConfig,
         logOutputChannel,
         eventLogger,
-        abortController
+        abortSignal
     );
 }

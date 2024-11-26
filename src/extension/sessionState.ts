@@ -3,14 +3,15 @@ import { Disposable, OutputChannel } from "vscode";
 import { createCoqLspClient } from "../coqLsp/coqLspBuilders";
 import { CoqLspClient } from "../coqLsp/coqLspClient";
 
+import { CompletionAbortError } from "../core/abortUtils";
+
 import { EventLogger } from "../logging/eventLogger";
 
-import { parseCoqLspServerPath } from "./configReaders";
-import { CompletionAbortError } from "./extensionAbortUtils";
-import { PluginStatusIndicator } from "./pluginStatusIndicator";
+import { parseCoqLspServerPath } from "./settings/configReaders";
+import { PluginStatusIndicator } from "./ui/pluginStatusIndicator";
 
 export class SessionState implements Disposable {
-    private _isSessionActive = true;
+    private _isActive = true;
     private _coqLspClient: CoqLspClient;
     private _abortController: AbortController;
 
@@ -20,13 +21,13 @@ export class SessionState implements Disposable {
     private _userNotifiedAboutAbort = false;
 
     throwOnInactiveSession(): void {
-        if (!this._isSessionActive) {
+        if (!this._isActive) {
             throw new Error("Trying to access a disposed session state");
         }
     }
 
-    get isSessionActive(): boolean {
-        return this._isSessionActive;
+    get isActive(): boolean {
+        return this._isActive;
     }
 
     get userNotifiedAboutAbort(): boolean {
@@ -52,6 +53,8 @@ export class SessionState implements Disposable {
     ) {
         this._coqLspClient = coqLspClient;
         this._abortController = abortController;
+
+        this.eventLogger.log("session-start", "User has started a new session");
     }
 
     static async create(
@@ -66,7 +69,7 @@ export class SessionState implements Disposable {
             coqLspServerPath,
             logOutputChannel,
             eventLogger,
-            abortController
+            abortController.signal
         );
 
         pluginStatusIndicator.updateStatusBar(true);
@@ -80,7 +83,7 @@ export class SessionState implements Disposable {
         );
     }
 
-    userReceivedAbortNotification(): void {
+    markAbortNotificationAsShown(): void {
         this._userNotifiedAboutAbort = true;
     }
 
@@ -89,23 +92,23 @@ export class SessionState implements Disposable {
     }
 
     hideInProgressSpinner(): void {
-        this.pluginStatusIndicator.hideInProgressSpinner(this._isSessionActive);
+        this.pluginStatusIndicator.hideInProgressSpinner(this._isActive);
     }
 
     async toggleCurrentSession(): Promise<void> {
-        if (this._isSessionActive) {
+        if (this._isActive) {
             this.abort();
         } else {
-            await this.startNewSession();
+            await this.restartSession();
         }
     }
 
-    abort(): void {
-        this._isSessionActive = false;
+    private abort(): void {
+        this._isActive = false;
         this._abortController.abort(new CompletionAbortError());
         this._coqLspClient.dispose();
 
-        this.pluginStatusIndicator.updateStatusBar(false);
+        this.pluginStatusIndicator.updateStatusBar(this._isActive);
 
         this.eventLogger.log(
             "session-abort",
@@ -113,25 +116,28 @@ export class SessionState implements Disposable {
         );
     }
 
-    async startNewSession(): Promise<void> {
-        this._isSessionActive = true;
+    private async restartSession(): Promise<void> {
+        this._isActive = true;
         this._abortController = new AbortController();
+        this._userNotifiedAboutAbort = false;
 
         const coqLspServerPath = parseCoqLspServerPath();
         this._coqLspClient = await createCoqLspClient(
             coqLspServerPath,
             this.logOutputChannel,
             this.eventLogger,
-            this._abortController
+            this._abortController.signal
         );
 
-        this.pluginStatusIndicator.updateStatusBar(true);
+        this.pluginStatusIndicator.updateStatusBar(this._isActive);
 
-        this.eventLogger.log("session-start", "User has started a new session");
+        this.eventLogger.log(
+            "session-restart",
+            "User has restarted the session"
+        );
     }
 
     dispose(): void {
-        this._abortController.abort();
         this._coqLspClient.dispose();
     }
 }

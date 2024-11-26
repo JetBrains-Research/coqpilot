@@ -11,7 +11,7 @@ import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
 import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
 import { resolveParametersOrThrow } from "../../llm/llmServices/utils/resolveOrThrow";
 
-import { createTestCoqLspClient } from "../../coqLsp/coqLspBuilders";
+import { withDocumentOpenedByTestCoqLsp } from "../../coqLsp/coqLspBuilders";
 import { CoqLspClient } from "../../coqLsp/coqLspClient";
 import { ProofGoal } from "../../coqLsp/coqLspTypes";
 
@@ -38,44 +38,120 @@ import { InputModelsParams } from "./inputModelsParams";
 import { BenchmarkReportHolder, TheoremProofResult } from "./reportHolder";
 import { consoleLog, consoleLogSeparatorLine } from "./utils/loggingUtils";
 
+export interface TestBenchmarkOptions extends TestBenchmarkOptionsWithDefaults {
+    filePath: string;
+    inputModelsParams: InputModelsParams;
+    relativePathToFile: string;
+}
+
+export interface TestBenchmarkOptionsWithDefaults {
+    specificTheoremsForBenchmark: string[] | undefined;
+    benchmarkFullTheorems: Boolean;
+    benchmarkAdmits: Boolean;
+    workspaceRootPath?: string;
+    requireAllAdmitsCompleted: Boolean;
+    maxPremisesNumber?: number;
+    groupName: string;
+    reportHolder?: BenchmarkReportHolder;
+    additionalImports?: AdditionalFileImport[];
+    perProofTimeoutMillis: number;
+}
+
+export function resolveTestBenchmarkOptionsWithDefaults(
+    inputOptions: TestBenchmarkOptions &
+        Partial<TestBenchmarkOptionsWithDefaults>
+): TestBenchmarkOptions {
+    return {
+        ...inputOptions,
+        benchmarkFullTheorems: inputOptions.benchmarkFullTheorems ?? true,
+        benchmarkAdmits: inputOptions.benchmarkAdmits ?? true,
+        requireAllAdmitsCompleted:
+            inputOptions.requireAllAdmitsCompleted ?? false,
+        groupName: inputOptions.groupName ?? "Unnamed",
+        perProofTimeoutMillis: inputOptions.perProofTimeoutMillis ?? 15_000,
+    };
+}
+
 export async function runTestBenchmark(
-    filePath: string,
-    inputModelsParams: InputModelsParams,
-    relativePathToFile: string,
-    specificTheoremsForBenchmark: string[] | undefined,
-    benchmarkFullTheorems: Boolean = true,
-    benchmarkAdmits: Boolean = true,
-    workspaceRootPath?: string,
-    requireAllAdmitsCompleted: Boolean = false,
-    maxPremisesNumber?: number,
-    groupName: string = "Unnamed",
-    reportHolder?: BenchmarkReportHolder,
-    additionalImports?: AdditionalFileImport[],
-    perProofTimeoutMillis: number = 15000
+    inputOptions: TestBenchmarkOptions
 ): Promise<BenchmarkReport> {
-    consoleLog(`run benchmarks for file: ${filePath}\n`, "blue");
+    const resolvedOptions =
+        resolveTestBenchmarkOptionsWithDefaults(inputOptions);
+
+    const [fileUri, isNewlyCreatedFile] = getFileUriWithImports(
+        resolvedOptions.filePath,
+        resolvedOptions.additionalImports
+    );
+    /**
+     * Note: so far the abort signal is never triggered;
+     * however, such behaviour can be supported:
+     * the same `AbortController` object is passed throughout the run properly.
+     */
+    const abortController = new AbortController();
+
+    return withDocumentOpenedByTestCoqLsp(
+        { uri: fileUri },
+        {
+            workspaceRootPath: inputOptions.workspaceRootPath,
+            abortSignal: abortController.signal,
+        },
+        (coqLspClient) =>
+            runTestBenchmarkOnPreparedFile(
+                resolvedOptions,
+                coqLspClient,
+                fileUri,
+                isNewlyCreatedFile,
+                abortController
+            )
+    );
+}
+
+function getFileUriWithImports(
+    filePath: string,
+    additionalImports?: AdditionalFileImport[]
+): [Uri, boolean] {
+    if (additionalImports === undefined) {
+        return [Uri.fromPath(filePath), false];
+    }
+    const importStrings =
+        additionalImports?.map((importFile) => importFile.get()) ?? [];
+    const fileContent = fs.readFileSync(filePath, "utf8");
+    const updatedFileContent = importStrings.join("\n") + "\n" + fileContent;
+    const auxFilePath = buildAuxFileUri(filePath);
+    fs.writeFileSync(auxFilePath.fsPath, updatedFileContent);
+    return [auxFilePath, true];
+}
+
+export async function runTestBenchmarkOnPreparedFile(
+    options: TestBenchmarkOptions,
+    coqLspClient: CoqLspClient,
+    fileUri: Uri,
+    isNewlyCreatedFile: boolean,
+    abortController: AbortController
+): Promise<BenchmarkReport> {
+    consoleLog(`run benchmarks for file: ${options.filePath}\n`, "blue");
     const shouldCompleteHole = (_hole: ProofStep) => true;
     const eventLogger = new EventLogger();
 
     const [completionTargets, sourceFileEnvironment, processEnvironment] =
         await prepareForBenchmarkCompletions(
-            inputModelsParams,
+            options.inputModelsParams,
             shouldCompleteHole,
-            workspaceRootPath,
-            filePath,
-            eventLogger,
-            additionalImports
+            coqLspClient,
+            fileUri,
+            isNewlyCreatedFile,
+            eventLogger
         );
     const filteredCompletionTargets = {
         admitTargets: completionTargets.admitTargets.filter(
             (target) =>
-                specificTheoremsForBenchmark?.includes(
+                options.specificTheoremsForBenchmark?.includes(
                     target.parentTheorem.name
                 ) ?? true
         ),
         theoremTargets: completionTargets.theoremTargets.filter(
             (target) =>
-                specificTheoremsForBenchmark?.includes(
+                options.specificTheoremsForBenchmark?.includes(
                     target.parentTheorem.name
                 ) ?? true
         ),
@@ -86,43 +162,45 @@ export async function runTestBenchmark(
     let admitTargetsResults: BenchmarkResult | undefined = undefined;
     let theoremTargetsResults: BenchmarkResult | undefined = undefined;
 
-    if (benchmarkAdmits) {
+    if (options.benchmarkAdmits) {
         consoleLog("try to complete admits\n");
         admitTargetsResults = await benchmarkTargets(
             filteredCompletionTargets.admitTargets,
             sourceFileEnvironment,
             processEnvironment,
-            getSingleModelId(inputModelsParams),
-            relativePathToFile,
-            groupName,
+            getSingleModelId(options.inputModelsParams),
+            options.relativePathToFile,
+            options.groupName,
+            abortController,
             eventLogger,
-            maxPremisesNumber,
-            reportHolder,
-            perProofTimeoutMillis
+            options.maxPremisesNumber,
+            options.reportHolder,
+            options.perProofTimeoutMillis
         );
         consoleLog(
             `BENCHMARK RESULT, ADMITS COMPLETED: ${admitTargetsResults}\n`
         );
         consoleLogSeparatorLine("\n");
 
-        if (requireAllAdmitsCompleted) {
+        if (options.requireAllAdmitsCompleted) {
             assert.ok(admitTargetsResults.allCompleted());
         }
     }
 
-    if (benchmarkFullTheorems) {
+    if (options.benchmarkFullTheorems) {
         consoleLog("try to prove theorems\n");
         theoremTargetsResults = await benchmarkTargets(
             filteredCompletionTargets.theoremTargets,
             sourceFileEnvironment,
             processEnvironment,
-            getSingleModelId(inputModelsParams),
-            relativePathToFile,
-            groupName,
+            getSingleModelId(options.inputModelsParams),
+            options.relativePathToFile,
+            options.groupName,
+            abortController,
             eventLogger,
-            maxPremisesNumber,
-            reportHolder,
-            perProofTimeoutMillis
+            options.maxPremisesNumber,
+            options.reportHolder,
+            options.perProofTimeoutMillis
         );
         consoleLog(
             `BENCHMARK RESULT, THEOREMS PROVED: ${theoremTargetsResults}\n`
@@ -195,6 +273,7 @@ export async function benchmarkTargets(
     modelId: string,
     checkedFilePath: string,
     groupName: string,
+    abortController: AbortController,
     eventLogger: EventLogger,
     maxPremisesNumber?: number,
     reportHolder?: BenchmarkReportHolder,
@@ -210,6 +289,7 @@ export async function benchmarkTargets(
             modelId,
             checkedFilePath,
             groupName,
+            abortController,
             eventLogger,
             maxPremisesNumber,
             reportHolder,
@@ -232,6 +312,7 @@ async function benchmarkCompletionGeneration(
     modelId: string,
     checkedFilePath: string,
     groupName: string,
+    abortController: AbortController,
     eventLogger: EventLogger,
     maxPremisesNumber?: number,
     reportHolder?: BenchmarkReportHolder,
@@ -266,7 +347,6 @@ async function benchmarkCompletionGeneration(
         premisesNumber: maxPremisesNumber,
     };
 
-    const abortController = new AbortController();
     const result = await generateCompletion(
         completionContext,
         sourceFileEnvironmentWithFilteredContext,
@@ -357,44 +437,21 @@ function buildAuxFileUri(filePath: string, unique: boolean = true): Uri {
 async function prepareForBenchmarkCompletions(
     inputModelsParams: InputModelsParams,
     shouldCompleteHole: (hole: ProofStep) => boolean,
-    workspaceRootPath: string | undefined,
-    filePath: string,
-    eventLogger: EventLogger,
-    additionalImports?: AdditionalFileImport[]
+    coqLspClient: CoqLspClient,
+    fileUri: Uri,
+    isNewlyCreatedFile: boolean,
+    eventLogger: EventLogger
 ): Promise<
     [BenchmarkingCompletionTargets, SourceFileEnvironment, ProcessEnvironment]
 > {
-    function getFileUriWithImports(
-        filePath: string,
-        additionalImports?: AdditionalFileImport[]
-    ): [Uri, boolean] {
-        if (additionalImports === undefined) {
-            return [Uri.fromPath(filePath), false];
-        }
-
-        const importStrings =
-            additionalImports?.map((importFile) => importFile.get()) ?? [];
-        const fileContent = fs.readFileSync(filePath, "utf8");
-        const updatedFileContent =
-            importStrings.join("\n") + "\n" + fileContent;
-        const auxFilePath = buildAuxFileUri(filePath);
-        fs.writeFileSync(auxFilePath.fsPath, updatedFileContent);
-        return [auxFilePath, true];
-    }
-
-    const [fileUri, isNew] = getFileUriWithImports(filePath, additionalImports);
-
-    const client = await createTestCoqLspClient(workspaceRootPath);
-    await client.openTextDocument(fileUri);
-
-    const coqProofChecker = new CoqProofChecker(client);
+    const coqProofChecker = new CoqProofChecker(coqLspClient);
     const mockDocumentVersion = 1;
     const [completionTargets, sourceFileEnvironment] =
         await extractCompletionTargets(
             mockDocumentVersion,
             shouldCompleteHole,
             fileUri,
-            client
+            coqLspClient
         );
     const llmServices: LLMServices = {
         openAiService: new OpenAiService(eventLogger),
@@ -411,7 +468,7 @@ async function prepareForBenchmarkCompletions(
         services: llmServices,
     };
 
-    if (isNew) {
+    if (isNewlyCreatedFile) {
         fs.unlinkSync(fileUri.fsPath);
     }
 
@@ -463,7 +520,7 @@ async function createCompletionTargets(
     const theoremsWithProofs = fileTheorems.filter((thr) => thr.proof);
     const admitHolesToComplete = theoremsWithProofs
         .map((thr) =>
-            thr.proof!.holes.map((hole) => {
+            thr.proof.holes.map((hole) => {
                 return {
                     parentTheorem: thr,
                     proofStep: hole,
@@ -477,7 +534,7 @@ async function createCompletionTargets(
     const firstProofSteps = theoremsWithProofs.map((thr) => {
         return {
             parentTheorem: thr,
-            proofStep: thr.proof!.proof_steps[1],
+            proofStep: thr.proof.proof_steps[1],
         };
     });
 
@@ -510,15 +567,12 @@ async function resolveProofStepsToCompletionContexts(
             fileUri,
             documentVersion
         );
-        if (goals.ok) {
-            const firstGoal = goals.val.shift();
-            if (firstGoal) {
-                completionContexts.push({
-                    proofGoal: firstGoal,
-                    admitRange: parentedProofStep.proofStep.range,
-                    parentTheorem: parentedProofStep.parentTheorem,
-                });
-            }
+        if (goals.ok && goals.val.length !== 0) {
+            completionContexts.push({
+                proofGoal: goals.val[0],
+                admitRange: parentedProofStep.proofStep.range,
+                parentTheorem: parentedProofStep.parentTheorem,
+            });
         }
     }
     return completionContexts;

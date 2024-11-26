@@ -72,8 +72,6 @@ suite("[LLMService-s utils] Building chats test", () => {
     async function buildTestData(): Promise<[TestTheorems, TestMessages]> {
         const [plusTheorem, plusAssocTheorem, theoremToComplete] =
             await readTheorems();
-        expect(plusTheorem.proof).toBeTruthy();
-        expect(plusAssocTheorem.proof).toBeTruthy();
 
         const messages = {
             systemMessage: {
@@ -95,11 +93,11 @@ suite("[LLMService-s utils] Building chats test", () => {
 
             plusTheoremProof: {
                 role: "assistant",
-                content: plusTheorem.proof!.onlyText(),
+                content: plusTheorem.proof.onlyText(),
             } as ChatMessage,
             plusAssocTheoremProof: {
                 role: "assistant",
-                content: plusAssocTheorem.proof!.onlyText(),
+                content: plusAssocTheorem.proof.onlyText(),
             } as ChatMessage,
         };
 

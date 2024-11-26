@@ -1,10 +1,10 @@
 import Ajv, { DefinedError, JSONSchemaType } from "ajv";
 import { WorkspaceConfiguration, workspace } from "vscode";
 
-import { LLMServices } from "../llm/llmServices";
-import { LLMService } from "../llm/llmServices/llmService";
-import { ModelParams, ModelsParams } from "../llm/llmServices/modelParams";
-import { SingleParamResolutionResult } from "../llm/llmServices/utils/paramsResolvers/abstractResolvers";
+import { LLMServices } from "../../llm/llmServices";
+import { LLMService } from "../../llm/llmServices/llmService";
+import { ModelParams, ModelsParams } from "../../llm/llmServices/modelParams";
+import { SingleParamResolutionResult } from "../../llm/llmServices/utils/paramsResolvers/abstractResolvers";
 import {
     GrazieUserModelParams,
     LMStudioUserModelParams,
@@ -15,21 +15,21 @@ import {
     lmStudioUserModelParamsSchema,
     openAiUserModelParamsSchema,
     predefinedProofsUserModelParamsSchema,
-} from "../llm/userModelParams";
+} from "../../llm/userModelParams";
 
-import { ContextTheoremsRanker } from "../core/contextTheoremRanker/contextTheoremsRanker";
-import { DistanceContextTheoremsRanker } from "../core/contextTheoremRanker/distanceContextTheoremsRanker";
-import { JaccardIndexContextTheoremsRanker } from "../core/contextTheoremRanker/jaccardIndexContextTheoremsRanker";
-import { RandomContextTheoremsRanker } from "../core/contextTheoremRanker/randomContextTheoremsRanker";
+import { DistanceContextTheoremsRanker } from "../../core/contextTheoremRanker/actualRankers/distanceContextTheoremsRanker";
+import { JaccardIndexContextTheoremsRanker } from "../../core/contextTheoremRanker/actualRankers/jaccardIndexContextTheoremsRanker";
+import { RandomContextTheoremsRanker } from "../../core/contextTheoremRanker/actualRankers/randomContextTheoremsRanker";
+import { ContextTheoremsRanker } from "../../core/contextTheoremRanker/contextTheoremsRanker";
 
-import { AjvMode, buildAjv } from "../utils/ajvErrorsHandling";
-import { stringifyAnyValue, stringifyDefinedValue } from "../utils/printers";
-
-import { pluginId } from "./coqPilot";
+import { AjvMode, buildAjv } from "../../utils/ajvErrorsHandling";
+import { stringifyAnyValue, stringifyDefinedValue } from "../../utils/printers";
 import {
     EditorMessages,
     showMessageToUserWithSettingsHint,
-} from "./editorMessages";
+} from "../ui/messages/editorMessages";
+import { pluginId } from "../utils/pluginId";
+
 import {
     SettingsValidationError,
     toSettingName,

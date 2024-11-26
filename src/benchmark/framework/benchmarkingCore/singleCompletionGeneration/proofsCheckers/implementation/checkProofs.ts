@@ -1,4 +1,4 @@
-import { createTestCoqLspClient } from "../../../../../../coqLsp/coqLspBuilders";
+import { withDocumentOpenedByTestCoqLsp } from "../../../../../../coqLsp/coqLspBuilders";
 import { CoqLspTimeoutError } from "../../../../../../coqLsp/coqLspTypes";
 
 import {
@@ -7,8 +7,8 @@ import {
 } from "../../../../../../core/coqProofChecker";
 
 import { stringifyAnyValue } from "../../../../../../utils/printers";
-import { Uri } from "../../../../../../utils/uri";
 import { BenchmarkingLogger } from "../../../../logging/benchmarkingLogger";
+import { deserializeUri } from "../../../../structures/common/serializedUri";
 import { LogsIPCSender } from "../../../../utils/subprocessUtils/ipc/onParentProcessCallExecutor/logsIpcSender";
 import { TimeMark } from "../../measureUtils";
 
@@ -28,31 +28,29 @@ export namespace CheckProofsImpl {
 
     export async function checkProofsMeasured(
         args: Signature.Args,
-        providedLogger: ProvidedLogger
+        providedLogger: ProvidedLogger,
+        abortSignal?: AbortSignal
     ): Promise<Signature.Result> {
-        const coqLspClient = await createTestCoqLspClient(
-            args.workspaceRootPath
-        );
-        const coqProofChecker = new CoqProofChecker(coqLspClient);
-        // TODO: each coq proof checker should use its own prefix to work good in parallel (many checkers for the same theorem in the same file)
+        const fileUri = deserializeUri(args.serializedFileUri);
+        const timeMark = new TimeMark();
 
         try {
-            const timeMark = new TimeMark();
-            const fileUri = Uri.fromPath(args.fileUri);
-
-            // TODO: [@Gleb Solovev] Pay Atteniton that it was previously done by the CoqProofChecker
-            await coqLspClient.openTextDocument(fileUri);
-
-            const proofCheckResults = await coqProofChecker.checkProofs(
-                fileUri,
-                args.documentVersion,
-                args.checkAtPosition,
-                args.preparedProofs
+            const proofCheckResults = await withDocumentOpenedByTestCoqLsp(
+                { uri: fileUri, version: args.documentVersion },
+                {
+                    workspaceRootPath: args.workspaceRootPath,
+                    abortSignal: abortSignal,
+                },
+                (coqLspClient) =>
+                    new CoqProofChecker(coqLspClient).checkProofs(
+                        fileUri,
+                        args.documentVersion,
+                        args.positionToCheckAt,
+                        args.preparedProofs
+                    )
             );
-
-            await coqLspClient.closeTextDocument(fileUri);
-
             const proofsValidationMillis = timeMark.measureElapsedMillis();
+
             return buildSuccessResult(
                 proofCheckResults,
                 proofsValidationMillis,

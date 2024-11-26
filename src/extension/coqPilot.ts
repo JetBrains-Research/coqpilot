@@ -7,6 +7,7 @@ import {
 
 import { CoqLspStartupError } from "../coqLsp/coqLspTypes";
 
+import { CompletionAbortError } from "../core/abortUtils";
 import {
     CompletionContext,
     ProcessEnvironment,
@@ -25,40 +26,37 @@ import { ProofStep } from "../coqParser/parsedTypes";
 import { buildErrorCompleteLog } from "../utils/errorsUtils";
 import { Uri } from "../utils/uri";
 
+import { PluginContext } from "./pluginContext";
+import { SessionState } from "./sessionState";
 import {
     buildTheoremsRankerFromConfig,
     readAndValidateUserModelsParams,
-} from "./configReaders";
+} from "./settings/configReaders";
+import { SettingsValidationError } from "./settings/settingsValidationError";
 import {
     deleteTextFromRange,
     highlightTextInEditor,
     insertCompletion,
-} from "./documentEditor";
+} from "./ui/documentEditor";
 import {
     EditorMessages,
     showMessageToUser,
     showMessageToUserWithSettingsHint,
-} from "./editorMessages";
-import { CompletionAbortError } from "./extensionAbortUtils";
-import { subscribeToHandleLLMServicesEvents } from "./llmServicesEventsHandler";
-import { PluginContext } from "./pluginContext";
-import { PluginStatusIndicator } from "./pluginStatusIndicator";
+} from "./ui/messages/editorMessages";
+import { subscribeToHandleLLMServicesEvents } from "./ui/messages/llmServicesEventsHandler";
+import { PluginStatusIndicator } from "./ui/pluginStatusIndicator";
+import { pluginId } from "./utils/pluginId";
 import {
     positionInRange,
     toVSCodePosition,
     toVSCodeRange,
-} from "./positionRangeUtils";
-import { SessionState } from "./sessionState";
-import { SettingsValidationError } from "./settingsValidationError";
-
-export const pluginId = "coqpilot";
-export const pluginName = "CoqPilot";
+} from "./utils/positionRangeUtils";
 
 export class CoqPilot {
     private constructor(
         private readonly vscodeContext: VSCodeContext,
         private readonly pluginContext: PluginContext,
-        private sessionState: SessionState,
+        private readonly sessionState: SessionState,
         toggleCommand: string
     ) {
         this.registerEditorCommand(
@@ -74,6 +72,8 @@ export class CoqPilot {
             this.performCompletionForAllAdmits.bind(this)
         );
 
+        // TODO: would it be clearer and safer to initialise a new session
+        // instead of restarting the same object (?)
         this.registerEditorCommand(
             toggleCommand,
             this.sessionState.toggleCurrentSession.bind(this.sessionState)
@@ -129,7 +129,7 @@ export class CoqPilot {
         shouldCompleteHole: (hole: ProofStep) => boolean,
         editor: TextEditor
     ) {
-        if (!this.sessionState.isSessionActive) {
+        if (!this.sessionState.isActive) {
             showMessageToUser(EditorMessages.extensionIsPaused, "warning");
             return;
         }
@@ -152,8 +152,9 @@ export class CoqPilot {
                 );
             } else if (e instanceof CompletionAbortError) {
                 if (!this.sessionState.userNotifiedAboutAbort) {
+                    // TODO: potential race condition causeing notification shown twice
+                    this.sessionState.markAbortNotificationAsShown();
                     showMessageToUser(EditorMessages.completionAborted, "info");
-                    this.sessionState.userReceivedAbortNotification();
                 }
             } else {
                 showMessageToUser(
@@ -309,6 +310,8 @@ export class CoqPilot {
         const coqProofChecker = new CoqProofChecker(
             this.sessionState.coqLspClient
         );
+        // Note: here and later the target file is expected to be opened by the user,
+        // so no explicit `coqLspClient.openTextDocument(...)` call is needed
         const [completionContexts, sourceFileEnvironment] =
             await inspectSourceFile(
                 documentVersion,

@@ -1,4 +1,4 @@
-import { createTestCoqLspClient } from "../../coqLsp/coqLspBuilders";
+import { withDocumentOpenedByTestCoqLsp } from "../../coqLsp/coqLspBuilders";
 
 import { parseCoqFile } from "../../coqParser/parseCoqFile";
 import { Theorem } from "../../coqParser/parsedTypes";
@@ -14,18 +14,12 @@ export async function parseTheoremsFromCoqFile(
         resourcePath,
         projectRootPath
     );
-
     const fileUri = Uri.fromPath(filePath);
-    const client = await createTestCoqLspClient(rootDir);
 
-    await client.openTextDocument(fileUri);
-    const abortController = new AbortController();
-    const document = await parseCoqFile(
-        fileUri,
-        client,
-        abortController.signal
+    return await withDocumentOpenedByTestCoqLsp(
+        { uri: fileUri },
+        { workspaceRootPath: rootDir },
+        (coqLspClient) =>
+            parseCoqFile(fileUri, coqLspClient, new AbortController().signal)
     );
-    await client.closeTextDocument(fileUri);
-
-    return document;
 }

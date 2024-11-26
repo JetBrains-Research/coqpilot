@@ -109,7 +109,13 @@ export const serializedTheoremSchema: JSONSchemaType<SerializedTheorem> = {
             type: "number",
         },
     },
-    required: ["name", "statement_range", "statement", "fileTheoremsIndex"],
+    required: [
+        "name",
+        "statement_range",
+        "statement",
+        "proof",
+        "fileTheoremsIndex",
+    ],
     additionalProperties: false,
 };
 

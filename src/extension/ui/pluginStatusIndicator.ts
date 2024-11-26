@@ -5,7 +5,7 @@ import {
     window,
 } from "vscode";
 
-import { pluginName } from "./coqPilot";
+import { pluginName } from "../utils/pluginId";
 
 export class PluginStatusIndicator {
     private readonly statusBarItem: StatusBarItem;

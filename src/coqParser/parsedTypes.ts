@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import { Range } from "vscode-languageclient";
 
-import { Goal, PpString } from "../coqLsp/coqLspTypes";
+import { ProofGoal } from "../coqLsp/coqLspTypes";
 
 export enum Vernacexpr {
     VernacLoad = "VernacLoad",
@@ -99,25 +99,25 @@ export enum Vernacexpr {
 
 export class ProofStep {
     constructor(
-        public text: string,
-        public vernac_type: Vernacexpr,
-        public range: Range
+        readonly text: string,
+        readonly vernac_type: Vernacexpr,
+        readonly range: Range
     ) {}
 
-    public toString(): string {
+    toString(): string {
         return this.text;
     }
 }
 
 export class TheoremProof {
     constructor(
-        public proof_steps: ProofStep[],
-        public end_pos: Range,
-        public is_incomplete: boolean,
-        public holes: ProofStep[]
+        readonly proof_steps: ProofStep[],
+        readonly end_pos: Range,
+        readonly is_incomplete: boolean,
+        readonly holes: ProofStep[]
     ) {}
 
-    public toString(): string {
+    toString(): string {
         let text = "";
         for (const step of this.proof_steps) {
             text +=
@@ -127,7 +127,7 @@ export class TheoremProof {
         return text;
     }
 
-    public onlyText(): string {
+    onlyText(): string {
         let text = "";
         for (const step of this.proof_steps) {
             text +=
@@ -140,20 +140,20 @@ export class TheoremProof {
 
 export class Theorem {
     constructor(
-        public name: string,
-        public statement_range: Range,
-        public statement: string,
-        public proof: TheoremProof,
-        public initial_goal: Goal<PpString> | null = null
+        readonly name: string,
+        readonly statement_range: Range,
+        readonly statement: string,
+        readonly proof: TheoremProof,
+        readonly initial_goal: ProofGoal | null = null
     ) {}
 
-    public toString(): string {
+    toString(): string {
         let text = this.statement;
         text += "\n" + this.proof.toString();
         return text;
     }
 
-    public onlyText(): string {
+    onlyText(): string {
         let text = this.statement;
         text += "\n" + this.proof.onlyText();
         return text;

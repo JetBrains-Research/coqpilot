@@ -3,14 +3,11 @@ import { GeneratedProof } from "../llm/llmServices/generatedProof";
 
 import { CoqLspTimeoutError } from "../coqLsp/coqLspTypes";
 
-import {
-    CompletionAbortError,
-    throwOnAbort,
-} from "../extension/extensionAbortUtils";
 import { EventLogger } from "../logging/eventLogger";
 import { asErrorOrRethrow, buildErrorCompleteLog } from "../utils/errorsUtils";
 import { stringifyAnyValue } from "../utils/printers";
 
+import { CompletionAbortError, throwOnAbort } from "./abortUtils";
 import {
     CompletionContext,
     ProcessEnvironment,
@@ -44,6 +41,10 @@ export enum FailureGenerationStatus {
     SEARCH_FAILED,
 }
 
+/**
+ * _Implementation note:_ when this method is called, the target file is expected to be opened by the user.
+ * Therefore, no explicit `coqLspClient.openTextDocument(...)` call is made.
+ */
 export async function generateCompletion(
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,

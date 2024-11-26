@@ -1,11 +1,10 @@
 import { DefinedError } from "ajv";
 import { commands, window } from "vscode";
 
-import { ajvErrorsAsString } from "../utils/ajvErrorsHandling";
-import { stringifyAnyValue } from "../utils/printers";
-import { Time } from "../utils/time";
-
-import { pluginId } from "./coqPilot";
+import { ajvErrorsAsString } from "../../../utils/ajvErrorsHandling";
+import { stringifyAnyValue } from "../../../utils/printers";
+import { Time } from "../../../utils/time";
+import { pluginId } from "../../utils/pluginId";
 
 export const openSettingsItem = "Open settings";
 

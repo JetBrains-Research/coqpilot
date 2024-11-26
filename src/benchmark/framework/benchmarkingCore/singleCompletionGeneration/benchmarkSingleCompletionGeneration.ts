@@ -162,7 +162,8 @@ export async function benchmarkSingleCompletionGeneration<
             generationArgs.completionContext,
             generationArgs.sourceFileEnvironment,
             generationArgs.workspaceRoot,
-            logger
+            logger,
+            abortSignal
         );
     } catch (error) {
         if (error instanceof ProofsCheckFailedError) {

@@ -1,7 +1,6 @@
-import { Theorem } from "../../coqParser/parsedTypes";
-import { CompletionContext } from "../completionGenerationContext";
-
-import { ContextTheoremsRanker } from "./contextTheoremsRanker";
+import { Theorem } from "../../../coqParser/parsedTypes";
+import { CompletionContext } from "../../completionGenerationContext";
+import { ContextTheoremsRanker } from "../contextTheoremsRanker";
 
 export class DistanceContextTheoremsRanker implements ContextTheoremsRanker {
     readonly needsUnwrappedNotations = false;

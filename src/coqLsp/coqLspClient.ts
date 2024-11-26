@@ -19,7 +19,8 @@ import {
     VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
 
-import { throwOnAbort } from "../extension/extensionAbortUtils";
+import { throwOnAbort } from "../core/abortUtils";
+
 import { EventLogger } from "../logging/eventLogger";
 import { Uri } from "../utils/uri";
 
@@ -30,11 +31,16 @@ import {
     CoqLspStartupError,
     FlecheDocument,
     FlecheDocumentParams,
-    Goal,
     GoalAnswer,
     GoalRequest,
     PpString,
+    ProofGoal,
 } from "./coqLspTypes";
+
+export interface DocumentSpec {
+    uri: Uri;
+    version?: number;
+}
 
 export interface CoqLspClient extends Disposable {
     /**
@@ -52,7 +58,18 @@ export interface CoqLspClient extends Disposable {
         documentUri: Uri,
         version: number,
         command?: string
-    ): Promise<Result<Goal<PpString>[], Error>>;
+    ): Promise<Result<ProofGoal[], Error>>;
+
+    /**
+     * The wrapper for the `getGoalsAtPoint` method returning only the first goal of the extracted ones.
+     * If the goals extraction is not successfull, this method will throw a `CoqLspError`.
+     */
+    getFirstGoalAtPointOrThrow(
+        position: Position,
+        documentUri: Uri,
+        version: number,
+        command?: string
+    ): Promise<ProofGoal>;
 
     /**
      * Returns a FlecheDocument for the given uri.
@@ -65,11 +82,10 @@ export interface CoqLspClient extends Disposable {
 
     closeTextDocument(uri: Uri): Promise<void>;
 
-    /**
-     *
-     * @param goals
-     */
-    getFirstGoalOrThrow(goals: Result<Goal<PpString>[], Error>): Goal<PpString>;
+    withTextDocument<T>(
+        documentSpec: DocumentSpec,
+        block: (openedDocDiagnostic: DiagnosticMessage) => Promise<T>
+    ): Promise<T>;
 }
 
 const goalReqType = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
@@ -92,7 +108,7 @@ export class CoqLspClientImpl implements CoqLspClient {
     private constructor(
         coqLspConnector: CoqLspConnector,
         public readonly eventLogger?: EventLogger,
-        public readonly abortController?: AbortController
+        public readonly abortSignal?: AbortSignal
     ) {
         this.client = coqLspConnector;
     }
@@ -102,7 +118,7 @@ export class CoqLspClientImpl implements CoqLspClient {
         clientConfig: CoqLspClientConfig,
         logOutputChannel: OutputChannel,
         eventLogger?: EventLogger,
-        abortController?: AbortController
+        abortSignal?: AbortSignal
     ): Promise<CoqLspClientImpl> {
         const connector = new CoqLspConnector(
             serverConfig,
@@ -115,7 +131,7 @@ export class CoqLspClientImpl implements CoqLspClient {
                 clientConfig.coq_lsp_server_path
             );
         });
-        return new CoqLspClientImpl(connector, eventLogger, abortController);
+        return new CoqLspClientImpl(connector, eventLogger, abortSignal);
     }
 
     async getGoalsAtPoint(
@@ -123,9 +139,9 @@ export class CoqLspClientImpl implements CoqLspClient {
         documentUri: Uri,
         version: number,
         command?: string
-    ): Promise<Result<Goal<PpString>[], Error>> {
+    ): Promise<Result<ProofGoal[], Error>> {
         return await this.mutex.runExclusive(async () => {
-            throwOnAbort(this.abortController?.signal);
+            throwOnAbort(this.abortSignal);
             return this.getGoalsAtPointUnsafe(
                 position,
                 documentUri,
@@ -135,44 +151,70 @@ export class CoqLspClientImpl implements CoqLspClient {
         });
     }
 
+    async getFirstGoalAtPointOrThrow(
+        position: Position,
+        documentUri: Uri,
+        version: number,
+        command?: string
+    ): Promise<ProofGoal> {
+        return await this.mutex.runExclusive(async () => {
+            throwOnAbort(this.abortSignal);
+            const goals = await this.getGoalsAtPointUnsafe(
+                position,
+                documentUri,
+                version,
+                command
+            );
+            if (goals.err) {
+                throw goals.val;
+            } else if (goals.val.length === 0) {
+                throw new CoqLspError(
+                    `Failed to get the first goal: list of goals is empty at the position ${position} of ${documentUri.fsPath}`
+                );
+            }
+            return goals.val[0];
+        });
+    }
+
     async openTextDocument(
         uri: Uri,
         version: number = 1
     ): Promise<DiagnosticMessage> {
         return await this.mutex.runExclusive(async () => {
-            throwOnAbort(this.abortController?.signal);
+            throwOnAbort(this.abortSignal);
             return this.openTextDocumentUnsafe(uri, version);
         });
     }
 
     async closeTextDocument(uri: Uri): Promise<void> {
         return await this.mutex.runExclusive(async () => {
-            throwOnAbort(this.abortController?.signal);
+            throwOnAbort(this.abortSignal);
             return this.closeTextDocumentUnsafe(uri);
         });
     }
 
-    async getFlecheDocument(uri: Uri): Promise<FlecheDocument> {
-        return await this.mutex.runExclusive(async () => {
-            throwOnAbort(this.abortController?.signal);
-            return this.getFlecheDocumentUnsafe(uri);
-        });
+    async withTextDocument<T>(
+        documentSpec: DocumentSpec,
+        block: (openedDocDiagnostic: DiagnosticMessage) => Promise<T>
+    ): Promise<T> {
+        const diagnostic = await this.openTextDocument(
+            documentSpec.uri,
+            documentSpec.version
+        );
+        // TODO: discuss whether coq-lsp is capable of maintaining several docs opened
+        // or we need a common lock for open-close here
+        try {
+            return await block(diagnostic);
+        } finally {
+            await this.closeTextDocument(documentSpec.uri);
+        }
     }
 
-    getFirstGoalOrThrow(
-        goals: Result<Goal<PpString>[], Error>
-    ): Goal<PpString> {
-        if (goals.err) {
-            throw new CoqLspError(
-                "Call to `getFirstGoalOrThrow` with a Error type"
-            );
-        } else if (goals.val.length === 0) {
-            throw new CoqLspError(
-                "Call to `getFirstGoalOrThrow` with an empty set of goals"
-            );
-        }
-
-        return goals.val[0];
+    async getFlecheDocument(uri: Uri): Promise<FlecheDocument> {
+        return await this.mutex.runExclusive(async () => {
+            throwOnAbort(this.abortSignal);
+            return this.getFlecheDocumentUnsafe(uri);
+        });
     }
 
     /**
@@ -221,7 +263,7 @@ export class CoqLspClientImpl implements CoqLspClient {
         documentUri: Uri,
         version: number,
         command?: string
-    ): Promise<Result<Goal<PpString>[], Error>> {
+    ): Promise<Result<ProofGoal[], Error>> {
         let goalRequestParams: GoalRequest = {
             textDocument: VersionedTextDocumentIdentifier.create(
                 documentUri.uri,
@@ -382,6 +424,15 @@ export class CoqLspClientImpl implements CoqLspClient {
         return doc;
     }
 
+    /**
+     * _Implementation note:_ although this `dispose` implementation calls an async method,
+     * we are not tend to await it, as well as `CoqLspClient.dispose()` in general.
+     *
+     * Since different coq-lsp clients correspond to different processes,
+     * they don't have any shared resources; therefore, a new client can be started without
+     * waiting for the previous one to finish. Thus, we don't await for this `dispose()` call
+     * to finish, the client and its process will be disposed at some point asynchronously.
+     */
     dispose(): void {
         this.subscriptions.forEach((d) => d.dispose());
         this.client.stop();

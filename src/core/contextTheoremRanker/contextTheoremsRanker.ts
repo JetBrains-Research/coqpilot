@@ -7,5 +7,9 @@ export interface ContextTheoremsRanker {
         completionContext: CompletionContext
     ): Theorem[];
 
+    /**
+     * _Note:_ so far it only triggers initial goals of all parsed theorems
+     * being extracted at the parsing stage too.
+     */
     needsUnwrappedNotations: boolean;
 }

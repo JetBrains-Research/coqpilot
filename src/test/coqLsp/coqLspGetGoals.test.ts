@@ -1,8 +1,8 @@
 import { expect } from "earl";
 import { Result } from "ts-results";
 
-import { createTestCoqLspClient } from "../../coqLsp/coqLspBuilders";
-import { Goal, PpString } from "../../coqLsp/coqLspTypes";
+import { withDocumentOpenedByTestCoqLsp } from "../../coqLsp/coqLspBuilders";
+import { ProofGoal } from "../../coqLsp/coqLspTypes";
 
 import { Uri } from "../../utils/uri";
 import { resolveResourcesDir } from "../commonTestFunctions/pathsResolver";
@@ -12,26 +12,30 @@ suite("Retrieve goals from Coq file", () => {
         points: { line: number; character: number }[],
         resourcePath: string[],
         projectRootPath?: string[]
-    ): Promise<Result<Goal<PpString>[], Error>[]> {
+    ): Promise<Result<ProofGoal[], Error>[]> {
         const [filePath, rootDir] = resolveResourcesDir(
             resourcePath,
             projectRootPath
         );
         const fileUri = Uri.fromPath(filePath);
 
-        const client = await createTestCoqLspClient(rootDir);
-        await client.openTextDocument(fileUri);
-        const goals = await Promise.all(
-            points.map(async (point) => {
-                return await client.getGoalsAtPoint(point, fileUri, 1);
-            })
+        return withDocumentOpenedByTestCoqLsp(
+            { uri: fileUri },
+            { workspaceRootPath: rootDir },
+            (coqLspClient) =>
+                Promise.all(
+                    points.map(async (point) => {
+                        return await coqLspClient.getGoalsAtPoint(
+                            point,
+                            fileUri,
+                            1
+                        );
+                    })
+                )
         );
-        await client.closeTextDocument(fileUri);
-
-        return goals;
     }
 
-    function unpackGoal(goal: Goal<PpString>): { hyps: string[]; ty: string } {
+    function unpackGoal(goal: ProofGoal): { hyps: string[]; ty: string } {
         return {
             hyps: goal.hyps.map((hyp) => `${hyp.names.join(" ")} : ${hyp.ty}`),
             ty: goal.ty as string,
