@@ -77,7 +77,7 @@ export class LoggerRecord {
     }
 
     protected buildStatusLine(): string {
-        const timestamp = new Date(this.timestampMillis).toLocaleString();
+        const timestamp = new Date(this.timestampMillis).toISOString();
         return `[${timestamp}] \`${this.modelId}\` model: ${this.responseStatus}\n`;
     }
 
