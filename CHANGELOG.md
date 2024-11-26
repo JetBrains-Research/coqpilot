@@ -13,6 +13,8 @@ The version increment is minor, yet the changes are significant. The main focus 
 - Get rid of temporary files in the `extension` part of `CoqPilot`
 - Refactor `CoqLspClient` 
 - Make computation of `initialGoal` for premises optional to avoid unnecessary requests to `coq-lsp`
+- Introduce `with-coq-lsp` wrappers to encapsulate correct `CoqLspClient` disposal
+- Introduce `CoqLspClient.withTextDocument(...)` wrapper to encapsulate opening and closing a document with `coq-lsp`
 
 ## 2.3.0
 
