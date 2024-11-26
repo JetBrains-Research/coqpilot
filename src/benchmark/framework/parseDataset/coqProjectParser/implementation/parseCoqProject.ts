@@ -99,15 +99,11 @@ export namespace ParseCoqProjectImpl {
         logger: Logger
     ): Promise<SerializedParsedCoqFile> {
         const mockDocumentVersion = 1;
-        // TODO: [@Gleb Solovev] Do not create this Abort Controller but pass
-        // the one created at the top
-        // TODO + check coq-lsp creation in benchmarks
-        const abortController = new AbortController();
         const sourceFileEnvironment = await createSourceFileEnvironment(
             mockDocumentVersion,
             Uri.fromPath(filePath),
             coqLspClient,
-            abortController.signal
+            new AbortController().signal // abort behaviour is not supported at the parsing stage
         );
         const serializedParsedFile: SerializedParsedCoqFile = {
             serializedTheoremsByNames: packIntoMappedObject(
