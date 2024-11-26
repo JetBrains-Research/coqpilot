@@ -104,7 +104,8 @@ export namespace ParseCoqProjectImpl {
             mockDocumentVersion,
             Uri.fromPath(filePath),
             coqLspClient,
-            new AbortController().signal // abort behaviour is not supported at the parsing stage
+            new AbortController().signal, // abort behaviour is not supported at the parsing stage
+            true // TODO: pass `ContextTheoremsRanker.needsUnwrappedNotations` here to improve performance
         );
         const serializedParsedFile: SerializedParsedCoqFile = {
             serializedTheoremsByNames: packIntoMappedObject(
