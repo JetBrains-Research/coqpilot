@@ -97,15 +97,13 @@ class GrazieServiceInternal extends LLMServiceInternal<
         choices: number
     ): Promise<GeneratedRawContent> {
         LLMServiceInternal.validateChoices(choices);
-        let attempts = choices * 2;
         const completions: Promise<string>[] = [];
         const formattedChat = this.formatChatHistory(analyzedChat.chat);
 
-        while (completions.length < choices && attempts > 0) {
+        while (completions.length <= choices) {
             completions.push(
                 this.api.requestChatCompletion(params, formattedChat)
             );
-            attempts--;
         }
         const rawContentItems = await Promise.all(completions);
 
