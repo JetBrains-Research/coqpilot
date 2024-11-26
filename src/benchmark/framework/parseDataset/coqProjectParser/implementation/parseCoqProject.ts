@@ -25,6 +25,7 @@ import {
     SerializedGoal,
     serializeGoal,
 } from "../../../utils/coqUtils/goalParser";
+import { extractSerializedTheoremFisrtProofStep } from "../../../utils/coqUtils/proofTargetExtractor";
 import { LogsIPCSender } from "../../../utils/subprocessUtils/ipc/onParentProcessCallExecutor/logsIpcSender";
 
 import { ParseCoqProjectInternalSignature } from "./internalSignature";
@@ -137,10 +138,12 @@ export namespace ParseCoqProjectImpl {
         for (const fileTarget of fileTargets) {
             if (fileTarget.specificTheoremName === undefined) {
                 // all theorems requests
-                for (const theorem of mappedObjectValues(theoremsMapping)) {
+                for (const serializedTheorem of mappedObjectValues(
+                    theoremsMapping
+                )) {
                     const parsedTargetsFromTheorem =
                         await extractTargetsFromTheorem(
-                            theorem,
+                            serializedTheorem,
                             fileTarget.requestType,
                             serializedParsedFile,
                             coqLspClient,
@@ -172,7 +175,7 @@ export namespace ParseCoqProjectImpl {
     }
 
     async function extractTargetsFromTheorem(
-        theorem: SerializedTheorem,
+        serializedTheorem: SerializedTheorem,
         requestType: TargetRequestType,
         serializedParsedFile: SerializedParsedCoqFile,
         coqLspClient: CoqLspClient,
@@ -188,7 +191,7 @@ export namespace ParseCoqProjectImpl {
             knownGoal
         ) => {
             return {
-                theoremName: theorem.name,
+                theoremName: serializedTheorem.name,
                 targetType: targetType,
                 goalToProve:
                     knownGoal ??
@@ -203,12 +206,18 @@ export namespace ParseCoqProjectImpl {
         };
         switch (requestType) {
             case TargetRequestType.THEOREM_PROOF:
-                // THEOREM_PROOF goals are already parsed within the theorems,
-                // so `ParsedFileTarget`-s for them are redundant
-                return [];
+                return [
+                    await targetBuilder(
+                        extractSerializedTheoremFisrtProofStep(
+                            serializedTheorem
+                        ),
+                        TargetType.PROVE_THEOREM,
+                        serializedTheorem.initial_goal
+                    ),
+                ];
             case TargetRequestType.ALL_ADMITS:
                 const parsedTargets = [];
-                for (const holeProofStep of theorem.proof!.holes) {
+                for (const holeProofStep of serializedTheorem.proof!.holes) {
                     parsedTargets.push(
                         await targetBuilder(
                             holeProofStep,
