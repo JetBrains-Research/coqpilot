@@ -46,7 +46,8 @@ export async function withPreparedEnvironment<T>(
                     (_hole) => true,
                     fileUri,
                     client,
-                    new AbortController().signal
+                    new AbortController().signal,
+                    true // to support any ranker
                 )
             );
         const preparedEnvironment = {

@@ -25,6 +25,7 @@ import {
     SerializedGoal,
     serializeGoal,
 } from "../../../utils/coqUtils/goalParser";
+import { extractSerializedTheoremFisrtProofStep } from "../../../utils/coqUtils/proofTargetExtractor";
 import { LogsIPCSender } from "../../../utils/subprocessUtils/ipc/onParentProcessCallExecutor/logsIpcSender";
 
 import { ParseCoqProjectInternalSignature } from "./internalSignature";
@@ -99,15 +100,12 @@ export namespace ParseCoqProjectImpl {
         logger: Logger
     ): Promise<SerializedParsedCoqFile> {
         const mockDocumentVersion = 1;
-        // TODO: [@Gleb Solovev] Do not create this Abort Controller but pass
-        // the one created at the top
-        // TODO + check coq-lsp creation in benchmarks
-        const abortController = new AbortController();
         const sourceFileEnvironment = await createSourceFileEnvironment(
             mockDocumentVersion,
             Uri.fromPath(filePath),
             coqLspClient,
-            abortController.signal
+            new AbortController().signal, // abort behaviour is not supported at the parsing stage
+            true // TODO: pass `ContextTheoremsRanker.needsUnwrappedNotations` here to improve performance
         );
         const serializedParsedFile: SerializedParsedCoqFile = {
             serializedTheoremsByNames: packIntoMappedObject(
@@ -141,10 +139,12 @@ export namespace ParseCoqProjectImpl {
         for (const fileTarget of fileTargets) {
             if (fileTarget.specificTheoremName === undefined) {
                 // all theorems requests
-                for (const theorem of mappedObjectValues(theoremsMapping)) {
+                for (const serializedTheorem of mappedObjectValues(
+                    theoremsMapping
+                )) {
                     const parsedTargetsFromTheorem =
                         await extractTargetsFromTheorem(
-                            theorem,
+                            serializedTheorem,
                             fileTarget.requestType,
                             serializedParsedFile,
                             coqLspClient,
@@ -176,7 +176,7 @@ export namespace ParseCoqProjectImpl {
     }
 
     async function extractTargetsFromTheorem(
-        theorem: SerializedTheorem,
+        serializedTheorem: SerializedTheorem,
         requestType: TargetRequestType,
         serializedParsedFile: SerializedParsedCoqFile,
         coqLspClient: CoqLspClient,
@@ -192,7 +192,7 @@ export namespace ParseCoqProjectImpl {
             knownGoal
         ) => {
             return {
-                theoremName: theorem.name,
+                theoremName: serializedTheorem.name,
                 targetType: targetType,
                 goalToProve:
                     knownGoal ??
@@ -207,12 +207,19 @@ export namespace ParseCoqProjectImpl {
         };
         switch (requestType) {
             case TargetRequestType.THEOREM_PROOF:
-                // THEOREM_PROOF goals are already parsed within the theorems,
-                // so `ParsedFileTarget`-s for them are redundant
-                return [];
+                const theoremProofTarget = await targetBuilder(
+                    extractSerializedTheoremFisrtProofStep(serializedTheorem),
+                    TargetType.PROVE_THEOREM,
+                    serializedTheorem.initial_goal
+                );
+                if (serializedTheorem.initial_goal === undefined) {
+                    serializedTheorem.initial_goal =
+                        theoremProofTarget.goalToProve;
+                }
+                return [theoremProofTarget];
             case TargetRequestType.ALL_ADMITS:
                 const parsedTargets = [];
-                for (const holeProofStep of theorem.proof!.holes) {
+                for (const holeProofStep of serializedTheorem.proof!.holes) {
                     parsedTargets.push(
                         await targetBuilder(
                             holeProofStep,

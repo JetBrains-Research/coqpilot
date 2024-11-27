@@ -33,8 +33,6 @@ export namespace ParseCoqProjectInternalSignature {
         export type FilePathToFileTargets = { [key: string]: FileTarget[] };
 
         export interface FileTarget {
-            // TODO: optimize - `PROVE_THEOREM` targets don't need to be requested explicitly,
-            // they will be always parsed together with the theorems
             requestType: TargetRequestType;
             /**
              * If `specificTheoremName` is undefined, this target means request on all file theorems.

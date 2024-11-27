@@ -40,6 +40,7 @@ import { consoleLog, consoleLogSeparatorLine } from "./utils/loggingUtils";
 
 export interface TestBenchmarkOptions extends TestBenchmarkOptionsWithDefaults {
     filePath: string;
+    // TODO: support ranker
     inputModelsParams: InputModelsParams;
     relativePathToFile: string;
 }
@@ -451,7 +452,8 @@ async function prepareForBenchmarkCompletions(
             mockDocumentVersion,
             shouldCompleteHole,
             fileUri,
-            coqLspClient
+            coqLspClient,
+            true // TODO: pass `ranker.needsUnwrappedNotations` here
         );
     const llmServices: LLMServices = {
         openAiService: new OpenAiService(eventLogger),
@@ -479,14 +481,16 @@ async function extractCompletionTargets(
     documentVersion: number,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileUri: Uri,
-    client: CoqLspClient
+    client: CoqLspClient,
+    rankerNeedsUnwrappedNotations: boolean
 ): Promise<[BenchmarkingCompletionTargets, SourceFileEnvironment]> {
     const abortController = new AbortController();
     const sourceFileEnvironment = await createSourceFileEnvironment(
         documentVersion,
         fileUri,
         client,
-        abortController.signal
+        abortController.signal,
+        rankerNeedsUnwrappedNotations
     );
     const completionTargets = await createCompletionTargets(
         documentVersion,
