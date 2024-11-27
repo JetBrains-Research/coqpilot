@@ -222,6 +222,6 @@ class OpenAiServiceInternal extends LLMServiceInternal<
         chat: ChatHistory,
         modelParams: OpenAiModelParams
     ): ChatHistory {
-        return toO1CompatibleChatHistory(chat, modelParams.modelName);
+        return toO1CompatibleChatHistory(chat, modelParams.modelName, "openai");
     }
 }

@@ -122,7 +122,8 @@ class GrazieServiceInternal extends LLMServiceInternal<
     ): GrazieFormattedHistory {
         const o1CompatibleChatHistory = toO1CompatibleChatHistory(
             chat,
-            modelParams.modelName
+            modelParams.modelName,
+            "grazie"
         );
 
         return o1CompatibleChatHistory.map((message: ChatMessage) => {

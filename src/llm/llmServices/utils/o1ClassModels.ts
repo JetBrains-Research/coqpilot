@@ -1,11 +1,13 @@
 import { ChatHistory, ChatMessage } from "../commonStructures/chat";
 
-const o1ClassModels = [
+const o1ClassModelsOpenAI = [
     "o1-preview",
     "o1-preview-2024-09-12",
     "o1-mini",
     "o1-mini-2024-09-12",
 ];
+
+const o1ClassModelsGrazie = ["openai-o1", "openai-o1-mini"];
 
 /**
  * As of November 2024, o1 model requires a different format of chat history.
@@ -15,8 +17,11 @@ const o1ClassModels = [
  */
 export function toO1CompatibleChatHistory(
     chatHistory: ChatHistory,
-    modelName: string
+    modelName: string,
+    service: "openai" | "grazie"
 ): ChatHistory {
+    const o1ClassModels =
+        service === "openai" ? o1ClassModelsOpenAI : o1ClassModelsGrazie;
     if (o1ClassModels.includes(modelName)) {
         return chatHistory.map((message: ChatMessage) => {
             return {
