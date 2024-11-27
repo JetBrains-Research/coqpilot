@@ -14,9 +14,9 @@ import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
 import { LLMServiceInternal } from "../llmServiceInternal";
 import { OpenAiModelParams } from "../modelParams";
+import { toO1CompatibleChatHistory } from "../utils/o1ClassModels";
 
 import { OpenAiModelParamsResolver } from "./openAiModelParamsResolver";
-import { toO1CompatibleChatHistory } from "../utils/o1ClassModels";
 
 export class OpenAiService extends LLMServiceImpl<
     OpenAiUserModelParams,
@@ -219,7 +219,7 @@ class OpenAiServiceInternal extends LLMServiceInternal<
     private static readonly connectionErrorPattern = /^Connection error\.$/;
 
     private formatChatHistory(
-        chat: ChatHistory, 
+        chat: ChatHistory,
         modelParams: OpenAiModelParams
     ): ChatHistory {
         return toO1CompatibleChatHistory(chat, modelParams.modelName);
