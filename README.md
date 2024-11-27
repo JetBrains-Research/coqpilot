@@ -83,7 +83,19 @@ For more information on how to install `coq-lsp` please refer to [coq-lsp](https
 
 Either way around, if the [coq-lsp](https://github.com/ejgallego/coq-lsp) extension works well and you can see the goals and theorems in the VSCode, then `CoqPilot` should work as well. However, using [coq-lsp](https://github.com/ejgallego/coq-lsp) as a plugin for Coq support is not mandatory for `CoqPilot` to work.
 
-If your installation of `coq-lsp` is not in the default path, you can specify the path to the `coq-lsp` server in the settings using the `coqpilot.coqLspServerPath` setting. Default value should work well for most of the cases.
+If your installation of `coq-lsp` is not in the default path, you can specify the path to the `coq-lsp` server in the settings using the `coqpilot.coqLspServerPath` setting. Default value should work well for `opam`.
+
+**IMPORTANT**: If you are using `nix` in your project, make sure to **UPDATE** the path of the `coq-lsp` server in the settings. The default path is set to `coq-lsp`, which is the default path for `opam`. If you are using `nix`, you should run the following command from inside of the `nix-shell`: 
+```bash
+which coq-lsp
+```
+And then copy the path to the `coq-lsp` server and paste it into the `coqpilot.coqLspServerPath` setting. 
+
+In the benchmark the same rule applies, but the path to the `coq-lsp` server should be set as an environment variable `COQ_LSP_PATH`: 
+```bash
+export COQ_LSP_PATH=$(which coq-lsp)
+```
+
 
 ### Building locally
 
