@@ -104,21 +104,15 @@ suite("[SourceExecutable] Legacy Benchmark", () => {
 
                 for (const resolvedFilePath of resolvedFilePaths) {
                     const { admitsCompleted, theoremsProved } =
-                        await runTestBenchmark(
-                            resolvedFilePath,
-                            benchmark.inputModelsParams,
-                            item.path,
-                            item.specificTheoremForBenchmark,
-                            benchmark.benchmarkFullTheorems,
-                            benchmark.benchmarkAdmits,
-                            resolvedWorkspaceRootPath,
-                            benchmark.requireAllAdmitsCompleted,
-                            benchmark.maxPremisesNumber,
-                            benchmark.groupName,
-                            reportHolder,
-                            benchmark.additionalImports,
-                            benchmark.perProofTimeoutMillis
-                        );
+                        await runTestBenchmark({
+                            ...benchmark,
+                            filePath: resolvedFilePath,
+                            relativePathToFile: item.path,
+                            specificTheoremsForBenchmark:
+                                item.specificTheoremsForBenchmark,
+                            workspaceRootPath: resolvedWorkspaceRootPath,
+                            reportHolder: reportHolder,
+                        });
                     admitsCompletedInTotal.add(
                         admitsCompleted ?? new BenchmarkResult(0, 0)
                     );

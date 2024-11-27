@@ -1,11 +1,11 @@
-import { switchByLLMServiceType } from "../llm/llmServices";
-import { LLMService } from "../llm/llmServices/llmService";
+import { switchByLLMServiceType } from "../../llm/llmServices";
+import { LLMService } from "../../llm/llmServices/llmService";
 
-import { pluginId } from "./coqPilot";
 import {
     UIMessageSeverity,
     showMessageToUserWithSettingsHint,
-} from "./editorMessages";
+} from "../ui/messages/editorMessages";
+import { pluginId } from "../utils/pluginId";
 
 export class SettingsValidationError extends Error {
     constructor(

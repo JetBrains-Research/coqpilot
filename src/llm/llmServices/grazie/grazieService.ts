@@ -12,6 +12,7 @@ import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
 import { LLMServiceInternal } from "../llmServiceInternal";
 import { GrazieModelParams } from "../modelParams";
+import { toO1CompatibleChatHistory } from "../utils/o1ClassModels";
 
 import { GrazieApi, GrazieChatRole, GrazieFormattedHistory } from "./grazieApi";
 import { GrazieModelParamsResolver } from "./grazieModelParamsResolver";
@@ -97,15 +98,13 @@ class GrazieServiceInternal extends LLMServiceInternal<
         choices: number
     ): Promise<GeneratedRawContent> {
         LLMServiceInternal.validateChoices(choices);
-        let attempts = choices * 2;
         const completions: Promise<string>[] = [];
-        const formattedChat = this.formatChatHistory(analyzedChat.chat);
+        const formattedChat = this.formatChatHistory(analyzedChat.chat, params);
 
-        while (completions.length < choices && attempts > 0) {
+        while (completions.length <= choices) {
             completions.push(
                 this.api.requestChatCompletion(params, formattedChat)
             );
-            attempts--;
         }
         const rawContentItems = await Promise.all(completions);
 
@@ -117,8 +116,17 @@ class GrazieServiceInternal extends LLMServiceInternal<
         );
     }
 
-    private formatChatHistory(chat: ChatHistory): GrazieFormattedHistory {
-        return chat.map((message: ChatMessage) => {
+    private formatChatHistory(
+        chat: ChatHistory,
+        modelParams: GrazieModelParams
+    ): GrazieFormattedHistory {
+        const o1CompatibleChatHistory = toO1CompatibleChatHistory(
+            chat,
+            modelParams.modelName,
+            "grazie"
+        );
+
+        return o1CompatibleChatHistory.map((message: ChatMessage) => {
             const grazieRoleName =
                 message.role[0].toUpperCase() + message.role.slice(1);
             return {

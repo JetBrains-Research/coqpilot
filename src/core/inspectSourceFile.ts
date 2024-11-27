@@ -1,10 +1,8 @@
-import { readFileSync } from "fs";
-import * as path from "path";
-
 import { CoqLspClient } from "../coqLsp/coqLspClient";
 
 import { parseCoqFile } from "../coqParser/parseCoqFile";
 import { ProofStep, Theorem } from "../coqParser/parsedTypes";
+import { EventLogger } from "../logging/eventLogger";
 import { Uri } from "../utils/uri";
 
 import {
@@ -15,18 +13,24 @@ import {
 type AnalyzedFile = [CompletionContext[], SourceFileEnvironment];
 
 export async function inspectSourceFile(
-    fileVersion: number,
+    documentVersion: number,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileUri: Uri,
-    client: CoqLspClient
+    client: CoqLspClient,
+    abortSignal: AbortSignal,
+    needsTheoremInitialGoals: boolean,
+    eventLogger?: EventLogger
 ): Promise<AnalyzedFile> {
     const sourceFileEnvironment = await createSourceFileEnvironment(
-        fileVersion,
+        documentVersion,
         fileUri,
-        client
+        client,
+        abortSignal,
+        needsTheoremInitialGoals,
+        eventLogger
     );
     const completionContexts = await createCompletionContexts(
-        fileVersion,
+        documentVersion,
         shouldCompleteHole,
         sourceFileEnvironment.fileTheorems,
         fileUri,
@@ -35,7 +39,7 @@ export async function inspectSourceFile(
     const sourceFileEnvironmentWithCompleteProofs: SourceFileEnvironment = {
         ...sourceFileEnvironment,
         fileTheorems: sourceFileEnvironment.fileTheorems.filter(
-            (thr) => thr.proof && !thr.proof.is_incomplete
+            (thr) => !thr.proof.is_incomplete
         ),
     };
 
@@ -43,7 +47,7 @@ export async function inspectSourceFile(
 }
 
 async function createCompletionContexts(
-    fileVersion: number,
+    documentVersion: number,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileTheorems: Theorem[],
     fileUri: Uri,
@@ -51,22 +55,21 @@ async function createCompletionContexts(
 ): Promise<CompletionContext[]> {
     const holesToComplete = fileTheorems
         .filter((thr) => thr.proof)
-        .map((thr) => thr.proof!.holes)
+        .map((thr) => thr.proof.holes)
         .flat()
         .filter(shouldCompleteHole);
 
     let completionContexts: CompletionContext[] = [];
     for (const hole of holesToComplete) {
-        const goal = await client.getFirstGoalAtPoint(
+        const goals = await client.getGoalsAtPoint(
             hole.range.start,
             fileUri,
-            fileVersion
+            documentVersion
         );
-        if (!(goal instanceof Error)) {
+        if (goals.ok && goals.val.length !== 0) {
             completionContexts.push({
-                proofGoal: goal,
-                prefixEndPosition: hole.range.start,
-                admitEndPosition: hole.range.end,
+                proofGoal: goals.val[0],
+                admitRange: hole.range,
             });
         }
     }
@@ -75,31 +78,24 @@ async function createCompletionContexts(
 }
 
 export async function createSourceFileEnvironment(
-    fileVersion: number,
+    documentVersion: number,
     fileUri: Uri,
-    client: CoqLspClient
+    client: CoqLspClient,
+    abortSignal: AbortSignal,
+    needsTheoremInitialGoals: boolean,
+    eventLogger?: EventLogger
 ): Promise<SourceFileEnvironment> {
-    const fileTheorems = await parseCoqFile(fileUri, client);
-    const fileText = readFileSync(fileUri.fsPath);
-    const dirPath = getSourceFolderPath(fileUri);
-    if (!dirPath) {
-        throw Error(
-            `unable to get source folder path from \`fileUri\`: ${fileUri}`
-        );
-    }
+    const fileTheorems = await parseCoqFile(
+        fileUri,
+        client,
+        abortSignal,
+        needsTheoremInitialGoals,
+        eventLogger
+    );
 
     return {
         fileTheorems: fileTheorems,
-        fileLines: fileText.toString().split("\n"),
-        fileVersion: fileVersion,
-        dirPath: dirPath,
+        documentVersion: documentVersion,
+        fileUri: fileUri,
     };
-}
-
-function getSourceFolderPath(documentUri: Uri): string | undefined {
-    try {
-        return path.dirname(documentUri.fsPath);
-    } catch (error) {
-        return undefined;
-    }
 }

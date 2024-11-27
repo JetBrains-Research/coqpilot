@@ -259,6 +259,7 @@ export abstract class FileTarget implements EqualTo<FileTarget> {
     abstract equalTo(other: FileTarget): boolean;
     abstract hash(): number;
     abstract toString(linePrefix: string, itemizeString: string): string;
+    // TODO: support `needsTheoremInitialGoals` here to improve parsing performance
 }
 
 export class SpecificTheoremTarget extends FileTarget {

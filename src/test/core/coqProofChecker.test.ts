@@ -1,12 +1,11 @@
 import { expect } from "earl";
-import { readFileSync } from "fs";
-import * as path from "path";
 
-import { createTestCoqLspClient } from "../../coqLsp/coqLspBuilders";
+import { withDocumentOpenedByTestCoqLsp } from "../../coqLsp/coqLspBuilders";
 
 import { CoqProofChecker } from "../../core/coqProofChecker";
 import { ProofCheckResult } from "../../core/coqProofChecker";
 
+import { Uri } from "../../utils/uri";
 import { resolveResourcesDir } from "../commonTestFunctions/pathsResolver";
 
 suite("`CoqProofChecker` tests", () => {
@@ -20,31 +19,34 @@ suite("`CoqProofChecker` tests", () => {
             resourcePath,
             projectRootPath
         );
-        const fileDir = path.dirname(filePath);
+        const fileUri = Uri.fromPath(filePath);
+        const documentVersion = 1;
 
-        const fileLines = readFileSync(filePath).toString().split("\n");
-        const client = await createTestCoqLspClient(rootDir);
-        const coqProofChecker = new CoqProofChecker(client);
-        const preparedProofs = proofsToCheck.map((proofs) =>
-            proofs.map(prepareProofBeforeCheck)
-        );
-
-        return Promise.all(
-            positions.map(async (position, i) => {
-                const textPrefix = getTextBeforePosition(fileLines, position);
-                const proofCheckRes = await coqProofChecker.checkProofs(
-                    fileDir,
-                    textPrefix,
-                    position,
-                    preparedProofs[i]
+        return withDocumentOpenedByTestCoqLsp(
+            { uri: fileUri, version: documentVersion },
+            { workspaceRootPath: rootDir },
+            (coqLspClient) => {
+                const coqProofChecker = new CoqProofChecker(coqLspClient);
+                const preparedProofs = proofsToCheck.map((proofs) =>
+                    proofs.map(prepareProofBeforeCheck)
                 );
-                return proofCheckRes.map((res) => {
-                    return {
-                        ...res,
-                        proof: unpackProof(res.proof),
-                    };
-                });
-            })
+                return Promise.all(
+                    positions.map(async (position, i) => {
+                        const proofCheckRes = await coqProofChecker.checkProofs(
+                            fileUri,
+                            documentVersion,
+                            position,
+                            preparedProofs[i]
+                        );
+                        return proofCheckRes.map((res) => {
+                            return {
+                                ...res,
+                                proof: unpackProof(res.proof),
+                            };
+                        });
+                    })
+                );
+            }
         );
     }
 
@@ -58,18 +60,6 @@ suite("`CoqProofChecker` tests", () => {
             .trim()
             .slice(1, flatProof.length - 2)
             .trim();
-    }
-
-    function getTextBeforePosition(
-        textLines: string[],
-        position: { line: number; character: number }
-    ): string[] {
-        const textPrefix = textLines.slice(0, position.line + 1);
-        textPrefix[position.line] = textPrefix[position.line].slice(
-            0,
-            position.character
-        );
-        return textPrefix;
     }
 
     test("Check simple admits", async () => {

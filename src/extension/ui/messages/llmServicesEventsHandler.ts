@@ -2,26 +2,26 @@ import {
     ConfigurationError,
     GenerationFailedError,
     RemoteConnectionError,
-} from "../llm/llmServiceErrors";
-import { LLMServices, asLLMServices } from "../llm/llmServices";
+} from "../../../llm/llmServiceErrors";
+import { LLMServices, asLLMServices } from "../../../llm/llmServices";
 import {
     LLMServiceRequest,
     LLMServiceRequestFailed,
     LLMServiceRequestSucceeded,
-} from "../llm/llmServices/commonStructures/llmServiceRequest";
-import { LLMServiceImpl } from "../llm/llmServices/llmService";
-import { ModelParams } from "../llm/llmServices/modelParams";
+} from "../../../llm/llmServices/commonStructures/llmServiceRequest";
+import { LLMServiceImpl } from "../../../llm/llmServices/llmService";
+import { ModelParams } from "../../../llm/llmServices/modelParams";
 
-import { EventLogger } from "../logging/eventLogger";
-import { stringifyAnyValue } from "../utils/printers";
-import { SimpleSet } from "../utils/simpleSet";
+import { EventLogger } from "../../../logging/eventLogger";
+import { stringifyAnyValue } from "../../../utils/printers";
+import { SimpleSet } from "../../../utils/simpleSet";
+import { toSettingName } from "../../settings/settingsValidationError";
 
 import {
     EditorMessages,
     showMessageToUser,
     showMessageToUserWithSettingsHint,
 } from "./editorMessages";
-import { toSettingName } from "./settingsValidationError";
 
 enum LLMServiceAvailablityState {
     AVAILABLE,

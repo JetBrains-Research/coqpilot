@@ -1,8 +1,7 @@
-import { Theorem } from "../../coqParser/parsedTypes";
-import { CompletionContext } from "../completionGenerationContext";
-
-import { ContextTheoremsRanker } from "./contextTheoremsRanker";
-import { goalAsTheoremString } from "./tokenUtils";
+import { Theorem } from "../../../coqParser/parsedTypes";
+import { CompletionContext } from "../../completionGenerationContext";
+import { ContextTheoremsRanker } from "../contextTheoremsRanker";
+import { goalAsTheoremString } from "../utils/tokenUtils";
 
 /**
  * Ranks theorems based on how similar their statements are to
@@ -14,6 +13,8 @@ import { goalAsTheoremString } from "./tokenUtils";
 export class JaccardIndexContextTheoremsRanker
     implements ContextTheoremsRanker
 {
+    readonly needsUnwrappedNotations = true;
+
     rankContextTheorems(
         theorems: Theorem[],
         completionContext: CompletionContext

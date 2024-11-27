@@ -1,6 +1,4 @@
-# CoqPilot
-
-![Version](https://img.shields.io/badge/version-v2.3.0-blue?style=flat-square)
+# CoqPilot ![Version](https://img.shields.io/badge/version-v2.4.0-blue?style=flat-square)
 
 *Authors:* Andrei Kozyrev, Gleb Solovev, Nikita Khramov, and Anton Podkopaev, [Programming Languages and Tools Lab](https://lp.jetbrains.com/research/plt_lab/) at JetBrains Research.
 
@@ -8,14 +6,14 @@
 
 # Table of Contents
 
-- 🚀 [CoqPilot Overview](#coqpilot)
+- 🚀 [CoqPilot Overview](#coqpilot-version)
 - 📋 [Requirements](#requirements)
+- 📚 [Related papers](#related-papers)
 - 🔍 [Brief Technical Overview](#brief-technical-overview)
 - 💡 [Example Usage](#example-usage)
 - 🛠 [Installation](#installation)
   - ▶️ [Coq-LSP Installation](#coq-lsp-installation)
   - 🤖 [Building Locally](#building-locally)
-- ⚠️ [Important Information](#important)
 - ⚙️ [Extension Settings](#extension-settings)
 - 📐 [Guide to Model Configuration](#guide-to-model-configuration)
   - 🎛 [How VSCode settings work](#how-vscode-settings-work)
@@ -30,7 +28,17 @@
 
 ## Requirements
 
-* `coq-lsp` version `0.1.9+8.19` is currently required to run the extension.
+* `coq-lsp` version `0.2.2+8.19` is currently required to run the extension.
+
+## Related papers
+
+- **[ASE Demo'24]** *CoqPilot, a plugin for LLM-based generation of proofs*
+  <br />
+  [[Paper](https://dl.acm.org/doi/10.1145/3691620.3695357) | [arXiv](https://arxiv.org/abs/2410.19605) | [Video (5min)](https://www.youtube.com/watch?v=oB1Lx-So9Lo) | [Video (10min)](https://www.youtube.com/watch?v=P-LHXf7vntM)]
+- **[AITP'24 & CoqWS'24]** *CoqPilot, a plugin for LLM-based generation of proofs*
+  <br />
+  [[Extended Abstract](https://coq-workshop.gitlab.io/2024/files/EA2.pdf) | [CoqWS Slides](https://coq-workshop.gitlab.io/2024/files/SL2.pdf)]
+
 
 ## Brief technical overview
 
@@ -68,14 +76,26 @@ As soon as at least one valid proof is found, it is substituted in the editor an
 
 To run the extension, you must install a `coq-lsp` server. Depending on the system used in your project, you should install it using `opam` or `nix`. A well-configured `nix` project should have the `coq-lsp` server installed as a dependency. To install `coq-lsp` using `opam`, you can use the following commands: 
 ```bash
-opam pin add coq-lsp 0.1.9+8.19
+opam pin add coq-lsp 0.2.2+8.19
 opam install coq-lsp
 ```
 For more information on how to install `coq-lsp` please refer to [coq-lsp](https://github.com/ejgallego/coq-lsp). 
 
 Either way around, if the [coq-lsp](https://github.com/ejgallego/coq-lsp) extension works well and you can see the goals and theorems in the VSCode, then `CoqPilot` should work as well. However, using [coq-lsp](https://github.com/ejgallego/coq-lsp) as a plugin for Coq support is not mandatory for `CoqPilot` to work.
 
-If your installation of `coq-lsp` is not in the default path, you can specify the path to the `coq-lsp` server in the settings using the `coqpilot.coqLspServerPath` setting. Default value should work well for most of the cases.
+If your installation of `coq-lsp` is not in the default path, you can specify the path to the `coq-lsp` server in the settings using the `coqpilot.coqLspServerPath` setting. Default value should work well for `opam`.
+
+**IMPORTANT**: If you are using `nix` in your project, make sure to **UPDATE** the path of the `coq-lsp` server in the settings. The default path is set to `coq-lsp`, which is the default path for `opam`. If you are using `nix`, you should run the following command from inside of the `nix-shell`: 
+```bash
+which coq-lsp
+```
+And then copy the path to the `coq-lsp` server and paste it into the `coqpilot.coqLspServerPath` setting. 
+
+In the benchmark the same rule applies, but the path to the `coq-lsp` server should be set as an environment variable `COQ_LSP_PATH`: 
+```bash
+export COQ_LSP_PATH=$(which coq-lsp)
+```
+
 
 ### Building locally
 
@@ -109,19 +129,6 @@ To run specific tests, you can use `npm run test -- -g="grep pattern"`.
 <!-- ## Architecture
 
 The extension's architecture overview is stored in the [ARCHITECTURE.md](https://github.com/JetBrains-Research/coqpilot/blob/refactor/ARCHITECTURE.md) file. It will be extended and updated as the project evolves. -->
-
-## Important 
-
-CoqPilot generates aux files with `_cp_aux.v` suffix. Sometimes when generation fails with exception, it is possible that such file will not be deleted. When a project is open, extension shall show a window that asks if you want to add such files to the local project gitignore. 
-
-Moreover, this repository contains a script for your convenience that adds the format of such files to the global gitignore file on your system.  
-- Copy the [`set_gitignore.sh`](https://github.com/JetBrains-Research/coqpilot/blob/main/set_gitignore.sh) file to your computer. Then: 
-```bash 
-chmod +x set_gitignore.sh
-./set_gitignore.sh
-```
-It will add the format of CoqPilot aux files to your global gitignore file on the system, so that even if CoqPilot forgets to clean files up, they will not be marked as new files in git.
-Comment: Such files are not visible in the VSCode explorer, because plugin adds them to the `files.exclude` setting on startup.
 
 ## Extension Settings
 
@@ -253,7 +260,7 @@ The process of running the benchmark is not perfectly automated and we are worki
     npm run benchmark
     ```    
 
-If you aim to run the benchmark with the use of `Tactician`, you should install the `imm` project and `Tactician` with `opam`. For `opam` installation instrustion, you can refer to the [Tactician website](https://coq-tactician.github.io/manual/installation/) and [imm repository](https://github.com/weakmemory/imm/tree/master?tab=readme-ov-file#installation-via-opam-supported-up-to-the-15-version-of-imm) (this part of the README file is a little outdated, but the installation process for `coq-8.19.0` is still the same).
+If you aim to run the benchmark with the use of `Tactician`, you should install the `imm` project and `Tactician` with `opam`. For `opam` installation instruction, you can refer to the [Tactician website](https://coq-tactician.github.io/manual/installation/) and [imm repository](https://github.com/weakmemory/imm/tree/master?tab=readme-ov-file#installation-via-opam-supported-up-to-the-15-version-of-imm) (this part of the README file is a little outdated, but the installation process for `coq-8.19.0` is still the same).
 
 ## Integrating other solutions
 
@@ -296,7 +303,6 @@ Then add the `hammer.`, `sauto.` or any other tactic from `CoqHammer` to the pre
 ## Future plans
 
 - Currently the user needs to manually enter the nix shell to get the correct environment for the benchmarks. We are working on automating this process.
-- Get rid of the overhead due to hacks with coq-lsp and the aux files.
 
 ## Release Notes
 

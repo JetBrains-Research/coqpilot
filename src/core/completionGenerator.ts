@@ -1,22 +1,21 @@
 import { LLMSequentialIterator } from "../llm/llmIterator";
 import { GeneratedProof } from "../llm/llmServices/generatedProof";
 
-import { createCoqLspClient } from "../coqLsp/coqLspBuilders";
 import { CoqLspTimeoutError } from "../coqLsp/coqLspTypes";
 
 import { EventLogger } from "../logging/eventLogger";
 import { asErrorOrRethrow, buildErrorCompleteLog } from "../utils/errorsUtils";
 import { stringifyAnyValue } from "../utils/printers";
 
+import { CompletionAbortError, throwOnAbort } from "./abortUtils";
 import {
     CompletionContext,
     ProcessEnvironment,
     SourceFileEnvironment,
 } from "./completionGenerationContext";
-import { CoqProofChecker, ProofCheckResult } from "./coqProofChecker";
+import { ProofCheckResult } from "./coqProofChecker";
 import {
     buildProofGenerationContext,
-    getTextBeforePosition,
     prepareProofToCheck,
 } from "./exposedCompletionGeneratorUtils";
 
@@ -42,12 +41,16 @@ export enum FailureGenerationStatus {
     SEARCH_FAILED,
 }
 
+/**
+ * _Implementation note:_ when this method is called, the target file is expected to be opened by the user.
+ * Therefore, no explicit `coqLspClient.openTextDocument(...)` call is made.
+ */
 export async function generateCompletion(
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
+    abortSignal: AbortSignal,
     eventLogger?: EventLogger,
-    workspaceRootPath?: string,
     perProofTimeoutMillis: number = 15000
 ): Promise<GenerationResult> {
     const context = buildProofGenerationContext(
@@ -68,10 +71,6 @@ export async function generateCompletion(
         processEnvironment.services,
         eventLogger
     );
-    const sourceFileContentPrefix = getTextBeforePosition(
-        sourceFileEnvironment.fileLines,
-        completionContext.prefixEndPosition
-    );
 
     try {
         /** newlyGeneratedProofs = generatedProofsBatch from iterator +
@@ -79,6 +78,7 @@ export async function generateCompletion(
         let newlyGeneratedProofs: GeneratedProof[] = [];
 
         for await (const generatedProofsBatch of iterator) {
+            throwOnAbort(abortSignal);
             newlyGeneratedProofs.push(...generatedProofsBatch);
             eventLogger?.log(
                 "core-new-proofs-ready-for-checking",
@@ -87,12 +87,11 @@ export async function generateCompletion(
             );
             const fixedProofsOrCompletion = await checkAndFixProofs(
                 newlyGeneratedProofs,
-                sourceFileContentPrefix,
                 completionContext,
                 sourceFileEnvironment,
                 processEnvironment,
+                abortSignal,
                 eventLogger,
-                workspaceRootPath,
                 perProofTimeoutMillis
             );
             if (fixedProofsOrCompletion instanceof SuccessGenerationResult) {
@@ -102,14 +101,14 @@ export async function generateCompletion(
         }
 
         while (newlyGeneratedProofs.length > 0) {
+            throwOnAbort(abortSignal);
             const fixedProofsOrCompletion = await checkAndFixProofs(
                 newlyGeneratedProofs,
-                sourceFileContentPrefix,
                 completionContext,
                 sourceFileEnvironment,
                 processEnvironment,
+                abortSignal,
                 eventLogger,
-                workspaceRootPath,
                 perProofTimeoutMillis
             );
             if (fixedProofsOrCompletion instanceof SuccessGenerationResult) {
@@ -137,6 +136,8 @@ export async function generateCompletion(
                 FailureGenerationStatus.TIMEOUT_EXCEEDED,
                 error.message
             );
+        } else if (error instanceof CompletionAbortError) {
+            throw error;
         } else {
             return new FailureGenerationResult(
                 FailureGenerationStatus.ERROR_OCCURRED,
@@ -148,22 +149,19 @@ export async function generateCompletion(
 
 async function checkAndFixProofs(
     newlyGeneratedProofs: GeneratedProof[],
-    sourceFileContentPrefix: string[],
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
+    abortSignal: AbortSignal,
     eventLogger?: EventLogger,
-    workspaceRootPath?: string,
     perProofTimeoutMillis: number = 15000
 ): Promise<GeneratedProof[] | SuccessGenerationResult> {
     // check proofs and finish with success if at least one is valid
     const proofCheckResults = await checkGeneratedProofs(
         newlyGeneratedProofs,
-        sourceFileContentPrefix,
         completionContext,
         sourceFileEnvironment,
         processEnvironment,
-        workspaceRootPath,
         perProofTimeoutMillis
     );
     const completion = getFirstValidProof(proofCheckResults);
@@ -181,7 +179,7 @@ async function checkAndFixProofs(
             };
         }
     );
-    const fixedProofs = await fixProofs(proofsWithFeedback);
+    const fixedProofs = await fixProofs(proofsWithFeedback, abortSignal);
     eventLogger?.log(
         "core-proofs-fixed",
         "Proofs were fixed",
@@ -195,11 +193,9 @@ async function checkAndFixProofs(
 
 async function checkGeneratedProofs(
     generatedProofs: GeneratedProof[],
-    sourceFileContentPrefix: string[],
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
-    workspaceRootPath?: string,
     perProofTimeoutMillis = 15000
 ): Promise<ProofCheckResult[]> {
     const preparedProofBatch = generatedProofs.map(
@@ -207,17 +203,10 @@ async function checkGeneratedProofs(
             prepareProofToCheck(generatedProof.proof())
     );
 
-    if (workspaceRootPath) {
-        processEnvironment.coqProofChecker.dispose();
-        const client = await createCoqLspClient(workspaceRootPath);
-        const coqProofChecker = new CoqProofChecker(client);
-        processEnvironment.coqProofChecker = coqProofChecker;
-    }
-
     return processEnvironment.coqProofChecker.checkProofs(
-        sourceFileEnvironment.dirPath,
-        sourceFileContentPrefix,
-        completionContext.prefixEndPosition,
+        sourceFileEnvironment.fileUri,
+        sourceFileEnvironment.documentVersion,
+        completionContext.admitRange.start,
         preparedProofBatch,
         perProofTimeoutMillis
     );
@@ -229,12 +218,14 @@ interface ProofWithFeedback {
 }
 
 async function fixProofs(
-    proofsWithFeedback: ProofWithFeedback[]
+    proofsWithFeedback: ProofWithFeedback[],
+    abortSignal: AbortSignal
 ): Promise<GeneratedProof[]> {
     const fixProofsPromises = [];
 
     // build fix promises
     for (const proofWithFeedback of proofsWithFeedback) {
+        throwOnAbort(abortSignal);
         const generatedProof = proofWithFeedback.generatedProof;
         if (!generatedProof.canBeFixed()) {
             continue;

@@ -5,7 +5,7 @@ import { CoqPilot } from "./extension/coqPilot";
 export let extension: CoqPilot | undefined;
 
 export async function activate(context: ExtensionContext): Promise<void> {
-    extension = new CoqPilot(context);
+    extension = await CoqPilot.create(context);
     context.subscriptions.push(extension);
 }
 

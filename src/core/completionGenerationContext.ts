@@ -1,4 +1,4 @@
-import { Position } from "vscode-languageclient";
+import { Range } from "vscode-languageclient";
 
 import { LLMServices } from "../llm/llmServices";
 import { ModelsParams } from "../llm/llmServices/modelParams";
@@ -6,22 +6,21 @@ import { ModelsParams } from "../llm/llmServices/modelParams";
 import { ProofGoal } from "../coqLsp/coqLspTypes";
 
 import { Theorem } from "../coqParser/parsedTypes";
+import { Uri } from "../utils/uri";
 
 import { ContextTheoremsRanker } from "./contextTheoremRanker/contextTheoremsRanker";
 import { CoqProofChecker } from "./coqProofChecker";
 
 export interface CompletionContext {
     proofGoal: ProofGoal;
-    prefixEndPosition: Position;
-    admitEndPosition: Position;
+    admitRange: Range;
 }
 
 export interface SourceFileEnvironment {
     // `fileTheorems` contain only ones that successfully finish with Qed.
     fileTheorems: Theorem[];
-    fileLines: string[];
-    fileVersion: number;
-    dirPath: string;
+    documentVersion: number;
+    fileUri: Uri;
 }
 
 export interface ProcessEnvironment {

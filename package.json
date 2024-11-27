@@ -8,7 +8,7 @@
     "url": "https://github.com/JetBrains-Research/coqpilot"
   },
   "publisher": "JetBrains-Research",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "engines": {
     "vscode": "^1.82.0"
   },
@@ -392,15 +392,18 @@
     "pretest": "npm run compile && npm run lint",
     "test": "npm run test-only",
     "clean": "rm -rf out",
+    "rebuild": "npm run clean && npm run compile && npm run format",
     "rebuild-test-resources": "cd ./src/test/resources/coqProj && make clean && make",
     "preclean-test": "npm run clean && npm run rebuild-test-resources && npm run compile && npm run lint",
     "clean-test": "npm run test-only",
     "prebenchmark": "npm run preclean-test",
-    "premulti-workspace-benchmark": "npm run prebenchmark",
+    "premulti-workspaces-benchmark": "npm run prebenchmark",
     "multi-workspaces-benchmark": "node ./out/benchmark/multiWorkspacesSetup.js",
     "presingle-workspace-benchmark": "npm run prebenchmark",
     "single-workspace-benchmark": "npm run test-executables-unsafe -- -g=\"[SourceExecutable] Single Workspace Benchmark\"",
     "benchmark": "npm run single-workspace-benchmark",
+    "prebenchmark-test": "rm -rf benchmarksOutput",
+    "benchmark-test": "npm run benchmark",
     "preteamcity-benchmark-setup": "npm run prebenchmark",
     "teamcity-benchmark-setup": "node ./out/benchmark/teamCitySetup.js",
     "teamcity-benchmark-agent": "npm run test-executables-unsafe -- -g=\"[SourceExecutable] Team City Benchmark Agent\"",
@@ -441,7 +444,7 @@
     "event-source-polyfill": "^1.0.31",
     "i": "^0.3.7",
     "mocha-param": "^2.0.1",
-    "node-ipc": "^11.1.0",
+    "node-ipc": "^12.0.0",
     "npm": "^10.4.0",
     "openai": "^4.6.0",
     "path": "^0.12.7",
@@ -450,6 +453,7 @@
     "tiktoken": "^1.0.17",
     "tmp": "^0.2.3",
     "toml": "^3.0.0",
+    "ts-results": "^3.3.0",
     "vscode-languageclient": "^9.0.1",
     "yargs": "^17.7.2"
   }

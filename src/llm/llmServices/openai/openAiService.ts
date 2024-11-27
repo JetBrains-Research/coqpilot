@@ -7,13 +7,14 @@ import {
 } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { OpenAiUserModelParams } from "../../userModelParams";
-import { AnalyzedChatHistory } from "../commonStructures/chat";
+import { AnalyzedChatHistory, ChatHistory } from "../commonStructures/chat";
 import { GeneratedRawContent } from "../commonStructures/generatedRawContent";
 import { ProofVersion } from "../commonStructures/proofVersion";
 import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
 import { LLMServiceInternal } from "../llmServiceInternal";
 import { OpenAiModelParams } from "../modelParams";
+import { toO1CompatibleChatHistory } from "../utils/o1ClassModels";
 
 import { OpenAiModelParamsResolver } from "./openAiModelParamsResolver";
 
@@ -93,13 +94,14 @@ class OpenAiServiceInternal extends LLMServiceInternal<
         LLMServiceInternal.validateChoices(choices);
 
         const openai = new OpenAI({ apiKey: params.apiKey });
+        const formattedChat = this.formatChatHistory(analyzedChat.chat, params);
         this.debug.logEvent("Completion requested", {
-            history: analyzedChat.chat,
+            history: formattedChat,
         });
 
         try {
             const completion = await openai.chat.completions.create({
-                messages: analyzedChat.chat,
+                messages: formattedChat,
                 model: params.modelName,
                 n: choices,
                 temperature: params.temperature,
@@ -215,4 +217,11 @@ class OpenAiServiceInternal extends LLMServiceInternal<
         /^This model's maximum context length is ([0-9]+) tokens\. However, you requested ([0-9]+) tokens \(([0-9]+) in the messages, ([0-9]+) in the completion\)\..*$/;
 
     private static readonly connectionErrorPattern = /^Connection error\.$/;
+
+    private formatChatHistory(
+        chat: ChatHistory,
+        modelParams: OpenAiModelParams
+    ): ChatHistory {
+        return toO1CompatibleChatHistory(chat, modelParams.modelName, "openai");
+    }
 }

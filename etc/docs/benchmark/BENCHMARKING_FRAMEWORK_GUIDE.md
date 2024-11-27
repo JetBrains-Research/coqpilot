@@ -40,6 +40,7 @@ This experiment must be run within the workspace environment, which the user act
 cd dataset/imm
 nix-build # builds the 'imm' project
 nix-shell # activates its environment
+export COQ_LSP_PATH=$(which coq-lsp) # sets up the proper coq-lsp server path
 cd ../..
 npm run single-workspace-benchmark
 ```

@@ -1,17 +1,17 @@
-import { Theorem } from "../../coqParser/parsedTypes";
-import { CompletionContext } from "../completionGenerationContext";
-
-import { ContextTheoremsRanker } from "./contextTheoremsRanker";
-import { goalAsTheoremString } from "./tokenUtils";
+import { Theorem } from "../../../coqParser/parsedTypes";
+import { CompletionContext } from "../../completionGenerationContext";
+import { ContextTheoremsRanker } from "../contextTheoremsRanker";
+import { goalAsTheoremString } from "../utils/tokenUtils";
 
 /**
  * Ranks theorems based on how similar their statements are to
  * the current goal context. Metric is calculated on the
  * concatenated hypothesis and conclusion.
  *
- * ```cosine(A, B) = |A ∩ B| / sqrt(|A| * |B|)```
  */
-export class CosineContextTheoremsRanker implements ContextTheoremsRanker {
+export class EuclidContextTheoremsRanker implements ContextTheoremsRanker {
+    readonly needsUnwrappedNotations = true;
+
     rankContextTheorems(
         theorems: Theorem[],
         completionContext: CompletionContext
@@ -19,7 +19,7 @@ export class CosineContextTheoremsRanker implements ContextTheoremsRanker {
         const goal = completionContext.proofGoal;
         const goalTheorem = goalAsTheoremString(goal);
 
-        const cosine = (theorem: Theorem): number => {
+        const euclid = (theorem: Theorem): number => {
             const completionTokens = goalTheorem
                 .split(" ")
                 .filter(
@@ -37,12 +37,11 @@ export class CosineContextTheoremsRanker implements ContextTheoremsRanker {
                 theoremTokens.includes(token)
             );
 
-            return (
-                intersection.length /
-                Math.sqrt(completionTokens.length * theoremTokens.length)
-            );
+            const union = new Set([...completionTokens, ...theoremTokens]);
+
+            return Math.sqrt(intersection.length - union.size);
         };
 
-        return theorems.sort((a, b) => cosine(b) - cosine(a));
+        return theorems.sort((a, b) => euclid(b) - euclid(a));
     }
 }

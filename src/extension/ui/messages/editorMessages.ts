@@ -1,11 +1,10 @@
 import { DefinedError } from "ajv";
 import { commands, window } from "vscode";
 
-import { ajvErrorsAsString } from "../utils/ajvErrorsHandling";
-import { stringifyAnyValue } from "../utils/printers";
-import { Time } from "../utils/time";
-
-import { pluginId } from "./coqPilot";
+import { ajvErrorsAsString } from "../../../utils/ajvErrorsHandling";
+import { stringifyAnyValue } from "../../../utils/printers";
+import { Time } from "../../../utils/time";
+import { pluginId } from "../../utils/pluginId";
 
 export const openSettingsItem = "Open settings";
 
@@ -30,6 +29,12 @@ export namespace EditorMessages {
 
     export const reportUnexpectedError = (errorDescription: string) =>
         `Coqpilot got an unexpected error: ${errorDescription}. Please report this crash by opening an issue in the Coqpilot GitHub repository.`;
+
+    export const completionAborted =
+        "Completion generation was forcefully aborted, stopping Coq-LSP server. Please hit the CoqPilot Status Bar button again to restart the server and continue using CoqPilot.";
+
+    export const extensionIsPaused =
+        "You have stopped CoqPilot. To resume, click on the CoqPilot icon in the status bar.";
 
     export const objectWasThrownAsError = (e: any) =>
         reportUnexpectedError(

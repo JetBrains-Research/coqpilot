@@ -2,8 +2,8 @@ import {
     CompletionContext,
     SourceFileEnvironment,
 } from "../../../../../../core/completionGenerationContext";
-import { getTextBeforePosition } from "../../../../../../core/exposedCompletionGeneratorUtils";
 
+import { serializeUri } from "../../../../structures/common/serializedUri";
 import {
     WorkspaceRoot,
     isStandaloneFilesRoot,
@@ -28,12 +28,9 @@ export namespace ProofsCheckerUtils {
             workspaceRootPath: isStandaloneFilesRoot(workspaceRoot)
                 ? undefined
                 : workspaceRoot.directoryPath,
-            sourceFileDirPath: sourceFileEnvironment.dirPath,
-            sourceFileContentPrefix: getTextBeforePosition(
-                sourceFileEnvironment.fileLines,
-                completionContext.prefixEndPosition
-            ),
-            prefixEndPosition: completionContext.prefixEndPosition,
+            serializedFileUri: serializeUri(sourceFileEnvironment.fileUri),
+            documentVersion: sourceFileEnvironment.documentVersion,
+            positionToCheckAt: completionContext.admitRange.start,
             preparedProofs: preparedProofs,
         };
     }

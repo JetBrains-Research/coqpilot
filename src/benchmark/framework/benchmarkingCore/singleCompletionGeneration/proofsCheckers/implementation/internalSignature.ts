@@ -2,14 +2,16 @@ import { JSONSchemaType } from "ajv";
 
 import { ProofCheckResult } from "../../../../../../core/coqProofChecker";
 
+import { SerializedUri } from "../../../../structures/common/serializedUri";
+
 export namespace CheckProofsInternalSignature {
     export const subprocessName = "Check generated proofs";
 
     export interface Args {
         workspaceRootPath: string | undefined;
-        sourceFileDirPath: string;
-        sourceFileContentPrefix: string[];
-        prefixEndPosition: Position;
+        serializedFileUri: SerializedUri;
+        documentVersion: number;
+        positionToCheckAt: Position;
         preparedProofs: string[];
     }
 
@@ -79,16 +81,13 @@ export namespace CheckProofsInternalSignature {
                 type: "string",
                 nullable: true,
             },
-            sourceFileDirPath: {
+            serializedFileUri: {
                 type: "string",
             },
-            sourceFileContentPrefix: {
-                type: "array",
-                items: {
-                    type: "string",
-                },
+            documentVersion: {
+                type: "number",
             },
-            prefixEndPosition: positionSchema,
+            positionToCheckAt: positionSchema,
             preparedProofs: {
                 type: "array",
                 items: {
@@ -97,9 +96,9 @@ export namespace CheckProofsInternalSignature {
             },
         },
         required: [
-            "sourceFileDirPath",
-            "sourceFileContentPrefix",
-            "prefixEndPosition",
+            "serializedFileUri",
+            "documentVersion",
+            "positionToCheckAt",
             "preparedProofs",
         ],
         additionalProperties: false,
