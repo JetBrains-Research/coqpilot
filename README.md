@@ -1,4 +1,4 @@
-# CoqPilot ![Version](https://img.shields.io/badge/version-v2.4.0-blue?style=flat-square)
+# CoqPilot ![Version](https://img.shields.io/badge/version-v2.4.1-blue?style=flat-square)
 
 *Authors:* Andrei Kozyrev, Gleb Solovev, Nikita Khramov, and Anton Podkopaev, [Programming Languages and Tools Lab](https://lp.jetbrains.com/research/plt_lab/) at JetBrains Research.
 

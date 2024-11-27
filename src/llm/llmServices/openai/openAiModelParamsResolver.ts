@@ -6,8 +6,7 @@ import { ValidParamsResolverImpl } from "../utils/paramsResolvers/paramsResolver
 
 export class OpenAiModelParamsResolver
     extends BasicModelParamsResolver<OpenAiUserModelParams, OpenAiModelParams>
-    implements
-        ValidParamsResolverImpl<OpenAiUserModelParams, OpenAiModelParams>
+    implements ValidParamsResolverImpl<OpenAiUserModelParams, OpenAiModelParams>
 {
     constructor() {
         super(openAiModelParamsSchema, "OpenAiModelParams");

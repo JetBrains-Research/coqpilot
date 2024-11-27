@@ -8,8 +8,7 @@ import { GrazieService } from "./grazieService";
 
 export class GrazieModelParamsResolver
     extends BasicModelParamsResolver<GrazieUserModelParams, GrazieModelParams>
-    implements
-        ValidParamsResolverImpl<GrazieUserModelParams, GrazieModelParams>
+    implements ValidParamsResolverImpl<GrazieUserModelParams, GrazieModelParams>
 {
     constructor() {
         super(grazieModelParamsSchema, "GrazieModelParams");

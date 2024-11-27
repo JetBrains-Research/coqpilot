@@ -42,6 +42,7 @@
 	},
 	"exclude": [
 		"./_opam/**/*",
-		"./out/**/*"
+		"./out/**/*",
+		"./eslint.config.mjs"
 	],
 }

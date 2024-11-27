@@ -6,6 +6,7 @@ const o1ClassModelsOpenAI = [
     "o1-mini",
     "o1-mini-2024-09-12",
 ];
+
 const o1ClassModelsGrazie = ["openai-o1", "openai-o1-mini"];
 
 /**

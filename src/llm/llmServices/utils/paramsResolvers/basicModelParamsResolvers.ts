@@ -16,8 +16,7 @@ import {
 
 export class BasicMultiroundProfileResolver
     extends ParamsResolverImpl<UserMultiroundProfile, MultiroundProfile>
-    implements
-        ValidParamsResolverImpl<UserMultiroundProfile, MultiroundProfile>
+    implements ValidParamsResolverImpl<UserMultiroundProfile, MultiroundProfile>
 {
     constructor() {
         super(multiroundProfileSchema, "MultiroundProfile");
