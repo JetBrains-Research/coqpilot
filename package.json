@@ -10,7 +10,7 @@
   "publisher": "JetBrains-Research",
   "version": "2.4.1",
   "engines": {
-    "vscode": "^1.82.0"
+    "vscode": "^1.95.0"
   },
   "categories": [
     "Other"
