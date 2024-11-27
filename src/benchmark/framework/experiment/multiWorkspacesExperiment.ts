@@ -19,6 +19,7 @@ import { AbstractExperiment, ExecutionContext } from "./abstractExperiment";
  * In summary, `MultiWorkspacesExperiment` is designed to work with multiple workspaces per run,
  * making it better suited for large benchmarking experiments.
  */
+// CRITICAL TODO: support COQ_LSP_PATH switch for the processes of different workspaces
 export class MultiWorkspacesExperiment extends AbstractExperiment {
     constructor(
         bundles: InputBenchmarkingBundle[] = [],
