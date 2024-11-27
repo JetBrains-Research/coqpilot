@@ -397,7 +397,7 @@
     "preclean-test": "npm run clean && npm run rebuild-test-resources && npm run compile && npm run lint",
     "clean-test": "npm run test-only",
     "prebenchmark": "npm run preclean-test",
-    "premulti-workspace-benchmark": "npm run prebenchmark",
+    "premulti-workspaces-benchmark": "npm run prebenchmark",
     "multi-workspaces-benchmark": "node ./out/benchmark/multiWorkspacesSetup.js",
     "presingle-workspace-benchmark": "npm run prebenchmark",
     "single-workspace-benchmark": "npm run test-executables-unsafe -- -g=\"[SourceExecutable] Single Workspace Benchmark\"",
