@@ -308,7 +308,8 @@ export class CoqPilot {
         const contextTheoremsRanker = buildTheoremsRankerFromConfig();
 
         const coqProofChecker = new CoqProofChecker(
-            this.sessionState.coqLspClient
+            this.sessionState.coqLspClient,
+            this.pluginContext.eventLogger
         );
         // Note: here and later the target file is expected to be opened by the user,
         // so no explicit `coqLspClient.openTextDocument(...)` call is needed
