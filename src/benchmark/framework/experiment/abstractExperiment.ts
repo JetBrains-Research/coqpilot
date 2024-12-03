@@ -108,6 +108,7 @@ export abstract class AbstractExperiment {
         );
     }
 
+    // TODO: support absolute `artifactsDirPath`
     /**
      * The core method that executes the benchmarking experiment.
      *
