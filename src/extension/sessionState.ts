@@ -5,10 +5,12 @@ import { CoqLspClient } from "../coqLsp/coqLspClient";
 
 import { CompletionAbortError } from "../core/abortUtils";
 
-import { EventLogger } from "../logging/eventLogger";
+import { EventLogger, Severity } from "../logging/eventLogger";
 
 import { parseCoqLspServerPath } from "./settings/configReaders";
 import { PluginStatusIndicator } from "./ui/pluginStatusIndicator";
+import { CoqLspConnector } from "../coqLsp/coqLspConnector";
+import { EditorMessages, showMessageToUser } from "./ui/messages/editorMessages";
 
 export class SessionState implements Disposable {
     private _isActive = true;
@@ -64,6 +66,17 @@ export class SessionState implements Disposable {
     ): Promise<SessionState> {
         const abortController = new AbortController();
         const coqLspServerPath = parseCoqLspServerPath();
+
+        eventLogger.subscribe(
+            CoqLspConnector.versioningErrorEvent,
+            Severity.INFO,
+            (message, _) => {
+                showMessageToUser(
+                    EditorMessages.coqLspServerVersionMismatch(message),
+                    "error"
+                );
+            }
+        );
 
         const coqLspClient = await createCoqLspClient(
             coqLspServerPath,

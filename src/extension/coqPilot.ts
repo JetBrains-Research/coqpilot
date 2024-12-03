@@ -51,8 +51,6 @@ import {
     toVSCodePosition,
     toVSCodeRange,
 } from "./utils/positionRangeUtils";
-import { CoqLspConnector } from "../coqLsp/coqLspConnector";
-import { Severity } from "../logging/eventLogger";
 
 export class CoqPilot {
     private constructor(
@@ -74,7 +72,7 @@ export class CoqPilot {
             this.performCompletionForAllAdmits.bind(this)
         );
 
-        this.registerEditorCommand(
+        this.registerCommand(
             toggleCommand,
             this.sessionState.toggleCurrentSession.bind(this.sessionState)
         );
@@ -89,17 +87,6 @@ export class CoqPilot {
         const pluginStatusIndicator = new PluginStatusIndicator(
             `${pluginId}.${toggleCommand}`,
             vscodeContext
-        );
-
-        globalExtensionState.eventLogger.subscribe(
-            CoqLspConnector.versioningErrorEvent,
-            Severity.INFO,
-            (message, _) => {
-                showMessageToUser(
-                    EditorMessages.coqLspServerVersionMismatch(message),
-                    "error"
-                );
-            }
         );
 
         const sessionExtensionState = await SessionState.create(
@@ -345,6 +332,14 @@ export class CoqPilot {
         };
 
         return [completionContexts, sourceFileEnvironment, processEnvironment];
+    }
+
+    private registerCommand(command: string, fn: () => void) {
+        let disposable = commands.registerCommand(
+            `${pluginId}.` + command,
+            fn
+        );
+        this.vscodeContext.subscriptions.push(disposable);
     }
 
     private registerEditorCommand(
