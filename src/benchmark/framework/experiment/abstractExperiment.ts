@@ -280,9 +280,20 @@ export abstract class AbstractExperiment {
         optionsAfterStartupResolution: ExperimentRunOptions.AfterStartupResolution,
         requestedWorkspaces: string[]
     ): ExperimentRunOptions {
+        // So far `coqLspServerPath` is applied to the benchmarking system
+        // by storing it into `process.env.COQ_LSP_PATH`.
+        // TODO: pass it through the system explicitly (!)
+        const customCoqLspServerPath =
+            optionsAfterStartupResolution.coqLspServerPath;
+        if (customCoqLspServerPath !== undefined) {
+            process.env.COQ_LSP_PATH = customCoqLspServerPath;
+        }
+
         return {
             loggerSeverity: optionsAfterStartupResolution.loggerSeverity,
             logsFilePath: optionsAfterStartupResolution.logsFilePath,
+
+            coqLspServerPath: undefined, // TODO: is passed through `process.env.COQ_LSP_PATH` above
 
             datasetCacheUsage: optionsAfterStartupResolution.datasetCacheUsage,
             datasetCacheDirectoryPath:
