@@ -123,7 +123,8 @@ export class CoqLspClientImpl implements CoqLspClient {
         const connector = new CoqLspConnector(
             serverConfig,
             clientConfig,
-            logOutputChannel
+            logOutputChannel,
+            eventLogger
         );
         await connector.start().catch((error) => {
             throw new CoqLspStartupError(

@@ -51,6 +51,8 @@ import {
     toVSCodePosition,
     toVSCodeRange,
 } from "./utils/positionRangeUtils";
+import { CoqLspConnector } from "../coqLsp/coqLspConnector";
+import { Severity } from "../logging/eventLogger";
 
 export class CoqPilot {
     private constructor(
@@ -72,8 +74,6 @@ export class CoqPilot {
             this.performCompletionForAllAdmits.bind(this)
         );
 
-        // TODO: would it be clearer and safer to initialise a new session
-        // instead of restarting the same object (?)
         this.registerEditorCommand(
             toggleCommand,
             this.sessionState.toggleCurrentSession.bind(this.sessionState)
@@ -89,6 +89,17 @@ export class CoqPilot {
         const pluginStatusIndicator = new PluginStatusIndicator(
             `${pluginId}.${toggleCommand}`,
             vscodeContext
+        );
+
+        globalExtensionState.eventLogger.subscribe(
+            CoqLspConnector.versioningErrorEvent,
+            Severity.INFO,
+            (message, _) => {
+                showMessageToUser(
+                    EditorMessages.coqLspServerVersionMismatch(message),
+                    "error"
+                );
+            }
         );
 
         const sessionExtensionState = await SessionState.create(

@@ -11,6 +11,8 @@ import { EventLogger } from "../logging/eventLogger";
 import { CoqLspClientConfig, CoqLspServerConfig } from "./coqLspConfig";
 
 export class CoqLspConnector extends LanguageClient {
+    static versioningErrorEvent = "coq-lsp-versioning-error";
+
     constructor(
         serverConfig: CoqLspServerConfig,
         clientConfig: CoqLspClientConfig,
@@ -63,20 +65,24 @@ export class CoqLspConnector extends LanguageClient {
         super.setTrace(Trace.Verbose);
         await super
             .start()
-            .then(this.logStatusUpdate.bind(this, "started"))
+            .then()
             .catch((error) => {
                 let emsg = error.toString();
                 this.eventLogger?.log("coq-lsp-start-error", emsg);
-                this.logStatusUpdate("stopped");
                 throw error;
             });
     }
 
-    override async stop(): Promise<void> {
-        super.stop().then(this.logStatusUpdate.bind(this, "stopped"));
+    private isVersioningError(message: string): boolean {
+        return message.includes("Incorrect client version");
     }
 
-    private logStatusUpdate = (status: "started" | "stopped") => {
-        this.eventLogger?.log("coq-lsp-status-change", status);
-    };
+    override error(message: string, data: any, showNotification = true) {
+        if (this.isVersioningError(message)) {
+            this.eventLogger?.log(CoqLspConnector.versioningErrorEvent, message);
+        } else {
+            this.eventLogger?.log("coq-lsp-error", message);
+        }
+        super.error(message, data, showNotification);
+    }
 }
