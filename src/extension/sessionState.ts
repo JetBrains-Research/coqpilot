@@ -2,15 +2,18 @@ import { Disposable, OutputChannel } from "vscode";
 
 import { createCoqLspClient } from "../coqLsp/coqLspBuilders";
 import { CoqLspClient } from "../coqLsp/coqLspClient";
+import { CoqLspConnector } from "../coqLsp/coqLspConnector";
 
 import { CompletionAbortError } from "../core/abortUtils";
 
 import { EventLogger, Severity } from "../logging/eventLogger";
 
 import { parseCoqLspServerPath } from "./settings/configReaders";
+import {
+    EditorMessages,
+    showMessageToUser,
+} from "./ui/messages/editorMessages";
 import { PluginStatusIndicator } from "./ui/pluginStatusIndicator";
-import { CoqLspConnector } from "../coqLsp/coqLspConnector";
-import { EditorMessages, showMessageToUser } from "./ui/messages/editorMessages";
 
 export class SessionState implements Disposable {
     private _isActive = true;

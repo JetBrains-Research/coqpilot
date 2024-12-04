@@ -246,28 +246,46 @@ export class CoqLspClientImpl implements CoqLspClient {
     }
 
     trackSuspiciousLspErrors() {
-        this.client.onNotification(PublishDiagnosticsNotification.type, (params: PublishDiagnosticsParams) => {
-            function filterIncorrectLspSuspectedDiagnostics(diagnostic: Diagnostic): boolean {
-                const errorSubstrings = [
-                    "Cannot find a physical path bound to logical path",
-                    "Dynlink error: error loading shared library"
-                ]
+        this.client.onNotification(
+            PublishDiagnosticsNotification.type,
+            (params: PublishDiagnosticsParams) => {
+                function filterIncorrectLspSuspectedDiagnostics(
+                    diagnostic: Diagnostic
+                ): boolean {
+                    const errorSubstrings = [
+                        "Cannot find a physical path bound to logical path",
+                        "Dynlink error: error loading shared library",
+                    ];
 
-                return errorSubstrings.some((substr) => diagnostic.message.includes(substr) && diagnostic.severity === 1);
-            }
-
-            const suspectedDiagnostics = params.diagnostics.filter(filterIncorrectLspSuspectedDiagnostics);
-            if (suspectedDiagnostics.length > 0) { 
-                const data = {
-                    uri: params.uri.toString(),
-                    version: params.version,
-                    diagnosticMessage: suspectedDiagnostics.map((d) => d.message)
+                    return errorSubstrings.some(
+                        (substr) =>
+                            diagnostic.message.includes(substr) &&
+                            diagnostic.severity === 1
+                    );
                 }
-                const firstErrorMessage = suspectedDiagnostics[0].message.split("\n")[0];
-    
-                this.eventLogger?.log(CoqLspConnector.wrongServerSuspectedEvent, firstErrorMessage, data);
+
+                const suspectedDiagnostics = params.diagnostics.filter(
+                    filterIncorrectLspSuspectedDiagnostics
+                );
+                if (suspectedDiagnostics.length > 0) {
+                    const data = {
+                        uri: params.uri.toString(),
+                        version: params.version,
+                        diagnosticMessage: suspectedDiagnostics.map(
+                            (d) => d.message
+                        ),
+                    };
+                    const firstErrorMessage =
+                        suspectedDiagnostics[0].message.split("\n")[0];
+
+                    this.eventLogger?.log(
+                        CoqLspConnector.wrongServerSuspectedEvent,
+                        firstErrorMessage,
+                        data
+                    );
+                }
             }
-        });
+        );
     }
 
     filterDiagnostics(

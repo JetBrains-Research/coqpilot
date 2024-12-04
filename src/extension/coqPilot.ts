@@ -335,10 +335,7 @@ export class CoqPilot {
     }
 
     private registerCommand(command: string, fn: () => void) {
-        let disposable = commands.registerCommand(
-            `${pluginId}.` + command,
-            fn
-        );
+        let disposable = commands.registerCommand(`${pluginId}.` + command, fn);
         this.vscodeContext.subscriptions.push(disposable);
     }
 

@@ -79,7 +79,10 @@ export class CoqLspConnector extends LanguageClient {
 
     override error(message: string, data: any, showNotification = true) {
         if (this.isVersioningError(message)) {
-            this.eventLogger?.log(CoqLspConnector.wrongServerSuspectedEvent, message);
+            this.eventLogger?.log(
+                CoqLspConnector.wrongServerSuspectedEvent,
+                message
+            );
         } else {
             this.eventLogger?.log("coq-lsp-error", message);
         }
