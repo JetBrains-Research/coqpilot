@@ -68,11 +68,14 @@ export class SessionState implements Disposable {
         const coqLspServerPath = parseCoqLspServerPath();
 
         eventLogger.subscribe(
-            CoqLspConnector.versioningErrorEvent,
+            CoqLspConnector.wrongServerSuspectedEvent,
             Severity.INFO,
             (message, _) => {
                 showMessageToUser(
-                    EditorMessages.coqLspServerVersionMismatch(message),
+                    EditorMessages.wrongCoqLspSuspected(
+                        coqLspServerPath,
+                        message
+                    ),
                     "error"
                 );
             }

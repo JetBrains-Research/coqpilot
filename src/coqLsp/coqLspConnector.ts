@@ -11,7 +11,7 @@ import { EventLogger } from "../logging/eventLogger";
 import { CoqLspClientConfig, CoqLspServerConfig } from "./coqLspConfig";
 
 export class CoqLspConnector extends LanguageClient {
-    static versioningErrorEvent = "coq-lsp-versioning-error";
+    static wrongServerSuspectedEvent = "wrong-lsp-server-suspected";
 
     constructor(
         serverConfig: CoqLspServerConfig,
@@ -79,7 +79,7 @@ export class CoqLspConnector extends LanguageClient {
 
     override error(message: string, data: any, showNotification = true) {
         if (this.isVersioningError(message)) {
-            this.eventLogger?.log(CoqLspConnector.versioningErrorEvent, message);
+            this.eventLogger?.log(CoqLspConnector.wrongServerSuspectedEvent, message);
         } else {
             this.eventLogger?.log("coq-lsp-error", message);
         }
