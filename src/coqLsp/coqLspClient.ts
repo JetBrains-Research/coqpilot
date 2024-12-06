@@ -14,6 +14,7 @@ import {
     Position,
     ProtocolNotificationType,
     PublishDiagnosticsNotification,
+    PublishDiagnosticsParams,
     RequestType,
     TextDocumentIdentifier,
     VersionedTextDocumentIdentifier,
@@ -111,6 +112,7 @@ export class CoqLspClientImpl implements CoqLspClient {
         public readonly abortSignal?: AbortSignal
     ) {
         this.client = coqLspConnector;
+        this.trackSuspiciousLspErrors();
     }
 
     static async create(
@@ -123,7 +125,8 @@ export class CoqLspClientImpl implements CoqLspClient {
         const connector = new CoqLspConnector(
             serverConfig,
             clientConfig,
-            logOutputChannel
+            logOutputChannel,
+            eventLogger
         );
         await connector.start().catch((error) => {
             throw new CoqLspStartupError(
@@ -240,6 +243,49 @@ export class CoqLspClientImpl implements CoqLspClient {
         return errorMsgWithTrace
             .substring(0, errorMsgWithTrace.indexOf(traceStartString))
             .trim();
+    }
+
+    trackSuspiciousLspErrors() {
+        this.client.onNotification(
+            PublishDiagnosticsNotification.type,
+            (params: PublishDiagnosticsParams) => {
+                function filterIncorrectLspSuspectedDiagnostics(
+                    diagnostic: Diagnostic
+                ): boolean {
+                    const errorSubstrings = [
+                        "Cannot find a physical path bound to logical path",
+                        "Dynlink error: error loading shared library",
+                    ];
+
+                    return errorSubstrings.some(
+                        (substr) =>
+                            diagnostic.message.includes(substr) &&
+                            diagnostic.severity === 1
+                    );
+                }
+
+                const suspectedDiagnostics = params.diagnostics.filter(
+                    filterIncorrectLspSuspectedDiagnostics
+                );
+                if (suspectedDiagnostics.length > 0) {
+                    const data = {
+                        uri: params.uri.toString(),
+                        version: params.version,
+                        diagnosticMessage: suspectedDiagnostics.map(
+                            (d) => d.message
+                        ),
+                    };
+                    const firstErrorMessage =
+                        suspectedDiagnostics[0].message.split("\n")[0];
+
+                    this.eventLogger?.log(
+                        CoqLspConnector.wrongServerSuspectedEvent,
+                        firstErrorMessage,
+                        data
+                    );
+                }
+            }
+        );
     }
 
     filterDiagnostics(

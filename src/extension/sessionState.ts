@@ -2,12 +2,17 @@ import { Disposable, OutputChannel } from "vscode";
 
 import { createCoqLspClient } from "../coqLsp/coqLspBuilders";
 import { CoqLspClient } from "../coqLsp/coqLspClient";
+import { CoqLspConnector } from "../coqLsp/coqLspConnector";
 
 import { CompletionAbortError } from "../core/abortUtils";
 
-import { EventLogger } from "../logging/eventLogger";
+import { EventLogger, Severity } from "../logging/eventLogger";
 
 import { parseCoqLspServerPath } from "./settings/configReaders";
+import {
+    EditorMessages,
+    showMessageToUser,
+} from "./ui/messages/editorMessages";
 import { PluginStatusIndicator } from "./ui/pluginStatusIndicator";
 
 export class SessionState implements Disposable {
@@ -64,6 +69,20 @@ export class SessionState implements Disposable {
     ): Promise<SessionState> {
         const abortController = new AbortController();
         const coqLspServerPath = parseCoqLspServerPath();
+
+        eventLogger.subscribe(
+            CoqLspConnector.wrongServerSuspectedEvent,
+            Severity.INFO,
+            (message, _) => {
+                showMessageToUser(
+                    EditorMessages.wrongCoqLspSuspected(
+                        coqLspServerPath,
+                        message
+                    ),
+                    "error"
+                );
+            }
+        );
 
         const coqLspClient = await createCoqLspClient(
             coqLspServerPath,

@@ -4,6 +4,7 @@ import { Position } from "vscode-languageclient";
 import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { CoqLspTimeoutError } from "../coqLsp/coqLspTypes";
 
+import { EventLogger } from "../logging/eventLogger";
 import { Uri } from "../utils/uri";
 
 export interface ProofCheckResult {
@@ -17,7 +18,10 @@ type Proof = string;
 export class CoqProofChecker {
     private mutex: Mutex = new Mutex();
 
-    constructor(private coqLspClient: CoqLspClient) {}
+    constructor(
+        private coqLspClient: CoqLspClient,
+        private eventLogger?: EventLogger
+    ) {}
 
     async checkProofs(
         fileUri: Uri,
@@ -78,6 +82,13 @@ export class CoqProofChecker {
                 documentVersion,
                 proof
             );
+
+            if (goalsResult.err) {
+                this.eventLogger?.log(
+                    "new-proof-check",
+                    `Checking proog: ${proof}, goalsResult: ${goalsResult.val.message}`
+                );
+            }
 
             results.push({
                 proof: proof,
