@@ -36,6 +36,12 @@ export namespace EditorMessages {
     export const extensionIsPaused =
         "You have stopped CoqPilot. To resume, click on the CoqPilot icon in the status bar.";
 
+    export const wrongCoqLspSuspected = (
+        coqLspPath: string,
+        errorMessage: string
+    ): string =>
+        `CoqPilot suspects that the Coq-LSP server located at ${coqLspPath} is not working as expected, error received from server: \"${errorMessage}\". Please make sure that the server is properly installed and the path to it is set correctly in the settings.`;
+
     export const objectWasThrownAsError = (e: any) =>
         reportUnexpectedError(
             `object was thrown as error, ${stringifyAnyValue(e)}`

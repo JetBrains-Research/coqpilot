@@ -51,6 +51,7 @@ export async function executeBenchmarkingTask(
     try {
         const generationArgs = {
             completionContext: task.getCompletionContext(),
+            sourceTheorem: task.sourceTheorem,
             sourceFileEnvironment: task.getSourceFileEnvironment(),
             benchmarkingModelParams: params,
             llmService: llmService,

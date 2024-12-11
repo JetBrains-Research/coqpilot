@@ -11,6 +11,17 @@ export interface ExperimentRunOptions extends BenchmarkingOptions {
      */
     logsFilePath: string | undefined;
 
+    /**
+     * Path to the coq-lsp server. Currently, it **must be set up properly**;
+     * otherwise, proof checking always suceeds even for the invalid proofs.
+     *
+     * Notes on the coq-lsp server path resolution.
+     * - If `coqLspServerPath` is set, it will be used.
+     * - Otherwise, the one stored in the `COQ_LSP_PATH` environment variable will be selected.
+     * - Finally, if none of them are set, coq-lsp will search for the server path automatically.
+     */
+    coqLspServerPath: string | undefined;
+
     datasetCacheUsage: DatasetCacheUsageMode;
     /**
      * Path relative to the root directory. If it is not set, a `dataset/.parsingCache` will be used.

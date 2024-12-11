@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.4.2
+
+- Fix premise selection bug in benchmarks: in `v2.4.1`, a theorem for which the completion was issued was accidentally added to the list of premises. This was fixed in this release.
+We encountered difficulty setting the correct `coq-lsp` path in the settings, both for the `coq-lsp` plugin itself and for `coqpilot`. When using the `nix` environment, it is common for the path to be updated by hand, and it is not always done correctly. Therefore, we added a warning message to the user, which is shown when `coqpilot` suspects that the build of `coq-lsp` on the given path is not the expected one.
+
 ## 2.4.1
 
 Hot fix with update of dependencies to fix the issue on extension activation.
