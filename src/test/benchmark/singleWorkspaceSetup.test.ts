@@ -35,6 +35,9 @@ suite("[SourceExecutable] Single Workspace Benchmark", () => {
         experiment.updateRunOptions({
             loggerSeverity: SeverityLevel.DEBUG,
             // logsFilePath: "benchmarkLogs/logs.txt",
+
+            // Don't forget to set up properly (or via `COQ_LSP_PATH`)
+            coqLspServerPath: "coq-lsp",
         });
 
         try {

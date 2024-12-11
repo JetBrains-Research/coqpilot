@@ -44,6 +44,7 @@ import {
 } from "../../structures/benchmarkingResults/benchmarkedItem";
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { ParsedCoqFileData } from "../../structures/parsedCoqFile/parsedCoqFileData";
+import { TheoremData } from "../../structures/parsedCoqFile/theoremData";
 import { throwOnAbort } from "../../utils/asyncUtils/abortUtils";
 import { AsyncScheduler } from "../../utils/asyncUtils/asyncScheduler";
 import { reduceToMap } from "../../utils/collectionUtils/mapUtils";
@@ -65,6 +66,7 @@ export interface CompletionGenerationBenchmarkArgs<
     LLMServiceType extends LLMService<any, ResolvedModelParams>,
 > {
     completionContext: CompletionContext;
+    sourceTheorem: TheoremData;
     sourceFileEnvironment: SourceFileEnvironment;
     benchmarkingModelParams: BenchmarkingModelParams<ResolvedModelParams>;
     llmService: LLMServiceType;
@@ -242,6 +244,7 @@ async function generateProofWithRetriesExclusively<
         () =>
             generateProofWithRetriesMeasured(
                 generationArgs.completionContext,
+                generationArgs.sourceTheorem.name,
                 generationArgs.sourceFileEnvironment,
                 generationArgs.benchmarkingModelParams,
                 generationArgs.llmService,
@@ -258,6 +261,7 @@ async function generateProofWithRetriesMeasured<
     ResolvedModelParams extends ModelParams,
 >(
     completionContext: CompletionContext,
+    sourceTheoremName: string,
     sourceFileEnvironment: SourceFileEnvironment,
     benchmarkingModelParams: BenchmarkingModelParams<ResolvedModelParams>,
     llmService: LLMService<any, any>,
@@ -286,6 +290,7 @@ async function generateProofWithRetriesMeasured<
     const proofGenerationContext = buildProofGenerationContext(
         completionContext,
         sourceFileEnvironment.fileTheorems,
+        sourceTheoremName,
         benchmarkingModelParams.theoremRanker
     );
 
@@ -395,14 +400,24 @@ async function generateProofWithRetriesMeasured<
     }
 }
 
+/**
+ * _Important:_ this function is the one responsbile for **removing
+ * the target theorem from the context** (i.e. file theorems) if it is present there.
+ */
 function buildProofGenerationContext(
     completionContext: CompletionContext,
     fileTheorems: Theorem[],
+    targetTheoremName: string,
     theoremRanker?: ContextTheoremsRanker
 ): ProofGenerationContext {
+    const contextTheorems = fileTheorems.filter(
+        (theorem) => theorem.name !== targetTheoremName
+    );
     const rankedTheorems =
-        theoremRanker?.rankContextTheorems(fileTheorems, completionContext) ??
-        fileTheorems;
+        theoremRanker?.rankContextTheorems(
+            contextTheorems,
+            completionContext
+        ) ?? fileTheorems;
     return {
         contextTheorems: rankedTheorems,
         completionTarget: goalToTargetLemma(completionContext.proofGoal),
