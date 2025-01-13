@@ -31,12 +31,19 @@ import { BasicJsonSerializationStructures } from "./structures";
 export namespace BasicJsonSerialization {
     import Structures = BasicJsonSerializationStructures;
 
+    /**
+     * _Important note:_ this method serializes the `benchmarkedItem.result`
+     * as a list of single results corresponding to the BFS traversal of the multiround execution.
+     * Therefore, do not use this method recursively to avoid massive data duplication.
+     */
     export function serializeBenchmarkedItem(
         benchmarkedItem: BenchmarkedItem
     ): Structures.SerializedBenchmarkedItem {
         return {
             item: serializeBenchmarkingItem(benchmarkedItem.item),
-            result: serializeBenchmarkingResult(benchmarkedItem.result),
+            resultByRounds: serializeBenchmarkingResultAsRoundsTree(
+                benchmarkedItem.result
+            ),
         };
     }
 
@@ -89,7 +96,15 @@ export namespace BasicJsonSerialization {
         };
     }
 
-    export function serializeBenchmarkingResult(
+    export function serializeBenchmarkingResultAsRoundsTree(
+        rootResult: BenchmarkingResult
+    ): Structures.SerializedBenchmarkingResult[] {
+        return rootResult
+            .getAllRoundsResults()
+            .map((result) => serializeBenchmarkingResultAsSingleRound(result));
+    }
+
+    export function serializeBenchmarkingResultAsSingleRound(
         result: BenchmarkingResult
     ): Structures.SerializedBenchmarkingResult {
         const serializedBase: Structures.SerializedBaseBenchmarkingResult = {

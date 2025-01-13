@@ -67,7 +67,7 @@ abstract class AbstractBenchmarkedCompletionGeneration<
      *
      * If there is only single round, this method returns `[this]`;
      */
-    getAllRoundsResults(): BenchmarkedCompletionGeneration[] {
+    getAllRoundsResults(): BenchmarkingResult[] {
         const traversal = [];
 
         let lastRoundTraversal: BenchmarkedCompletionGeneration[] = [this];
@@ -86,7 +86,7 @@ abstract class AbstractBenchmarkedCompletionGeneration<
             lastRoundTraversal = nextRoundTraversal;
         }
 
-        return traversal;
+        return traversal as BenchmarkingResult[];
     }
 
     /**
@@ -98,7 +98,7 @@ abstract class AbstractBenchmarkedCompletionGeneration<
      */
     getAllProofsByRounds(): BenchmarkedProof[] {
         return this.getAllRoundsResults().flatMap(
-            (roundResult) => roundResult.generatedProofs
+            (roundResult) => roundResult.generatedProofs as BenchmarkedProof[]
         );
     }
 

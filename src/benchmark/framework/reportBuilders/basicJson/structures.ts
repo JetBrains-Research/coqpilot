@@ -20,7 +20,7 @@ import { SerializedGoal } from "../../utils/coqUtils/goalParser";
 export namespace BasicJsonSerializationStructures {
     export interface SerializedBenchmarkedItem {
         item: SerializedBenchmarkingItem;
-        result: SerializedBenchmarkingResult;
+        resultByRounds: SerializedBenchmarkingResult[];
     }
 
     export interface SerializedBenchmarkingItem {
