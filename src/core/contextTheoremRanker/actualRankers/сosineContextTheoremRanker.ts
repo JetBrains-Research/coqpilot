@@ -11,6 +11,7 @@ import { goalAsTheoremString } from "../utils/tokenUtils";
  * ```cosine(A, B) = |A ∩ B| / sqrt(|A| * |B|)```
  */
 export class CosineContextTheoremsRanker implements ContextTheoremsRanker {
+    readonly type = "cosine";
     readonly needsUnwrappedNotations = true;
 
     rankContextTheorems(

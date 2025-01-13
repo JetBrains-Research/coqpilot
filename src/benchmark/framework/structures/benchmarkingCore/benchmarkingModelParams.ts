@@ -7,7 +7,7 @@ import { LLMServiceIdentifier } from "../common/llmServiceIdentifier";
 export interface BenchmarkingModelParams<
     ResolvedModelParams extends ModelParams,
 > {
-    theoremRanker?: ContextTheoremsRanker;
+    theoremRanker: ContextTheoremsRanker;
     modelParams: ResolvedModelParams;
     llmServiceIdentifier: LLMServiceIdentifier;
 }

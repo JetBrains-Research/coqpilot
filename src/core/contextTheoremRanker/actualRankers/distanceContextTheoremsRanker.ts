@@ -3,6 +3,7 @@ import { CompletionContext } from "../../completionGenerationContext";
 import { ContextTheoremsRanker } from "../contextTheoremsRanker";
 
 export class DistanceContextTheoremsRanker implements ContextTheoremsRanker {
+    readonly type = "distance";
     readonly needsUnwrappedNotations = false;
 
     rankContextTheorems(
