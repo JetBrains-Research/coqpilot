@@ -41,12 +41,14 @@ import { writeTeamCityStatisticsValue } from "../../logging/consoleWriteUtils";
 import { BenchmarkingModelParams } from "../../structures/benchmarkingCore/benchmarkingModelParams";
 import { BenchmarkingOptions } from "../../structures/benchmarkingCore/benchmarkingOptions";
 import {
-    BenchmarkedCompletionGeneration,
-    CompletionGenerationFailureType,
-    FailedCompletionGeneration,
-    SuccessfulCompletionGeneration,
-    ValidatedProof,
+    BenchmarkingResult,
+    FailedCompletionGenerationBenchmarking,
+    SuccessfulCompletionGenerationBenchmarking,
 } from "../../structures/benchmarkingResults/benchmarkedItem";
+import {
+    NonValidatedProof,
+    ValidatedProof,
+} from "../../structures/benchmarkingResults/benchmarkedProof";
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { ParsedCoqFileData } from "../../structures/parsedCoqFile/parsedCoqFileData";
 import { TheoremData } from "../../structures/parsedCoqFile/theoremData";
@@ -55,11 +57,7 @@ import { AsyncScheduler } from "../../utils/asyncUtils/asyncScheduler";
 import { reduceToMap } from "../../utils/collectionUtils/mapUtils";
 import { hasAllPropertiesDefined } from "../../utils/objectUtils";
 
-import {
-    CompletionGenerationTimeImpl,
-    TimeMark,
-    ValidatedProofImpl,
-} from "./measureUtils";
+import { CompletionGenerationTimeImpl, TimeMark } from "./measureTimeUtils";
 import {
     AbstractProofsChecker,
     ProofsCheckFailedError,
@@ -74,16 +72,16 @@ export interface CompletionGenerationBenchmarkArgs<
     sourceTheorem: TheoremData;
     sourceFileEnvironment: SourceFileEnvironment;
     benchmarkingModelParams: BenchmarkingModelParams<ResolvedModelParams>;
+    parentProofToFix: ParentProofToFix | undefined;
     round: number;
-    multiroundArgs: MultiroundBenchmarkArgs | undefined;
     llmService: LLMServiceType;
     llmServiceEventLogger: EventLogger;
     parsedSourceFileData: ParsedCoqFileData;
     workspaceRoot: WorkspaceRoot;
 }
 
-export interface MultiroundBenchmarkArgs {
-    lastRoundFailedProof: ValidatedProof;
+export interface ParentProofToFix {
+    benchmarkedProof: ValidatedProof;
     diagnostic: string;
 }
 
@@ -115,7 +113,8 @@ export async function benchmarkSingleCompletionGeneration<
     logger: BenchmarkingLogger,
     proofsChecker: AbstractProofsChecker,
     abortSignal: AbortSignal
-): Promise<BenchmarkedCompletionGeneration> {
+): Promise<BenchmarkingResult> {
+    // generate proofs
     const proofGenerationResult = await generateProofWithRetriesExclusively(
         generationArgs,
         options,
@@ -149,29 +148,27 @@ export async function benchmarkSingleCompletionGeneration<
         preparedProofsWithTokens,
         ([preparedProof, _]) => preparedProof,
         ([preparedProof, generatedProof, tokens]) =>
-            new ValidatedProofImpl(generatedProof, preparedProof, tokens)
+            new NonValidatedProof(generatedProof, preparedProof, tokens)
     );
 
+    // prepare result data
+    const allGeneratedProofs = Array.from(allGeneratedProofsMap.values());
     const parsedSourceFile = generationArgs.parsedSourceFileData;
-    let resultMetrics: BenchmarkedCompletionGeneration = {
-        allGeneratedProofs: Array.from(allGeneratedProofsMap.values()),
-        contextTheorems: proofGenerationResult.contextTheoremNames.map(
-            (theoremName) => {
-                const theorem =
-                    parsedSourceFile.theoremsByNames.get(theoremName);
-                if (theorem === undefined) {
-                    throw Error(
-                        `Proof generation invariant failed: a context theorem with the name "${theoremName}" was not found in the parsed data of the file ${parsedSourceFile.filePath}`
-                    );
-                }
-                return theorem;
+    const contextTheorems = proofGenerationResult.contextTheoremNames.map(
+        (theoremName) => {
+            const theorem = parsedSourceFile.theoremsByNames.get(theoremName);
+            if (theorem === undefined) {
+                throw Error(
+                    `Proof generation invariant failed: a context theorem with the name "${theoremName}" was not found in the parsed data of the file ${parsedSourceFile.filePath}`
+                );
             }
-        ),
-        tokensSpentInTotal: proofGenerationResult.tokensSpentInTotal,
-        elapsedTime: measuredTime,
-        round: generationArgs.round,
-    };
+            return theorem;
+        }
+    );
+    const tokensSpentInTotal = proofGenerationResult.tokensSpentInTotal;
+    const round = generationArgs.round;
 
+    // check proofs
     throwOnAbort(abortSignal);
     let proofsCheckResult: ProofsCheckResult;
     try {
@@ -186,48 +183,61 @@ export async function benchmarkSingleCompletionGeneration<
     } catch (error) {
         if (error instanceof ProofsCheckFailedError) {
             logger.info(`Failed to validate proofs: ${error.causeMessage}`);
-            return buildFailedCompletionGeneration(
-                resultMetrics,
-                CompletionGenerationFailureType[error.failureType],
-                error.causeMessage
+            return new FailedCompletionGenerationBenchmarking(
+                allGeneratedProofs,
+                contextTheorems,
+                tokensSpentInTotal,
+                measuredTime,
+                round,
+                {
+                    failureType: error.failureType,
+                    causeMessage: error.causeMessage,
+                }
             );
         } else {
             throw error;
         }
     }
-    for (const checkedProof of proofsCheckResult.checkedProofs) {
-        const validatedProof = allGeneratedProofsMap.get(checkedProof.proof)!; // TODO (mb): !
-        validatedProof.setCheckResult(checkedProof);
-    }
-    const validProofs = resultMetrics.allGeneratedProofs.filter(
-        (validatedProof) => validatedProof.validation!.isValid // TODO (mb): !
+    // (!) TODO: check proof-checker behaviour for the equal proofs
+    const validatedProofs = proofsCheckResult.checkedProofs.map(
+        (checkedProof) => {
+            // TODO (mb): !
+            const nonValidatedProof = allGeneratedProofsMap.get(
+                checkedProof.proof
+            )!;
+            return nonValidatedProof.validate(checkedProof);
+        }
     );
+    const allGeneratedProofsNumber = allGeneratedProofs.length;
+    if (validatedProofs.length !== allGeneratedProofsNumber) {
+        logger.error(
+            `Benchmarking invariant failed: there are ${allGeneratedProofsNumber - validatedProofs.length} generated proofs failed to be checked`
+        );
+        throw Error(
+            `Benchmarking invariant failed: not all of the generated proofs were verified, however the execution has not been aborted earlier`
+        );
+    }
+
     measuredTime.addProofsValidationMillis(
         proofsCheckResult.effectiveElapsedMillis
+    );
+    const result = new SuccessfulCompletionGenerationBenchmarking(
+        validatedProofs,
+        contextTheorems,
+        tokensSpentInTotal,
+        measuredTime,
+        round
     );
     logger
         .asOneRecord()
         .info(
-            `Successfully verified proofs: ${validProofs.length} / ${preparedProofsWithTokens.length} are valid`
+            `Successfully verified proofs: ${result.thisRoundValidProofs.length} / ${allGeneratedProofsNumber} are valid`
         )
         .debug(
             `Effective elapsed time: ${proofsCheckResult.effectiveElapsedMillis} ms`,
             "gray"
         );
-
-    if (validProofs.length > 0) {
-        const successfulGeneration: SuccessfulCompletionGeneration = {
-            ...resultMetrics,
-            validProofs: validProofs,
-        };
-        return successfulGeneration;
-    } else {
-        return buildFailedCompletionGeneration(
-            resultMetrics,
-            CompletionGenerationFailureType.SEARCH_FAILED,
-            "No valid completions found"
-        );
-    }
+    return result;
 }
 
 namespace RemoteConnectionErrorDelays {
@@ -287,10 +297,10 @@ async function generateProofWithRetriesExclusively<
             };
         } else {
             generateProof = async () => {
-                const multiroundArgs = generationArgs.multiroundArgs!;
                 // TODO (mb): !
-                return await multiroundArgs.lastRoundFailedProof.generatedProof.fixProof(
-                    multiroundArgs.diagnostic,
+                const parentProof = generationArgs.parentProofToFix!;
+                return await parentProof.benchmarkedProof.proofObject.fixProof(
+                    parentProof.diagnostic,
                     benchmarkingParams.modelParams.multiroundProfile
                         .defaultProofFixChoices,
                     ErrorsHandlingMode.RETHROW_ERRORS
@@ -488,17 +498,4 @@ function buildProofGenerationContext(
         contextTheorems: rankedTheorems,
         completionTarget: goalToTargetLemma(completionContext.proofGoal),
     };
-}
-
-function buildFailedCompletionGeneration(
-    resultMetrics: BenchmarkedCompletionGeneration,
-    failureType: CompletionGenerationFailureType,
-    causeMessage: string
-): FailedCompletionGeneration {
-    const failedGeneration: FailedCompletionGeneration = {
-        ...resultMetrics,
-        failureType: failureType,
-        causeMessage: causeMessage,
-    };
-    return failedGeneration;
 }

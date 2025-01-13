@@ -26,7 +26,7 @@ import {
 import { prependWithZeros } from "../utils/serializationUtils";
 
 import { executeBenchmarkingTask } from "./executeBenchmarkingTask";
-import { TimeMark } from "./singleCompletionGeneration/measureUtils";
+import { TimeMark } from "./singleCompletionGeneration/measureTimeUtils";
 import { AbstractProofsChecker } from "./singleCompletionGeneration/proofsCheckers/abstractProofsChecker";
 
 namespace ArtifactsDirNames {

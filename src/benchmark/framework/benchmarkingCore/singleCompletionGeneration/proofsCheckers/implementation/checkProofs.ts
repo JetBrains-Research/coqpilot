@@ -10,7 +10,7 @@ import { stringifyAnyValue } from "../../../../../../utils/printers";
 import { BenchmarkingLogger } from "../../../../logging/benchmarkingLogger";
 import { deserializeUri } from "../../../../structures/common/serializedUri";
 import { LogsIPCSender } from "../../../../utils/subprocessUtils/ipc/onParentProcessCallExecutor/logsIpcSender";
-import { TimeMark } from "../../measureUtils";
+import { TimeMark } from "../../measureTimeUtils";
 
 import { CheckProofsInternalSignature } from "./internalSignature";
 

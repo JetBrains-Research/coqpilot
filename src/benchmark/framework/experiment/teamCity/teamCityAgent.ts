@@ -1,4 +1,4 @@
-import { TimeMark } from "../../benchmarkingCore/singleCompletionGeneration/measureUtils";
+import { TimeMark } from "../../benchmarkingCore/singleCompletionGeneration/measureTimeUtils";
 import { ExperimentResults } from "../../structures/benchmarkingResults/experimentResults";
 import { ExperimentRunOptions } from "../../structures/inputParameters/experimentRunOptions";
 import { InputBenchmarkingBundle } from "../../structures/inputParameters/inputBenchmarkingBundle";

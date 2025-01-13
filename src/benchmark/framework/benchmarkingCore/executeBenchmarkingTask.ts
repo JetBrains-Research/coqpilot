@@ -13,11 +13,8 @@ import { BenchmarkingItem } from "../structures/benchmarkingCore/benchmarkingIte
 import { BenchmarkingModelParams } from "../structures/benchmarkingCore/benchmarkingModelParams";
 import { BenchmarkingOptions } from "../structures/benchmarkingCore/benchmarkingOptions";
 import {
-    BenchmarkedCompletionGeneration,
     BenchmarkedItem,
-    CompletionGenerationFailureType,
-    isFailedGeneration,
-    isSuccessfulGeneration,
+    BenchmarkingResult,
 } from "../structures/benchmarkingResults/benchmarkedItem";
 import {
     FailFastAbortError,
@@ -28,11 +25,12 @@ import { selectLLMServiceBuilder } from "../utils/commonStructuresUtils/llmServi
 import { writeToFile } from "../utils/fileUtils/fs";
 
 import {
-    MultiroundBenchmarkArgs,
+    ParentProofToFix,
     benchmarkSingleCompletionGeneration,
 } from "./singleCompletionGeneration/benchmarkSingleCompletionGeneration";
 import { AbstractProofsChecker } from "./singleCompletionGeneration/proofsCheckers/abstractProofsChecker";
 
+// TODO (mb): document multiround execution
 export async function executeBenchmarkingTask(
     benchmarkingItem: BenchmarkingItem,
     saveToFilePath: string,
@@ -56,21 +54,21 @@ export async function executeBenchmarkingTask(
             sourceTheorem: task.sourceTheorem,
             sourceFileEnvironment: task.getSourceFileEnvironment(),
             benchmarkingModelParams: params,
+            parentProofToFix: undefined,
             round: 0,
-            multiroundArgs: undefined,
             llmService: llmService,
             llmServiceEventLogger: llmServiceEventLogger,
             parsedSourceFileData: task.parsedSourceFileData,
             workspaceRoot: task.workspaceRoot,
         };
 
-        async function executeBenchmarkingRound(
-            round: MultiroundBenchmarkArgs | undefined,
+        async function benchmarkCompletionGenerationRound(
+            parentProof: ParentProofToFix | undefined,
             roundIndex: number
-        ): Promise<BenchmarkedCompletionGeneration> {
+        ): Promise<BenchmarkingResult> {
             const thisRoundGenerationArgs = {
                 ...generationArgs,
-                multiroundArgs: round,
+                parentProofToFix: parentProof,
                 round: roundIndex,
             };
             const result = await benchmarkSingleCompletionGeneration(
@@ -85,42 +83,57 @@ export async function executeBenchmarkingTask(
             return result;
         }
 
-        const maxRounds = params.modelParams.multiroundProfile.maxRoundsNumber;
-        let zeroRoundResult: BenchmarkedCompletionGeneration | undefined =
-            undefined;
-        let roundsArgs: (MultiroundBenchmarkArgs | undefined)[] = [undefined];
-        for (let roundIndex = 0; roundIndex < maxRounds; roundIndex++) {
+        let rootResult: BenchmarkingResult | undefined = undefined;
+
+        const maxRoundsNumber =
+            params.modelParams.multiroundProfile.maxRoundsNumber;
+        let curRoundProofsToFix: (ParentProofToFix | undefined)[] = [undefined];
+        for (let roundIndex = 0; roundIndex < maxRoundsNumber; roundIndex++) {
             throwOnAbort(abortSignal);
-            const nextRoundArgs: MultiroundBenchmarkArgs[] = [];
-            for (const round of roundsArgs) {
-                const roundResult = await executeBenchmarkingRound(
-                    round,
-                    roundIndex
-                );
+            const nextRoundProofsToFix: ParentProofToFix[] = [];
+            for (const parentProof of curRoundProofsToFix) {
+                const childRoundResult =
+                    await benchmarkCompletionGenerationRound(
+                        parentProof,
+                        roundIndex
+                    );
                 // TODO (mb): saveResultToFile(benchmarkedItem, saveToFilePath, itemLogger);
-                if (round === undefined) {
+                if (parentProof === undefined) {
                     // roundIndex === 0
-                    zeroRoundResult = roundResult;
+                    rootResult = childRoundResult;
                 } else {
-                    round.lastRoundFailedProof.nextProofFixRound = roundResult;
+                    parentProof.benchmarkedProof.linkNextRoundResult(
+                        childRoundResult
+                    );
                 }
-                // assign failed generated proofs for regeneration on next rounds
-                const failedProofs = roundResult.allGeneratedProofs.filter(
-                    (validatedProof) => validatedProof.validation!.isValid // TODO (mb): handle nullbility
-                );
-                for (const failedProof of failedProofs) {
-                    nextRoundArgs.push({
-                        lastRoundFailedProof: failedProof,
-                        diagnostic: failedProof.validation!.diagnostic!, // TODO (mb): handle !
+                if (childRoundResult.isFailedToFinishRound()) {
+                    /**
+                     * There are different policies of what to do when one of the proof-fixing rounds has failed,
+                     * but here the following is chosen: to return the benchmarking result "generally" failed to finish
+                     * (meaning that `rootResult.hasFailedToFinish()` will return `true`),
+                     * with some of the proofs not reaching the `maxRoundsNumber` fixes.
+                     *
+                     * This strategy seems most reasonable: since rounds may fail only because of coq-lsp or coq-proof-checker errors,
+                     * such a failure will most likely not be fixed by itself in the current setup for this benchmarking task.
+                     * Therefore, there is no much sense in trying to fix other proofs generating their new versions not being able to check them.
+                     */
+                    // TODO: briefly add to the top-level description
+                    break;
+                }
+                // assign non-valid generated proofs for regeneration on next rounds
+                for (const nonValidProof of childRoundResult.thisRoundNonValidProofs) {
+                    nextRoundProofsToFix.push({
+                        benchmarkedProof: nonValidProof,
+                        diagnostic: nonValidProof.validationResult.diagnostic!, // TODO (mb): handle !
                     });
                 }
             }
-            roundsArgs = nextRoundArgs;
+            curRoundProofsToFix = nextRoundProofsToFix;
         }
 
         const benchmarkedItem: BenchmarkedItem = {
             item: benchmarkingItem,
-            result: zeroRoundResult!, // TODO (mb): handle !
+            result: rootResult!, // TODO (mb): handle !
         };
         // TODO (mb): support proper multiround result save in general
         saveResultToFile(benchmarkedItem, saveToFilePath, itemLogger);
@@ -222,47 +235,45 @@ function saveResultToFile(
     );
 }
 
-// TODO (mb): support multiround
-function logResult(
-    result: BenchmarkedCompletionGeneration,
-    itemLogger: BenchmarkingLogger
-) {
-    if (isSuccessfulGeneration(result)) {
+function logResult(result: BenchmarkingResult, itemLogger: BenchmarkingLogger) {
+    if (result.isSuccessfulCompletion()) {
+        // TODO (mb): log round info
         itemLogger
             .asOneRecord()
             .info(`Goal was succefully proven ${heavyCheckMark}`, "green")
             .debug("First valid proof:")
-            .debug(`${result.validProofs[0].asString}`)
+            .debug(`${result.getAllValidProofs()[0].asString}`)
             .debug(
                 `Total effective elapsed time: ${millisToString(result.elapsedTime.totalMillis)}`
             );
-    } else if (isFailedGeneration(result)) {
+    } else {
         let failureMessage: string;
-        let logCause: boolean = true;
-        switch (result.failureType) {
-            case CompletionGenerationFailureType.SEARCH_FAILED:
-                failureMessage = "Valid proofs not found";
-                logCause = false;
-                break;
-            case CompletionGenerationFailureType.COQ_PROOF_CHECKER_ERROR:
-                failureMessage = "`CoqProofChecker` error";
-                break;
-            case CompletionGenerationFailureType.TIMEOUT:
-                failureMessage = "Proof validation timeout";
-                break;
+        let cause: string | undefined = undefined;
+        if (result.hasSuccessfullyFinished()) {
+            failureMessage = "Valid proofs not found";
+        } else {
+            const allFailedRounds = result.getAllFailedToFinishRounds();
+            // TODO (mb): log all rounds failed just in case
+            const firstFailedRound = allFailedRounds[0];
+            switch (firstFailedRound.failureMetadata.failureType) {
+                case "COQ_LSP_TIMEOUT":
+                    failureMessage = "Proof validation timeout";
+                    break;
+                case "COQ_PROOF_CHECKER_ERROR":
+                    failureMessage = "`CoqProofChecker` error";
+                    break;
+            }
+            cause = firstFailedRound.failureMetadata.causeMessage;
         }
+
         const asOneRecordLogs = itemLogger
             .asOneRecord()
             .info(`${failureMessage} ${heavyCrossMark}`, "red");
-        if (logCause) {
-            asOneRecordLogs.debug(`Cause: ${result.causeMessage}`);
+        if (cause !== undefined) {
+            asOneRecordLogs.debug(`Cause: ${cause}`);
         }
         asOneRecordLogs.debug(
             `Total effective elapsed time: ${millisToString(result.elapsedTime.totalMillis)}`
-        );
-    } else {
-        itemLogger.error(
-            `Got unknown \`BenchmarkedCompletionGeneration\` type: ${stringifyAnyValue(result)}`
         );
     }
 }

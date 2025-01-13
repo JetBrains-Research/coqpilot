@@ -1,5 +1,5 @@
 import { benchmark } from "../benchmarkingCore/benchmark";
-import { TimeMark } from "../benchmarkingCore/singleCompletionGeneration/measureUtils";
+import { TimeMark } from "../benchmarkingCore/singleCompletionGeneration/measureTimeUtils";
 import { AbstractProofsChecker } from "../benchmarkingCore/singleCompletionGeneration/proofsCheckers/abstractProofsChecker";
 import {
     BenchmarkingLogger,

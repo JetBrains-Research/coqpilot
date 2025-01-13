@@ -1,55 +1,120 @@
 import { GenerationTokens } from "../../../../llm/llmServices/commonStructures/generationTokens";
-import { GeneratedProof } from "../../../../llm/llmServices/generatedProof";
 
 import { BenchmarkingItem } from "../benchmarkingCore/benchmarkingItem";
-import { LengthMetrics } from "../common/measureStructures";
 import { TheoremData } from "../parsedCoqFile/theoremData";
+
+import {
+    BenchmarkedProof,
+    NonValidatedProof,
+    ValidatedProof,
+} from "./benchmarkedProof";
 
 export interface BenchmarkedItem {
     item: BenchmarkingItem;
-    result: BenchmarkedCompletionGeneration;
+    result: BenchmarkingResult;
 }
 
-export interface BenchmarkedCompletionGeneration {
-    allGeneratedProofs: ValidatedProof[];
-    contextTheorems: TheoremData[];
+export type BenchmarkingResult =
+    | FailedCompletionGenerationBenchmarking
+    | SuccessfulCompletionGenerationBenchmarking;
+
+type BenchmarkedCompletionGeneration =
+    AbstractBenchmarkedCompletionGeneration<BenchmarkedProof>;
+
+abstract class AbstractBenchmarkedCompletionGeneration<
+    ProofType extends BenchmarkedProof,
+> {
+    constructor(
+        readonly generatedProofs: ProofType[],
+        readonly contextTheorems: TheoremData[],
+        /**
+         * Tokens spent to generate `allGeneratedProofs` in total.
+         * To access per-proof tokens metrics, use `MeasuredProof.chatTokens` property.
+         *
+         * However, these metrics might be just an approximate estimation of the real ones.
+         * Check `GeneratedRawContent.tokensSpentInTotal` for more details.
+         */
+        readonly tokensSpentInTotal: GenerationTokens,
+        readonly elapsedTime: CompletionGenerationTime,
+        // TODO (mb): document
+        readonly round: number
+    ) {}
+
+    isFailedToFinishRound(): this is FailedCompletionGenerationBenchmarking {
+        const maybeFailedToFinish =
+            this as unknown as FailedCompletionGenerationBenchmarking;
+        return maybeFailedToFinish.failureMetadata !== undefined;
+    }
+
+    isSuccessfullyFinishedRound(): this is SuccessfulCompletionGenerationBenchmarking {
+        return !this.isFailedToFinishRound();
+    }
+
     /**
-     * Tokens spent to generate `allGeneratedProofs` in total.
-     * To access per-proof tokens metrics, use `MeasuredProof.chatTokens` property.
+     * Traverses all results of the rounds in the BFS order.
+     * Namely, `this` round will be visited first,
+     * then all results obtained for the next one, and so on.
      *
-     * However, these metrics might be just an approximate estimation of the real ones.
-     * Check `GeneratedRawContent.tokensSpentInTotal` for more details.
+     * If there is only single round, this method returns `[this]`;
      */
-    tokensSpentInTotal: GenerationTokens;
-    elapsedTime: CompletionGenerationTime;
+    getAllRoundsResults(): BenchmarkedCompletionGeneration[] {
+        const traversal = [];
 
-    // TODO (mb): document
-    round: number;
-}
+        let lastRoundTraversal: BenchmarkedCompletionGeneration[] = [this];
 
-export interface ValidatedProof extends MeasuredProof {
-    generatedProof: GeneratedProof;
-    // TODO (mb): document; undefine means not validated yet
-    validation: ValidationResult | undefined;
-    nextProofFixRound: BenchmarkedCompletionGeneration | undefined;
-}
+        while (lastRoundTraversal.length !== 0) {
+            traversal.push(...lastRoundTraversal);
+            const nextRoundTraversal = [];
+            for (const parentRound of lastRoundTraversal) {
+                if (parentRound.isSuccessfullyFinishedRound()) {
+                    const childResults = parentRound.generatedProofs
+                        .map((proof) => proof.nextRoundResult)
+                        .filter((result) => result !== undefined);
+                    nextRoundTraversal.push(...childResults);
+                }
+            }
+            lastRoundTraversal = nextRoundTraversal;
+        }
 
-export interface ValidationResult {
-    isValid: boolean;
-    diagnostic: string | undefined;
-}
+        return traversal;
+    }
 
-export interface MeasuredProof {
-    asString: string;
-    length: LengthMetrics;
     /**
-     * Tokens spent to generate this specific proof.
+     * Traverses all generated proofs in the BFS order.
+     * Namely, first all the proofs generated in `this` round will be visited,
+     * then all generated in the next one, and so on.
      *
-     * **Warning:** most likely, these metrics might be just an approximate estimation of the real ones.
-     * To get probably more accurate (but aggregated) data,
-     * use `BenchmarkedCompletionGeneration.tokensSpentInTotal` instead (check its docs for more details).
+     * If there is only single round, this method returns the same as `this.allGeneratedProofs`;
      */
-    tokensSpent: GenerationTokens;
+    getAllProofsByRounds(): BenchmarkedProof[] {
+        return this.getAllRoundsResults().flatMap(
+            (roundResult) => roundResult.generatedProofs
+        );
+    }
+
+    getAllValidProofs(): ValidatedProof[] {
+        return this.getAllProofsByRounds().filter(
+            (proof) => proof.isValidated() && proof.validationResult.isValid
+        ) as ValidatedProof[];
+    }
+
+    isSuccessfulCompletion(): boolean {
+        return this.getAllValidProofs().length > 0;
+    }
+
+    getAllFailedToFinishRounds(): FailedCompletionGenerationBenchmarking[] {
+        return this.getAllRoundsResults().filter((roundResult) =>
+            roundResult.isFailedToFinishRound()
+        );
+    }
+
+    hasFailedToFinish(): boolean {
+        return this.getAllFailedToFinishRounds().length !== 0;
+    }
+
+    hasSuccessfullyFinished(): boolean {
+        return this.getAllFailedToFinishRounds().length === 0;
+    }
 }
 
 export interface CompletionGenerationTime {
@@ -58,38 +123,60 @@ export interface CompletionGenerationTime {
     totalMillis: number;
 }
 
-export interface SuccessfulCompletionGeneration
-    extends BenchmarkedCompletionGeneration {
-    validProofs: MeasuredProof[];
+export class FailedCompletionGenerationBenchmarking extends AbstractBenchmarkedCompletionGeneration<NonValidatedProof> {
+    constructor(
+        generatedProofs: NonValidatedProof[],
+        contextTheorems: TheoremData[],
+        tokensSpentInTotal: GenerationTokens,
+        elapsedTime: CompletionGenerationTime,
+        round: number,
+        readonly failureMetadata: FailureMetadata
+    ) {
+        super(
+            generatedProofs,
+            contextTheorems,
+            tokensSpentInTotal,
+            elapsedTime,
+            round
+        );
+    }
 }
 
-export function isSuccessfulGeneration(
-    result: BenchmarkedCompletionGeneration
-): result is SuccessfulCompletionGeneration {
-    return (result as SuccessfulCompletionGeneration).validProofs !== undefined;
-}
-
-export interface FailedCompletionGeneration
-    extends BenchmarkedCompletionGeneration {
-    failureType: CompletionGenerationFailureType;
+// TODO: document better
+// configuration or unexpected error => not a result at all, should be thrown & reported
+export interface FailureMetadata {
+    failureType: FailureType;
     causeMessage: string;
-    // configuration or unexpected => (not a result, report)
-    // TODO: document better
 }
 
-// TODO: update them accordingly to the new coq-lsp
-export enum CompletionGenerationFailureType {
-    SEARCH_FAILED,
-    TIMEOUT, // TODO: coq proof checker / coq lsp timeout?
-    COQ_PROOF_CHECKER_ERROR,
-}
+export type FailureType = "COQ_LSP_TIMEOUT" | "COQ_PROOF_CHECKER_ERROR";
 
-export function isFailedGeneration(
-    result: BenchmarkedCompletionGeneration
-): result is FailedCompletionGeneration {
-    const maybeFailedGeneration = result as FailedCompletionGeneration;
-    return (
-        maybeFailedGeneration.failureType !== undefined &&
-        maybeFailedGeneration.causeMessage !== undefined
-    );
+export class SuccessfulCompletionGenerationBenchmarking extends AbstractBenchmarkedCompletionGeneration<ValidatedProof> {
+    constructor(
+        generatedProofs: ValidatedProof[],
+        contextTheorems: TheoremData[],
+        tokensSpentInTotal: GenerationTokens,
+        elapsedTime: CompletionGenerationTime,
+        round: number
+    ) {
+        super(
+            generatedProofs,
+            contextTheorems,
+            tokensSpentInTotal,
+            elapsedTime,
+            round
+        );
+    }
+
+    get thisRoundValidProofs(): ValidatedProof[] {
+        return this.generatedProofs.filter(
+            (proof) => proof.validationResult.isValid
+        );
+    }
+
+    get thisRoundNonValidProofs(): ValidatedProof[] {
+        return this.generatedProofs.filter(
+            (proof) => !proof.validationResult.isValid
+        );
+    }
 }
