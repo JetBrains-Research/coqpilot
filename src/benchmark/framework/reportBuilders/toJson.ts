@@ -1,6 +1,6 @@
 import { BenchmarkedItem } from "../structures/benchmarkingResults/benchmarkedItem";
 
-// TODO: serialize properly
+// TODO (mb): serialize properly
 export function benchmarkedItemToJson(
     benchmarkedItem: BenchmarkedItem
 ): string {

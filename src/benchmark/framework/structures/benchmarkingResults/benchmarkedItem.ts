@@ -1,4 +1,5 @@
 import { GenerationTokens } from "../../../../llm/llmServices/commonStructures/generationTokens";
+import { GeneratedProof } from "../../../../llm/llmServices/generatedProof";
 
 import { BenchmarkingItem } from "../benchmarkingCore/benchmarkingItem";
 import { LengthMetrics } from "../common/measureStructures";
@@ -10,7 +11,7 @@ export interface BenchmarkedItem {
 }
 
 export interface BenchmarkedCompletionGeneration {
-    allGeneratedProofs: MeasuredProof[];
+    allGeneratedProofs: ValidatedProof[];
     contextTheorems: TheoremData[];
     /**
      * Tokens spent to generate `allGeneratedProofs` in total.
@@ -21,6 +22,21 @@ export interface BenchmarkedCompletionGeneration {
      */
     tokensSpentInTotal: GenerationTokens;
     elapsedTime: CompletionGenerationTime;
+
+    // TODO (mb): document
+    round: number;
+}
+
+export interface ValidatedProof extends MeasuredProof {
+    generatedProof: GeneratedProof;
+    // TODO (mb): document; undefine means not validated yet
+    validation: ValidationResult | undefined;
+    nextProofFixRound: BenchmarkedCompletionGeneration | undefined;
+}
+
+export interface ValidationResult {
+    isValid: boolean;
+    diagnostic: string | undefined;
 }
 
 export interface MeasuredProof {
@@ -61,6 +77,7 @@ export interface FailedCompletionGeneration
     // TODO: document better
 }
 
+// TODO: update them accordingly to the new coq-lsp
 export enum CompletionGenerationFailureType {
     SEARCH_FAILED,
     TIMEOUT, // TODO: coq proof checker / coq lsp timeout?

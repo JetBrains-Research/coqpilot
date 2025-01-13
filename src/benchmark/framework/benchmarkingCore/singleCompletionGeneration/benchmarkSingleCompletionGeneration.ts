@@ -9,6 +9,10 @@ import { GeneratedRawContentItem } from "../../../../llm/llmServices/commonStruc
 import { GenerationTokens } from "../../../../llm/llmServices/commonStructures/generationTokens";
 import { LLMServiceRequestSucceeded } from "../../../../llm/llmServices/commonStructures/llmServiceRequest";
 import {
+    GeneratedProof,
+    GeneratedProofImpl,
+} from "../../../../llm/llmServices/generatedProof";
+import {
     LLMService,
     LLMServiceImpl,
 } from "../../../../llm/llmServices/llmService";
@@ -41,6 +45,7 @@ import {
     CompletionGenerationFailureType,
     FailedCompletionGeneration,
     SuccessfulCompletionGeneration,
+    ValidatedProof,
 } from "../../structures/benchmarkingResults/benchmarkedItem";
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { ParsedCoqFileData } from "../../structures/parsedCoqFile/parsedCoqFileData";
@@ -52,8 +57,8 @@ import { hasAllPropertiesDefined } from "../../utils/objectUtils";
 
 import {
     CompletionGenerationTimeImpl,
-    MeasuredProofImpl,
     TimeMark,
+    ValidatedProofImpl,
 } from "./measureUtils";
 import {
     AbstractProofsChecker,
@@ -69,15 +74,22 @@ export interface CompletionGenerationBenchmarkArgs<
     sourceTheorem: TheoremData;
     sourceFileEnvironment: SourceFileEnvironment;
     benchmarkingModelParams: BenchmarkingModelParams<ResolvedModelParams>;
+    round: number;
+    multiroundArgs: MultiroundBenchmarkArgs | undefined;
     llmService: LLMServiceType;
     llmServiceEventLogger: EventLogger;
     parsedSourceFileData: ParsedCoqFileData;
     workspaceRoot: WorkspaceRoot;
 }
 
+export interface MultiroundBenchmarkArgs {
+    lastRoundFailedProof: ValidatedProof;
+    diagnostic: string;
+}
+
 /**
  * Executes a single completion generation and measures its associated metrics.
- * Note: this function does not support multi-round generation so far (TODO).
+ * Note: this function does not support multi-round generation so far (TODO (mb)).
  *
  * If proof generation fails due to the `llmService` being unavailable or unreachable (e.g., connection error),
  * the function will retry indefinitely by default or until `options.proofGenerationRetries` are reached / abort signal is sent.
@@ -114,27 +126,30 @@ export async function benchmarkSingleCompletionGeneration<
     logger
         .asOneRecord()
         .info(
-            `Successfully generated ${proofGenerationResult.generatedRawProofs.length} proof(s)`
+            `Successfully generated ${proofGenerationResult.proofs.length} proof(s)`
         )
         .debug(
             `Effective elapsed time: ${proofGenerationResult.effectiveElapsedTimeMillis} ms`,
             "gray"
         );
-    const preparedProofsWithTokens: [string, GenerationTokens][] =
-        proofGenerationResult.generatedRawProofs.map(
-            (generatedRawProof: GeneratedRawContentItem) => [
-                prepareProofToCheck(generatedRawProof.content),
-                generatedRawProof.tokensSpent,
-            ]
-        );
+    const preparedProofsWithTokens: [
+        string,
+        GeneratedProof,
+        GenerationTokens,
+    ][] = proofGenerationResult.proofs.map((proof: GeneratedProofItem) => [
+        prepareProofToCheck(proof.generatedProof.proof()),
+        proof.generatedProof,
+        proof.tokensSpent,
+    ]);
 
     const measuredTime = new CompletionGenerationTimeImpl(
         proofGenerationResult.effectiveElapsedTimeMillis
     );
     const allGeneratedProofsMap = reduceToMap(
         preparedProofsWithTokens,
-        ([proof, _]) => proof,
-        ([proof, tokens]) => new MeasuredProofImpl(proof, tokens)
+        ([preparedProof, _]) => preparedProof,
+        ([preparedProof, generatedProof, tokens]) =>
+            new ValidatedProofImpl(generatedProof, preparedProof, tokens)
     );
 
     const parsedSourceFile = generationArgs.parsedSourceFileData;
@@ -154,13 +169,14 @@ export async function benchmarkSingleCompletionGeneration<
         ),
         tokensSpentInTotal: proofGenerationResult.tokensSpentInTotal,
         elapsedTime: measuredTime,
+        round: generationArgs.round,
     };
 
     throwOnAbort(abortSignal);
     let proofsCheckResult: ProofsCheckResult;
     try {
         proofsCheckResult = await proofsChecker.checkProofs(
-            preparedProofsWithTokens.map(([proof, _]) => proof),
+            Array.from(allGeneratedProofsMap.keys()),
             generationArgs.completionContext,
             generationArgs.sourceFileEnvironment,
             generationArgs.workspaceRoot,
@@ -179,9 +195,13 @@ export async function benchmarkSingleCompletionGeneration<
             throw error;
         }
     }
-    const validProofs = proofsCheckResult.checkedProofs
-        .filter((checkedProof) => checkedProof.isValid)
-        .map((checkedProof) => allGeneratedProofsMap.get(checkedProof.proof)!);
+    for (const checkedProof of proofsCheckResult.checkedProofs) {
+        const validatedProof = allGeneratedProofsMap.get(checkedProof.proof)!; // TODO (mb): !
+        validatedProof.setCheckResult(checkedProof);
+    }
+    const validProofs = resultMetrics.allGeneratedProofs.filter(
+        (validatedProof) => validatedProof.validation!.isValid // TODO (mb): !
+    );
     measuredTime.addProofsValidationMillis(
         proofsCheckResult.effectiveElapsedMillis
     );
@@ -216,10 +236,16 @@ namespace RemoteConnectionErrorDelays {
 }
 
 interface ProofGenerationResult {
-    generatedRawProofs: GeneratedRawContentItem[];
+    proofs: GeneratedProofItem[];
     tokensSpentInTotal: GenerationTokens;
     contextTheoremNames: string[];
     effectiveElapsedTimeMillis: number;
+}
+
+interface GeneratedProofItem {
+    generatedProof: GeneratedProof;
+    // TODO (mb): document by referencing `GeneratedRawContentItem.tokensSpent`
+    tokensSpent: GenerationTokens;
 }
 
 /**
@@ -240,30 +266,50 @@ async function generateProofWithRetriesExclusively<
     logger: BenchmarkingLogger,
     abortSignal: AbortSignal
 ): Promise<ProofGenerationResult> {
-    return modelsScheduler.scheduleTask(
-        () =>
-            generateProofWithRetriesMeasured(
-                generationArgs.completionContext,
-                generationArgs.sourceTheorem.name,
-                generationArgs.sourceFileEnvironment,
-                generationArgs.benchmarkingModelParams,
-                generationArgs.llmService,
-                generationArgs.llmServiceEventLogger,
-                options,
-                logger,
-                abortSignal
-            ),
-        logger
-    );
+    const benchmarkingParams = generationArgs.benchmarkingModelParams;
+    return modelsScheduler.scheduleTask(async () => {
+        let generateProof: (() => Promise<GeneratedProof[]>) | undefined =
+            undefined;
+        if (generationArgs.round === 0) {
+            generateProof = async () => {
+                const proofGenerationContext = buildProofGenerationContext(
+                    generationArgs.completionContext,
+                    generationArgs.sourceFileEnvironment.fileTheorems,
+                    generationArgs.sourceTheorem.name,
+                    benchmarkingParams.theoremRanker
+                );
+                return generationArgs.llmService.generateProof(
+                    proofGenerationContext,
+                    benchmarkingParams.modelParams,
+                    benchmarkingParams.modelParams.defaultChoices,
+                    ErrorsHandlingMode.RETHROW_ERRORS
+                );
+            };
+        } else {
+            generateProof = async () => {
+                const multiroundArgs = generationArgs.multiroundArgs!;
+                // TODO (mb): !
+                return await multiroundArgs.lastRoundFailedProof.generatedProof.fixProof(
+                    multiroundArgs.diagnostic,
+                    benchmarkingParams.modelParams.multiroundProfile
+                        .defaultProofFixChoices,
+                    ErrorsHandlingMode.RETHROW_ERRORS
+                );
+            };
+        }
+        return generateProofWithRetriesMeasured(
+            generateProof,
+            generationArgs.llmService,
+            generationArgs.llmServiceEventLogger,
+            options,
+            logger,
+            abortSignal
+        );
+    }, logger);
 }
 
-async function generateProofWithRetriesMeasured<
-    ResolvedModelParams extends ModelParams,
->(
-    completionContext: CompletionContext,
-    sourceTheoremName: string,
-    sourceFileEnvironment: SourceFileEnvironment,
-    benchmarkingModelParams: BenchmarkingModelParams<ResolvedModelParams>,
+async function generateProofWithRetriesMeasured(
+    generateProofs: () => Promise<GeneratedProof[]>,
     llmService: LLMService<any, any>,
     llmServiceEventLogger: EventLogger,
     options: BenchmarkingOptions,
@@ -271,6 +317,9 @@ async function generateProofWithRetriesMeasured<
     abortSignal: AbortSignal
 ): Promise<ProofGenerationResult> {
     const result: Partial<ProofGenerationResult> = {};
+    let generatedRawProofs: Map<string, GeneratedRawContentItem> | undefined =
+        undefined;
+
     const succeededSubscriptionId = llmServiceEventLogger.subscribeToLogicEvent(
         LLMServiceImpl.requestSucceededEvent,
         (data: any) => {
@@ -280,18 +329,20 @@ async function generateProofWithRetriesMeasured<
                     `data of the ${LLMServiceImpl.requestSucceededEvent} event should be a \`LLMServiceRequestSucceeded\` object, but data = ${stringifyAnyValue(data)}`
                 );
             }
-            result.generatedRawProofs = request.generatedRawProofs;
+            // (!!!) TODO (mb): pass logging object inside proof generation and get rid of tracking evens here
+            generatedRawProofs = reduceToMap(
+                request.generatedRawProofs,
+                (item) =>
+                    GeneratedProofImpl.removeProofQedIfNeeded(item.content),
+                (item) => item
+            );
+            console.error(
+                `\n\nBAKA BAKA:\n${request.generatedRawProofs.map((p) => p.content)}\n\n`
+            );
             result.tokensSpentInTotal = request.tokensSpentInTotal;
             result.contextTheoremNames =
                 request.analyzedChat?.contextTheorems ?? [];
         }
-    );
-
-    const proofGenerationContext = buildProofGenerationContext(
-        completionContext,
-        sourceFileEnvironment.fileTheorems,
-        sourceTheoremName,
-        benchmarkingModelParams.theoremRanker
     );
 
     let delayMillis = 0;
@@ -309,12 +360,24 @@ async function generateProofWithRetriesMeasured<
         throwOnAbort(abortSignal);
         try {
             const attemptTime = new TimeMark();
-            await llmService.generateProof(
-                proofGenerationContext,
-                benchmarkingModelParams.modelParams,
-                benchmarkingModelParams.modelParams.defaultChoices,
-                ErrorsHandlingMode.RETHROW_ERRORS
-            );
+            const generatedProofs = await generateProofs();
+            result.proofs = generatedProofs.map((generatedProof) => {
+                // TODO (mb): !
+                if (generatedRawProofs === undefined) {
+                    throw Error("Event not received");
+                }
+                const rawProof = generatedRawProofs.get(generatedProof.proof());
+                if (rawProof === undefined) {
+                    throw Error(
+                        `No proof logs in event for proof \`${generatedProof.proof()}\``
+                    );
+                }
+                return {
+                    generatedProof: generatedProof,
+                    tokensSpent: rawProof.tokensSpent,
+                };
+            });
+
             result.effectiveElapsedTimeMillis =
                 attemptTime.measureElapsedMillis();
             if (!hasAllPropertiesDefined<ProofGenerationResult>(result)) {
@@ -389,6 +452,9 @@ async function generateProofWithRetriesMeasured<
                     )
                     .debug(`Delay to wait for: ${millisToString(delayMillis)}`);
             } else {
+                console.error("\n\nBUKA\n\n");
+                console.error(llmServiceError.stack);
+                // TODO (mb): add stacktrace
                 throw Error(
                     `unknown \`LLMServiceError\` type: ${stringifyAnyValue(llmServiceError.name)}, ${stringifyAnyValue(llmServiceError)}`
                 );

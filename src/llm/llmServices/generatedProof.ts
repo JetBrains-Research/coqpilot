@@ -99,7 +99,7 @@ export abstract class GeneratedProofImpl<
 
         // Save newly generated `proof`
         this.proofVersions.push({
-            proof: this.removeProofQedIfNeeded(proof),
+            proof: GeneratedProofImpl.removeProofQedIfNeeded(proof),
             diagnostic: undefined,
         });
 
@@ -197,17 +197,21 @@ export abstract class GeneratedProofImpl<
         );
     }
 
-    private readonly coqProofBlockPattern =
+    private static readonly coqProofBlockPattern =
         /(Proof(?:\s+using(?:\s+\w+)*)?)\.\s*(.*?)\s*(Qed|Defined|Admitted|Abort)\./s;
-    private readonly coqProofBlockStartPattern = ["Proof.", "Proof using."];
-    private readonly coqProofBlockEndPattern = [
+    private static readonly coqProofBlockStartPattern = [
+        "Proof.",
+        "Proof using.",
+    ];
+    private static readonly coqProofBlockEndPattern = [
         "Qed.",
         "Admitted.",
         "Defined.",
         "Abort.",
     ];
 
-    private removeProofQedIfNeeded(message: string): string {
+    // TODO: move to utils to improve testability
+    static removeProofQedIfNeeded(message: string): string {
         const match = this.coqProofBlockPattern.exec(message);
         if (match) {
             return match[2];

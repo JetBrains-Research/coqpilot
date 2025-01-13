@@ -9,7 +9,6 @@ import {
     BenchmarkingLogger,
 } from "../logging/benchmarkingLogger";
 import { heavyCheckMark, heavyCrossMark } from "../logging/specialSymbols";
-import { benchmarkedItemToJson } from "../reportBuilders/toJson";
 import { BenchmarkingItem } from "../structures/benchmarkingCore/benchmarkingItem";
 import { BenchmarkingModelParams } from "../structures/benchmarkingCore/benchmarkingModelParams";
 import { BenchmarkingOptions } from "../structures/benchmarkingCore/benchmarkingOptions";
@@ -28,7 +27,10 @@ import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
 import { selectLLMServiceBuilder } from "../utils/commonStructuresUtils/llmServicesUtils";
 import { writeToFile } from "../utils/fileUtils/fs";
 
-import { benchmarkSingleCompletionGeneration } from "./singleCompletionGeneration/benchmarkSingleCompletionGeneration";
+import {
+    MultiroundBenchmarkArgs,
+    benchmarkSingleCompletionGeneration,
+} from "./singleCompletionGeneration/benchmarkSingleCompletionGeneration";
 import { AbstractProofsChecker } from "./singleCompletionGeneration/proofsCheckers/abstractProofsChecker";
 
 export async function executeBenchmarkingTask(
@@ -54,26 +56,73 @@ export async function executeBenchmarkingTask(
             sourceTheorem: task.sourceTheorem,
             sourceFileEnvironment: task.getSourceFileEnvironment(),
             benchmarkingModelParams: params,
+            round: 0,
+            multiroundArgs: undefined,
             llmService: llmService,
             llmServiceEventLogger: llmServiceEventLogger,
             parsedSourceFileData: task.parsedSourceFileData,
             workspaceRoot: task.workspaceRoot,
         };
-        throwOnAbort(abortSignal);
-        const result = await benchmarkSingleCompletionGeneration(
-            generationArgs,
-            options,
-            modelsScheduler,
-            itemLogger,
-            proofsChecker,
-            abortSignal
-        );
-        logResult(result, itemLogger);
+
+        async function executeBenchmarkingRound(
+            round: MultiroundBenchmarkArgs | undefined,
+            roundIndex: number
+        ): Promise<BenchmarkedCompletionGeneration> {
+            const thisRoundGenerationArgs = {
+                ...generationArgs,
+                multiroundArgs: round,
+                round: roundIndex,
+            };
+            const result = await benchmarkSingleCompletionGeneration(
+                thisRoundGenerationArgs,
+                options,
+                modelsScheduler,
+                itemLogger,
+                proofsChecker,
+                abortSignal
+            );
+            logResult(result, itemLogger);
+            return result;
+        }
+
+        const maxRounds = params.modelParams.multiroundProfile.maxRoundsNumber;
+        let zeroRoundResult: BenchmarkedCompletionGeneration | undefined =
+            undefined;
+        let roundsArgs: (MultiroundBenchmarkArgs | undefined)[] = [undefined];
+        for (let roundIndex = 0; roundIndex < maxRounds; roundIndex++) {
+            throwOnAbort(abortSignal);
+            const nextRoundArgs: MultiroundBenchmarkArgs[] = [];
+            for (const round of roundsArgs) {
+                const roundResult = await executeBenchmarkingRound(
+                    round,
+                    roundIndex
+                );
+                // TODO (mb): saveResultToFile(benchmarkedItem, saveToFilePath, itemLogger);
+                if (round === undefined) {
+                    // roundIndex === 0
+                    zeroRoundResult = roundResult;
+                } else {
+                    round.lastRoundFailedProof.nextProofFixRound = roundResult;
+                }
+                // assign failed generated proofs for regeneration on next rounds
+                const failedProofs = roundResult.allGeneratedProofs.filter(
+                    (validatedProof) => validatedProof.validation!.isValid // TODO (mb): handle nullbility
+                );
+                for (const failedProof of failedProofs) {
+                    nextRoundArgs.push({
+                        lastRoundFailedProof: failedProof,
+                        diagnostic: failedProof.validation!.diagnostic!, // TODO (mb): handle !
+                    });
+                }
+            }
+            roundsArgs = nextRoundArgs;
+        }
 
         const benchmarkedItem: BenchmarkedItem = {
             item: benchmarkingItem,
-            result: result,
+            result: zeroRoundResult!, // TODO (mb): handle !
         };
+        // TODO (mb): support proper multiround result save in general
         saveResultToFile(benchmarkedItem, saveToFilePath, itemLogger);
 
         return benchmarkedItem;
@@ -160,11 +209,12 @@ function logCommonError(
 }
 
 function saveResultToFile(
-    benchmarkedItem: BenchmarkedItem,
+    _benchmarkedItem: BenchmarkedItem,
     filePath: string,
     itemLogger: BenchmarkingLogger
 ) {
-    writeToFile(benchmarkedItemToJson(benchmarkedItem), filePath, (e) =>
+    // TODO (mb): benchmarkedItemToJson(benchmarkedItem)
+    writeToFile("TODO", filePath, (e) =>
         itemLogger
             .asOneRecord()
             .error(`Failed to save results into ${filePath}`)
@@ -172,6 +222,7 @@ function saveResultToFile(
     );
 }
 
+// TODO (mb): support multiround
 function logResult(
     result: BenchmarkedCompletionGeneration,
     itemLogger: BenchmarkingLogger

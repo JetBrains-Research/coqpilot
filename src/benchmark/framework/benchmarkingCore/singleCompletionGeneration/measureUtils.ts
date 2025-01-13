@@ -1,8 +1,13 @@
 import { GenerationTokens } from "../../../../llm/llmServices/commonStructures/generationTokens";
+import { GeneratedProof } from "../../../../llm/llmServices/generatedProof";
+
+import { ProofCheckResult } from "../../../../core/coqProofChecker";
 
 import {
+    BenchmarkedCompletionGeneration,
     CompletionGenerationTime,
-    MeasuredProof,
+    ValidatedProof,
+    ValidationResult,
 } from "../../structures/benchmarkingResults/benchmarkedItem";
 import { LengthMetrics } from "../../structures/common/measureStructures";
 
@@ -37,13 +42,34 @@ export class CompletionGenerationTimeImpl implements CompletionGenerationTime {
     }
 }
 
-export class MeasuredProofImpl implements MeasuredProof {
+// TODO (mb): remove after finishing the developing other interfaces
+// export class MeasuredProofImpl implements MeasuredProof {
+//     constructor(
+//         readonly asString: string,
+//         readonly tokensSpent: GenerationTokens
+//     ) {}
+
+//     readonly length = measureLength(this.asString);
+// }
+
+export class ValidatedProofImpl implements ValidatedProof {
     constructor(
+        readonly generatedProof: GeneratedProof,
         readonly asString: string,
         readonly tokensSpent: GenerationTokens
     ) {}
 
     readonly length = measureLength(this.asString);
+
+    validation: ValidationResult | undefined;
+    nextProofFixRound: BenchmarkedCompletionGeneration | undefined = undefined;
+
+    setCheckResult(checkedProof: ProofCheckResult) {
+        this.validation = {
+            isValid: checkedProof.isValid,
+            diagnostic: checkedProof.diagnostic,
+        };
+    }
 }
 
 export class TimeMark {
