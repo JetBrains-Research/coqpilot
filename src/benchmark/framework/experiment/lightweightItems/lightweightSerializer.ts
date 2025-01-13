@@ -94,7 +94,7 @@ export namespace LightweightSerializer {
         };
     }
 
-    function buildLightweightWorkspaceRoot(
+    export function buildLightweightWorkspaceRoot(
         workspaceRoot: WorkspaceRoot
     ): LightweightWorkspaceRoot {
         return {
@@ -106,7 +106,7 @@ export namespace LightweightSerializer {
         };
     }
 
-    function buildLightweightTask(
+    export function buildLightweightTask(
         task: CompletionGenerationTask
     ): LightweightCompletionGenerationTask {
         return {

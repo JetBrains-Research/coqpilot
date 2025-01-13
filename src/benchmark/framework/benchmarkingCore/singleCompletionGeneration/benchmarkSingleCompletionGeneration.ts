@@ -73,6 +73,7 @@ export interface CompletionGenerationBenchmarkArgs<
     sourceFileEnvironment: SourceFileEnvironment;
     benchmarkingModelParams: BenchmarkingModelParams<ResolvedModelParams>;
     parentProofToFix: ParentProofToFix | undefined;
+    nextGeneratedProofId: number;
     round: number;
     llmService: LLMServiceType;
     llmServiceEventLogger: EventLogger;
@@ -135,11 +136,15 @@ export async function benchmarkSingleCompletionGeneration<
         string,
         GeneratedProof,
         GenerationTokens,
-    ][] = proofGenerationResult.proofs.map((proof: GeneratedProofItem) => [
-        prepareProofToCheck(proof.generatedProof.proof()),
-        proof.generatedProof,
-        proof.tokensSpent,
-    ]);
+        number,
+    ][] = proofGenerationResult.proofs.map(
+        (proof: GeneratedProofItem, index: number) => [
+            prepareProofToCheck(proof.generatedProof.proof()),
+            proof.generatedProof,
+            proof.tokensSpent,
+            generationArgs.nextGeneratedProofId + index,
+        ]
+    );
 
     const measuredTime = new CompletionGenerationTimeImpl(
         proofGenerationResult.effectiveElapsedTimeMillis
@@ -147,8 +152,13 @@ export async function benchmarkSingleCompletionGeneration<
     const allGeneratedProofsMap = reduceToMap(
         preparedProofsWithTokens,
         ([preparedProof, _]) => preparedProof,
-        ([preparedProof, generatedProof, tokens]) =>
-            new NonValidatedProof(generatedProof, preparedProof, tokens)
+        ([preparedProof, generatedProof, tokens, generatedProofId]) =>
+            new NonValidatedProof(
+                generatedProof,
+                preparedProof,
+                tokens,
+                generatedProofId
+            )
     );
 
     // prepare result data

@@ -40,6 +40,16 @@ abstract class AbstractBenchmarkedCompletionGeneration<
         readonly round: number
     ) {}
 
+    private _parentProofToFixId: number | undefined = undefined;
+
+    get parentProofToFixId(): number | undefined {
+        return this._parentProofToFixId;
+    }
+
+    linkParentProofToFix(parentProofToFix: ValidatedProof) {
+        this._parentProofToFixId = parentProofToFix.generatedProofId;
+    }
+
     isFailedToFinishRound(): this is FailedCompletionGenerationBenchmarking {
         const maybeFailedToFinish =
             this as unknown as FailedCompletionGenerationBenchmarking;

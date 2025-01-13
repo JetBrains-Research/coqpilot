@@ -55,6 +55,7 @@ export async function executeBenchmarkingTask(
             sourceFileEnvironment: task.getSourceFileEnvironment(),
             benchmarkingModelParams: params,
             parentProofToFix: undefined,
+            nextGeneratedProofId: 0,
             round: 0,
             llmService: llmService,
             llmServiceEventLogger: llmServiceEventLogger,
@@ -64,11 +65,13 @@ export async function executeBenchmarkingTask(
 
         async function benchmarkCompletionGenerationRound(
             parentProof: ParentProofToFix | undefined,
+            nextGeneratedProofId: number,
             roundIndex: number
         ): Promise<BenchmarkingResult> {
             const thisRoundGenerationArgs = {
                 ...generationArgs,
                 parentProofToFix: parentProof,
+                nextGeneratedProofId: nextGeneratedProofId,
                 round: roundIndex,
             };
             const result = await benchmarkSingleCompletionGeneration(
@@ -88,6 +91,8 @@ export async function executeBenchmarkingTask(
         const maxRoundsNumber =
             params.modelParams.multiroundProfile.maxRoundsNumber;
         let curRoundProofsToFix: (ParentProofToFix | undefined)[] = [undefined];
+        let nextGeneratedProofId = 0;
+
         for (let roundIndex = 0; roundIndex < maxRoundsNumber; roundIndex++) {
             throwOnAbort(abortSignal);
             const nextRoundProofsToFix: ParentProofToFix[] = [];
@@ -95,8 +100,10 @@ export async function executeBenchmarkingTask(
                 const childRoundResult =
                     await benchmarkCompletionGenerationRound(
                         parentProof,
+                        nextGeneratedProofId,
                         roundIndex
                     );
+                nextGeneratedProofId += childRoundResult.generatedProofs.length;
                 // TODO (mb): saveResultToFile(benchmarkedItem, saveToFilePath, itemLogger);
                 if (parentProof === undefined) {
                     // roundIndex === 0
@@ -104,6 +111,9 @@ export async function executeBenchmarkingTask(
                 } else {
                     parentProof.benchmarkedProof.linkNextRoundResult(
                         childRoundResult
+                    );
+                    childRoundResult.linkParentProofToFix(
+                        parentProof.benchmarkedProof
                     );
                 }
                 if (childRoundResult.isFailedToFinishRound()) {
