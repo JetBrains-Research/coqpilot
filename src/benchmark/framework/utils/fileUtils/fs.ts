@@ -1,6 +1,9 @@
 import * as fs from "fs";
 import * as path from "path";
 
+import { stringifyAnyValue } from "../../../../utils/printers";
+import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
+
 export function getRootDir(): string {
     const relativeRoot = path.join(__dirname, "/../../../../../");
     return path.resolve(relativeRoot);
@@ -121,6 +124,21 @@ export function clearDirectory(dirPath: string) {
     createDirectory(true, dirPath);
 }
 
+export function provideEmptyDirectoryOrThrow(
+    dirPath: string,
+    dirNameDescription: string
+) {
+    if (exists(dirPath)) {
+        if (!checkDirectoryIsEmpty(dirPath)) {
+            throw Error(
+                `${dirNameDescription} directory should be empty: "${dirPath}"`
+            );
+        }
+    } else {
+        createDirectory(true, dirPath);
+    }
+}
+
 export type FileCreationModeOnExisting = "throw" | "clear" | "return";
 
 export function createFileWithParentDirectories(
@@ -228,4 +246,23 @@ function listFiles(
 
     traverseDirectory(dirPath, depth);
     return resultFilePaths;
+}
+
+export function saveToFileOrHandleError(
+    text: string,
+    filePath: string,
+    logger: BenchmarkingLogger,
+    fileDescription: string,
+    throwOnError: boolean
+) {
+    writeToFile(text, filePath, (e) => {
+        const errorMessage = `Failed to save ${fileDescription} into ${filePath}`;
+        logger
+            .asOneRecord()
+            .error(errorMessage)
+            .error(`Cause: ${stringifyAnyValue(e)}`);
+        if (throwOnError) {
+            throw Error(errorMessage);
+        }
+    });
 }

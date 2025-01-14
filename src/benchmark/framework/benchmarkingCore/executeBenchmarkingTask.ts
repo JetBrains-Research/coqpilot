@@ -2,13 +2,14 @@ import { ConfigurationError } from "../../../llm/llmServiceErrors";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
 
 import { buildErrorCompleteLog } from "../../../utils/errorsUtils";
-import { stringifyAnyValue } from "../../../utils/printers";
+import { toJsonString } from "../../../utils/printers";
 import { millisToString } from "../../../utils/time";
 import {
     AsOneRecordLogsBuilder,
     BenchmarkingLogger,
 } from "../logging/benchmarkingLogger";
 import { heavyCheckMark, heavyCrossMark } from "../logging/specialSymbols";
+import { BasicJsonSerialization } from "../reportBuilders/basicJson/serialization";
 import { BenchmarkingItem } from "../structures/benchmarkingCore/benchmarkingItem";
 import { BenchmarkingModelParams } from "../structures/benchmarkingCore/benchmarkingModelParams";
 import { BenchmarkingOptions } from "../structures/benchmarkingCore/benchmarkingOptions";
@@ -22,7 +23,12 @@ import {
 } from "../utils/asyncUtils/abortUtils";
 import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
 import { selectLLMServiceBuilder } from "../utils/commonStructuresUtils/llmServicesUtils";
-import { writeToFile } from "../utils/fileUtils/fs";
+import { buildSafeJsonFileName } from "../utils/fileUtils/fileNameUtils";
+import {
+    joinPaths,
+    provideEmptyDirectoryOrThrow,
+    saveToFileOrHandleError,
+} from "../utils/fileUtils/fs";
 
 import {
     ParentProofToFix,
@@ -30,16 +36,28 @@ import {
 } from "./singleCompletionGeneration/benchmarkSingleCompletionGeneration";
 import { AbstractProofsChecker } from "./singleCompletionGeneration/proofsCheckers/abstractProofsChecker";
 
+namespace ArtifactsNames {
+    export const benchmarkingItemFileName = "input-task.json";
+    export const resultReportFileName = "result.json";
+}
+
 // TODO (mb): document multiround execution
 export async function executeBenchmarkingTask(
     benchmarkingItem: BenchmarkingItem,
-    saveToFilePath: string,
+    saveToDirPath: string,
     options: BenchmarkingOptions,
     itemLogger: BenchmarkingLogger,
     modelsScheduler: AsyncScheduler,
     proofsChecker: AbstractProofsChecker,
     abortSignal: AbortSignal
 ): Promise<BenchmarkedItem | undefined> {
+    provideEmptyDirectoryOrThrow(saveToDirPath, "item artifacts");
+    saveInputTaskToFileOrThrow(
+        benchmarkingItem,
+        joinPaths(saveToDirPath, ArtifactsNames.benchmarkingItemFileName),
+        itemLogger
+    );
+
     const task = benchmarkingItem.task;
     const params = benchmarkingItem.params;
     const [llmService, llmServiceEventLogger] = selectLLMServiceBuilder(
@@ -104,7 +122,6 @@ export async function executeBenchmarkingTask(
                         roundIndex
                     );
                 nextGeneratedProofId += childRoundResult.generatedProofs.length;
-                // TODO (mb): saveResultToFile(benchmarkedItem, saveToFilePath, itemLogger);
                 if (parentProof === undefined) {
                     // roundIndex === 0
                     rootResult = childRoundResult;
@@ -116,6 +133,18 @@ export async function executeBenchmarkingTask(
                         parentProof.benchmarkedProof
                     );
                 }
+                saveRoundResultToFileOrThrow(
+                    childRoundResult,
+                    joinPaths(
+                        saveToDirPath,
+                        buildRoundResultFileName(
+                            roundIndex,
+                            parentProof?.benchmarkedProof.generatedProofId
+                        )
+                    ),
+                    itemLogger
+                );
+
                 if (childRoundResult.isFailedToFinishRound()) {
                     /**
                      * There are different policies of what to do when one of the proof-fixing rounds has failed,
@@ -127,7 +156,7 @@ export async function executeBenchmarkingTask(
                      * such a failure will most likely not be fixed by itself in the current setup for this benchmarking task.
                      * Therefore, there is no much sense in trying to fix other proofs generating their new versions not being able to check them.
                      */
-                    // TODO: briefly add to the top-level description
+                    // TODO (mb): briefly add to the top-level description
                     break;
                 }
                 // assign non-valid generated proofs for regeneration on next rounds
@@ -145,8 +174,11 @@ export async function executeBenchmarkingTask(
             item: benchmarkingItem,
             result: rootResult!, // TODO (mb): handle !
         };
-        // TODO (mb): support proper multiround result save in general
-        saveResultToFile(benchmarkedItem, saveToFilePath, itemLogger);
+        saveResultToFile(
+            benchmarkedItem.result,
+            joinPaths(saveToDirPath, ArtifactsNames.resultReportFileName),
+            itemLogger
+        );
 
         return benchmarkedItem;
     } catch (e) {
@@ -231,17 +263,69 @@ function logCommonError(
     }
 }
 
-function saveResultToFile(
-    _benchmarkedItem: BenchmarkedItem,
+function saveInputTaskToFileOrThrow(
+    benchmarkingItem: BenchmarkingItem,
     filePath: string,
     itemLogger: BenchmarkingLogger
 ) {
-    // TODO (mb): benchmarkedItemToJson(benchmarkedItem)
-    writeToFile("TODO", filePath, (e) =>
-        itemLogger
-            .asOneRecord()
-            .error(`Failed to save results into ${filePath}`)
-            .debug(`Cause: ${stringifyAnyValue(e)}`)
+    return saveToFileOrHandleError(
+        toJsonString(
+            BasicJsonSerialization.serializeBenchmarkingItem(benchmarkingItem),
+            2
+        ),
+        filePath,
+        itemLogger,
+        "task final result",
+        true
+    );
+}
+
+function buildRoundResultFileName(
+    round: number,
+    parentProofToFixId: number | undefined
+): string {
+    const parentId =
+        parentProofToFixId === undefined
+            ? `generate-proofs`
+            : `fix-proof-${parentProofToFixId}`;
+    return buildSafeJsonFileName(`round-${round}-${parentId}`);
+}
+
+function saveRoundResultToFileOrThrow(
+    roundResult: BenchmarkingResult,
+    filePath: string,
+    itemLogger: BenchmarkingLogger
+) {
+    return saveToFileOrHandleError(
+        toJsonString(
+            BasicJsonSerialization.serializeBenchmarkingResultAsSingleRound(
+                roundResult
+            ),
+            2
+        ),
+        filePath,
+        itemLogger,
+        `round result`,
+        true
+    );
+}
+
+function saveResultToFile(
+    rootResult: BenchmarkingResult,
+    filePath: string,
+    itemLogger: BenchmarkingLogger
+) {
+    return saveToFileOrHandleError(
+        toJsonString(
+            BasicJsonSerialization.serializeBenchmarkingResultAsRoundsTree(
+                rootResult
+            ),
+            2
+        ),
+        filePath,
+        itemLogger,
+        "task final result",
+        false
     );
 }
 
