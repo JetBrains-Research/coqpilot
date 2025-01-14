@@ -1,4 +1,7 @@
-import { stringifyAnyValue, toJsonString } from "../../../../utils/printers";
+import {
+    stringifyAnyValue,
+    toFormattedJsonString,
+} from "../../../../utils/printers";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
 import { serializeCodeElementRange } from "../../structures/common/codeElementPositions";
@@ -67,7 +70,7 @@ export function rewriteDatasetCache(
             );
             const fileSuccessfullySaved =
                 writeToFile(
-                    toJsonString(serializedCachedFile, 2),
+                    toFormattedJsonString(serializedCachedFile),
                     cachedFilePath,
                     (error) => {
                         logger

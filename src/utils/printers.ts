@@ -1,6 +1,6 @@
 export function stringifyAnyValue(
     value: any,
-    space: number | undefined = undefined
+    space: JsonSpacing = JsonSpacing.UNFORMATTED
 ): string {
     const valueAsString = toJsonString(value, space);
     if (typeof value === "number") {
@@ -11,7 +11,7 @@ export function stringifyAnyValue(
 
 export function stringifyDefinedValue(
     value: any,
-    space: number | undefined = undefined
+    space: JsonSpacing = JsonSpacing.UNFORMATTED
 ): string {
     if (value === undefined) {
         throw Error(`value to stringify is not defined`);
@@ -19,9 +19,20 @@ export function stringifyDefinedValue(
     return stringifyAnyValue(value, space);
 }
 
-export function toJsonString(
-    object: any,
-    space: number | undefined = undefined // TODO: support enum / constants
-): string {
+export function toFormattedJsonString(object: any): string {
+    return toJsonString(object, JsonSpacing.DEFAULT_FORMATTED);
+}
+
+export function toUnformattedJsonString(object: any): string {
+    return toJsonString(object, JsonSpacing.UNFORMATTED);
+}
+
+export enum JsonSpacing {
+    UNFORMATTED = 0,
+    DEFAULT_FORMATTED = 2,
+    WIDELY_FORMATTED = 4,
+}
+
+export function toJsonString(object: any, space: JsonSpacing): string {
     return JSON.stringify(object, null, space);
 }

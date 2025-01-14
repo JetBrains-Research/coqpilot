@@ -1,6 +1,7 @@
 import axios from "axios";
 import { ResponseType } from "axios";
 
+import { toUnformattedJsonString } from "../../../utils/printers";
 import { DebugWrappers } from "../llmServiceInternal";
 import { GrazieModelParams } from "../modelParams";
 
@@ -52,7 +53,7 @@ export class GrazieApi {
         history: GrazieFormattedHistory,
         params: GrazieModelParams
     ): string {
-        return JSON.stringify({
+        return toUnformattedJsonString({
             chat: {
                 messages: history,
             },
@@ -110,7 +111,7 @@ export class GrazieApi {
             Accept: "*/*",
             "Content-Type": "application/json",
             "Grazie-Authenticate-Jwt": token,
-            "Grazie-Agent": JSON.stringify({
+            "Grazie-Agent": toUnformattedJsonString({
                 name: "coq-pilot",
                 version: await this.getAgentVersion(),
             }),

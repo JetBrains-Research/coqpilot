@@ -1,4 +1,4 @@
-import { toJsonString } from "../../../utils/printers";
+import { toFormattedJsonString } from "../../../utils/printers";
 import { BenchmarkedItem } from "../structures/benchmarkingResults/benchmarkedItem";
 
 import { BasicJsonSerialization } from "./basicJson/serialization";
@@ -8,7 +8,7 @@ export function benchmarkedItemToJson(
 ): string {
     const serialized =
         BasicJsonSerialization.serializeBenchmarkedItem(benchmarkedItem);
-    return toJsonString(serialized, 2);
+    return toFormattedJsonString(serialized);
 }
 
 export function benchmarkedItemsToJson(

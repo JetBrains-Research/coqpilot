@@ -1,4 +1,5 @@
 import { EventLogger } from "../../../logging/eventLogger";
+import { toUnformattedJsonString } from "../../../utils/printers";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { LMStudioUserModelParams } from "../../userModelParams";
 import { AnalyzedChatHistory, ChatHistory } from "../commonStructures/chat";
@@ -141,7 +142,7 @@ class LMStudioServiceInternal extends LLMServiceInternal<
     };
 
     private body(messages: ChatHistory, params: LMStudioModelParams): string {
-        return JSON.stringify({
+        return toUnformattedJsonString({
             messages: messages,
             stream: false,
             temperature: params.temperature,

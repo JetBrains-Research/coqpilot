@@ -1,3 +1,4 @@
+import { JsonSpacing, toJsonString } from "../../../../utils/printers";
 import {
     ChatHistory,
     ChatRole,
@@ -345,7 +346,8 @@ export class DebugLoggerRecord extends LoggerRecord {
 
     protected static readonly subItemIndent = "\t";
     protected static readonly subItemDelimIndented = `${this.subItemIndent}> `;
-    protected static readonly jsonStringifyIndent = 2;
+    protected static readonly jsonStringifyIndent =
+        JsonSpacing.DEFAULT_FORMATTED;
 
     protected static readonly emptyListLine = `${this.subItemIndent}~ empty`;
     protected static readonly emptyListPattern = /^\t~ empty$/;
@@ -418,11 +420,7 @@ export class DebugLoggerRecord extends LoggerRecord {
     }
 
     private paramsToExtraLogs(): string {
-        return JSON.stringify(
-            this.params,
-            null,
-            DebugLoggerRecord.jsonStringifyIndent
-        );
+        return toJsonString(this.params, DebugLoggerRecord.jsonStringifyIndent);
     }
 
     static deserealizeFromString(
@@ -566,7 +564,7 @@ export class DebugLoggerRecord extends LoggerRecord {
         );
 
         restRawRecord = restRawRecord.slice(
-            JSON.stringify(params, null, this.jsonStringifyIndent).length
+            toJsonString(params, this.jsonStringifyIndent).length
         );
         if (!restRawRecord.startsWith("\n")) {
             throw new ParsingError(

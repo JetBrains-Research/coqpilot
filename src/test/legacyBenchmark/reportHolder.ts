@@ -3,6 +3,7 @@ import { ValidateFunction } from "ajv/dist/types";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 
 import { AjvMode, buildAjv } from "../../utils/ajvErrorsHandling";
+import { JsonSpacing, toJsonString } from "../../utils/printers";
 
 export interface TheoremProofResult {
     theoremName: string;
@@ -54,7 +55,10 @@ export class BenchmarkReportHolder {
             report[proofResult.theoremName] = [];
         }
         report[proofResult.theoremName].push(proofResult);
-        writeFileSync(this.reportPath, JSON.stringify(report, null, 4));
+        writeFileSync(
+            this.reportPath,
+            toJsonString(report, JsonSpacing.WIDELY_FORMATTED)
+        );
     }
 
     generateMarkdown() {

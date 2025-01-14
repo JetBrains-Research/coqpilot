@@ -1,7 +1,7 @@
 import { ProofGoal } from "../../../../coqLsp/coqLspTypes";
 
 import { ProofStep } from "../../../../coqParser/parsedTypes";
-import { toJsonString } from "../../../../utils/printers";
+import { toFormattedJsonString } from "../../../../utils/printers";
 import {
     AsOneRecordLogsBuilder,
     BenchmarkingLogger,
@@ -169,7 +169,7 @@ namespace UpdateCacheHolders {
                     "Cache building invariant failed: `CachedTheoremData` should have no targets before their initial build"
                 )
                 .debug(
-                    `\tTheorem "${cachedTheorem.theoremData.name}" had the following cached targets:\n${toJsonString(cachedTheorem.targetEntries(), 2)}`
+                    `\tTheorem "${cachedTheorem.theoremData.name}" had the following cached targets:\n${toFormattedJsonString(cachedTheorem.targetEntries())}`
                 );
             throw Error(
                 `Cache building invariant failed: \`CachedTheoremData\` is built incorrectly`
@@ -234,7 +234,7 @@ namespace UpdateCacheHolders {
                     "Cache building invariant failed: `CachedTheoremData` should have initialized targets before updating them with parsed ones"
                 )
                 .debug(
-                    `\tTheorem "${cachedTheorem.theoremData.name}" had the following cached targets:\n${toJsonString(cachedTheorem.targetEntries(), 2)};`
+                    `\tTheorem "${cachedTheorem.theoremData.name}" had the following cached targets:\n${toFormattedJsonString(cachedTheorem.targetEntries())};`
                 )
                 .debug(
                     `\t& was going to be updated with ${parsedTarget.targetType} target at ${parsedTarget.positionRange.toString()}`

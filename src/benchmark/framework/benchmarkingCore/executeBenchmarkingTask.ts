@@ -2,7 +2,7 @@ import { ConfigurationError } from "../../../llm/llmServiceErrors";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
 
 import { buildErrorCompleteLog } from "../../../utils/errorsUtils";
-import { toJsonString } from "../../../utils/printers";
+import { toFormattedJsonString } from "../../../utils/printers";
 import { millisToString } from "../../../utils/time";
 import {
     AsOneRecordLogsBuilder,
@@ -269,9 +269,8 @@ function saveInputTaskToFileOrThrow(
     itemLogger: BenchmarkingLogger
 ) {
     return saveToFileOrHandleError(
-        toJsonString(
-            BasicJsonSerialization.serializeBenchmarkingItem(benchmarkingItem),
-            2
+        toFormattedJsonString(
+            BasicJsonSerialization.serializeBenchmarkingItem(benchmarkingItem)
         ),
         filePath,
         itemLogger,
@@ -297,11 +296,10 @@ function saveRoundResultToFileOrThrow(
     itemLogger: BenchmarkingLogger
 ) {
     return saveToFileOrHandleError(
-        toJsonString(
+        toFormattedJsonString(
             BasicJsonSerialization.serializeBenchmarkingResultAsSingleRound(
                 roundResult
-            ),
-            2
+            )
         ),
         filePath,
         itemLogger,
@@ -316,11 +314,10 @@ function saveResultToFile(
     itemLogger: BenchmarkingLogger
 ) {
     return saveToFileOrHandleError(
-        toJsonString(
+        toFormattedJsonString(
             BasicJsonSerialization.serializeBenchmarkingResultAsRoundsTree(
                 rootResult
-            ),
-            2
+            )
         ),
         filePath,
         itemLogger,
