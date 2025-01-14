@@ -5,7 +5,9 @@ import { TheoremData } from "../parsedCoqFile/theoremData";
 
 import {
     BenchmarkedProof,
+    NonValidProof,
     NonValidatedProof,
+    ValidProof,
     ValidatedProof,
 } from "./benchmarkedProof";
 
@@ -102,10 +104,10 @@ abstract class AbstractBenchmarkedCompletionGeneration<
         );
     }
 
-    getAllValidProofs(): ValidatedProof[] {
+    getAllValidProofs(): ValidProof[] {
         return this.getAllProofsByRounds().filter(
-            (proof) => proof.isValidated() && proof.validationResult.isValid
-        ) as ValidatedProof[];
+            (proof) => proof.isValidated() && proof.isValidProof()
+        );
     }
 
     isSuccessfulCompletion(): boolean {
@@ -178,15 +180,11 @@ export class SuccessfulCompletionGenerationBenchmarking extends AbstractBenchmar
         );
     }
 
-    get thisRoundValidProofs(): ValidatedProof[] {
-        return this.generatedProofs.filter(
-            (proof) => proof.validationResult.isValid
-        );
+    get thisRoundValidProofs(): ValidProof[] {
+        return this.generatedProofs.filter((proof) => proof.isValidProof());
     }
 
-    get thisRoundNonValidProofs(): ValidatedProof[] {
-        return this.generatedProofs.filter(
-            (proof) => !proof.validationResult.isValid
-        );
+    get thisRoundNonValidProofs(): NonValidProof[] {
+        return this.generatedProofs.filter((proof) => proof.isNonValidProof());
     }
 }

@@ -49,35 +49,54 @@ export class NonValidatedProof extends AbstractBenchmarkedProof {
         proofObject: GeneratedProof,
         asString: string,
         tokensSpent: GenerationTokens,
-        readonly generatedProofId: number
+        generatedProofId: number
     ) {
         super(proofObject, asString, tokensSpent, generatedProofId);
     }
 
     validate(checkedProof: ProofCheckResult): ValidatedProof {
-        const validationResult: ValidationResult = {
-            isValid: checkedProof.isValid,
-            diagnostic: checkedProof.diagnostic,
-        };
-        return new ValidatedProof(
+        if (checkedProof.isValid) {
+            return new ValidProof(
+                this.proofObject,
+                this.asString,
+                this.tokensSpent,
+                this.generatedProofId
+            );
+        }
+        if (checkedProof.diagnostic === undefined) {
+            throw Error(
+                `\`CoqProofChecker\` invariant failed: non-valid proof cannot have \`undefined\` diagnostic`
+            );
+        }
+        return new NonValidProof(
             this.proofObject,
             this.asString,
             this.tokensSpent,
             this.generatedProofId,
-            validationResult
+            checkedProof.diagnostic! // invariant, has been checked above
         );
     }
 }
 
-export class ValidatedProof extends AbstractBenchmarkedProof {
+export type ValidatedProof = NonValidProof | ValidProof;
+
+abstract class AbstractValidatedProof extends AbstractBenchmarkedProof {
     constructor(
         proofObject: GeneratedProof,
         asString: string,
         tokensSpent: GenerationTokens,
-        readonly generatedProofId: number,
-        readonly validationResult: ValidationResult
+        generatedProofId: number,
+        readonly isValid: boolean
     ) {
         super(proofObject, asString, tokensSpent, generatedProofId);
+    }
+
+    isValidProof(): this is ValidProof {
+        return this.isValid;
+    }
+
+    isNonValidProof(): this is NonValidProof {
+        return !this.isValid;
     }
 
     private nextProofFixRoundResult: BenchmarkingResult | undefined = undefined;
@@ -91,7 +110,25 @@ export class ValidatedProof extends AbstractBenchmarkedProof {
     }
 }
 
-export interface ValidationResult {
-    isValid: boolean;
-    diagnostic: string | undefined;
+export class NonValidProof extends AbstractValidatedProof {
+    constructor(
+        proofObject: GeneratedProof,
+        asString: string,
+        tokensSpent: GenerationTokens,
+        generatedProofId: number,
+        readonly diagnostic: string
+    ) {
+        super(proofObject, asString, tokensSpent, generatedProofId, false);
+    }
+}
+
+export class ValidProof extends AbstractValidatedProof {
+    constructor(
+        proofObject: GeneratedProof,
+        asString: string,
+        tokensSpent: GenerationTokens,
+        generatedProofId: number
+    ) {
+        super(proofObject, asString, tokensSpent, generatedProofId, true);
+    }
 }

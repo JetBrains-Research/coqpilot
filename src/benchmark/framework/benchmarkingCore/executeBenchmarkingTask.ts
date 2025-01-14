@@ -163,7 +163,7 @@ export async function executeBenchmarkingTask(
                 for (const nonValidProof of childRoundResult.thisRoundNonValidProofs) {
                     nextRoundProofsToFix.push({
                         benchmarkedProof: nonValidProof,
-                        diagnostic: nonValidProof.validationResult.diagnostic!, // TODO (mb): handle !
+                        diagnostic: nonValidProof.diagnostic,
                     });
                 }
             }

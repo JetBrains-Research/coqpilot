@@ -208,7 +208,7 @@ export async function benchmarkSingleCompletionGeneration<
             throw error;
         }
     }
-    // (!) TODO: check proof-checker behaviour for the equal proofs
+    // (!) TODO (mb): check proof-checker behaviour for the equal proofs
     const validatedProofs = proofsCheckResult.checkedProofs.map(
         (checkedProof) => {
             // TODO (mb): !
