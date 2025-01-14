@@ -44,7 +44,32 @@ namespace ArtifactsNames {
     export const resultReportFileName = "result.json";
 }
 
-// TODO (mb): document multiround execution
+/**
+ * Executes the full benchmarking process for a given completion generation benchmarking task.
+ *
+ * Specifically, this function calls `benchmarkSingleCompletionGeneration` to benchmark individual
+ * rounds of completion generation. Benchmarking rounds are executed sequentially in BFS order:
+ * - First, the root round of proof generation is benchmarked.
+ * - Then, proof fixes for any resulting non-valid generated proofs are benchmarked in the second round.
+ * - Subsequently, proof fixes for non-valid proofs from the second round are benchmarked in the third round, and so on.
+ *
+ * The multiround benchmarking mirrors the original multiround completion generation process:
+ * execution stops as soon as any valid proof is generated.
+ *
+ * Additionally, this function saves interim and final benchmarking results to `saveToDirPath`
+ * to ensure no generated data is lost in case of failure, allowing the benchmarking task
+ * to be resumed in the future if needed.
+ *
+ * This function generally does not throw errors, except for `FailFastAbortError`, which
+ * enforces a fail-fast abort strategy. Errors anticipated during proof generation are captured
+ * in the `BenchmarkedItem` by `benchmarkSingleCompletionGeneration` (refer to its documentation
+ * for more details). However, these errors also stop the multiround benchmarking process.
+ * For further explanation, see the comment at the `if (childRoundResult.isFailedToFinishRound())`
+ * line in the code below.
+ *
+ * Other errors (e.g., `ConfigurationError`, `IllegalStateError`) will interrupt the
+ * benchmarking process. They are logged appropriately, and the function returns `undefined`.
+ */
 export async function executeBenchmarkingTask(
     benchmarkingItem: BenchmarkingItem,
     saveToDirPath: string,
@@ -166,7 +191,6 @@ export async function executeBenchmarkingTask(
                      * such a failure will most likely not be fixed by itself in the current setup for this benchmarking task.
                      * Therefore, there is no much sense in trying to fix other proofs generating their new versions not being able to check them.
                      */
-                    // TODO (mb): briefly add to the top-level description
                     break;
                 }
                 // assign non-valid generated proofs for regeneration on next rounds

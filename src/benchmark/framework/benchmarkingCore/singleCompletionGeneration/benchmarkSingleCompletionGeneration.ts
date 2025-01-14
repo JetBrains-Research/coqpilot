@@ -274,7 +274,10 @@ interface ProofGenerationResult {
 
 interface GeneratedProofItem {
     generatedProof: GeneratedProof;
-    // TODO (mb): document by referencing `GeneratedRawContentItem.tokensSpent`
+    /**
+     * Tokens spent to generate this specific proof.
+     * See `GeneratedRawContentItem.tokensSpent` for more details.
+     */
     tokensSpent: GenerationTokens;
 }
 
