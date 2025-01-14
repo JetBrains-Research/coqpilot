@@ -1,4 +1,5 @@
 import { ConfigurationError } from "../../../llm/llmServiceErrors";
+import { LLMService } from "../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
 
 import { buildErrorCompleteLog } from "../../../utils/errorsUtils";
@@ -32,6 +33,7 @@ import {
 } from "../utils/fileUtils/fs";
 
 import {
+    CompletionGenerationBenchmarkArgs,
     ParentProofToFix,
     benchmarkSingleCompletionGeneration,
 } from "./singleCompletionGeneration/benchmarkSingleCompletionGeneration";
@@ -68,14 +70,17 @@ export async function executeBenchmarkingTask(
         logCommonError(e, itemLogger, params, options, abortSignal);
 
     try {
-        const generationArgs = {
+        const generationArgs: CompletionGenerationBenchmarkArgs<
+            ModelParams,
+            LLMService<any, ModelParams>
+        > = {
             completionContext: task.getCompletionContext(),
             sourceTheorem: task.sourceTheorem,
             sourceFileEnvironment: task.getSourceFileEnvironment(),
             benchmarkingModelParams: params,
             parentProofToFix: undefined,
             nextGeneratedProofId: 0,
-            round: 0,
+            roundNumber: 1,
             llmService: llmService,
             llmServiceEventLogger: llmServiceEventLogger,
             parsedSourceFileData: task.parsedSourceFileData,
@@ -85,13 +90,13 @@ export async function executeBenchmarkingTask(
         async function benchmarkCompletionGenerationRound(
             parentProof: ParentProofToFix | undefined,
             nextGeneratedProofId: number,
-            roundIndex: number
+            roundNumber: number
         ): Promise<BenchmarkingResult> {
             const thisRoundGenerationArgs = {
                 ...generationArgs,
                 parentProofToFix: parentProof,
                 nextGeneratedProofId: nextGeneratedProofId,
-                round: roundIndex,
+                roundNumber: roundNumber,
             };
             const result = await benchmarkSingleCompletionGeneration(
                 thisRoundGenerationArgs,
@@ -112,7 +117,11 @@ export async function executeBenchmarkingTask(
         let curRoundProofsToFix: (ParentProofToFix | undefined)[] = [undefined];
         let nextGeneratedProofId = 0;
 
-        for (let roundIndex = 0; roundIndex < maxRoundsNumber; roundIndex++) {
+        for (
+            let roundNumber = 1;
+            roundNumber <= maxRoundsNumber;
+            roundNumber++
+        ) {
             throwOnAbort(abortSignal);
             const nextRoundProofsToFix: ParentProofToFix[] = [];
             for (const parentProof of curRoundProofsToFix) {
@@ -120,7 +129,7 @@ export async function executeBenchmarkingTask(
                     await benchmarkCompletionGenerationRound(
                         parentProof,
                         nextGeneratedProofId,
-                        roundIndex
+                        roundNumber
                     );
                 nextGeneratedProofId += childRoundResult.generatedProofs.length;
                 if (parentProof === undefined) {
@@ -139,7 +148,7 @@ export async function executeBenchmarkingTask(
                     joinPaths(
                         saveToDirPath,
                         buildRoundResultFileName(
-                            roundIndex,
+                            roundNumber,
                             parentProof?.benchmarkedProof.generatedProofId
                         )
                     ),
@@ -285,14 +294,14 @@ function saveInputTaskToFileOrThrow(
 }
 
 function buildRoundResultFileName(
-    round: number,
+    roundNumber: number,
     parentProofToFixId: number | undefined
 ): string {
     const parentId =
         parentProofToFixId === undefined
             ? `generate-proofs`
             : `fix-proof-${parentProofToFixId}`;
-    return buildSafeJsonFileName(`round-${round}-${parentId}`);
+    return buildSafeJsonFileName(`round-${roundNumber}-${parentId}`);
 }
 
 function saveRoundResultToFileOrThrow(

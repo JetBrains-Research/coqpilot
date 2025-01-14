@@ -113,7 +113,7 @@ export namespace BasicJsonSerialization {
             ),
             tokensSpentInTotal: result.tokensSpentInTotal,
             elapsedTime: result.elapsedTime,
-            round: result.round,
+            roundNumber: result.roundNumber,
             parentProofToFixId: result.parentProofToFixId,
         };
         if (result.isSuccessfullyFinishedRound()) {

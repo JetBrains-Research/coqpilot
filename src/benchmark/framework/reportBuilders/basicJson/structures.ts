@@ -58,7 +58,7 @@ export namespace BasicJsonSerializationStructures {
         contextTheoremsNames: string[];
         tokensSpentInTotal: GenerationTokens;
         elapsedTime: CompletionGenerationTime;
-        round: number;
+        roundNumber: number;
         parentProofToFixId: number | undefined;
     }
 

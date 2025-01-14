@@ -38,8 +38,14 @@ abstract class AbstractBenchmarkedCompletionGeneration<
          */
         readonly tokensSpentInTotal: GenerationTokens,
         readonly elapsedTime: CompletionGenerationTime,
-        // TODO (mb): document
-        readonly round: number
+        /**
+         * The round number of the multiround completion generation process.
+         * This corresponds to the version number of the proofs
+         * generated during this round (see `GeneratedProof.versionNumber()`).
+         * Specifically, the first round of proof generation (i.e., the root round) has `roundNumber: 1`.
+         * Each subsequent round, corresponding to proof fixing, increments the round number by 1.
+         */
+        readonly roundNumber: number
     ) {}
 
     private _parentProofToFixId: number | undefined = undefined;
@@ -141,7 +147,7 @@ export class FailedCompletionGenerationBenchmarking extends AbstractBenchmarkedC
         contextTheorems: TheoremData[],
         tokensSpentInTotal: GenerationTokens,
         elapsedTime: CompletionGenerationTime,
-        round: number,
+        roundNumber: number,
         readonly failureMetadata: FailureMetadata
     ) {
         super(
@@ -149,7 +155,7 @@ export class FailedCompletionGenerationBenchmarking extends AbstractBenchmarkedC
             contextTheorems,
             tokensSpentInTotal,
             elapsedTime,
-            round
+            roundNumber
         );
     }
 }
@@ -169,14 +175,14 @@ export class SuccessfulCompletionGenerationBenchmarking extends AbstractBenchmar
         contextTheorems: TheoremData[],
         tokensSpentInTotal: GenerationTokens,
         elapsedTime: CompletionGenerationTime,
-        round: number
+        roundNumber: number
     ) {
         super(
             generatedProofs,
             contextTheorems,
             tokensSpentInTotal,
             elapsedTime,
-            round
+            roundNumber
         );
     }
 

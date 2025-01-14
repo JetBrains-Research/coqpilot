@@ -80,7 +80,12 @@ export interface CompletionGenerationBenchmarkArgs<
     benchmarkingModelParams: BenchmarkingModelParams<ResolvedModelParams>;
     parentProofToFix: ParentProofToFix | undefined;
     nextGeneratedProofId: number;
-    round: number;
+    /**
+     * The round number of the multiround completion generation process.
+     * See `AbstractBenchmarkedCompletionGeneration.roundNumber`
+     * and `GeneratedProof.versionNumber()` for more details.
+     */
+    roundNumber: number;
     llmService: LLMServiceType;
     llmServiceEventLogger: EventLogger;
     parsedSourceFileData: ParsedCoqFileData;
@@ -93,8 +98,8 @@ export interface ParentProofToFix {
 }
 
 /**
- * Executes a single completion generation and measures its associated metrics.
- * Note: this function does not support multi-round generation so far (TODO (mb)).
+ * Executes a _single_ round of completion generation and records the associated metrics.
+ * This function performs only one iteration of a multiround generation process at a time.
  *
  * If proof generation fails due to the `llmService` being unavailable or unreachable (e.g., connection error),
  * the function will retry indefinitely by default or until `options.proofGenerationRetries` are reached / abort signal is sent.
@@ -180,7 +185,7 @@ export async function benchmarkSingleCompletionGeneration<
             )
     );
     const tokensSpentInTotal = proofGenerationResult.tokensSpentInTotal;
-    const round = generationArgs.round;
+    const roundNumber = generationArgs.roundNumber;
 
     // check proofs
     throwOnAbort(abortSignal);
@@ -202,7 +207,7 @@ export async function benchmarkSingleCompletionGeneration<
                 contextTheorems,
                 tokensSpentInTotal,
                 measuredTime,
-                round,
+                roundNumber,
                 {
                     failureType: error.failureType,
                     causeMessage: error.causeMessage,
@@ -241,7 +246,7 @@ export async function benchmarkSingleCompletionGeneration<
         contextTheorems,
         tokensSpentInTotal,
         measuredTime,
-        round
+        roundNumber
     );
     logger
         .asOneRecord()
@@ -295,7 +300,7 @@ async function generateProofWithRetriesExclusively<
     return modelsScheduler.scheduleTask(async () => {
         let generateProof: (() => Promise<GeneratedProof[]>) | undefined =
             undefined;
-        if (generationArgs.round === 0) {
+        if (generationArgs.roundNumber === 0) {
             generateProof = async () => {
                 const proofGenerationContext = buildProofGenerationContext(
                     generationArgs.completionContext,
@@ -315,7 +320,7 @@ async function generateProofWithRetriesExclusively<
                 const parentProof =
                     generationArgs.parentProofToFix ??
                     illegalState(
-                        `Proof-fix round should be performed (round ${generationArgs.round} is > 0), `,
+                        `Proof-fix round should be performed (round number ${generationArgs.roundNumber} is > 0), `,
                         "but `parentProofToFix` is not provided"
                     );
                 return await parentProof.benchmarkedProof.proofObject.fixProof(
