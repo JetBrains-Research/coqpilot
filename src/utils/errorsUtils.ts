@@ -1,5 +1,17 @@
 import { stringifyAnyValue } from "./printers";
 
+export function throwError(message: string): never {
+    throw Error(message);
+}
+
+export function illegalState(message: string): never {
+    throw Error(`Illegal state: ${message}`);
+}
+
+export function unreachable(message: string): never {
+    throw Error(`Unreachable code reached: ${message}`);
+}
+
 export abstract class ErrorWithCause extends Error {
     constructor(
         message: string = "",

@@ -30,6 +30,7 @@ import { goalToTargetLemma } from "../../../../core/exposedCompletionGeneratorUt
 import { Theorem } from "../../../../coqParser/parsedTypes";
 import { EventLogger } from "../../../../logging/eventLogger";
 import { delay } from "../../../../utils/delay";
+import { illegalState } from "../../../../utils/errorsUtils";
 import { stringifyAnyValue } from "../../../../utils/printers";
 import {
     millisToString,
@@ -211,10 +212,11 @@ export async function benchmarkSingleCompletionGeneration<
     // (!) TODO (mb): check proof-checker behaviour for the equal proofs
     const validatedProofs = proofsCheckResult.checkedProofs.map(
         (checkedProof) => {
-            // TODO (mb): !
-            const nonValidatedProof = allGeneratedProofsMap.get(
-                checkedProof.proof
-            )!;
+            const nonValidatedProof =
+                allGeneratedProofsMap.get(checkedProof.proof) ??
+                illegalState(
+                    `\`CoqProofChecker\` returned a proof that has not been sent as input`
+                );
             return nonValidatedProof.validate(checkedProof);
         }
     );
@@ -307,8 +309,11 @@ async function generateProofWithRetriesExclusively<
             };
         } else {
             generateProof = async () => {
-                // TODO (mb): !
-                const parentProof = generationArgs.parentProofToFix!;
+                const parentProof =
+                    generationArgs.parentProofToFix ??
+                    illegalState(
+                        `Proof-fix round should be performed (round ${generationArgs.round} is > 0), but \`parentProofToFix\` is not provided`
+                    );
                 return await parentProof.benchmarkedProof.proofObject.fixProof(
                     parentProof.diagnostic,
                     benchmarkingParams.modelParams.multiroundProfile
@@ -382,7 +387,6 @@ async function generateProofWithRetriesMeasured(
             const attemptTime = new TimeMark();
             const generatedProofs = await generateProofs();
             result.proofs = generatedProofs.map((generatedProof) => {
-                // TODO (mb): !
                 if (generatedRawProofs === undefined) {
                     throw Error("Event not received");
                 }

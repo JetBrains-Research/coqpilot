@@ -1,7 +1,7 @@
 import { ConfigurationError } from "../../../llm/llmServiceErrors";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
 
-import { buildErrorCompleteLog } from "../../../utils/errorsUtils";
+import { buildErrorCompleteLog, unreachable } from "../../../utils/errorsUtils";
 import { toFormattedJsonString } from "../../../utils/printers";
 import { millisToString } from "../../../utils/time";
 import {
@@ -172,7 +172,11 @@ export async function executeBenchmarkingTask(
 
         const benchmarkedItem: BenchmarkedItem = {
             item: benchmarkingItem,
-            result: rootResult!, // TODO (mb): handle !
+            result:
+                rootResult ??
+                unreachable(
+                    "either root round throws or its result is saved in `rootResult`"
+                ),
         };
         saveResultToFile(
             benchmarkedItem.result,
