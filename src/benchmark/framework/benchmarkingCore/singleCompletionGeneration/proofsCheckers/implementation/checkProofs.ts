@@ -68,7 +68,7 @@ export namespace CheckProofsImpl {
                 logger.error(
                     `coq-lsp timeout error: ${stringifyAnyValue(error.message)}`
                 );
-                return buildFailureResult("TIMEOUT", error.message);
+                return buildFailureResult("COQ_LSP_TIMEOUT", error.message);
             } else {
                 logger.error(
                     `\`CoqProofChecker\` error: ${stringifyAnyValue(error.message)}`

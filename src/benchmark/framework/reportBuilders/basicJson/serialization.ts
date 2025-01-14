@@ -158,7 +158,10 @@ export namespace BasicJsonSerialization {
     ): Structures.SerializedValidatedProof {
         return {
             ...serializedBaseBenchmarkedProof(validatedProof),
-            validationResult: validatedProof.validationResult,
+            isValid: validatedProof.isValid,
+            diagnostic: validatedProof.isNonValidProof()
+                ? validatedProof.diagnostic
+                : undefined,
         };
     }
 

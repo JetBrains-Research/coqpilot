@@ -9,7 +9,6 @@ import {
     CompletionGenerationTime,
     FailureMetadata,
 } from "../../structures/benchmarkingResults/benchmarkedItem";
-import { ValidationResult } from "../../structures/benchmarkingResults/benchmarkedProof";
 import { SerializedCodeElementRange } from "../../structures/common/codeElementPositions";
 import { LLMServiceIdentifier } from "../../structures/common/llmServiceIdentifier";
 import { LengthMetrics } from "../../structures/common/measureStructures";
@@ -87,7 +86,8 @@ export namespace BasicJsonSerializationStructures {
 
     export interface SerializedValidatedProof
         extends SerializedBaseBenchmarkedProof {
-        validationResult: ValidationResult;
+        isValid: boolean;
+        diagnostic: string | undefined;
     }
 
     export interface SerializedGeneratedProof {
