@@ -3,6 +3,7 @@ import { GeneratedProof } from "../../../../llm/llmServices/generatedProof";
 
 import { ProofCheckResult } from "../../../../core/coqProofChecker";
 
+import { invariantFailed } from "../../../../utils/throwErrors";
 import { LengthMetrics } from "../common/measureStructures";
 
 import { BenchmarkingResult } from "./benchmarkedItem";
@@ -63,17 +64,16 @@ export class NonValidatedProof extends AbstractBenchmarkedProof {
                 this.generatedProofId
             );
         }
-        if (checkedProof.diagnostic === undefined) {
-            throw Error(
-                `\`CoqProofChecker\` invariant failed: non-valid proof cannot have \`undefined\` diagnostic`
-            );
-        }
         return new NonValidProof(
             this.proofObject,
             this.asString,
             this.tokensSpent,
             this.generatedProofId,
-            checkedProof.diagnostic! // invariant, has been checked above
+            checkedProof.diagnostic ??
+                invariantFailed(
+                    "`CoqProofChecker`",
+                    "non-valid proof cannot have `undefined` diagnostic"
+                )
         );
     }
 }

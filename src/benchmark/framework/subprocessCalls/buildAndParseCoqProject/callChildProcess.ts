@@ -1,3 +1,4 @@
+import { illegalState } from "../../../../utils/throwErrors";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { CoqProjectParserUtils } from "../../parseDataset/coqProjectParser/implementation/coqProjectParserUtils";
 import { ParseCoqProjectInternalSignature } from "../../parseDataset/coqProjectParser/implementation/internalSignature";
@@ -71,7 +72,7 @@ function validateRequestedFilesAreInsideWorkspace(
     for (const filePath in workspaceTargets) {
         // Note: assuming paths are absolute and resolved
         if (!checkIsInsideDirectory(filePath, parentDirPath)) {
-            throw Error(
+            illegalState(
                 `Requested file ${filePath} is expected to be inside ${parentDirPath} directory`
             );
         }

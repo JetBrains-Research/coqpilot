@@ -30,8 +30,9 @@ import { goalToTargetLemma } from "../../../../core/exposedCompletionGeneratorUt
 import { Theorem } from "../../../../coqParser/parsedTypes";
 import { EventLogger } from "../../../../logging/eventLogger";
 import { delay } from "../../../../utils/delay";
-import { illegalState } from "../../../../utils/errorsUtils";
+import { buildErrorCompleteLog } from "../../../../utils/errorsUtils";
 import { stringifyAnyValue } from "../../../../utils/printers";
+import { illegalState, invariantFailed } from "../../../../utils/throwErrors";
 import {
     millisToString,
     timeToMillis,
@@ -57,6 +58,10 @@ import { throwOnAbort } from "../../utils/asyncUtils/abortUtils";
 import { AsyncScheduler } from "../../utils/asyncUtils/asyncScheduler";
 import { reduceToMap } from "../../utils/collectionUtils/mapUtils";
 import { hasAllPropertiesDefined } from "../../utils/objectUtils";
+import {
+    benchmarkingInvariantFailed,
+    throwBenchmarkingError,
+} from "../../utils/throwErrors";
 
 import { CompletionGenerationTimeImpl, TimeMark } from "./measureTimeUtils";
 import {
@@ -166,15 +171,13 @@ export async function benchmarkSingleCompletionGeneration<
     const allGeneratedProofs = Array.from(allGeneratedProofsMap.values());
     const parsedSourceFile = generationArgs.parsedSourceFileData;
     const contextTheorems = proofGenerationResult.contextTheoremNames.map(
-        (theoremName) => {
-            const theorem = parsedSourceFile.theoremsByNames.get(theoremName);
-            if (theorem === undefined) {
-                throw Error(
-                    `Proof generation invariant failed: a context theorem with the name "${theoremName}" was not found in the parsed data of the file ${parsedSourceFile.filePath}`
-                );
-            }
-            return theorem;
-        }
+        (theoremName) =>
+            parsedSourceFile.theoremsByNames.get(theoremName) ??
+            invariantFailed(
+                "Proof generation",
+                `a context theorem with the name "${theoremName}" `,
+                `was not found in the parsed data of the file ${parsedSourceFile.filePath}`
+            )
     );
     const tokensSpentInTotal = proofGenerationResult.tokensSpentInTotal;
     const round = generationArgs.round;
@@ -222,11 +225,11 @@ export async function benchmarkSingleCompletionGeneration<
     );
     const allGeneratedProofsNumber = allGeneratedProofs.length;
     if (validatedProofs.length !== allGeneratedProofsNumber) {
-        logger.error(
-            `Benchmarking invariant failed: there are ${allGeneratedProofsNumber - validatedProofs.length} generated proofs failed to be checked`
-        );
-        throw Error(
-            `Benchmarking invariant failed: not all of the generated proofs were verified, however the execution has not been aborted earlier`
+        benchmarkingInvariantFailed(
+            logger,
+            "not all of the generated proofs were verified, ",
+            "however the execution has not been aborted earlier;",
+            `\nthere are ${allGeneratedProofsNumber - validatedProofs.length} generated proofs failed to be checked`
         );
     }
 
@@ -312,7 +315,8 @@ async function generateProofWithRetriesExclusively<
                 const parentProof =
                     generationArgs.parentProofToFix ??
                     illegalState(
-                        `Proof-fix round should be performed (round ${generationArgs.round} is > 0), but \`parentProofToFix\` is not provided`
+                        `Proof-fix round should be performed (round ${generationArgs.round} is > 0), `,
+                        "but `parentProofToFix` is not provided"
                     );
                 return await parentProof.benchmarkedProof.proofObject.fixProof(
                     parentProof.diagnostic,
@@ -349,11 +353,6 @@ async function generateProofWithRetriesMeasured(
         LLMServiceImpl.requestSucceededEvent,
         (data: any) => {
             const request = data as LLMServiceRequestSucceeded;
-            if (request === null) {
-                throw Error(
-                    `data of the ${LLMServiceImpl.requestSucceededEvent} event should be a \`LLMServiceRequestSucceeded\` object, but data = ${stringifyAnyValue(data)}`
-                );
-            }
             // (!!!) TODO (mb): pass logging object inside proof generation and get rid of tracking evens here
             generatedRawProofs = reduceToMap(
                 request.generatedRawProofs,
@@ -378,7 +377,7 @@ async function generateProofWithRetriesMeasured(
     while (true) {
         // `options.proofGenerationRetries` might be undefined meaning the unlimited retries case
         if (attemptIndex === options.proofGenerationRetries) {
-            throw Error(
+            throwBenchmarkingError(
                 `Proof generation failed: max retries (${options.proofGenerationRetries}) has been reached`
             );
         }
@@ -388,14 +387,13 @@ async function generateProofWithRetriesMeasured(
             const generatedProofs = await generateProofs();
             result.proofs = generatedProofs.map((generatedProof) => {
                 if (generatedRawProofs === undefined) {
-                    throw Error("Event not received");
+                    benchmarkingInvariantFailed(logger, "event not received");
                 }
-                const rawProof = generatedRawProofs.get(generatedProof.proof());
-                if (rawProof === undefined) {
-                    throw Error(
+                const rawProof =
+                    generatedRawProofs.get(generatedProof.proof()) ??
+                    illegalState(
                         `No proof logs in event for proof \`${generatedProof.proof()}\``
                     );
-                }
                 return {
                     generatedProof: generatedProof,
                     tokensSpent: rawProof.tokensSpent,
@@ -405,8 +403,9 @@ async function generateProofWithRetriesMeasured(
             result.effectiveElapsedTimeMillis =
                 attemptTime.measureElapsedMillis();
             if (!hasAllPropertiesDefined<ProofGenerationResult>(result)) {
-                throw Error(
-                    "Proof generation invariant failed: proofs were generated, but a request-succeeded event was not sent"
+                invariantFailed(
+                    "Proof generation",
+                    "proofs were generated, but a request-succeeded event was not sent"
                 );
             }
 
@@ -436,12 +435,14 @@ async function generateProofWithRetriesMeasured(
 
             return result;
         } catch (e) {
-            const llmServiceError = e as LLMServiceError;
-            if (llmServiceError === null) {
-                throw Error(
-                    `LLMService is expected to throw only \`LLMServiceError\`-s, but got: ${stringifyAnyValue(e)}`
+            if (!(e instanceof LLMServiceError)) {
+                illegalState(
+                    "`LLMService` is expected to throw only `LLMServiceError`-s ",
+                    `but got:\n${buildErrorCompleteLog(e)}`
                 );
             }
+            const llmServiceError = e as LLMServiceError;
+
             if (llmServiceError instanceof ConfigurationError) {
                 logger.debug(
                     `Attempt #${attemptIndex}, configuration error: ${stringifyAnyValue(llmServiceError.message)}`
@@ -476,11 +477,9 @@ async function generateProofWithRetriesMeasured(
                     )
                     .debug(`Delay to wait for: ${millisToString(delayMillis)}`);
             } else {
-                console.error("\n\nBUKA\n\n");
-                console.error(llmServiceError.stack);
-                // TODO (mb): add stacktrace
-                throw Error(
-                    `unknown \`LLMServiceError\` type: ${stringifyAnyValue(llmServiceError.name)}, ${stringifyAnyValue(llmServiceError)}`
+                illegalState(
+                    `unknown \`LLMServiceError\` type: ${llmServiceError.name};\n`,
+                    buildErrorCompleteLog(llmServiceError)
                 );
             }
             // wait and try again

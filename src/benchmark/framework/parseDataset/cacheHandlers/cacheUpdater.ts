@@ -2,6 +2,7 @@ import { ProofGoal } from "../../../../coqLsp/coqLspTypes";
 
 import { ProofStep } from "../../../../coqParser/parsedTypes";
 import { toFormattedJsonString } from "../../../../utils/printers";
+import { invariantFailed } from "../../../../utils/throwErrors";
 import {
     AsOneRecordLogsBuilder,
     BenchmarkingLogger,
@@ -71,8 +72,9 @@ namespace UpdateCacheHolders {
                 .debug(
                     `\tCause: cached file path ${cachedResolvedPath} != parsed file path ${parsedFile.filePath}`
                 );
-            throw Error(
-                `Cache invariant failed: most likely, it has become invalid (${cachedFile.workspacePath} project cache)`
+            invariantFailed(
+                "Cache",
+                `most likely, it has become invalid (${cachedFile.workspacePath} project cache)`
             );
         }
 
@@ -171,8 +173,9 @@ namespace UpdateCacheHolders {
                 .debug(
                     `\tTheorem "${cachedTheorem.theoremData.name}" had the following cached targets:\n${toFormattedJsonString(cachedTheorem.targetEntries())}`
                 );
-            throw Error(
-                `Cache building invariant failed: \`CachedTheoremData\` is built incorrectly`
+            invariantFailed(
+                "Cache building",
+                "`CachedTheoremData` is built incorrectly"
             );
         }
 
@@ -239,8 +242,9 @@ namespace UpdateCacheHolders {
                 .debug(
                     `\t& was going to be updated with ${parsedTarget.targetType} target at ${parsedTarget.positionRange.toString()}`
                 );
-            throw Error(
-                `Cache building invariant failed: \`CachedTheoremData\` is built incorrectly`
+            invariantFailed(
+                "Cache building",
+                "`CachedTheoremData` is built incorrectly"
             );
         } else {
             const parsedTargetWasBuiltFromInitialGoal =
@@ -260,8 +264,9 @@ namespace UpdateCacheHolders {
                     .debug(
                         `\tTarget info: ${cachedTargetToUpdate.positionRange.toString()} at "${cachedTheorem.theoremData.name}"`
                     );
-                throw Error(
-                    `Cache invariant failed: most likely, it has become invalid (${workspacePath} project cache)`
+                invariantFailed(
+                    "Cache",
+                    `most likely, it has become invalid (${workspacePath} project cache)`
                 );
             }
             cachedTargetToUpdate.updateWithParsedGoal(parsedTarget.goalToProve);

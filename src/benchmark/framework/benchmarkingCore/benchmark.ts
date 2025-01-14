@@ -23,6 +23,7 @@ import {
     writeToFile,
 } from "../utils/fileUtils/fs";
 import { prependWithZeros } from "../utils/serializationUtils";
+import { benchmarkingInvariantFailed } from "../utils/throwErrors";
 
 import { executeBenchmarkingTask } from "./executeBenchmarkingTask";
 import { TimeMark } from "./singleCompletionGeneration/measureTimeUtils";
@@ -172,18 +173,17 @@ namespace ModelsSchedulers {
         item: BenchmarkingItem,
         itemLogger: BenchmarkingLogger
     ): AsyncScheduler {
-        const modelsScheduler = modelsSchedulers
-            .get(item.params.llmServiceIdentifier)
-            ?.get(ModelsSchedulers.getModelNameOrNoModelNameKeyword(item));
-        if (modelsScheduler === undefined) {
-            itemLogger.error(
-                "Unexpected error: no models scheduler for this benchmarking item"
-            );
-            throw Error(
-                `Benchmarking failed: no models scheduler for the benchmarking item`
-            );
-        }
-        return modelsScheduler;
+        return (
+            modelsSchedulers
+                .get(item.params.llmServiceIdentifier)
+                ?.get(
+                    ModelsSchedulers.getModelNameOrNoModelNameKeyword(item)
+                ) ??
+            benchmarkingInvariantFailed(
+                itemLogger,
+                "no models scheduler for the benchmarking item"
+            )
+        );
     }
 
     export function buildModelsSchedulers(

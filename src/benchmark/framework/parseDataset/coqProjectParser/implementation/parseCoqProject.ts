@@ -27,6 +27,7 @@ import {
 } from "../../../utils/coqUtils/goalParser";
 import { extractSerializedTheoremFisrtProofStep } from "../../../utils/coqUtils/proofTargetExtractor";
 import { LogsIPCSender } from "../../../utils/subprocessUtils/ipc/onParentProcessCallExecutor/logsIpcSender";
+import { throwBenchmarkingError } from "../../../utils/throwErrors";
 
 import { ParseCoqProjectInternalSignature } from "./internalSignature";
 
@@ -156,8 +157,9 @@ export namespace ParseCoqProjectImpl {
                 // specific theorems requests
                 const theoremName = fileTarget.specificTheoremName;
                 if (!(theoremName in theoremsMapping)) {
-                    throw Error(
-                        `Requested theorem "${theoremName}" could not be found in ${serializedParsedFile.filePath} file`
+                    throwBenchmarkingError(
+                        `Requested theorem "${theoremName}" could not be found `,
+                        `in ${serializedParsedFile.filePath} file`
                     );
                 }
                 const parsedTargetsFromTheorem =

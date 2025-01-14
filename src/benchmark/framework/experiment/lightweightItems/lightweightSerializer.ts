@@ -1,6 +1,7 @@
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 
 import { toFormattedJsonString } from "../../../../utils/printers";
+import { throwError } from "../../../../utils/throwErrors";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { BenchmarkingItem } from "../../structures/benchmarkingCore/benchmarkingItem";
 import { BenchmarkingModelParams } from "../../structures/benchmarkingCore/benchmarkingModelParams";
@@ -188,11 +189,12 @@ export namespace LightweightSerializer {
                 itemsDirPath,
                 buildItemFileName(item, i)
             );
-            writeToFile(toFormattedJsonString(item), itemFilePath, (err) => {
-                throw Error(
-                    `Lightweight serialization failed: failed to save ${itemFilePath} file, ${err.message}`
-                );
-            });
+            writeToFile(toFormattedJsonString(item), itemFilePath, (err) =>
+                throwError(
+                    "Lightweight serialization failed: ",
+                    `failed to save ${itemFilePath} file, ${err.message}`
+                )
+            );
         }
     }
 }

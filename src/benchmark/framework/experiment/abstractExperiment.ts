@@ -23,6 +23,7 @@ import {
     joinPaths,
     resolveAsAbsolutePath,
 } from "../utils/fileUtils/fs";
+import { throwBenchmarkingError } from "../utils/throwErrors";
 
 import {
     CacheTargetsImpl,
@@ -161,7 +162,7 @@ export abstract class AbstractExperiment {
             this.setupCoqProjectParser(executionContext)
         );
         if (benchmarkingItems.length === 0) {
-            throw Error(
+            throwBenchmarkingError(
                 "No items to benchmark: make sure the experiment input is configured correctly"
             );
         }

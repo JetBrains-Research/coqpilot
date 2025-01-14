@@ -1,4 +1,5 @@
 import { stringifyAnyValue } from "../../../../utils/printers";
+import { illegalState } from "../../../../utils/throwErrors";
 
 import { EqualityMap } from "./equalityMap";
 import { EqualTo } from "./equalityUtils";
@@ -23,7 +24,7 @@ export function getOrThrow<K, V, M extends Map<K, V>>(
 ): V {
     const value = map.get(key);
     if (value === undefined) {
-        throw Error(errorMessage);
+        illegalState(errorMessage);
     }
     return value;
 }
@@ -112,11 +113,11 @@ export function packIntoMap<T, K, V>(
     keyExtractor: (element: T) => K | undefined,
     valueMapper: (element: T) => V | undefined
 ): Map<K, V> {
-    return reduceToMapImpl(elements, keyExtractor, valueMapper, (key) => {
-        throw Error(
+    return reduceToMapImpl(elements, keyExtractor, valueMapper, (key) =>
+        illegalState(
             `Cannot pack elements into a map since keys are not unique: ${stringifyAnyValue(key)}`
-        );
-    });
+        )
+    );
 }
 
 export function packIntoMappedObject<T, V>(

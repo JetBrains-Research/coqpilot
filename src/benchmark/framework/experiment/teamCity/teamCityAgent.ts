@@ -1,7 +1,9 @@
+import { unsupported } from "../../../../utils/throwErrors";
 import { TimeMark } from "../../benchmarkingCore/singleCompletionGeneration/measureTimeUtils";
 import { ExperimentResults } from "../../structures/benchmarkingResults/experimentResults";
 import { ExperimentRunOptions } from "../../structures/inputParameters/experimentRunOptions";
 import { InputBenchmarkingBundle } from "../../structures/inputParameters/inputBenchmarkingBundle";
+import { throwBenchmarkingError } from "../../utils/throwErrors";
 import { LightweightDeserializer } from "../lightweightItems/lightweightDeserializer";
 import { LightweightSerialization } from "../lightweightItems/lightweightSerialization";
 import { CacheTargetsImpl } from "../setupDSL/datasetCacheBuilder";
@@ -73,7 +75,7 @@ export class TeamCityAgent extends SingleWorkspaceExperiment {
                 serialization
             )
         ) {
-            throw Error(
+            throwBenchmarkingError(
                 `Too many benchmarking items: input lightweight items ("${inputDirectoryPath}" directory) produce more than 1 benchmarking items`
             );
         }
@@ -85,7 +87,7 @@ export class TeamCityAgent extends SingleWorkspaceExperiment {
                 executionContext.logger
             );
         if (benchmarkingItems.length === 0) {
-            throw Error(
+            throwBenchmarkingError(
                 "No items to benchmark: make sure the experiment input is configured correctly"
             );
         }
@@ -143,7 +145,7 @@ export class TeamCityAgent extends SingleWorkspaceExperiment {
     }
 
     private throwDoesNotSupportSetupDSL(): never {
-        throw Error(
+        unsupported(
             "TeamCityExperiment does not support running benchmarks via setup DSL: execute lightweight benchmarking items instead"
         );
     }

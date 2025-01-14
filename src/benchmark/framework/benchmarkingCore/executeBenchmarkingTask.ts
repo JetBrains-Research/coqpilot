@@ -1,8 +1,9 @@
 import { ConfigurationError } from "../../../llm/llmServiceErrors";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
 
-import { buildErrorCompleteLog, unreachable } from "../../../utils/errorsUtils";
+import { buildErrorCompleteLog } from "../../../utils/errorsUtils";
 import { toFormattedJsonString } from "../../../utils/printers";
+import { unreachable } from "../../../utils/throwErrors";
 import { millisToString } from "../../../utils/time";
 import {
     AsOneRecordLogsBuilder,

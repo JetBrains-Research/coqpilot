@@ -2,6 +2,7 @@ import { LocalProofsChecker } from "../benchmarkingCore/singleCompletionGenerati
 import { LocalCoqProjectParser } from "../parseDataset/coqProjectParser/localCoqProjectParser";
 import { ExperimentRunOptions } from "../structures/inputParameters/experimentRunOptions";
 import { InputBenchmarkingBundle } from "../structures/inputParameters/inputBenchmarkingBundle";
+import { throwBenchmarkingError } from "../utils/throwErrors";
 
 import { AbstractExperiment, ExecutionContext } from "./abstractExperiment";
 
@@ -34,12 +35,10 @@ export class SingleWorkspaceExperiment extends AbstractExperiment {
         if (executionContext.requestedWorkspaces.length > 1) {
             const workspacesList =
                 executionContext.requestedWorkspaces.join(", ");
-            throw Error(
-                [
-                    "The `SingleWorkspaceExperiment` targets must belong to the same workspace,",
-                    "within the context of which the benchmark was executed.",
-                    `However, the selected workspace targets are: [${workspacesList}].`,
-                ].join(" ")
+            throwBenchmarkingError(
+                "The `SingleWorkspaceExperiment` targets must belong to the same workspace, ",
+                "within the context of which the benchmark was executed. ",
+                `However, the selected workspace targets are: [${workspacesList}].`
             );
         }
     }

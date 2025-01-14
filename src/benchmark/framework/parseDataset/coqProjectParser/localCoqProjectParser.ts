@@ -1,3 +1,4 @@
+import { asErrorOrRethrow } from "../../../../utils/errorsUtils";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { WorkspaceInputTargets } from "../../structures/common/inputTargets";
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
@@ -40,15 +41,9 @@ export class LocalCoqProjectParser extends AbstractCoqProjectParser {
     ) {
         try {
             return await ParseCoqProjectImpl.parseCoqProject(args, logger);
-        } catch (error) {
-            if (error instanceof Error) {
-                throw new CoqProjectParsingFailedError(
-                    error.name,
-                    error.message
-                );
-            } else {
-                throw error;
-            }
+        } catch (e) {
+            const error = asErrorOrRethrow(e);
+            throw new CoqProjectParsingFailedError(error.name, error.message);
         }
     }
 }

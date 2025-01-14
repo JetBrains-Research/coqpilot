@@ -22,6 +22,8 @@ export class ProofsCheckFailedError extends Error {
         readonly causeMessage: string
     ) {
         super(causeMessage);
+        Object.setPrototypeOf(this, new.target.prototype);
+        this.name = "ProofsCheckFailedError";
     }
 }
 

@@ -1,3 +1,5 @@
+import { illegalState } from "./throwErrors";
+
 export function stringifyAnyValue(
     value: any,
     space: JsonSpacing = JsonSpacing.UNFORMATTED
@@ -14,7 +16,7 @@ export function stringifyDefinedValue(
     space: JsonSpacing = JsonSpacing.UNFORMATTED
 ): string {
     if (value === undefined) {
-        throw Error(`value to stringify is not defined`);
+        illegalState(`value to stringify is not defined`);
     }
     return stringifyAnyValue(value, space);
 }

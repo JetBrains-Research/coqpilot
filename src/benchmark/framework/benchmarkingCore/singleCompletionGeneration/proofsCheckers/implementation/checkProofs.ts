@@ -6,6 +6,7 @@ import {
     ProofCheckResult,
 } from "../../../../../../core/coqProofChecker";
 
+import { asErrorOrRethrowWrapped } from "../../../../../../utils/errorsUtils";
 import { stringifyAnyValue } from "../../../../../../utils/printers";
 import { BenchmarkingLogger } from "../../../../logging/benchmarkingLogger";
 import { deserializeUri } from "../../../../structures/common/serializedUri";
@@ -57,12 +58,10 @@ export namespace CheckProofsImpl {
                 providedLogger
             );
         } catch (e) {
-            const error = e as Error;
-            if (error === null) {
-                throw Error(
-                    `got unexpected error from \`CoqProofChecker\`: ${stringifyAnyValue(e)}`
-                );
-            }
+            const error = asErrorOrRethrowWrapped(
+                e,
+                "got unexpected error from `CoqProofChecker`"
+            );
             // TODO: maybe it will be more efficient just to rethrow error here
             const logger = providedLogger.logger;
             if (error instanceof CoqLspTimeoutError) {

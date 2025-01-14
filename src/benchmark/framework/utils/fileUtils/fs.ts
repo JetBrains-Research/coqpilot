@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { stringifyAnyValue } from "../../../../utils/printers";
+import { illegalState } from "../../../../utils/throwErrors";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 
 export function getRootDir(): string {
@@ -221,7 +222,7 @@ function listFiles(
     predicate: (filePath: string) => boolean
 ): string[] {
     if (depth !== undefined && depth < 0) {
-        throw Error(`Files listing depth should be non-negative: ${depth}`);
+        illegalState(`Files listing depth should be non-negative: ${depth}`);
     }
     let resultFilePaths: string[] = [];
 
