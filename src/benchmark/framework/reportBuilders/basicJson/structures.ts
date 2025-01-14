@@ -57,9 +57,15 @@ export namespace BasicJsonSerializationStructures {
     export interface SerializedBaseBenchmarkingResult {
         contextTheoremsNames: string[];
         tokensSpentInTotal: GenerationTokens;
-        elapsedTime: CompletionGenerationTime;
+        roundElapsedTime: CompletionGenerationTime;
         roundNumber: number;
         parentProofToFixId: number | undefined;
+    }
+
+    export interface ExtraRootBenchmarkingResultData {
+        totalElapsedTime: CompletionGenerationTime;
+        hasSuccessfullyFinished: boolean;
+        isSuccessfulCompletion: boolean;
     }
 
     export interface SerializedFailedBenchmarking

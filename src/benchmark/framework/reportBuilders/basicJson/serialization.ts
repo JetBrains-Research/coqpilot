@@ -99,9 +99,27 @@ export namespace BasicJsonSerialization {
     export function serializeBenchmarkingResultAsRoundsTree(
         rootResult: BenchmarkingResult
     ): Structures.SerializedBenchmarkingResult[] {
-        return rootResult
-            .getAllRoundsResults()
-            .map((result) => serializeBenchmarkingResultAsSingleRound(result));
+        const [_, ...otherResults] = rootResult.getAllRoundsResults();
+        const serializedRootRound = {
+            ...serializeBenchmarkingResultAsSingleRound(rootResult),
+            ...serializeExtraRootBenchmarkingResultData(rootResult),
+        } as Structures.SerializedBenchmarkingResult;
+        return [
+            serializedRootRound,
+            ...otherResults.map((result) =>
+                serializeBenchmarkingResultAsSingleRound(result)
+            ),
+        ];
+    }
+
+    export function serializeExtraRootBenchmarkingResultData(
+        rootResult: BenchmarkingResult
+    ): Structures.ExtraRootBenchmarkingResultData {
+        return {
+            totalElapsedTime: rootResult.getTotalElapsedTime(),
+            hasSuccessfullyFinished: rootResult.hasSuccessfullyFinished(),
+            isSuccessfulCompletion: rootResult.isSuccessfulCompletion(),
+        };
     }
 
     export function serializeBenchmarkingResultAsSingleRound(
@@ -112,7 +130,7 @@ export namespace BasicJsonSerialization {
                 (theorem) => theorem.name
             ),
             tokensSpentInTotal: result.tokensSpentInTotal,
-            elapsedTime: result.elapsedTime,
+            roundElapsedTime: result.roundElapsedTime,
             roundNumber: result.roundNumber,
             parentProofToFixId: result.parentProofToFixId,
         };
