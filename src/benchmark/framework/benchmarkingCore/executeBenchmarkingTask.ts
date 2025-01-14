@@ -4,7 +4,7 @@ import { ModelParams } from "../../../llm/llmServices/modelParams";
 
 import { buildErrorCompleteLog } from "../../../utils/errorsUtils";
 import { toFormattedJsonString } from "../../../utils/printers";
-import { unreachable } from "../../../utils/throwErrors";
+import { illegalState, unreachable } from "../../../utils/throwErrors";
 import { millisToString } from "../../../utils/time";
 import {
     AsOneRecordLogsBuilder,
@@ -31,6 +31,7 @@ import {
     provideEmptyDirectoryOrThrow,
     saveToFileOrHandleError,
 } from "../utils/fileUtils/fs";
+import { benchmarkingInvariantFailed } from "../utils/throwErrors";
 
 import {
     CompletionGenerationBenchmarkArgs,
@@ -131,7 +132,7 @@ export async function executeBenchmarkingTask(
                 proofsChecker,
                 abortSignal
             );
-            logResult(result, itemLogger);
+            logRoundResult(result, itemLogger);
             return result;
         }
 
@@ -212,6 +213,7 @@ export async function executeBenchmarkingTask(
                     "either root round throws or its result is saved in `rootResult`"
                 ),
         };
+        logFinalResult(benchmarkedItem.result, itemLogger);
         saveResultToFile(
             benchmarkedItem.result,
             joinPaths(saveToDirPath, ArtifactsNames.resultReportFileName),
@@ -364,25 +366,92 @@ function saveResultToFile(
     );
 }
 
-function logResult(result: BenchmarkingResult, itemLogger: BenchmarkingLogger) {
-    if (result.isSuccessfulCompletion()) {
-        // TODO (mb): log round info
-        itemLogger
-            .asOneRecord()
-            .info(`Goal was succefully proven ${heavyCheckMark}`, "green")
-            .debug("First valid proof:")
-            .debug(`${result.getAllValidProofs()[0].asString}`)
-            .debug(
-                `Total effective elapsed time: ${millisToString(result.elapsedTime.totalMillis)}`
-            );
+function logRoundResult(
+    roundResult: BenchmarkingResult,
+    itemLogger: BenchmarkingLogger
+) {
+    const roundId =
+        roundResult.parentProofToFixId === undefined
+            ? "Root round of proof generation"
+            : `Round ${roundResult.roundNumber} of fixing proof ${roundResult.parentProofToFixId}`;
+    const asOneRecordLogs = itemLogger.asOneRecord();
+    const logElapsedTime = () =>
+        asOneRecordLogs.debug(
+            `This round effective elapsed time: ${millisToString(roundResult.roundElapsedTime.totalMillis)}`
+        );
+
+    if (roundResult.isSuccessfullyFinishedRound()) {
+        const resultLog = roundResult.isSuccessfulCompletion()
+            ? `valid proof has been found ${heavyCheckMark}\nFirst valid proof:\n\`${roundResult.thisRoundValidProofs[0]}\``
+            : "however, no valid proofs have been found";
+        const generatedProofsIds = roundResult.generatedProofs
+            .map((proof) => `${proof.generatedProofId}`)
+            .join(", ");
+
+        asOneRecordLogs
+            .debug(`${roundId} has been successfully finished: ${resultLog}`)
+            .debug(`Newly generated proofs id-s are: [${generatedProofsIds}]`);
+        logElapsedTime();
     } else {
+        const { failureType, causeMessage } = roundResult.failureMetadata;
+        asOneRecordLogs.error(
+            `${roundId} has failed to finish: ${failureType}, ${causeMessage}`
+        );
+        logElapsedTime();
+        asOneRecordLogs.error(
+            "This benchmarking task execution will be stopped"
+        );
+    }
+}
+
+function logFinalResult(
+    finalResult: BenchmarkingResult,
+    itemLogger: BenchmarkingLogger
+) {
+    const asOneRecordLogs = itemLogger.asOneRecord();
+    if (finalResult.isSuccessfulCompletion()) {
+        const firstValidProof = finalResult.getAllValidProofs()[0];
+        asOneRecordLogs
+            .info(`Goal was succefully proven ${heavyCheckMark}`, "green")
+            .debug(
+                `First valid proof was generated at round ${firstValidProof.proofObject.versionNumber()}:`
+            )
+            .debug(`${firstValidProof.asString}`);
+    } else {
+        let logFailure: (message: string) => void;
         let failureMessage: string;
         let cause: string | undefined = undefined;
-        if (result.hasSuccessfullyFinished()) {
+        if (finalResult.hasSuccessfullyFinished()) {
+            logFailure = (message) => asOneRecordLogs.info(message, "red");
             failureMessage = "Valid proofs not found";
         } else {
-            const allFailedRounds = result.getAllFailedToFinishRounds();
-            // TODO (mb): log all rounds failed just in case
+            logFailure = (message) => asOneRecordLogs.error(message);
+
+            const allFailedRounds = finalResult.getAllFailedToFinishRounds();
+            if (allFailedRounds.length > 1) {
+                benchmarkingInvariantFailed(
+                    itemLogger,
+                    "there are more than one failed rounds ",
+                    "in the final benchmarking result mutliround tree; ",
+                    "according to the implemented policy, the multiround benchmarking ",
+                    "should be stopped as soon as the first failure occurred\nFailed nodes:\n",
+                    allFailedRounds
+                        .map((failedRound) =>
+                            [
+                                `{ roundNumber: ${failedRound.roundNumber}; `,
+                                `parentProofToFixId: ${failedRound.parentProofToFixId}; `,
+                                `cause: ${failedRound.failureMetadata.failureType}, ${failedRound.failureMetadata.causeMessage} }`,
+                            ].join("")
+                        )
+                        .join(",\n")
+                );
+            }
+            if (allFailedRounds.length === 0) {
+                illegalState(
+                    "`finalResult.hasSuccessfullyFinished()` returned false,",
+                    "but there are no failed rounds in its multiround subtree"
+                );
+            }
             const firstFailedRound = allFailedRounds[0];
             switch (firstFailedRound.failureMetadata.failureType) {
                 case "COQ_LSP_TIMEOUT":
@@ -395,14 +464,13 @@ function logResult(result: BenchmarkingResult, itemLogger: BenchmarkingLogger) {
             cause = firstFailedRound.failureMetadata.causeMessage;
         }
 
-        const asOneRecordLogs = itemLogger
-            .asOneRecord()
-            .info(`${failureMessage} ${heavyCrossMark}`, "red");
+        logFailure(`${failureMessage} ${heavyCrossMark}`);
         if (cause !== undefined) {
             asOneRecordLogs.debug(`Cause: ${cause}`);
         }
-        asOneRecordLogs.debug(
-            `Total effective elapsed time: ${millisToString(result.elapsedTime.totalMillis)}`
-        );
     }
+
+    asOneRecordLogs.debug(
+        `Total effective elapsed time: ${millisToString(finalResult.getTotalElapsedTime().totalMillis)}`
+    );
 }

@@ -23,6 +23,21 @@ export class CompletionGenerationTimeImpl implements CompletionGenerationTime {
     }
 }
 
+/**
+ * Modifies and returns `totalTime`.
+ */
+export function addToTotalTime(
+    totalTime: CompletionGenerationTime,
+    otherTime: CompletionGenerationTime
+): CompletionGenerationTime {
+    totalTime.proofsGenerationMillis += otherTime.proofsGenerationMillis;
+    totalTime.proofsValidationMillis =
+        (totalTime.proofsValidationMillis ?? 0) +
+        (otherTime.proofsValidationMillis ?? 0);
+    totalTime.totalMillis += otherTime.totalMillis;
+    return totalTime;
+}
+
 export class TimeMark {
     private startTime: number;
 

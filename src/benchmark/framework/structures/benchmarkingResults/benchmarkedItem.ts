@@ -1,5 +1,6 @@
 import { GenerationTokens } from "../../../../llm/llmServices/commonStructures/generationTokens";
 
+import { addToTotalTime } from "../../benchmarkingCore/singleCompletionGeneration/measureTimeUtils";
 import { BenchmarkingItem } from "../benchmarkingCore/benchmarkingItem";
 import { TheoremData } from "../parsedCoqFile/theoremData";
 
@@ -37,7 +38,7 @@ abstract class AbstractBenchmarkedCompletionGeneration<
          * Check `GeneratedRawContent.tokensSpentInTotal` for more details.
          */
         readonly tokensSpentInTotal: GenerationTokens,
-        readonly elapsedTime: CompletionGenerationTime,
+        readonly roundElapsedTime: CompletionGenerationTime,
         /**
          * The round number of the multiround completion generation process.
          * This corresponds to the version number of the proofs
@@ -133,6 +134,18 @@ abstract class AbstractBenchmarkedCompletionGeneration<
     hasSuccessfullyFinished(): boolean {
         return this.getAllFailedToFinishRounds().length === 0;
     }
+
+    getTotalElapsedTime(): CompletionGenerationTime {
+        return this.getAllRoundsResults().reduce(
+            (totalTime: CompletionGenerationTime, roundResult) =>
+                addToTotalTime(totalTime, roundResult.roundElapsedTime),
+            {
+                proofsGenerationMillis: 0,
+                proofsValidationMillis: 0,
+                totalMillis: 0,
+            } as CompletionGenerationTime
+        );
+    }
 }
 
 export interface CompletionGenerationTime {
@@ -146,7 +159,7 @@ export class FailedCompletionGenerationBenchmarking extends AbstractBenchmarkedC
         generatedProofs: NonValidatedProof[],
         contextTheorems: TheoremData[],
         tokensSpentInTotal: GenerationTokens,
-        elapsedTime: CompletionGenerationTime,
+        roundElapsedTime: CompletionGenerationTime,
         roundNumber: number,
         readonly failureMetadata: FailureMetadata
     ) {
@@ -154,7 +167,7 @@ export class FailedCompletionGenerationBenchmarking extends AbstractBenchmarkedC
             generatedProofs,
             contextTheorems,
             tokensSpentInTotal,
-            elapsedTime,
+            roundElapsedTime,
             roundNumber
         );
     }
@@ -174,14 +187,14 @@ export class SuccessfulCompletionGenerationBenchmarking extends AbstractBenchmar
         generatedProofs: ValidatedProof[],
         contextTheorems: TheoremData[],
         tokensSpentInTotal: GenerationTokens,
-        elapsedTime: CompletionGenerationTime,
+        roundElapsedTime: CompletionGenerationTime,
         roundNumber: number
     ) {
         super(
             generatedProofs,
             contextTheorems,
             tokensSpentInTotal,
-            elapsedTime,
+            roundElapsedTime,
             roundNumber
         );
     }
