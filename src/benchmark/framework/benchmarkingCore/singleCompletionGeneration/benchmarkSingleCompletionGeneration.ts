@@ -56,7 +56,10 @@ import { ParsedCoqFileData } from "../../structures/parsedCoqFile/parsedCoqFileD
 import { TheoremData } from "../../structures/parsedCoqFile/theoremData";
 import { throwOnAbort } from "../../utils/asyncUtils/abortUtils";
 import { AsyncScheduler } from "../../utils/asyncUtils/asyncScheduler";
-import { reduceToMap } from "../../utils/collectionUtils/mapUtils";
+import {
+    groupByAndMap,
+    reduceToMap,
+} from "../../utils/collectionUtils/mapUtils";
 import { hasAllPropertiesDefined } from "../../utils/objectUtils";
 import {
     benchmarkingInvariantFailed,
@@ -160,7 +163,13 @@ export async function benchmarkSingleCompletionGeneration<
     const measuredTime = new CompletionGenerationTimeImpl(
         proofGenerationResult.effectiveElapsedTimeMillis
     );
-    const allGeneratedProofsMap = reduceToMap(
+    // Generated `preparedProofsWithTokens` _might_ contain duplicate proofs;
+    // therefore, any further mappings should be done carefully,
+    // so as not to lose duplicate proofs objects.
+    // Their metadata might be different despite the same string representation and
+    // in any case they are important for showing the correct number of tokens spent in total;
+    // therefore, duplicates must be saved.
+    const allGeneratedProofsMap = groupByAndMap(
         preparedProofsWithTokens,
         ([preparedProof, _]) => preparedProof,
         ([preparedProof, generatedProof, tokens, generatedProofId]) =>
@@ -173,7 +182,9 @@ export async function benchmarkSingleCompletionGeneration<
     );
 
     // prepare result data
-    const allGeneratedProofs = Array.from(allGeneratedProofsMap.values());
+    const allGeneratedProofs = Array.from(
+        allGeneratedProofsMap.values()
+    ).flat();
     const parsedSourceFile = generationArgs.parsedSourceFileData;
     const contextTheorems = proofGenerationResult.contextTheoremNames.map(
         (theoremName) =>
@@ -191,6 +202,10 @@ export async function benchmarkSingleCompletionGeneration<
     throwOnAbort(abortSignal);
     let proofsCheckResult: ProofsCheckResult;
     try {
+        // Although `CoqProofChecher.checkProofs(...)` allows duplicate proofs
+        // (and returns duplicate `ProofCheckResult`-s for them),
+        // this behaviour could be changed in the future.
+        // Therefore, the following code handles proofs duplicates by itself.
         proofsCheckResult = await proofsChecker.checkProofs(
             Array.from(allGeneratedProofsMap.keys()),
             generationArgs.completionContext,
@@ -217,15 +232,16 @@ export async function benchmarkSingleCompletionGeneration<
             throw error;
         }
     }
-    // (!) TODO (mb): check proof-checker behaviour for the equal proofs
-    const validatedProofs = proofsCheckResult.checkedProofs.map(
+    const validatedProofs = proofsCheckResult.checkedProofs.flatMap(
         (checkedProof) => {
-            const nonValidatedProof =
+            const nonValidatedProofs =
                 allGeneratedProofsMap.get(checkedProof.proof) ??
                 illegalState(
                     `\`CoqProofChecker\` returned a proof that has not been sent as input`
                 );
-            return nonValidatedProof.validate(checkedProof);
+            return nonValidatedProofs.map((proof) =>
+                proof.validate(checkedProof)
+            );
         }
     );
     const allGeneratedProofsNumber = allGeneratedProofs.length;
@@ -293,7 +309,10 @@ interface GeneratedProofItem {
 async function generateProofWithRetriesExclusively<
     ResolvedModelParams extends ModelParams,
 >(
-    generationArgs: CompletionGenerationBenchmarkArgs<ResolvedModelParams, any>,
+    generationArgs: CompletionGenerationBenchmarkArgs<
+        ResolvedModelParams,
+        LLMService<any, ResolvedModelParams>
+    >,
     options: BenchmarkingOptions,
     modelsScheduler: AsyncScheduler,
     logger: BenchmarkingLogger,
