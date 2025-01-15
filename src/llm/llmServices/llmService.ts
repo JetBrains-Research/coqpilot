@@ -7,6 +7,7 @@ import { UserModelParams } from "../userModelParams";
 
 import { AnalyzedChatHistory } from "./commonStructures/chat";
 import { ErrorsHandlingMode } from "./commonStructures/errorsHandlingMode";
+import { ProofGenerationMetadataHolder } from "./commonStructures/proofGenerationMetadata";
 import { GeneratedProofImpl } from "./generatedProof";
 import { LLMServiceInternal } from "./llmServiceInternal";
 import { ModelParams } from "./modelParams";
@@ -150,23 +151,30 @@ export abstract class LLMServiceImpl<
     static readonly requestFailedEvent = `llmservice-request-failed`;
 
     /**
-     * Generates proofs from chat.
+     * Generates proofs based on chat input.
      * This method performs errors-handling and logging, check `LLMServiceImpl` docs for more details.
      *
-     * The default implementation is based on the `LLMServiceInternal.generateFromChatImpl`.
-     * If it is not the desired way, `generateFromChat` should be overriden.
+     * The default implementation relies on `LLMServiceInternal.generateFromChatImpl`.
+     * If a different behavior is required, the `generateFromChat` method should be overridden;
+     * however, maintaining all errors-handling and logging invariants.
+     * Consider `LLMServiceInternal.logGenerationAndHandleErrors` for help.
      *
-     * @param choices if specified, overrides `ModelParams.defaultChoices`.
-     * @returns generated proofs as raw strings.
+     * @param analyzedChat the analyzed chat history used as input for proof generation.
+     * @param params resolved model parameters for configuring the generation process.
+     * @param choices specifies the number of choices for generation. If not provided, the `params.defaultChoices` value is used.
+     * @param metadataHolder if provided, stores metadata about the proof generation process, which can be analyzed later.
+     * @returns an array of generated proofs as raw strings.
      */
     async generateFromChat(
         analyzedChat: AnalyzedChatHistory,
         params: ResolvedModelParams,
-        choices: number = params.defaultChoices
+        choices: number = params.defaultChoices,
+        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined
     ): Promise<string[]> {
         return this.internal.generateFromChatWrapped(
             params,
             choices,
+            metadataHolder,
             () => analyzedChat,
             (proof) => proof
         );
@@ -178,19 +186,26 @@ export abstract class LLMServiceImpl<
      *
      * The default implementation is based on the generation from chat, namely,
      * it calls `LLMServiceInternal.generateFromChatImpl`.
-     * If it is not the desired way, `generateProof` should be overriden.
+     * If it is not the desired way, `generateProof` should be overriden;
+     * however, maintaining all errors-handling and logging invariants.
+     * Consider `LLMServiceInternal.logGenerationAndHandleErrors` for help.
      *
-     * @param choices if specified, overrides `ModelParams.defaultChoices`.
-     * @returns generated proofs as `GeneratedProofImpl`-s.
+     * @param proofGenerationContext the context used as input for proof generation.
+     * @param params resolved model parameters for configuring the generation process.
+     * @param choices specifies the number of choices for generation. If not provided, the `params.defaultChoices` value is used.
+     * @param metadataHolder if provided, stores metadata about the proof generation process, which can be analyzed later.
+     * @returns an array of generated proofs as `GeneratedProofImpl`-s.
      */
     async generateProof(
         proofGenerationContext: ProofGenerationContext,
         params: ResolvedModelParams,
-        choices: number = params.defaultChoices
+        choices: number = params.defaultChoices,
+        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined
     ): Promise<GeneratedProofType[]> {
         return this.internal.generateFromChatWrapped(
             params,
             choices,
+            metadataHolder,
             () => buildProofGenerationChat(proofGenerationContext, params),
             (proof) =>
                 this.internal.constructGeneratedProof(

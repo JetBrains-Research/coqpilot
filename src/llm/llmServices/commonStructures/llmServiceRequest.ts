@@ -6,6 +6,7 @@ import { ModelParams } from "../modelParams";
 import { AnalyzedChatHistory } from "./chat";
 import { GeneratedRawContentItem } from "./generatedRawContent";
 import { GenerationTokens } from "./generationTokens";
+import { ProofGenerationType } from "./proofGenerationType";
 
 /**
  * Interface for `LLMServiceImpl` to package all generation request data.
@@ -14,6 +15,7 @@ import { GenerationTokens } from "./generationTokens";
  */
 export interface LLMServiceRequest {
     llmService: LLMService<UserModelParams, ModelParams>;
+    proofGenerationType: ProofGenerationType;
     params: ModelParams;
     choices: number;
     analyzedChat?: AnalyzedChatHistory;

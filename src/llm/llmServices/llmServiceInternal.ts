@@ -24,6 +24,8 @@ import {
     LLMServiceRequestFailed,
     LLMServiceRequestSucceeded,
 } from "./commonStructures/llmServiceRequest";
+import { ProofGenerationMetadataHolder } from "./commonStructures/proofGenerationMetadata";
+import { ProofGenerationType } from "./commonStructures/proofGenerationType";
 import { ProofVersion } from "./commonStructures/proofVersion";
 import { GeneratedProofImpl } from "./generatedProof";
 import { LLMServiceImpl } from "./llmService";
@@ -141,12 +143,15 @@ export abstract class LLMServiceInternal<
     readonly generateFromChatWrapped = async <T>(
         params: ResolvedModelParams,
         choices: number,
+        metadataHolder: ProofGenerationMetadataHolder | undefined,
         buildAndValidateChat: () => AnalyzedChatHistory,
         wrapRawProofContent: (proof: string) => T
     ): Promise<T[]> => {
         return this.logGenerationAndHandleErrors<T>(
+            ProofGenerationType.CHAT_BASED,
             params,
             choices,
+            metadataHolder,
             (request) => {
                 request.analyzedChat = buildAndValidateChat();
             },
@@ -169,6 +174,7 @@ export abstract class LLMServiceInternal<
      * to help with overriding the default public methods implementation.
      *
      * Invariants TL;DR:
+     * - `metadataHolder` is updated with `proofGenerationType` at the very beginning and with the final result metadata in the end;
      * - any thrown error will be of `LLMServiceError` type: if the error is not of that type originally, it'd be wrapped;
      * - errors are rethrown only in case of `RETHROW_ERRORS`;
      * - `this.generationsLogger` logs every success and only `GenerationFailedError`-s (not `ConfigurationError`-s, for example);
@@ -176,14 +182,17 @@ export abstract class LLMServiceInternal<
      *   in case of success / failure event's `data` is the `LLMServiceRequestSucceeded` / `LLMServiceRequestFailed` object respectively.
      *
      * Invariants, the full version.
+     * - `metadataHolder` is updated with `proofGenerationType` at the very beginning;
      * - `completeAndValidateRequest` should fill the received request (for example, with `AnalyzedChatHistory`) and validate its properties;
      *   it is allowed to throw any error:
      *     - if it is not `ConfigurationError` already, its message will be wrapped into `ConfigurationError`;
      *     - then, it will be handled according to `errorsHandlingMode` `(*)`;
      * - If the request is successfully built, then the proofs generation will be performed.
+     *     - `metadataHolder` is updated with the built request;
      *     - If no error is thrown:
      *         - generation will be logged as successful one via `this.generationsLogger`;
      *         - `LLMService.requestSucceededEvent` (with `LLMServiceRequestSucceeded` as data) will be logged via `this.eventLogger`.
+     *         - `metadataHolder` is updated with the success metadata;
      *     - If error is thrown:
      *         - it will be wrapped into `GenerationFailedError`, if it is not of `LLMServiceError` type already;
      *         - if it's an instance of `GenerationFailedError`, it will be logged via `this.generationsLogger`;
@@ -192,14 +201,17 @@ export abstract class LLMServiceInternal<
      * `(*)` means:
      * - `LLMService.requestFailedEvent` (with `LLMServiceRequestFailed` as data
      *   containing the error wrapped into `LLMServiceError`) will be logged via `this.eventLogger`;
+     * - `metadataHolder` is updated with the failure metadata;
      * - if `this.errorsHandlingMode === ErrorsHandlingMode.RETHROW_ERRORS`,
      *   the error will be rethrown.
      * - if `this.errorsHandlingMode === ErrorsHandlingMode.SWALLOW_ERRORS`,
      *   the error will not be rethrown.
      */
     readonly logGenerationAndHandleErrors = async <T>(
+        proofGenerationType: ProofGenerationType,
         params: ResolvedModelParams,
         choices: number,
+        metadataHolder: ProofGenerationMetadataHolder | undefined,
         completeAndValidateRequest: (request: LLMServiceRequest) => void,
         generateProofs: (
             request: LLMServiceRequest
@@ -208,29 +220,32 @@ export abstract class LLMServiceInternal<
     ): Promise<T[]> => {
         const request: LLMServiceRequest = {
             llmService: this.llmService,
+            proofGenerationType: proofGenerationType,
             params: params,
             choices: choices,
         };
+        metadataHolder?.setProofGenerationType(proofGenerationType);
         try {
             completeAndValidateRequest(request);
+            metadataHolder?.updateWithBuiltRequest(request);
         } catch (e) {
             const error = asErrorOrRethrow(e);
             const configurationError =
                 error instanceof ConfigurationError
                     ? error
                     : new ConfigurationError(error.message);
-            this.logAndHandleError(configurationError, request);
+            this.logAndHandleError(configurationError, request, metadataHolder);
             return [];
         }
         try {
             const rawGeneratedContent = await generateProofs(request);
-            this.logSuccess(request, rawGeneratedContent);
+            this.logSuccess(request, rawGeneratedContent, metadataHolder);
             return rawGeneratedContent.items.map((rawProof) =>
                 wrapRawProofContent(rawProof.content)
             );
         } catch (e) {
             const error = asErrorOrRethrow(e);
-            this.logAndHandleError(error, request);
+            this.logAndHandleError(error, request, metadataHolder);
             return [];
         }
     };
@@ -240,15 +255,21 @@ export abstract class LLMServiceInternal<
      */
     unsupportedMethod(
         message: string,
+        proofGenerationType: ProofGenerationType,
         params: ResolvedModelParams,
         choices: number
     ) {
         const request: LLMServiceRequest = {
             llmService: this.llmService,
+            proofGenerationType: proofGenerationType,
             params: params,
             choices: choices,
         };
-        this.logAndHandleError(new ConfigurationError(message), request);
+        this.logAndHandleError(
+            new ConfigurationError(message),
+            request,
+            undefined
+        );
     }
 
     /**
@@ -307,7 +328,8 @@ export abstract class LLMServiceInternal<
 
     private logSuccess(
         request: LLMServiceRequest,
-        generatedProofsAsRawContent: GeneratedRawContent
+        generatedProofsAsRawContent: GeneratedRawContent,
+        metadataHolder: ProofGenerationMetadataHolder | undefined
     ) {
         const requestSucceeded: LLMServiceRequestSucceeded = {
             ...request,
@@ -319,9 +341,14 @@ export abstract class LLMServiceInternal<
             LLMServiceImpl.requestSucceededEvent,
             requestSucceeded
         );
+        metadataHolder?.setSuccessMetadata(requestSucceeded);
     }
 
-    private logAndHandleError(error: Error, request: LLMServiceRequest) {
+    private logAndHandleError(
+        error: Error,
+        request: LLMServiceRequest,
+        metadataHolder: ProofGenerationMetadataHolder | undefined
+    ) {
         const requestFailed: LLMServiceRequestFailed = {
             ...request,
             llmServiceError:
@@ -336,6 +363,7 @@ export abstract class LLMServiceInternal<
             LLMServiceImpl.requestFailedEvent,
             requestFailed
         );
+        metadataHolder?.setFailureMetadata(requestFailed);
         if (this.errorsHandlingMode === ErrorsHandlingMode.RETHROW_ERRORS) {
             throw requestFailed.llmServiceError;
         }

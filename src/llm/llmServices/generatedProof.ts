@@ -2,6 +2,7 @@ import { ConfigurationError } from "../llmServiceErrors";
 import { ProofGenerationContext } from "../proofGenerationContext";
 import { UserModelParams } from "../userModelParams";
 
+import { ProofGenerationMetadataHolder } from "./commonStructures/proofGenerationMetadata";
 import { ProofVersion } from "./commonStructures/proofVersion";
 import { LLMService, LLMServiceImpl } from "./llmService";
 import { LLMServiceInternal } from "./llmServiceInternal";
@@ -158,19 +159,24 @@ export abstract class GeneratedProofImpl<
      *
      * The default implementation is based on the generation from chat, namely,
      * it calls `LLMServiceInternal.generateFromChatImpl`.
-     * If it is not the desired way, `fixProof` should be overriden.
+     * If it is not the desired way, `fixProof` should be overriden;
+     * however, maintaining all errors-handling and logging invariants.
+     * Consider `LLMServiceInternal.logGenerationAndHandleErrors` for help.
      *
-     * @param diagnostic diagnostic received from the compiler.
-     * @param choices if specified, overrides `ModelParams.multiroundProfile.defaultProofFixChoices`.
+     * @param diagnostic the diagnostic received from the compiler.
+     * @param choices specifies the number of choices for generation. If not provided, the `params.multiroundProfile.defaultProofFixChoices` value is used.
+     * @param metadataHolder if provided, stores metadata about the proof generation process, which can be analyzed later.
      */
     async fixProof(
         diagnostic: string,
         choices: number = this.modelParams.multiroundProfile
-            .defaultProofFixChoices
+            .defaultProofFixChoices,
+        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined
     ): Promise<GeneratedProofType[]> {
         return this.llmServiceInternal.generateFromChatWrapped(
             this.modelParams,
             choices,
+            metadataHolder,
             () => {
                 if (!this.canBeFixed()) {
                     throw new ConfigurationError(

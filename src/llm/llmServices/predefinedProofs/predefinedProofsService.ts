@@ -5,6 +5,8 @@ import { PredefinedProofsUserModelParams } from "../../userModelParams";
 import { AnalyzedChatHistory } from "../commonStructures/chat";
 import { GeneratedRawContent } from "../commonStructures/generatedRawContent";
 import { zeroTokens } from "../commonStructures/generationTokens";
+import { ProofGenerationMetadataHolder } from "../commonStructures/proofGenerationMetadata";
+import { ProofGenerationType } from "../commonStructures/proofGenerationType";
 import { ProofVersion } from "../commonStructures/proofVersion";
 import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
@@ -32,11 +34,14 @@ export class PredefinedProofsService extends LLMServiceImpl<
     async generateProof(
         proofGenerationContext: ProofGenerationContext,
         params: PredefinedProofsModelParams,
-        choices: number = params.defaultChoices
+        choices: number = params.defaultChoices,
+        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined
     ): Promise<PredefinedProof[]> {
         return this.internal.logGenerationAndHandleErrors(
+            ProofGenerationType.NO_CHAT,
             params,
             choices,
+            metadataHolder,
             (_request) => {
                 LLMServiceInternal.validateChoices(choices);
                 const tactics = params.tactics;
@@ -105,6 +110,7 @@ export class PredefinedProof extends GeneratedProofImpl<
     ): Promise<PredefinedProof[]> {
         this.llmServiceInternal.unsupportedMethod(
             "`PredefinedProof` cannot be fixed",
+            ProofGenerationType.NO_CHAT,
             this.modelParams,
             choices
         );
