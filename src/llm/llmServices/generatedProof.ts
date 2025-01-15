@@ -2,7 +2,6 @@ import { ConfigurationError } from "../llmServiceErrors";
 import { ProofGenerationContext } from "../proofGenerationContext";
 import { UserModelParams } from "../userModelParams";
 
-import { ErrorsHandlingMode } from "./commonStructures/errorsHandlingMode";
 import { ProofVersion } from "./commonStructures/proofVersion";
 import { LLMService, LLMServiceImpl } from "./llmService";
 import { LLMServiceInternal } from "./llmServiceInternal";
@@ -167,13 +166,11 @@ export abstract class GeneratedProofImpl<
     async fixProof(
         diagnostic: string,
         choices: number = this.modelParams.multiroundProfile
-            .defaultProofFixChoices,
-        errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
+            .defaultProofFixChoices
     ): Promise<GeneratedProofType[]> {
         return this.llmServiceInternal.generateFromChatWrapped(
             this.modelParams,
             choices,
-            errorsHandlingMode,
             () => {
                 if (!this.canBeFixed()) {
                     throw new ConfigurationError(

@@ -107,38 +107,43 @@ export abstract class LLMServiceImpl<
         LLMServiceInternalType
     >,
 > {
+    abstract readonly serviceName: string;
     protected abstract readonly internal: LLMServiceInternalType;
     protected abstract readonly modelParamsResolver: ParamsResolver<
         InputModelParams,
         ResolvedModelParams
     >;
-    protected readonly eventLoggerGetter: () => EventLogger | undefined;
+
+    protected readonly eventLogger: EventLogger | undefined;
+    readonly errorsHandlingMode: ErrorsHandlingMode;
+    readonly generationLogsFilePath: string;
     protected readonly generationsLoggerBuilder: () => GenerationsLogger;
 
     /**
      * Creates an instance of `LLMServiceImpl`.
-     * @param eventLogger if it is not specified, events won't be logged and passing `LOG_EVENTS_AND_SWALLOW_ERRORS` will throw an error.
+     * @param eventLogger is used to send proof generation events. If not specified, event logging will be disabled.
+     * @param errorsHandlingMode defines how errors during method calls are handled: whether they are rethrown or swallowed. Regardless of the mode, errors are logged.
      * @param debugLogs enables debug logs for the internal `GenerationsLogger`.
      * @param generationLogsFilePath if it is not specified, a temporary file will be used.
      */
     constructor(
-        readonly serviceName: string,
         eventLogger: EventLogger | undefined,
-        debugLogs: boolean,
-        generationLogsFilePath: string | undefined
+        errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.RETHROW_ERRORS,
+        generationLogsFilePath: string | undefined = undefined,
+        debugLogs: boolean = false
     ) {
-        this.eventLoggerGetter = () => eventLogger;
+        this.eventLogger = eventLogger;
+        this.errorsHandlingMode = errorsHandlingMode;
+        this.generationLogsFilePath =
+            generationLogsFilePath ?? tmp.fileSync().name;
         this.generationsLoggerBuilder = () =>
-            new GenerationsLogger(
-                generationLogsFilePath ?? tmp.fileSync().name,
-                {
-                    debug: debugLogs,
-                    paramsPropertiesToCensor: {
-                        apiKey: GenerationsLogger.censorString,
-                    },
-                    cleanLogsOnStart: true,
-                }
-            );
+            new GenerationsLogger(this.generationLogsFilePath, {
+                debug: debugLogs,
+                paramsPropertiesToCensor: {
+                    apiKey: GenerationsLogger.censorString,
+                },
+                cleanLogsOnStart: true,
+            });
     }
 
     static readonly requestSucceededEvent = `llmservice-request-succeeded`;
@@ -157,13 +162,11 @@ export abstract class LLMServiceImpl<
     async generateFromChat(
         analyzedChat: AnalyzedChatHistory,
         params: ResolvedModelParams,
-        choices: number = params.defaultChoices,
-        errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
+        choices: number = params.defaultChoices
     ): Promise<string[]> {
         return this.internal.generateFromChatWrapped(
             params,
             choices,
-            errorsHandlingMode,
             () => analyzedChat,
             (proof) => proof
         );
@@ -183,13 +186,11 @@ export abstract class LLMServiceImpl<
     async generateProof(
         proofGenerationContext: ProofGenerationContext,
         params: ResolvedModelParams,
-        choices: number = params.defaultChoices,
-        errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
+        choices: number = params.defaultChoices
     ): Promise<GeneratedProofType[]> {
         return this.internal.generateFromChatWrapped(
             params,
             choices,
-            errorsHandlingMode,
             () => buildProofGenerationChat(proofGenerationContext, params),
             (proof) =>
                 this.internal.constructGeneratedProof(

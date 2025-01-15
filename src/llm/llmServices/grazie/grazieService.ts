@@ -1,4 +1,3 @@
-import { EventLogger } from "../../../logging/eventLogger";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { GrazieUserModelParams } from "../../userModelParams";
 import {
@@ -24,21 +23,13 @@ export class GrazieService extends LLMServiceImpl<
     GrazieGeneratedProof,
     GrazieServiceInternal
 > {
-    protected readonly internal: GrazieServiceInternal;
+    readonly serviceName = "GrazieService";
+    protected readonly internal = new GrazieServiceInternal(
+        this,
+        this.eventLogger,
+        this.generationsLoggerBuilder
+    );
     protected readonly modelParamsResolver = new GrazieModelParamsResolver();
-
-    constructor(
-        eventLogger?: EventLogger,
-        debugLogs: boolean = false,
-        generationsLogsFilePath?: string
-    ) {
-        super("GrazieService", eventLogger, debugLogs, generationsLogsFilePath);
-        this.internal = new GrazieServiceInternal(
-            this,
-            this.eventLoggerGetter,
-            this.generationsLoggerBuilder
-        );
-    }
 
     /**
      * As specified in Grazie REST API, `maxTokensToGenerate` is a constant currently.
@@ -75,7 +66,7 @@ class GrazieServiceInternal extends LLMServiceInternal<
     GrazieGeneratedProof,
     GrazieServiceInternal
 > {
-    readonly api = new GrazieApi(this.debug);
+    readonly api = new GrazieApi(this.logDebug);
 
     constructGeneratedProof(
         proof: string,
@@ -101,6 +92,7 @@ class GrazieServiceInternal extends LLMServiceInternal<
         const completions: Promise<string>[] = [];
         const formattedChat = this.formatChatHistory(analyzedChat.chat, params);
 
+        // TODO: this is the bug causing `choices + 1` generations instead of `choices`
         while (completions.length <= choices) {
             completions.push(
                 this.api.requestChatCompletion(params, formattedChat)

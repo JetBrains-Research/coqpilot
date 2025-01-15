@@ -65,17 +65,19 @@ export abstract class LLMServiceInternal<
     >,
 > {
     readonly eventLogger: EventLogger | undefined;
+    readonly errorsHandlingMode: ErrorsHandlingMode;
     readonly generationsLogger: GenerationsLogger;
-    readonly debug: DebugWrappers;
+    readonly logDebug: DebugLogsWrappers;
 
     constructor(
         readonly llmService: LLMServiceType,
-        eventLoggerGetter: () => EventLogger | undefined,
+        eventLogger: EventLogger | undefined,
         generationsLoggerBuilder: () => GenerationsLogger
     ) {
-        this.eventLogger = eventLoggerGetter();
+        this.eventLogger = eventLogger;
+        this.errorsHandlingMode = llmService.errorsHandlingMode;
         this.generationsLogger = generationsLoggerBuilder();
-        this.debug = new DebugWrappers(
+        this.logDebug = new DebugLogsWrappers(
             llmService.serviceName,
             this.eventLogger
         );
@@ -109,7 +111,7 @@ export abstract class LLMServiceInternal<
      * so there is no need to perform this checks again. Report `ConfigurationError` only if something goes wrong during generation runtime.
      *
      * Subnote: most likely, you'd like to call `this.validateChoices` to validate `choices` parameter.
-     * Since it overrides `choices`-like parameters of already validated `params`, it might have any number value.
+     * Since it overrides `choices`-like properties of already validated `params`, it might have any number value.
      */
     abstract generateFromChatImpl(
         analyzedChat: AnalyzedChatHistory,
@@ -139,24 +141,21 @@ export abstract class LLMServiceInternal<
     readonly generateFromChatWrapped = async <T>(
         params: ResolvedModelParams,
         choices: number,
-        errorsHandlingMode: ErrorsHandlingMode,
         buildAndValidateChat: () => AnalyzedChatHistory,
         wrapRawProofContent: (proof: string) => T
     ): Promise<T[]> => {
         return this.logGenerationAndHandleErrors<T>(
             params,
             choices,
-            errorsHandlingMode,
             (request) => {
                 request.analyzedChat = buildAndValidateChat();
             },
-            async (request) => {
-                return this.generateFromChatImpl(
+            async (request) =>
+                this.generateFromChatImpl(
                     request.analyzedChat!,
                     params,
                     choices
-                );
-            },
+                ),
             wrapRawProofContent
         );
     };
@@ -173,7 +172,7 @@ export abstract class LLMServiceInternal<
      * - any thrown error will be of `LLMServiceError` type: if the error is not of that type originally, it'd be wrapped;
      * - errors are rethrown only in case of `RETHROW_ERRORS`;
      * - `this.generationsLogger` logs every success and only `GenerationFailedError`-s (not `ConfigurationError`-s, for example);
-     * - `this.eventLogger` logs every success and in case of `LOG_EVENTS_AND_SWALLOW_ERRORS` logs any error;
+     * - `this.eventLogger` logs every success and any error;
      *   in case of success / failure event's `data` is the `LLMServiceRequestSucceeded` / `LLMServiceRequestFailed` object respectively.
      *
      * Invariants, the full version.
@@ -191,17 +190,16 @@ export abstract class LLMServiceInternal<
      *         - finally, it will be handled according to `errorsHandlingMode` `(*)`.
      *
      * `(*)` means:
-     * - if `errorsHandlingMode === ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS`,
-     *     - `LLMService.requestFailedEvent` (with `LLMServiceRequestFailed` as data
-     *       containing the error wrapped into `LLMServiceError`) will be logged via `this.eventLogger`;
-     *     - the error will not be rethrown.
-     * - if `errorsHandlingMode === ErrorsHandlingMode.RETHROW_ERRORS`,
-     *     - the error will be rethrown.
+     * - `LLMService.requestFailedEvent` (with `LLMServiceRequestFailed` as data
+     *   containing the error wrapped into `LLMServiceError`) will be logged via `this.eventLogger`;
+     * - if `this.errorsHandlingMode === ErrorsHandlingMode.RETHROW_ERRORS`,
+     *   the error will be rethrown.
+     * - if `this.errorsHandlingMode === ErrorsHandlingMode.SWALLOW_ERRORS`,
+     *   the error will not be rethrown.
      */
     readonly logGenerationAndHandleErrors = async <T>(
         params: ResolvedModelParams,
         choices: number,
-        errorsHandlingMode: ErrorsHandlingMode,
         completeAndValidateRequest: (request: LLMServiceRequest) => void,
         generateProofs: (
             request: LLMServiceRequest
@@ -221,11 +219,7 @@ export abstract class LLMServiceInternal<
                 error instanceof ConfigurationError
                     ? error
                     : new ConfigurationError(error.message);
-            this.logAndHandleError(
-                configurationError,
-                errorsHandlingMode,
-                request
-            );
+            this.logAndHandleError(configurationError, request);
             return [];
         }
         try {
@@ -236,7 +230,7 @@ export abstract class LLMServiceInternal<
             );
         } catch (e) {
             const error = asErrorOrRethrow(e);
-            this.logAndHandleError(error, errorsHandlingMode, request);
+            this.logAndHandleError(error, request);
             return [];
         }
     };
@@ -247,19 +241,14 @@ export abstract class LLMServiceInternal<
     unsupportedMethod(
         message: string,
         params: ResolvedModelParams,
-        choices: number,
-        errorsHandlingMode: ErrorsHandlingMode
+        choices: number
     ) {
         const request: LLMServiceRequest = {
             llmService: this.llmService,
             params: params,
             choices: choices,
         };
-        this.logAndHandleError(
-            new ConfigurationError(message),
-            errorsHandlingMode,
-            request
-        );
+        this.logAndHandleError(new ConfigurationError(message), request);
     }
 
     /**
@@ -332,11 +321,7 @@ export abstract class LLMServiceInternal<
         );
     }
 
-    private logAndHandleError(
-        error: Error,
-        errorsHandlingMode: ErrorsHandlingMode,
-        request: LLMServiceRequest
-    ) {
+    private logAndHandleError(error: Error, request: LLMServiceRequest) {
         const requestFailed: LLMServiceRequestFailed = {
             ...request,
             llmServiceError:
@@ -347,29 +332,12 @@ export abstract class LLMServiceInternal<
         if (requestFailed.llmServiceError instanceof GenerationFailedError) {
             this.generationsLogger.logGenerationFailed(requestFailed);
         }
-        this.logAsEventOrRethrow(requestFailed, errorsHandlingMode);
-    }
-
-    private logAsEventOrRethrow(
-        requestFailed: LLMServiceRequestFailed,
-        errorsHandlingMode: ErrorsHandlingMode
-    ) {
-        switch (errorsHandlingMode) {
-            case ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS:
-                if (!this.eventLogger) {
-                    throw Error("cannot log events: no `eventLogger` provided");
-                }
-                this.eventLogger.logLogicEvent(
-                    LLMServiceImpl.requestFailedEvent,
-                    requestFailed
-                );
-                return;
-            case ErrorsHandlingMode.RETHROW_ERRORS:
-                throw requestFailed.llmServiceError;
-            default:
-                throw Error(
-                    `unsupported \`ErrorsHandlingMode\`: ${errorsHandlingMode}`
-                );
+        this.eventLogger?.logLogicEvent(
+            LLMServiceImpl.requestFailedEvent,
+            requestFailed
+        );
+        if (this.errorsHandlingMode === ErrorsHandlingMode.RETHROW_ERRORS) {
+            throw requestFailed.llmServiceError;
         }
     }
 }
@@ -380,7 +348,7 @@ export abstract class LLMServiceInternal<
  * Its instance is available inside `LLMServiceInternal` and
  * could be passed into other classes of the internal implementation.
  */
-export class DebugWrappers {
+export class DebugLogsWrappers {
     constructor(
         private readonly serviceName: string,
         private readonly eventLogger?: EventLogger
@@ -389,7 +357,7 @@ export class DebugWrappers {
     /**
      * Helper method that provides debug logging in a shorter way.
      */
-    logEvent(message: string, data?: any) {
+    event(message: string, data?: any) {
         this.eventLogger?.log(this.serviceName, message, data, Severity.DEBUG);
     }
 }

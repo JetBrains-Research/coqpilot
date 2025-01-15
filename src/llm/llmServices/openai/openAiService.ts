@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-import { EventLogger } from "../../../logging/eventLogger";
+import { asErrorOrUndefined } from "../../../utils/errorsUtils";
 import {
     ConfigurationError,
     RemoteConnectionError,
@@ -25,21 +25,13 @@ export class OpenAiService extends LLMServiceImpl<
     OpenAiGeneratedProof,
     OpenAiServiceInternal
 > {
-    protected readonly internal: OpenAiServiceInternal;
+    readonly serviceName = "OpenAiService";
+    protected readonly internal = new OpenAiServiceInternal(
+        this,
+        this.eventLogger,
+        this.generationsLoggerBuilder
+    );
     protected readonly modelParamsResolver = new OpenAiModelParamsResolver();
-
-    constructor(
-        eventLogger?: EventLogger,
-        debugLogs: boolean = false,
-        generationsLogsFilePath?: string
-    ) {
-        super("OpenAiService", eventLogger, debugLogs, generationsLogsFilePath);
-        this.internal = new OpenAiServiceInternal(
-            this,
-            this.eventLoggerGetter,
-            this.generationsLoggerBuilder
-        );
-    }
 }
 
 export class OpenAiGeneratedProof extends GeneratedProofImpl<
@@ -95,7 +87,7 @@ class OpenAiServiceInternal extends LLMServiceInternal<
 
         const openai = new OpenAI({ apiKey: params.apiKey });
         const formattedChat = this.formatChatHistory(analyzedChat.chat, params);
-        this.debug.logEvent("Completion requested", {
+        this.logDebug.event("Completion requested", {
             history: formattedChat,
         });
 
@@ -152,8 +144,8 @@ class OpenAiServiceInternal extends LLMServiceInternal<
         caughtObject: any,
         params: OpenAiModelParams
     ): any {
-        const error = caughtObject as Error;
-        if (error === null) {
+        const error = asErrorOrUndefined(caughtObject);
+        if (error === undefined) {
             return caughtObject;
         }
         const errorMessage = error.message;

@@ -1,10 +1,8 @@
-import { EventLogger } from "../../../logging/eventLogger";
 import { Time, timeZero } from "../../../utils/time";
 import { ConfigurationError } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { PredefinedProofsUserModelParams } from "../../userModelParams";
 import { AnalyzedChatHistory } from "../commonStructures/chat";
-import { ErrorsHandlingMode } from "../commonStructures/errorsHandlingMode";
 import { GeneratedRawContent } from "../commonStructures/generatedRawContent";
 import { zeroTokens } from "../commonStructures/generationTokens";
 import { ProofVersion } from "../commonStructures/proofVersion";
@@ -22,38 +20,23 @@ export class PredefinedProofsService extends LLMServiceImpl<
     PredefinedProof,
     PredefinedProofsServiceInternal
 > {
-    protected readonly internal: PredefinedProofsServiceInternal;
+    readonly serviceName = "PredefinedProofsService";
+    protected readonly internal = new PredefinedProofsServiceInternal(
+        this,
+        this.eventLogger,
+        this.generationsLoggerBuilder
+    );
     protected readonly modelParamsResolver =
         new PredefinedProofsModelParamsResolver();
-
-    constructor(
-        eventLogger?: EventLogger,
-        debugLogs: boolean = false,
-        generationsLogsFilePath?: string
-    ) {
-        super(
-            "PredefinedProofsService",
-            eventLogger,
-            debugLogs,
-            generationsLogsFilePath
-        );
-        this.internal = new PredefinedProofsServiceInternal(
-            this,
-            this.eventLoggerGetter,
-            this.generationsLoggerBuilder
-        );
-    }
 
     async generateProof(
         proofGenerationContext: ProofGenerationContext,
         params: PredefinedProofsModelParams,
-        choices: number = params.defaultChoices,
-        errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
+        choices: number = params.defaultChoices
     ): Promise<PredefinedProof[]> {
         return this.internal.logGenerationAndHandleErrors(
             params,
             choices,
-            errorsHandlingMode,
             (_request) => {
                 LLMServiceInternal.validateChoices(choices);
                 const tactics = params.tactics;
@@ -118,14 +101,12 @@ export class PredefinedProof extends GeneratedProofImpl<
     async fixProof(
         _diagnostic: string,
         choices: number = this.modelParams.multiroundProfile
-            .defaultProofFixChoices,
-        errorsHandlingMode: ErrorsHandlingMode
+            .defaultProofFixChoices
     ): Promise<PredefinedProof[]> {
         this.llmServiceInternal.unsupportedMethod(
             "`PredefinedProof` cannot be fixed",
             this.modelParams,
-            choices,
-            errorsHandlingMode
+            choices
         );
         return [];
     }

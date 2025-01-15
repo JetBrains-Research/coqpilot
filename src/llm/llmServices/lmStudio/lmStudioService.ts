@@ -1,4 +1,3 @@
-import { EventLogger } from "../../../logging/eventLogger";
 import { toUnformattedJsonString } from "../../../utils/printers";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { LMStudioUserModelParams } from "../../userModelParams";
@@ -19,26 +18,13 @@ export class LMStudioService extends LLMServiceImpl<
     LMStudioGeneratedProof,
     LMStudioServiceInternal
 > {
-    protected readonly internal: LMStudioServiceInternal;
+    readonly serviceName = "LMStudioService";
+    protected readonly internal = new LMStudioServiceInternal(
+        this,
+        this.eventLogger,
+        this.generationsLoggerBuilder
+    );
     protected readonly modelParamsResolver = new LMStudioModelParamsResolver();
-
-    constructor(
-        eventLogger?: EventLogger,
-        debugLogs: boolean = false,
-        generationsLogsFilePath?: string
-    ) {
-        super(
-            "LMStudioService",
-            eventLogger,
-            debugLogs,
-            generationsLogsFilePath
-        );
-        this.internal = new LMStudioServiceInternal(
-            this,
-            this.eventLoggerGetter,
-            this.generationsLoggerBuilder
-        );
-    }
 }
 
 export class LMStudioGeneratedProof extends GeneratedProofImpl<
@@ -93,7 +79,7 @@ class LMStudioServiceInternal extends LLMServiceInternal<
         LLMServiceInternal.validateChoices(choices);
         let attempts = choices * 2;
         const completions: string[] = [];
-        this.debug.logEvent("Completion requested", {
+        this.logDebug.event("Completion requested", {
             history: analyzedChat.chat,
         });
 
@@ -109,12 +95,12 @@ class LMStudioServiceInternal extends LLMServiceInternal<
                     const res = await responce.json();
                     const newCompletion = res.choices[0].message.content;
                     completions.push(newCompletion);
-                    this.debug.logEvent("Completion succeeded", {
+                    this.logDebug.event("Completion succeeded", {
                         newCompletion: newCompletion,
                     });
                 }
             } catch (err) {
-                this.debug.logEvent("Completion failed", {
+                this.logDebug.event("Completion failed", {
                     error: err,
                 });
                 if ((err as Error) === null) {
