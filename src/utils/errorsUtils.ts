@@ -34,15 +34,17 @@ export function getErrorMessage(e: any): string {
 
 export abstract class ErrorWithCause extends Error {
     constructor(
-        message: string = "",
+        message: string | undefined,
         readonly cause: Error | undefined = undefined
     ) {
-        let errorMessage = message;
-        if (cause !== undefined) {
-            const causeMessage = `cause: [${cause.name}] "${cause.message}"`;
-            errorMessage =
-                message === "" ? causeMessage : `${message}, ${causeMessage}`;
-        }
+        const causeMessage =
+            cause === undefined ? "" : `[${cause.name}] "${cause.message}"`;
+        const errorMessage =
+            message === undefined
+                ? causeMessage
+                : cause === undefined
+                  ? message
+                  : `${message}, cause: ${causeMessage}`;
         super(errorMessage);
     }
 }

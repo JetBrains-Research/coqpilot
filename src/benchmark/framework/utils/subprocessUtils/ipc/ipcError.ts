@@ -1,6 +1,4 @@
-import { ErrorWithCause } from "../../../../../utils/errorsUtils";
-
-export class IPCError extends ErrorWithCause {
+export class IPCError extends Error {
     constructor(message: string) {
         super(message);
         Object.setPrototypeOf(this, new.target.prototype);

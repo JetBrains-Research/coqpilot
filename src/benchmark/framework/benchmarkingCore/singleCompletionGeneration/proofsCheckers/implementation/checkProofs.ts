@@ -6,10 +6,12 @@ import {
     ProofCheckResult,
 } from "../../../../../../core/coqProofChecker";
 
-import { asErrorOrRethrowWrapped } from "../../../../../../utils/errorsUtils";
-import { stringifyAnyValue } from "../../../../../../utils/printers";
-import { BenchmarkingLogger } from "../../../../logging/benchmarkingLogger";
+import {
+    asErrorOrRethrowWrapped,
+    getErrorMessage,
+} from "../../../../../../utils/errorsUtils";
 import { deserializeUri } from "../../../../structures/common/serializedUri";
+import { FailFastAbortError } from "../../../../utils/asyncUtils/abortUtils";
 import { LogsIPCSender } from "../../../../utils/subprocessUtils/ipc/onParentProcessCallExecutor/logsIpcSender";
 import { TimeMark } from "../../measureTimeUtils";
 
@@ -22,10 +24,7 @@ import { CheckProofsInternalSignature } from "./internalSignature";
 export namespace CheckProofsImpl {
     import Signature = CheckProofsInternalSignature;
 
-    export interface ProvidedLogger {
-        logger: LogsIPCSender | BenchmarkingLogger;
-        logSuccess: boolean;
-    }
+    export type ProvidedLogger = LogsIPCSender | undefined;
 
     export async function checkProofsMeasured(
         args: Signature.Args,
@@ -62,16 +61,17 @@ export namespace CheckProofsImpl {
                 e,
                 "got unexpected error from `CoqProofChecker`"
             );
-            // TODO: maybe it will be more efficient just to rethrow error here
-            const logger = providedLogger.logger;
-            if (error instanceof CoqLspTimeoutError) {
-                logger.error(
-                    `coq-lsp timeout error: ${stringifyAnyValue(error.message)}`
+            // TODO: just rethrow error here, packing-unpacking should be carefully removed
+            if (error instanceof FailFastAbortError) {
+                throw error;
+            } else if (error instanceof CoqLspTimeoutError) {
+                providedLogger?.error(
+                    `\`coq-lsp\` timeout error: ${getErrorMessage(error)}`
                 );
                 return buildFailureResult("COQ_LSP_TIMEOUT", error.message);
             } else {
-                logger.error(
-                    `\`CoqProofChecker\` error: ${stringifyAnyValue(error.message)}`
+                providedLogger?.error(
+                    `\`CoqProofChecker\` error: ${getErrorMessage(error)}`
                 );
                 return buildFailureResult(
                     "COQ_PROOF_CHECKER_ERROR",
@@ -86,11 +86,9 @@ export namespace CheckProofsImpl {
         proofsValidationMillis: number,
         providedLogger: ProvidedLogger
     ): Signature.SuccessResult {
-        if (providedLogger.logSuccess) {
-            providedLogger.logger.debug(
-                `Proofs were successfully checked in ${proofsValidationMillis} ms`
-            );
-        }
+        providedLogger?.debug(
+            `Proofs were successfully checked in ${proofsValidationMillis} ms`
+        );
         return {
             checkedProofs: proofCheckResults,
             effectiveElapsedMillis: proofsValidationMillis,

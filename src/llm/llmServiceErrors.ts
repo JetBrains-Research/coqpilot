@@ -4,7 +4,10 @@ import { ErrorWithCause } from "../utils/errorsUtils";
  * Base class for the errors thrown by `LLMService`.
  */
 export abstract class LLMServiceError extends ErrorWithCause {
-    constructor(message: string = "", cause: Error | undefined = undefined) {
+    constructor(
+        message: string | undefined,
+        cause: Error | undefined = undefined
+    ) {
         super(message, cause);
         Object.setPrototypeOf(this, new.target.prototype);
         this.name = "LLMServiceError";
@@ -44,7 +47,7 @@ export class RemoteConnectionError extends LLMServiceError {
  */
 export class GenerationFailedError extends LLMServiceError {
     constructor(readonly cause: Error) {
-        super("", cause);
+        super(undefined, cause);
         Object.setPrototypeOf(this, new.target.prototype);
         this.name = "GenerationFailedError";
     }

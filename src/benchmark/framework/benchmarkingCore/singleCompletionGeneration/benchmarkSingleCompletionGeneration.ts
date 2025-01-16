@@ -202,7 +202,11 @@ export async function benchmarkSingleCompletionGeneration<
         );
     } catch (error) {
         if (error instanceof ProofsCheckFailedError) {
-            logger.info(`Failed to validate proofs: ${error.causeMessage}`);
+            const failureType = translateToFailureType(error.failureType);
+            logger
+                .asOneRecord()
+                .info(`Failed to validate proofs: ${failureType}`)
+                .debug(`Cause: ${error.causeMessage}`);
             return new FailedCompletionGenerationBenchmarking(
                 allGeneratedProofs,
                 contextTheorems,
@@ -210,7 +214,7 @@ export async function benchmarkSingleCompletionGeneration<
                 measuredTime,
                 roundNumber,
                 {
-                    failureType: translateToFailureType(error.failureType),
+                    failureType: failureType,
                     causeMessage: error.causeMessage,
                 }
             );
@@ -412,7 +416,7 @@ async function generateProofWithRetriesMeasured(
 
             if (llmServiceError instanceof ConfigurationError) {
                 logger.debug(
-                    `Attempt #${attemptIndex}, configuration error: ${stringifyAnyValue(llmServiceError.message)}`
+                    `Attempt #${attemptIndex}, configuration error: ${llmServiceError.message}`
                 );
                 throw llmServiceError;
             }
@@ -423,7 +427,7 @@ async function generateProofWithRetriesMeasured(
                 logger
                     .asOneRecord()
                     .debug(
-                        `Attempt #${attemptIndex}, generation failed error: ${stringifyAnyValue(llmServiceError.message)}`
+                        `Attempt #${attemptIndex}, generation failed error: ${llmServiceError.message}`
                     )
                     .debug(
                         `Estimated time to become available: ${timeToString(estimatedTime)}`

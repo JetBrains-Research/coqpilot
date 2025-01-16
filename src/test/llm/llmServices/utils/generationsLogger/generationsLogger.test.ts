@@ -302,7 +302,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
 
             class DummyLLMServiceError extends LLMServiceError {
                 constructor() {
-                    super();
+                    super("dummy");
                     Object.setPrototypeOf(this, new.target.prototype);
                     this.name = "DummyLLMServiceError";
                 }

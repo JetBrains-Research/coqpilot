@@ -40,7 +40,8 @@ abstract class AbstractBenchmarkedProof {
 
     isValidated(): this is ValidatedProof {
         const maybeValidatedProof = this as unknown as ValidatedProof;
-        return maybeValidatedProof.isValidated !== undefined;
+        // Note: yes, here the method presence is checked, since `isValid` property is private
+        return maybeValidatedProof.isValidProof !== undefined;
     }
 }
 
@@ -89,7 +90,7 @@ abstract class AbstractValidatedProof extends AbstractBenchmarkedProof {
         proofObject: GeneratedProof,
         asString: string,
         generatedProofId: number,
-        readonly isValid: boolean
+        private readonly isValid: boolean
     ) {
         super(proofObject, asString, generatedProofId);
     }

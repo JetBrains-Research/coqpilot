@@ -176,7 +176,7 @@ export namespace BasicJsonSerialization {
     ): Structures.SerializedValidatedProof {
         return {
             ...serializedBaseBenchmarkedProof(validatedProof),
-            isValid: validatedProof.isValid,
+            isValid: validatedProof.isValidProof(),
             diagnostic: validatedProof.isNonValidProof()
                 ? validatedProof.diagnostic
                 : undefined,

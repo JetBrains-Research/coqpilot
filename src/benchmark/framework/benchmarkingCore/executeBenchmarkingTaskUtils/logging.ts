@@ -42,11 +42,8 @@ export namespace ExecuteBenchmarkingTaskLoggingUtils {
         } else {
             const { failureType, causeMessage } = roundResult.failureMetadata;
             asOneRecordLogs
-                .error(
-                    `${roundId} has failed to finish: ${failureType}`,
-                    "default"
-                )
-                .error(`Cause: ${causeMessage}`, "default");
+                .error(`${roundId} has failed to finish:`, "default")
+                .error(`${failureType}: ${causeMessage}`, "default");
             logElapsedTime();
             asOneRecordLogs.error(
                 "This benchmarking task execution will be stopped"
@@ -106,7 +103,7 @@ export namespace ExecuteBenchmarkingTaskLoggingUtils {
                 const firstFailedRound = allFailedRounds[0];
                 switch (firstFailedRound.failureMetadata.failureType) {
                     case "`coq-lsp` timeout":
-                        failureMessage = "Proof validation timeout";
+                        failureMessage = "Proofs validation timeout";
                         break;
                     case "`CoqProofChecker` error":
                         failureMessage = "`CoqProofChecker` error";
