@@ -206,7 +206,7 @@ class OpenAiServiceInternal extends LLMServiceInternal<
         /^The model `(.*)` does not exist or you do not have access to it\.$/;
 
     private static readonly incorrectApiKeyPattern =
-        /^Incorrect API key provided: (.*)\.(.*)$/;
+        /^401 Incorrect API key provided: (.*)\.(.*)$/;
 
     private static readonly maximumContextLengthExceededPattern =
         /^This model's maximum context length is ([0-9]+) tokens\. However, you requested ([0-9]+) tokens \(([0-9]+) in the messages, ([0-9]+) in the completion\)\..*$/;
