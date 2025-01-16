@@ -189,7 +189,6 @@ export namespace BasicJsonSerialization {
         return {
             generatedProof: serializeGeneratedProof(proof.proofObject),
             asString: proof.asString,
-            tokensSpent: proof.tokensSpent,
             length: proof.length,
             generatedProofId: proof.generatedProofId,
         };
@@ -199,10 +198,10 @@ export namespace BasicJsonSerialization {
         proofObject: GeneratedProof
     ): Structures.SerializedGeneratedProof {
         return {
+            rawProof: proofObject.rawProof,
             proofGenerationContext: serializeProofGenerationContext(
                 proofObject.proofGenerationContext
             ),
-            previousProofVersions: proofObject.proofVersions,
         };
     }
 

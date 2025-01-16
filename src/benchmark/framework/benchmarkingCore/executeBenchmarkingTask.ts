@@ -1,4 +1,5 @@
 import { ConfigurationError } from "../../../llm/llmServiceErrors";
+import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
 import { LLMService } from "../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
 
@@ -86,12 +87,13 @@ export async function executeBenchmarkingTask(
         joinPaths(saveToDirPath, ArtifactsNames.benchmarkingItemFileName),
         itemLogger
     );
-
     const task = benchmarkingItem.task;
     const params = benchmarkingItem.params;
-    const [llmService, llmServiceEventLogger] = selectLLMServiceBuilder(
+
+    const llmService = selectLLMServiceBuilder(
         benchmarkingItem.params.llmServiceIdentifier
-    )();
+    )(undefined, ErrorsHandlingMode.RETHROW_ERRORS);
+
     const logError = (e: any) =>
         logCommonError(e, itemLogger, params, options, abortSignal);
 
@@ -108,7 +110,6 @@ export async function executeBenchmarkingTask(
             nextGeneratedProofId: 0,
             roundNumber: 1,
             llmService: llmService,
-            llmServiceEventLogger: llmServiceEventLogger,
             parsedSourceFileData: task.parsedSourceFileData,
             workspaceRoot: task.workspaceRoot,
         };
@@ -414,7 +415,7 @@ function logFinalResult(
         asOneRecordLogs
             .info(`Goal was succefully proven ${heavyCheckMark}`, "green")
             .debug(
-                `First valid proof was generated at round ${firstValidProof.proofObject.versionNumber()}:`
+                `First valid proof was generated at round ${firstValidProof.proofObject.versionNumber}:`
             )
             .debug(`${firstValidProof.asString}`);
     } else {

@@ -4,18 +4,10 @@ import {
     LLMServiceError,
     RemoteConnectionError,
 } from "../../../../llm/llmServiceErrors";
-import { ErrorsHandlingMode } from "../../../../llm/llmServices/commonStructures/errorsHandlingMode";
-import { GeneratedRawContentItem } from "../../../../llm/llmServices/commonStructures/generatedRawContent";
 import { GenerationTokens } from "../../../../llm/llmServices/commonStructures/generationTokens";
-import { LLMServiceRequestSucceeded } from "../../../../llm/llmServices/commonStructures/llmServiceRequest";
-import {
-    GeneratedProof,
-    GeneratedProofImpl,
-} from "../../../../llm/llmServices/generatedProof";
-import {
-    LLMService,
-    LLMServiceImpl,
-} from "../../../../llm/llmServices/llmService";
+import { ProofGenerationMetadataHolder } from "../../../../llm/llmServices/commonStructures/proofGenerationMetadata";
+import { GeneratedProof } from "../../../../llm/llmServices/generatedProof";
+import { LLMService } from "../../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 import { ProofGenerationContext } from "../../../../llm/proofGenerationContext";
 
@@ -28,7 +20,6 @@ import { prepareProofToCheck } from "../../../../core/exposedCompletionGenerator
 import { goalToTargetLemma } from "../../../../core/exposedCompletionGeneratorUtils";
 
 import { Theorem } from "../../../../coqParser/parsedTypes";
-import { EventLogger } from "../../../../logging/eventLogger";
 import { delay } from "../../../../utils/delay";
 import { buildErrorCompleteLog } from "../../../../utils/errorsUtils";
 import { stringifyAnyValue } from "../../../../utils/printers";
@@ -56,11 +47,7 @@ import { ParsedCoqFileData } from "../../structures/parsedCoqFile/parsedCoqFileD
 import { TheoremData } from "../../structures/parsedCoqFile/theoremData";
 import { throwOnAbort } from "../../utils/asyncUtils/abortUtils";
 import { AsyncScheduler } from "../../utils/asyncUtils/asyncScheduler";
-import {
-    groupByAndMap,
-    reduceToMap,
-} from "../../utils/collectionUtils/mapUtils";
-import { hasAllPropertiesDefined } from "../../utils/objectUtils";
+import { groupByAndMap } from "../../utils/collectionUtils/mapUtils";
 import {
     benchmarkingInvariantFailed,
     throwBenchmarkingError,
@@ -90,7 +77,6 @@ export interface CompletionGenerationBenchmarkArgs<
      */
     roundNumber: number;
     llmService: LLMServiceType;
-    llmServiceEventLogger: EventLogger;
     parsedSourceFileData: ParsedCoqFileData;
     workspaceRoot: WorkspaceRoot;
 }
@@ -140,43 +126,37 @@ export async function benchmarkSingleCompletionGeneration<
     logger
         .asOneRecord()
         .info(
-            `Successfully generated ${proofGenerationResult.proofs.length} proof(s)`
+            `Successfully generated ${proofGenerationResult.generatedProofs.length} proof(s)`
         )
         .debug(
             `Effective elapsed time: ${proofGenerationResult.effectiveElapsedTimeMillis} ms`,
             "gray"
         );
-    const preparedProofsWithTokens: [
-        string,
-        GeneratedProof,
-        GenerationTokens,
-        number,
-    ][] = proofGenerationResult.proofs.map(
-        (proof: GeneratedProofItem, index: number) => [
-            prepareProofToCheck(proof.generatedProof.proof()),
-            proof.generatedProof,
-            proof.tokensSpent,
-            generationArgs.nextGeneratedProofId + index,
-        ]
-    );
+    const preparedProofs: [string, GeneratedProof, number][] =
+        proofGenerationResult.generatedProofs.map(
+            (generatedProof: GeneratedProof, index: number) => [
+                prepareProofToCheck(generatedProof.proof),
+                generatedProof,
+                generationArgs.nextGeneratedProofId + index,
+            ]
+        );
 
     const measuredTime = new CompletionGenerationTimeImpl(
         proofGenerationResult.effectiveElapsedTimeMillis
     );
-    // Generated `preparedProofsWithTokens` _might_ contain duplicate proofs;
+    // Generated `preparedProofs` _might_ contain duplicate proofs;
     // therefore, any further mappings should be done carefully,
     // so as not to lose duplicate proofs objects.
     // Their metadata might be different despite the same string representation and
     // in any case they are important for showing the correct number of tokens spent in total;
     // therefore, duplicates must be saved.
     const allGeneratedProofsMap = groupByAndMap(
-        preparedProofsWithTokens,
+        preparedProofs,
         ([preparedProof, _]) => preparedProof,
-        ([preparedProof, generatedProof, tokens, generatedProofId]) =>
+        ([preparedProof, generatedProof, generatedProofId]) =>
             new NonValidatedProof(
                 generatedProof,
                 preparedProof,
-                tokens,
                 generatedProofId
             )
     );
@@ -282,19 +262,10 @@ namespace RemoteConnectionErrorDelays {
 }
 
 interface ProofGenerationResult {
-    proofs: GeneratedProofItem[];
+    generatedProofs: GeneratedProof[];
     tokensSpentInTotal: GenerationTokens;
     contextTheoremNames: string[];
     effectiveElapsedTimeMillis: number;
-}
-
-interface GeneratedProofItem {
-    generatedProof: GeneratedProof;
-    /**
-     * Tokens spent to generate this specific proof.
-     * See `GeneratedRawContentItem.tokensSpent` for more details.
-     */
-    tokensSpent: GenerationTokens;
 }
 
 /**
@@ -320,10 +291,13 @@ async function generateProofWithRetriesExclusively<
 ): Promise<ProofGenerationResult> {
     const benchmarkingParams = generationArgs.benchmarkingModelParams;
     return modelsScheduler.scheduleTask(async () => {
-        let generateProof: (() => Promise<GeneratedProof[]>) | undefined =
-            undefined;
+        let generateProof:
+            | ((
+                  metadataHolder: ProofGenerationMetadataHolder
+              ) => Promise<GeneratedProof[]>)
+            | undefined = undefined;
         if (generationArgs.roundNumber === 0) {
-            generateProof = async () => {
+            generateProof = async (metadataHolder) => {
                 const proofGenerationContext = buildProofGenerationContext(
                     generationArgs.completionContext,
                     generationArgs.sourceFileEnvironment.fileTheorems,
@@ -334,11 +308,11 @@ async function generateProofWithRetriesExclusively<
                     proofGenerationContext,
                     benchmarkingParams.modelParams,
                     benchmarkingParams.modelParams.defaultChoices,
-                    ErrorsHandlingMode.RETHROW_ERRORS
+                    metadataHolder
                 );
             };
         } else {
-            generateProof = async () => {
+            generateProof = async (metadataHolder) => {
                 const parentProof =
                     generationArgs.parentProofToFix ??
                     illegalState(
@@ -349,14 +323,13 @@ async function generateProofWithRetriesExclusively<
                     parentProof.diagnostic,
                     benchmarkingParams.modelParams.multiroundProfile
                         .defaultProofFixChoices,
-                    ErrorsHandlingMode.RETHROW_ERRORS
+                    metadataHolder
                 );
             };
         }
         return generateProofWithRetriesMeasured(
             generateProof,
             generationArgs.llmService,
-            generationArgs.llmServiceEventLogger,
             options,
             logger,
             abortSignal
@@ -365,37 +338,14 @@ async function generateProofWithRetriesExclusively<
 }
 
 async function generateProofWithRetriesMeasured(
-    generateProofs: () => Promise<GeneratedProof[]>,
+    generateProofs: (
+        metadataHolder: ProofGenerationMetadataHolder
+    ) => Promise<GeneratedProof[]>,
     llmService: LLMService<any, any>,
-    llmServiceEventLogger: EventLogger,
     options: BenchmarkingOptions,
     logger: BenchmarkingLogger,
     abortSignal: AbortSignal
 ): Promise<ProofGenerationResult> {
-    const result: Partial<ProofGenerationResult> = {};
-    let generatedRawProofs: Map<string, GeneratedRawContentItem> | undefined =
-        undefined;
-
-    const succeededSubscriptionId = llmServiceEventLogger.subscribeToLogicEvent(
-        LLMServiceImpl.requestSucceededEvent,
-        (data: any) => {
-            const request = data as LLMServiceRequestSucceeded;
-            // (!!!) TODO (mb): pass logging object inside proof generation and get rid of tracking evens here
-            generatedRawProofs = reduceToMap(
-                request.generatedRawProofs,
-                (item) =>
-                    GeneratedProofImpl.removeProofQedIfNeeded(item.content),
-                (item) => item
-            );
-            console.error(
-                `\n\nBAKA BAKA:\n${request.generatedRawProofs.map((p) => p.content)}\n\n`
-            );
-            result.tokensSpentInTotal = request.tokensSpentInTotal;
-            result.contextTheoremNames =
-                request.analyzedChat?.contextTheorems ?? [];
-        }
-    );
-
     let delayMillis = 0;
     let prevFailureIsConnectionError = false;
     let attemptIndex = 0;
@@ -411,30 +361,19 @@ async function generateProofWithRetriesMeasured(
         throwOnAbort(abortSignal);
         try {
             const attemptTime = new TimeMark();
-            const generatedProofs = await generateProofs();
-            result.proofs = generatedProofs.map((generatedProof) => {
-                if (generatedRawProofs === undefined) {
-                    benchmarkingInvariantFailed(logger, "event not received");
-                }
-                const rawProof =
-                    generatedRawProofs.get(generatedProof.proof()) ??
-                    illegalState(
-                        `No proof logs in event for proof \`${generatedProof.proof()}\``
-                    );
-                return {
-                    generatedProof: generatedProof,
-                    tokensSpent: rawProof.tokensSpent,
-                };
-            });
 
-            result.effectiveElapsedTimeMillis =
-                attemptTime.measureElapsedMillis();
-            if (!hasAllPropertiesDefined<ProofGenerationResult>(result)) {
-                invariantFailed(
-                    "Proof generation",
-                    "proofs were generated, but a request-succeeded event was not sent"
-                );
-            }
+            const metadataHolder = new ProofGenerationMetadataHolder();
+            const generatedProofs = await generateProofs(metadataHolder);
+            const successMetadata =
+                metadataHolder.getSuccessfulProofGenerationMetadata();
+
+            const result: ProofGenerationResult = {
+                generatedProofs: generatedProofs,
+                tokensSpentInTotal: successMetadata.tokensSpentInTotal,
+                contextTheoremNames:
+                    successMetadata.analyzedChat?.contextTheorems ?? [],
+                effectiveElapsedTimeMillis: attemptTime.measureElapsedMillis(),
+            };
 
             const tokens = result.tokensSpentInTotal;
             logger
@@ -454,11 +393,6 @@ async function generateProofWithRetriesMeasured(
                     tokens.tokensSpentInTotal
                 );
             }
-
-            llmServiceEventLogger.unsubscribe(
-                LLMServiceImpl.requestSucceededEvent,
-                succeededSubscriptionId
-            );
 
             return result;
         } catch (e) {

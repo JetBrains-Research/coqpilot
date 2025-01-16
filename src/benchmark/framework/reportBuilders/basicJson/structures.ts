@@ -1,5 +1,5 @@
+import { GeneratedRawContentItem } from "../../../../llm/llmServices/commonStructures/generatedRawContent";
 import { GenerationTokens } from "../../../../llm/llmServices/commonStructures/generationTokens";
-import { ProofVersion } from "../../../../llm/llmServices/commonStructures/proofVersion";
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 
 import { RankerType } from "../../../../core/contextTheoremRanker/contextTheoremsRanker";
@@ -82,7 +82,6 @@ export namespace BasicJsonSerializationStructures {
     export interface SerializedBaseBenchmarkedProof {
         generatedProof: SerializedGeneratedProof;
         asString: string;
-        tokensSpent: GenerationTokens;
         length: LengthMetrics;
         generatedProofId: number;
     }
@@ -97,8 +96,8 @@ export namespace BasicJsonSerializationStructures {
     }
 
     export interface SerializedGeneratedProof {
+        rawProof: GeneratedRawContentItem;
         proofGenerationContext: SerializedProofGenerationContext;
-        previousProofVersions: ProofVersion[];
     }
 
     export interface SerializedProofGenerationContext {
