@@ -15,6 +15,10 @@ import { UserModelParams } from "../../../../llm/userModelParams";
 import { EventLogger } from "../../../../logging/eventLogger";
 import { LLMServiceIdentifier } from "../../structures/common/llmServiceIdentifier";
 
+/**
+ * Regardless of the string values defined in the implementation of `LLMServiceIdentifier` (they can change with time),
+ * this function guarantees to provide nice and human-readable names of the services.
+ */
 export function getShortName(identifier: LLMServiceIdentifier): string {
     switch (identifier) {
         case LLMServiceIdentifier.PREDEFINED_PROOFS:
