@@ -382,22 +382,29 @@ function logRoundResult(
         );
 
     if (roundResult.isSuccessfullyFinishedRound()) {
-        const resultLog = roundResult.isSuccessfulCompletion()
-            ? `valid proof has been found ${heavyCheckMark}\nFirst valid proof:\n\`${roundResult.thisRoundValidProofs[0]}\``
-            : "however, no valid proofs have been found";
+        asOneRecordLogs.info(`${roundId} has been successfully finished:`);
+        if (roundResult.isSuccessfulCompletion()) {
+            asOneRecordLogs
+                .info(`Valid proof has been found ${heavyCheckMark}`)
+                .debug("First valid proof:")
+                .debug(roundResult.thisRoundValidProofs[0].asString);
+        } else {
+            asOneRecordLogs.debug(
+                `However, no valid proofs have been found ${heavyCrossMark}`
+            );
+        }
         const generatedProofsIds = roundResult.generatedProofs
             .map((proof) => `${proof.generatedProofId}`)
             .join(", ");
-
-        asOneRecordLogs
-            .debug(`${roundId} has been successfully finished: ${resultLog}`)
-            .debug(`Newly generated proofs id-s are: [${generatedProofsIds}]`);
+        asOneRecordLogs.debug(
+            `Newly generated proofs id-s are: [${generatedProofsIds}]`
+        );
         logElapsedTime();
     } else {
         const { failureType, causeMessage } = roundResult.failureMetadata;
-        asOneRecordLogs.error(
-            `${roundId} has failed to finish: ${failureType}, ${causeMessage}`
-        );
+        asOneRecordLogs
+            .error(`${roundId} has failed to finish: ${failureType}`, "default")
+            .error(`Cause: ${causeMessage}`, "default");
         logElapsedTime();
         asOneRecordLogs.error(
             "This benchmarking task execution will be stopped"
