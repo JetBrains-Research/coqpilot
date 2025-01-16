@@ -91,6 +91,7 @@ export function resolveInputBenchmarkingModelParams(
     const { ranker, ...pureInputModelParams } = inputParams;
     return {
         theoremRanker: resolveTheoremsRanker(inputParams.ranker),
+        // TODO (!): warn using resolution logs as it is done in UI (so no unexpected params change happens)
         modelParams: resolveOrThrow(paramsResolver, pureInputModelParams),
         llmServiceIdentifier: llmServiceIdentifier,
     };

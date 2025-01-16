@@ -37,6 +37,7 @@ import {
     BenchmarkingResult,
     FailedCompletionGenerationBenchmarking,
     SuccessfulCompletionGenerationBenchmarking,
+    translateToFailureType,
 } from "../../structures/benchmarkingResults/benchmarkedItem";
 import {
     NonValidatedProof,
@@ -95,11 +96,16 @@ export interface ParentProofToFix {
  * The retries will occur with delays as specified in `LLMService.estimateTimeToBecomeAvailable` and `RemoteConnectionErrorDelays`,
  * until a response with proofs is received.
  *
- * Typically, this function does not throw errors:
- * expected errors are encapsulated within `FailedCompletionGeneration`.
- * However, the following exceptions will be handled differently:
- * - `ConfigurationError`-s and `FailFastAbortError`-s will always be rethrown;
- * - errors will be thrown if internal invariants are violated.
+ * The function handles errors as follows:
+ * - throws a `BenchmarkingError` if proof generation fails within the configured `proofGenerationRetries` attempts;
+ * - captures proof-checking errors, such as `coq-lsp` timeouts or `CoqProofChecker` failures,
+ *   within `FailedCompletionGenerationBenchmarking`.
+ *
+ * However, the following exceptions are always rethrown:
+ * - `ConfigurationError`: notifies the user immediately about incorrect pipeline configuration;
+ * - `FailFastAbortError`: halts execution in response to a fail-fast strategy signal;
+ * - `IllegalStateError`: indicates internal invariant violations that may lead to unexpected behavior;
+ * - any other unexpected errors are wrapped into an `IllegalStateError`, indicating an illegal state.
  */
 export async function benchmarkSingleCompletionGeneration<
     ResolvedModelParams extends ModelParams,
@@ -204,7 +210,7 @@ export async function benchmarkSingleCompletionGeneration<
                 measuredTime,
                 roundNumber,
                 {
-                    failureType: error.failureType,
+                    failureType: translateToFailureType(error.failureType),
                     causeMessage: error.causeMessage,
                 }
             );

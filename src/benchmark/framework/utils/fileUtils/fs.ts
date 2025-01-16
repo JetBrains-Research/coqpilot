@@ -1,9 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 
-import { stringifyAnyValue } from "../../../../utils/printers";
 import { illegalState } from "../../../../utils/throwErrors";
-import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 
 export function getRootDir(): string {
     const relativeRoot = path.join(__dirname, "/../../../../../");
@@ -127,11 +125,12 @@ export function clearDirectory(dirPath: string) {
 
 export function provideEmptyDirectoryOrThrow(
     dirPath: string,
-    dirNameDescription: string
+    dirNameDescription: string,
+    throwError: (errorMessage: string) => never
 ) {
     if (exists(dirPath)) {
         if (!checkDirectoryIsEmpty(dirPath)) {
-            throw Error(
+            throwError(
                 `${dirNameDescription} directory should be empty: "${dirPath}"`
             );
         }
@@ -149,7 +148,7 @@ export function createFileWithParentDirectories(
     if (fs.existsSync(filePath)) {
         switch (mode) {
             case "throw":
-                throw Error(`failed to create ${filePath}: it already exists`);
+                illegalState(`failed to create ${filePath}: it already exists`);
             case "clear":
                 clearFile(filePath);
                 return;
@@ -247,23 +246,4 @@ function listFiles(
 
     traverseDirectory(dirPath, depth);
     return resultFilePaths;
-}
-
-export function saveToFileOrHandleError(
-    text: string,
-    filePath: string,
-    logger: BenchmarkingLogger,
-    fileDescription: string,
-    throwOnError: boolean
-) {
-    writeToFile(text, filePath, (e) => {
-        const errorMessage = `Failed to save ${fileDescription} into ${filePath}`;
-        logger
-            .asOneRecord()
-            .error(errorMessage)
-            .error(`Cause: ${stringifyAnyValue(e)}`);
-        if (throwOnError) {
-            throw Error(errorMessage);
-        }
-    });
 }

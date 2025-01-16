@@ -1,6 +1,7 @@
 import { GenerationTokens } from "../../../../llm/llmServices/commonStructures/generationTokens";
 
 import { addToTotalTime } from "../../benchmarkingCore/singleCompletionGeneration/measureTimeUtils";
+import { ProofsCheckFailureType } from "../../benchmarkingCore/singleCompletionGeneration/proofsCheckers/abstractProofsChecker";
 import { BenchmarkingItem } from "../benchmarkingCore/benchmarkingItem";
 import { TheoremData } from "../parsedCoqFile/theoremData";
 
@@ -18,8 +19,8 @@ export interface BenchmarkedItem {
 }
 
 export type BenchmarkingResult =
-    | FailedCompletionGenerationBenchmarking
-    | SuccessfulCompletionGenerationBenchmarking;
+    | SuccessfulCompletionGenerationBenchmarking
+    | FailedCompletionGenerationBenchmarking;
 
 type BenchmarkedCompletionGeneration =
     AbstractBenchmarkedCompletionGeneration<BenchmarkedProof>;
@@ -154,6 +155,32 @@ export interface CompletionGenerationTime {
     totalMillis: number;
 }
 
+export class SuccessfulCompletionGenerationBenchmarking extends AbstractBenchmarkedCompletionGeneration<ValidatedProof> {
+    constructor(
+        generatedProofs: ValidatedProof[],
+        contextTheorems: TheoremData[],
+        tokensSpentInTotal: GenerationTokens,
+        roundElapsedTime: CompletionGenerationTime,
+        roundNumber: number
+    ) {
+        super(
+            generatedProofs,
+            contextTheorems,
+            tokensSpentInTotal,
+            roundElapsedTime,
+            roundNumber
+        );
+    }
+
+    get thisRoundValidProofs(): ValidProof[] {
+        return this.generatedProofs.filter((proof) => proof.isValidProof());
+    }
+
+    get thisRoundNonValidProofs(): NonValidProof[] {
+        return this.generatedProofs.filter((proof) => proof.isNonValidProof());
+    }
+}
+
 export class FailedCompletionGenerationBenchmarking extends AbstractBenchmarkedCompletionGeneration<NonValidatedProof> {
     constructor(
         generatedProofs: NonValidatedProof[],
@@ -180,30 +207,15 @@ export interface FailureMetadata {
     causeMessage: string;
 }
 
-export type FailureType = "COQ_LSP_TIMEOUT" | "COQ_PROOF_CHECKER_ERROR";
+export type FailureType = "`coq-lsp` timeout" | "`CoqProofChecker` error";
 
-export class SuccessfulCompletionGenerationBenchmarking extends AbstractBenchmarkedCompletionGeneration<ValidatedProof> {
-    constructor(
-        generatedProofs: ValidatedProof[],
-        contextTheorems: TheoremData[],
-        tokensSpentInTotal: GenerationTokens,
-        roundElapsedTime: CompletionGenerationTime,
-        roundNumber: number
-    ) {
-        super(
-            generatedProofs,
-            contextTheorems,
-            tokensSpentInTotal,
-            roundElapsedTime,
-            roundNumber
-        );
-    }
-
-    get thisRoundValidProofs(): ValidProof[] {
-        return this.generatedProofs.filter((proof) => proof.isValidProof());
-    }
-
-    get thisRoundNonValidProofs(): NonValidProof[] {
-        return this.generatedProofs.filter((proof) => proof.isNonValidProof());
+export function translateToFailureType(
+    failureType: ProofsCheckFailureType
+): FailureType {
+    switch (failureType) {
+        case "COQ_LSP_TIMEOUT":
+            return "`coq-lsp` timeout";
+        case "COQ_PROOF_CHECKER_ERROR":
+            return "`CoqProofChecker` error";
     }
 }

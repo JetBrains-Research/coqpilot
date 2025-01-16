@@ -23,7 +23,10 @@ import {
     writeToFile,
 } from "../utils/fileUtils/fs";
 import { prependWithZeros } from "../utils/serializationUtils";
-import { benchmarkingInvariantFailed } from "../utils/throwErrors";
+import {
+    benchmarkingInvariantFailed,
+    throwBenchmarkingError,
+} from "../utils/throwErrors";
 
 import { executeBenchmarkingTask } from "./executeBenchmarkingTask";
 import { TimeMark } from "./singleCompletionGeneration/measureTimeUtils";
@@ -42,7 +45,11 @@ export async function benchmark(
     totalTime: TimeMark,
     proofsChecker: AbstractProofsChecker
 ): Promise<ExperimentResults> {
-    provideEmptyDirectoryOrThrow(resolvedArtifactsDirPath, "artifacts");
+    provideEmptyDirectoryOrThrow(
+        resolvedArtifactsDirPath,
+        "artifacts",
+        throwBenchmarkingError
+    );
     const itemsDirPath = createDirectory(
         true,
         resolvedArtifactsDirPath,
