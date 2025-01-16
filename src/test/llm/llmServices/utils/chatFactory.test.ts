@@ -34,6 +34,7 @@ import {
     gptModelName,
     testModelId,
 } from "../../llmSpecificTestUtils/constants";
+import { toMockProofVersion } from "../../llmSpecificTestUtils/mockProofVersion";
 
 /*
  * Note: if in the future some of the tests will act against experiments with chats,
@@ -121,14 +122,11 @@ suite("[LLMService-s utils] Building chats test", () => {
         ];
     }
 
-    const misspelledProof: ProofVersion = {
-        proof: "something???",
-        diagnostic: "Bad input...",
-    };
-    const incorrectProof: ProofVersion = {
-        proof: "auto.",
-        diagnostic: "It does not finish proof...",
-    };
+    const misspelledProof = toMockProofVersion("something???", "Bad input...");
+    const incorrectProof = toMockProofVersion(
+        "auto.",
+        "It does not finish proof..."
+    );
 
     test("Test `validateChat`: valid chats", async () => {
         const [_, messages] = await buildTestData();

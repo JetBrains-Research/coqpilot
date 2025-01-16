@@ -38,8 +38,9 @@ suite("LLM Iterator test", () => {
                 for (let t = 0; t < tactics.length; t++) {
                     const result = await iterator.nextProof();
                     expect(result.done).toBeFalsy();
-                    const proof = result.value;
-                    expect(proof.proof()).toEqual(tactics[t]);
+                    expect(result.value).not.toBeNullish();
+                    const proof = result.value!;
+                    expect(proof.proof).toEqual(tactics[t]);
                 }
             }
             const result = await iterator.nextProof();
@@ -60,8 +61,9 @@ suite("LLM Iterator test", () => {
             for (let i = 0; i < 2; i++) {
                 const result = await iterator.next();
                 expect(result.done).toBeFalsy();
-                const proofsBatch = result.value.map(
-                    (proofObject: GeneratedProof) => proofObject.proof()
+                expect(result.value).not.toBeNullish();
+                const proofsBatch = result.value!.map(
+                    (proofObject: GeneratedProof) => proofObject.proof
                 );
                 expect(proofsBatch).toEqual(tactics);
             }

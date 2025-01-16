@@ -1,5 +1,6 @@
 import { expect } from "earl";
 
+import { ErrorsHandlingMode } from "../../../../llm/llmServices/commonStructures/errorsHandlingMode";
 import {
     ModelParams,
     MultiroundProfile,
@@ -109,39 +110,43 @@ suite("[LLMService] Test model-params resolution", () => {
     });
 
     test("Test resolution by LLMService", async () => {
-        await withLLMService(new MockLLMService(), async (mockService) => {
-            const unresolvedMockUserParams: MockLLMUserModelParams = {
-                modelId: testModelId,
-                systemPrompt: "This system prompt will be overriden by service",
-                maxTokensToGenerate: 100,
-                tokensLimit: 1000,
-                proofsToGenerate: ["auto.", "avto."],
-            };
+        await withLLMService(
+            new MockLLMService(undefined, ErrorsHandlingMode.RETHROW_ERRORS),
+            async (mockService) => {
+                const unresolvedMockUserParams: MockLLMUserModelParams = {
+                    modelId: testModelId,
+                    systemPrompt:
+                        "This system prompt will be overriden by the service",
+                    maxTokensToGenerate: 100,
+                    tokensLimit: 1000,
+                    proofsToGenerate: ["auto.", "avto."],
+                };
 
-            /*
-             * `MockLLMService` parameters resolution does 4 changes to `inputParams`:
-             * - resolves undefined `workerId` to 0;
-             * - adds extra `resolvedWithMockLLMService: true` property;
-             * - overrides original `systemPrompt` with `this.systemPromptToOverrideWith`.
-             * - overrides original `choices` to `defaultChoices` with `proofsToGenerate.length`.
-             * Everything else should be resolved with defaults, if needed.
-             */
-            const expectedResolvedMockParams = {
-                ...unresolvedMockUserParams,
-                multiroundProfile: defaultMultiroundProfile,
-                systemPrompt: MockLLMService.systemPromptToOverrideWith,
-                workerId: 0,
-                resolvedWithMockLLMService: true,
-                defaultChoices: 2,
-            } as MockLLMModelParams;
+                /*
+                 * `MockLLMService` parameters resolution does 4 changes to `inputParams`:
+                 * - resolves undefined `workerId` to 0;
+                 * - adds extra `resolvedWithMockLLMService: true` property;
+                 * - overrides original `systemPrompt` with `this.systemPromptToOverrideWith`.
+                 * - overrides original `choices` to `defaultChoices` with `proofsToGenerate.length`.
+                 * Everything else should be resolved with defaults, if needed.
+                 */
+                const expectedResolvedMockParams = {
+                    ...unresolvedMockUserParams,
+                    multiroundProfile: defaultMultiroundProfile,
+                    systemPrompt: MockLLMService.systemPromptToOverrideWith,
+                    workerId: 0,
+                    resolvedWithMockLLMService: true,
+                    defaultChoices: 2,
+                } as MockLLMModelParams;
 
-            const actualResolvedMockParams = mockService.resolveParameters(
-                unresolvedMockUserParams
-            ).resolved;
+                const actualResolvedMockParams = mockService.resolveParameters(
+                    unresolvedMockUserParams
+                ).resolved;
 
-            expect(actualResolvedMockParams).toEqual(
-                expectedResolvedMockParams
-            );
-        });
+                expect(actualResolvedMockParams).toEqual(
+                    expectedResolvedMockParams
+                );
+            }
+        );
     });
 });

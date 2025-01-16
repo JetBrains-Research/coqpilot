@@ -96,6 +96,8 @@ function subscribeToLogicEvents<LLMServiceType extends LLMService<any, any>>(
             expect(requestSucceeded).toBeTruthy();
             expect(requestSucceeded.llmService).toEqual(expectedService);
             expect(requestSucceeded.params.modelId).toEqual(expectedModelId);
+            expect(requestSucceeded.generatedRawProofs).not.toBeNullish();
+            expect(requestSucceeded.tokensSpentInTotal).not.toBeNullish();
             eventsTracker.successfulRequestEventsN += 1;
         }
     );
@@ -106,6 +108,7 @@ function subscribeToLogicEvents<LLMServiceType extends LLMService<any, any>>(
             expect(requestFailed).toBeTruthy();
             expect(requestFailed.llmService).toEqual(expectedService);
             expect(requestFailed.params.modelId).toEqual(expectedModelId);
+            expect(requestFailed.llmServiceError).not.toBeNullish();
             if (expectedError !== undefined) {
                 expect(requestFailed.llmServiceError).toEqual(expectedError);
             }

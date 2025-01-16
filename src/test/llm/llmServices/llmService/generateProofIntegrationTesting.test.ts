@@ -2,6 +2,7 @@ import { expect } from "earl";
 
 import { ConfigurationError } from "../../../../llm/llmServiceErrors";
 import { ErrorsHandlingMode } from "../../../../llm/llmServices/commonStructures/errorsHandlingMode";
+import { ProofGenerationMetadataHolder } from "../../../../llm/llmServices/commonStructures/proofGenerationMetadata";
 
 import { EventLogger } from "../../../../logging/eventLogger";
 import {
@@ -12,10 +13,7 @@ import {
     MockEventsTracker,
     subscribeToTrackMockEvents,
 } from "../../llmSpecificTestUtils/eventsTracker";
-import {
-    expectGeneratedProof,
-    toProofVersion,
-} from "../../llmSpecificTestUtils/expectGeneratedProof";
+import { toProofVersion } from "../../llmSpecificTestUtils/expectGeneratedProof";
 import {
     ExpectedRecord,
     expectLogs,
@@ -29,6 +27,7 @@ import {
     testFailedGenerationCompletely,
     testFailureAtChatBuilding,
 } from "../../llmSpecificTestUtils/testFailedGeneration";
+import { expectSuccessfullyGeneratedProofs } from "../../llmSpecificTestUtils/testSuccessfulGeneration";
 import { enhanceMockParams } from "../../llmSpecificTestUtils/transformParams";
 import { withMockLLMService } from "../../llmSpecificTestUtils/withMockLLMService";
 
@@ -40,6 +39,7 @@ import { withMockLLMService } from "../../llmSpecificTestUtils/withMockLLMServic
 suite("[LLMService] Integration testing of `generateProof`", () => {
     test("Test success, 1 round and default settings", async () => {
         await withMockLLMService(
+            ErrorsHandlingMode.RETHROW_ERRORS,
             async (mockService, basicMockParams, testEventLogger) => {
                 const eventsTracker = subscribeToTrackMockEvents(
                     testEventLogger,
@@ -47,21 +47,30 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
                     basicMockParams.modelId
                 );
 
+                const metadataHolder = new ProofGenerationMetadataHolder();
                 const generatedProofs = await mockService.generateProof(
                     mockProofGenerationContext,
                     basicMockParams,
-                    proofsToGenerate.length
+                    proofsToGenerate.length,
+                    metadataHolder
                 );
 
-                expect(generatedProofs).toHaveLength(proofsToGenerate.length);
-                for (let i = 0; i < generatedProofs.length; i++) {
-                    expectGeneratedProof(generatedProofs[i], {
-                        proof: proofsToGenerate[i],
-                        proofVersions: [toProofVersion(proofsToGenerate[i])],
-                        versionNumber: 1,
-                        canBeFixed: false,
-                    });
-                }
+                expectSuccessfullyGeneratedProofs(
+                    generatedProofs,
+                    metadataHolder,
+                    {
+                        proofsToGenerateNumber: proofsToGenerate.length,
+                        getProof: (i) => proofsToGenerate[i],
+                        getVersionNumber: () => 1,
+                        getProofVersions: (i, rawProofMetadata) => [
+                            toProofVersion(
+                                proofsToGenerate[i],
+                                rawProofMetadata
+                            ),
+                        ],
+                        getCanBeFixed: () => false,
+                    }
+                );
 
                 expect(eventsTracker).toEqual({
                     mockEventsN: 1,
@@ -76,16 +85,16 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
     async function generateProof(
         mockService: MockLLMService,
         mockParams: MockLLMModelParams,
-        errorsHandlingMode: ErrorsHandlingMode
+        metadataHolder: ProofGenerationMetadataHolder
     ): Promise<string[]> {
         return (
             await mockService.generateProof(
                 mockProofGenerationContext,
                 mockParams,
                 proofsToGenerate.length,
-                errorsHandlingMode
+                metadataHolder
             )
-        ).map((generatedProof) => generatedProof.proof());
+        ).map((generatedProof) => generatedProof.proof);
     }
 
     testFailedGenerationCompletely(generateProof, {
@@ -98,6 +107,7 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
 
     test("Test successful 2-round generation, default settings", async () => {
         await withMockLLMService(
+            ErrorsHandlingMode.RETHROW_ERRORS,
             async (mockService, basicMockParams, testEventLogger) => {
                 const eventsTracker = subscribeToTrackMockEvents(
                     testEventLogger,
@@ -123,27 +133,37 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
                 const diagnostic = "Proof is incorrect...";
                 for (const generatedProof of generatedProofs) {
                     expect(generatedProof.canBeFixed()).toBeTruthy();
-                    const fixedGeneratedProofs =
-                        await generatedProof.fixProof(diagnostic);
-                    expect(fixedGeneratedProofs).toHaveLength(
-                        withFixesMockParams.multiroundProfile
-                            .defaultProofFixChoices
+                    const metadataHolder = new ProofGenerationMetadataHolder();
+                    const fixedGeneratedProofs = await generatedProof.fixProof(
+                        diagnostic,
+                        generatedProof.modelParams.multiroundProfile
+                            .defaultProofFixChoices,
+                        metadataHolder
                     );
 
-                    fixedGeneratedProofs.forEach((fixedGeneratedProof) => {
-                        expectGeneratedProof(fixedGeneratedProof, {
-                            proof: MockLLMService.fixedProofString,
-                            proofVersions: [
+                    expectSuccessfullyGeneratedProofs(
+                        fixedGeneratedProofs,
+                        metadataHolder,
+                        {
+                            proofsToGenerateNumber:
+                                withFixesMockParams.multiroundProfile
+                                    .defaultProofFixChoices,
+                            getProof: () => MockLLMService.fixedProofString,
+                            getVersionNumber: () => 2,
+                            getProofVersions: (_, rawProofMetadata) => [
                                 toProofVersion(
-                                    generatedProof.proof(),
+                                    generatedProof.proof,
+                                    generatedProof.rawProof,
                                     diagnostic
                                 ),
-                                toProofVersion(MockLLMService.fixedProofString),
+                                toProofVersion(
+                                    MockLLMService.fixedProofString,
+                                    rawProofMetadata
+                                ),
                             ],
-                            versionNumber: 2,
-                            canBeFixed: false,
-                        });
-                    });
+                            getCanBeFixed: () => false,
+                        }
+                    );
                 }
 
                 const generationsN = 1 + generatedProofs.length;
@@ -160,54 +180,33 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
         );
     });
 
-    function tossCoin(trueProbability: number): boolean {
-        return Math.random() < trueProbability;
-    }
+    test("Stress test with single worker (multiround with random failures, default settings)", async () => {
+        await stressTest(
+            {
+                workersN: 1,
+                iterationsPerWorker: 1000,
+                newProofsOnEachIteration: 10,
+                proofFixChoices: 4,
+                tryToFixProbability: 0.5,
+                failedGenerationProbability: 0.5,
+            },
+            true
+        );
+    }).timeout(40000);
 
-    function throwErrorOnNextGeneration(
-        probability: number,
-        mockService: MockLLMService,
-        error: Error,
-        workerId: number
-    ): Error | undefined {
-        const coin = tossCoin(probability);
-        if (coin) {
-            mockService.throwErrorOnNextGeneration(error, workerId);
-        }
-        return coin ? error : undefined;
-    }
-
-    function updateExpectations(
-        errorWasThrown: Error | undefined,
-        generatedProofs: MockLLMGeneratedProof[],
-        expectedProofsLength: number,
-        expectedEvents: MockEventsTracker,
-        expectedLogs?: ExpectedRecord[]
-    ) {
-        expectedEvents.mockEventsN += 1;
-        if (errorWasThrown !== undefined) {
-            expect(generatedProofs).toHaveLength(0);
-            expectedEvents.failedRequestEventsN += 1;
-            expectedLogs?.push({
-                status: "FAILURE",
-                error: errorWasThrown,
-            });
-        } else {
-            expect(generatedProofs).toHaveLength(expectedProofsLength);
-            expectedEvents.successfulRequestEventsN += 1;
-            expectedLogs?.push({ status: "SUCCESS" });
-        }
-    }
-
-    function checkExpectations(
-        actualEvents: MockEventsTracker,
-        expectedEvents: MockEventsTracker,
-        expectedLogs: ExpectedRecord[],
-        mockService: MockLLMService
-    ) {
-        expect(actualEvents).toEqual(expectedEvents);
-        expectLogs(expectedLogs, mockService);
-    }
+    test("Stress test with async workers (multiround with random failures, default settings)", async () => {
+        await stressTest(
+            {
+                workersN: 10,
+                iterationsPerWorker: 100,
+                newProofsOnEachIteration: 10,
+                proofFixChoices: 4,
+                tryToFixProbability: 0.5,
+                failedGenerationProbability: 0.5,
+            },
+            false
+        );
+    }).timeout(5000);
 
     interface StressTestParams {
         workersN: number;
@@ -219,6 +218,41 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
     }
 
     async function stressTest(
+        testParams: StressTestParams,
+        checkLogsEachIteration: boolean
+    ) {
+        await withMockLLMService(
+            ErrorsHandlingMode.SWALLOW_ERRORS,
+            async (mockService, basicMockParams, testEventLogger) => {
+                const [actualEvents, expectedEvents, _undefined] =
+                    await stressTestImpl(
+                        testParams,
+                        mockService,
+                        basicMockParams,
+                        testEventLogger,
+                        checkLogsEachIteration
+                    );
+
+                expect(actualEvents).toEqual(expectedEvents);
+
+                const logs = mockService.readGenerationsLogs();
+                const successLogsN = logs.filter(
+                    (record) => record.responseStatus === "SUCCESS"
+                ).length;
+                const failureLogsN = logs.filter(
+                    (record) => record.responseStatus === "FAILURE"
+                ).length;
+                expect(successLogsN).toEqual(
+                    expectedEvents.successfulRequestEventsN
+                );
+                expect(failureLogsN).toEqual(
+                    expectedEvents.failedRequestEventsN
+                );
+            }
+        );
+    }
+
+    async function stressTestImpl(
         testParams: StressTestParams,
         mockService: MockLLMService,
         basicMockParams: MockLLMModelParams,
@@ -295,7 +329,7 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
                     const newlyGeneratedProofs = [];
                     for (const generatedProofToFix of toFixCandidates) {
                         if (!generatedProofToFix.canBeFixed()) {
-                            expect(
+                            await expect(
                                 async () =>
                                     await generatedProofToFix.fixProof(
                                         diagnostic
@@ -345,63 +379,52 @@ suite("[LLMService] Integration testing of `generateProof`", () => {
         return [actualEvents, expectedEvents, expectedLogs];
     }
 
-    test("Stress test with sync worker (multiround with random failures, default settings)", async () => {
-        await withMockLLMService(
-            async (mockService, basicMockParams, testEventLogger) => {
-                const [_actualEvents, _expectedEvents, _expectedLogs] =
-                    await stressTest(
-                        {
-                            workersN: 1,
-                            iterationsPerWorker: 1000,
-                            newProofsOnEachIteration: 10,
-                            proofFixChoices: 4,
-                            tryToFixProbability: 0.5,
-                            failedGenerationProbability: 0.5,
-                        },
-                        mockService,
-                        basicMockParams,
-                        testEventLogger,
-                        true
-                    );
-            }
-        );
-    }).timeout(40000);
+    function throwErrorOnNextGeneration(
+        probability: number,
+        mockService: MockLLMService,
+        error: Error,
+        workerId: number
+    ): Error | undefined {
+        const coin = tossCoin(probability);
+        if (coin) {
+            mockService.throwErrorOnNextGeneration(error, workerId);
+        }
+        return coin ? error : undefined;
+    }
 
-    test("Stress test with async workers (multiround with random failures, default settings)", async () => {
-        await withMockLLMService(
-            async (mockService, basicMockParams, testEventLogger) => {
-                const [actualEvents, expectedEvents, _undefined] =
-                    await stressTest(
-                        {
-                            workersN: 10,
-                            iterationsPerWorker: 100,
-                            newProofsOnEachIteration: 10,
-                            proofFixChoices: 4,
-                            tryToFixProbability: 0.5,
-                            failedGenerationProbability: 0.5,
-                        },
-                        mockService,
-                        basicMockParams,
-                        testEventLogger,
-                        false
-                    );
+    function tossCoin(trueProbability: number): boolean {
+        return Math.random() < trueProbability;
+    }
 
-                expect(actualEvents).toEqual(expectedEvents);
+    function updateExpectations(
+        errorWasThrown: Error | undefined,
+        generatedProofs: MockLLMGeneratedProof[],
+        expectedProofsLength: number,
+        expectedEvents: MockEventsTracker,
+        expectedLogs?: ExpectedRecord[]
+    ) {
+        expectedEvents.mockEventsN += 1;
+        if (errorWasThrown !== undefined) {
+            expect(generatedProofs).toHaveLength(0);
+            expectedEvents.failedRequestEventsN += 1;
+            expectedLogs?.push({
+                status: "FAILURE",
+                error: errorWasThrown,
+            });
+        } else {
+            expect(generatedProofs).toHaveLength(expectedProofsLength);
+            expectedEvents.successfulRequestEventsN += 1;
+            expectedLogs?.push({ status: "SUCCESS" });
+        }
+    }
 
-                const logs = mockService.readGenerationsLogs();
-                const successLogsN = logs.filter(
-                    (record) => record.responseStatus === "SUCCESS"
-                ).length;
-                const failureLogsN = logs.filter(
-                    (record) => record.responseStatus === "FAILURE"
-                ).length;
-                expect(successLogsN).toEqual(
-                    expectedEvents.successfulRequestEventsN
-                );
-                expect(failureLogsN).toEqual(
-                    expectedEvents.failedRequestEventsN
-                );
-            }
-        );
-    }).timeout(5000);
+    function checkExpectations(
+        actualEvents: MockEventsTracker,
+        expectedEvents: MockEventsTracker,
+        expectedLogs: ExpectedRecord[],
+        mockService: MockLLMService
+    ) {
+        expect(actualEvents).toEqual(expectedEvents);
+        expectLogs(expectedLogs, mockService);
+    }
 });

@@ -1,7 +1,6 @@
 import { expect } from "earl";
 
 import { ConfigurationError } from "../../../llm/llmServiceErrors";
-import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
 import { OpenAiModelParams } from "../../../llm/llmServices/modelParams";
 import { OpenAiService } from "../../../llm/llmServices/openai/openAiService";
 import { defaultSystemMessageContent } from "../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";
@@ -225,22 +224,20 @@ suite("[LLMService] Test `OpenAiService`", function () {
             inputParams,
             async (openAiService, resolvedParams: OpenAiModelParams) => {
                 // non-positive choices
-                expect(async () => {
+                await expect(async () => {
                     await openAiService.generateProof(
                         mockProofGenerationContext,
                         resolvedParams,
-                        -1,
-                        ErrorsHandlingMode.RETHROW_ERRORS
+                        -1
                     );
                 }).toBeRejectedWith(ConfigurationError, "choices");
 
                 // incorrect api key
-                expect(async () => {
+                await expect(async () => {
                     await openAiService.generateProof(
                         mockProofGenerationContext,
                         resolvedParams,
-                        1,
-                        ErrorsHandlingMode.RETHROW_ERRORS
+                        1
                     );
                 }).toBeRejectedWith(ConfigurationError, "api key");
             }
@@ -262,20 +259,19 @@ suite("[LLMService] Test `OpenAiService`", function () {
                 inputParams,
                 async (openAiService, resolvedParams) => {
                     // unknown model name
-                    expect(async () => {
+                    await expect(async () => {
                         await openAiService.generateProof(
                             mockProofGenerationContext,
                             {
                                 ...resolvedParams,
                                 modelName: "unknown",
                             } as OpenAiModelParams,
-                            1,
-                            ErrorsHandlingMode.RETHROW_ERRORS
+                            1
                         );
                     }).toBeRejectedWith(ConfigurationError, "model name");
 
                     // context length exceeded (requested too many tokens for the completion)
-                    expect(async () => {
+                    await expect(async () => {
                         await openAiService.generateProof(
                             mockProofGenerationContext,
                             {
@@ -283,8 +279,7 @@ suite("[LLMService] Test `OpenAiService`", function () {
                                 maxTokensToGenerate: 500_000,
                                 tokensLimit: 1_000_000,
                             } as OpenAiModelParams,
-                            1,
-                            ErrorsHandlingMode.RETHROW_ERRORS
+                            1
                         );
                     }).toBeRejectedWith(
                         ConfigurationError,

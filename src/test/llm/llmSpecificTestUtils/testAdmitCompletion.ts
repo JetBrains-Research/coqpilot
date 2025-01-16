@@ -1,6 +1,5 @@
 import { expect } from "earl";
 
-import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
 import { LLMService } from "../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
 import { UserModelParams } from "../../../llm/userModelParams";
@@ -33,8 +32,7 @@ export async function testLLMServiceCompletesAdmitFromFile<
                     const generatedProofs = await service.generateProof(
                         proofGenerationContext,
                         resolvedParams,
-                        choices,
-                        ErrorsHandlingMode.RETHROW_ERRORS
+                        choices
                     );
                     expect(generatedProofs).toHaveLength(choices);
                     expect(
