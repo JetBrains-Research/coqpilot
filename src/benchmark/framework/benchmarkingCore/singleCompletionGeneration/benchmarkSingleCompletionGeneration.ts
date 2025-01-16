@@ -296,7 +296,7 @@ async function generateProofWithRetriesExclusively<
                   metadataHolder: ProofGenerationMetadataHolder
               ) => Promise<GeneratedProof[]>)
             | undefined = undefined;
-        if (generationArgs.roundNumber === 0) {
+        if (generationArgs.roundNumber === 1) {
             generateProof = async (metadataHolder) => {
                 const proofGenerationContext = buildProofGenerationContext(
                     generationArgs.completionContext,
@@ -316,7 +316,7 @@ async function generateProofWithRetriesExclusively<
                 const parentProof =
                     generationArgs.parentProofToFix ??
                     illegalState(
-                        `Proof-fix round should be performed (round number ${generationArgs.roundNumber} is > 0), `,
+                        `Proof-fix round should be performed (round number ${generationArgs.roundNumber} is > 1), `,
                         "but `parentProofToFix` is not provided"
                     );
                 return await parentProof.benchmarkedProof.proofObject.fixProof(
