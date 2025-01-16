@@ -130,7 +130,6 @@ export async function executeBenchmarkingTask(
                 proofsChecker,
                 abortSignal
             );
-            Logging.logRoundResult(result, itemLogger);
             return result;
         }
 
@@ -156,10 +155,11 @@ export async function executeBenchmarkingTask(
                         roundNumber
                     );
                 nextGeneratedProofId += childRoundResult.generatedProofs.length;
+
                 if (parentProof === undefined) {
-                    // roundIndex === 0
                     rootResult = childRoundResult;
                 } else {
+                    // link target proof and the result of its proof-fix generation
                     parentProof.benchmarkedProof.linkNextRoundResult(
                         childRoundResult
                     );
@@ -167,6 +167,8 @@ export async function executeBenchmarkingTask(
                         parentProof.benchmarkedProof
                     );
                 }
+
+                Logging.logRoundResult(childRoundResult, itemLogger);
                 ArtifactsUtils.saveRoundResultToFileOrThrow(
                     childRoundResult,
                     joinPaths(
@@ -178,7 +180,10 @@ export async function executeBenchmarkingTask(
                     )
                 );
 
-                if (childRoundResult.isFailedToFinishRound()) {
+                if (
+                    childRoundResult.isFailedToFinishRound() ||
+                    childRoundResult.isSuccessfulCompletion()
+                ) {
                     /**
                      * There are different policies of what to do when one of the proof-fixing rounds has failed,
                      * but here the following is chosen: to return the benchmarking result "generally" failed to finish
