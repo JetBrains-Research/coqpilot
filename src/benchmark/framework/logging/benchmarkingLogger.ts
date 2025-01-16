@@ -1,10 +1,10 @@
+import { LogColor, colorize } from "../../../utils/colorLogging";
 import { stringifyAnyValue } from "../../../utils/printers";
 import {
     appendToFile,
     createFileWithParentDirectories,
 } from "../utils/fileUtils/fs";
 
-import { LogColor, colorize } from "./colorLogging";
 import { writeToConsoleErr } from "./consoleWriteUtils";
 
 export enum SeverityLevel {

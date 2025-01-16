@@ -1,7 +1,7 @@
 import { TeamCityAgent } from "../../benchmark/framework/experiment/teamCity/teamCityAgent";
 import { SeverityLevel } from "../../benchmark/framework/logging/benchmarkingLogger";
-import { colorize } from "../../benchmark/framework/logging/colorLogging";
 import { DatasetCacheUsageMode } from "../../benchmark/framework/structures/inputParameters/datasetCaching";
+import { colorize } from "../../utils/colorLogging";
 import { time, timeToMillis } from "../../utils/time";
 
 suite("[SourceExecutable] Team City Benchmark Agent", () => {

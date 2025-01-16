@@ -1,4 +1,4 @@
-import { illegalState } from "../../../utils/throwErrors";
+import { illegalState } from "./throwErrors";
 
 export type LogColor =
     | "default"
