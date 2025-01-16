@@ -2,7 +2,10 @@ import { toUnformattedJsonString } from "../../../utils/printers";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { LMStudioUserModelParams } from "../../userModelParams";
 import { AnalyzedChatHistory, ChatHistory } from "../commonStructures/chat";
-import { GeneratedRawContent } from "../commonStructures/generatedRawContent";
+import {
+    GeneratedRawContent,
+    GeneratedRawContentItem,
+} from "../commonStructures/generatedRawContent";
 import { ProofVersion } from "../commonStructures/proofVersion";
 import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
@@ -34,14 +37,14 @@ export class LMStudioGeneratedProof extends GeneratedProofImpl<
     LMStudioServiceInternal
 > {
     constructor(
-        proof: string,
+        rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
         modelParams: LMStudioModelParams,
         llmServiceInternal: LMStudioServiceInternal,
         previousProofVersions?: ProofVersion[]
     ) {
         super(
-            proof,
+            rawProof,
             proofGenerationContext,
             modelParams,
             llmServiceInternal,
@@ -57,13 +60,13 @@ class LMStudioServiceInternal extends LLMServiceInternal<
     LMStudioServiceInternal
 > {
     constructGeneratedProof(
-        proof: string,
+        rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
         modelParams: LMStudioModelParams,
         previousProofVersions?: ProofVersion[] | undefined
     ): LMStudioGeneratedProof {
         return new LMStudioGeneratedProof(
-            proof,
+            rawProof,
             proofGenerationContext,
             modelParams,
             this,

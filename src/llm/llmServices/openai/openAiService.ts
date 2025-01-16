@@ -8,7 +8,10 @@ import {
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { OpenAiUserModelParams } from "../../userModelParams";
 import { AnalyzedChatHistory, ChatHistory } from "../commonStructures/chat";
-import { GeneratedRawContent } from "../commonStructures/generatedRawContent";
+import {
+    GeneratedRawContent,
+    GeneratedRawContentItem,
+} from "../commonStructures/generatedRawContent";
 import { ProofVersion } from "../commonStructures/proofVersion";
 import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
@@ -41,14 +44,14 @@ export class OpenAiGeneratedProof extends GeneratedProofImpl<
     OpenAiServiceInternal
 > {
     constructor(
-        proof: string,
+        rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
         modelParams: OpenAiModelParams,
         llmServiceInternal: OpenAiServiceInternal,
         previousProofVersions?: ProofVersion[]
     ) {
         super(
-            proof,
+            rawProof,
             proofGenerationContext,
             modelParams,
             llmServiceInternal,
@@ -64,13 +67,13 @@ class OpenAiServiceInternal extends LLMServiceInternal<
     OpenAiServiceInternal
 > {
     constructGeneratedProof(
-        proof: string,
+        rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
         modelParams: OpenAiModelParams,
         previousProofVersions?: ProofVersion[] | undefined
     ): OpenAiGeneratedProof {
         return new OpenAiGeneratedProof(
-            proof,
+            rawProof,
             proofGenerationContext,
             modelParams,
             this,

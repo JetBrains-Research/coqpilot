@@ -3,7 +3,10 @@ import { ConfigurationError } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { PredefinedProofsUserModelParams } from "../../userModelParams";
 import { AnalyzedChatHistory } from "../commonStructures/chat";
-import { GeneratedRawContent } from "../commonStructures/generatedRawContent";
+import {
+    GeneratedRawContent,
+    GeneratedRawContentItem,
+} from "../commonStructures/generatedRawContent";
 import { zeroTokens } from "../commonStructures/generationTokens";
 import { ProofGenerationMetadataHolder } from "../commonStructures/proofGenerationMetadata";
 import { ProofGenerationType } from "../commonStructures/proofGenerationType";
@@ -64,9 +67,9 @@ export class PredefinedProofsService extends LLMServiceImpl<
                     tokensSpentInTotal: zeroTokens(),
                 };
             },
-            (proof) =>
+            (rawProof) =>
                 this.internal.constructGeneratedProof(
-                    proof,
+                    rawProof,
                     proofGenerationContext,
                     params
                 )
@@ -95,12 +98,17 @@ export class PredefinedProof extends GeneratedProofImpl<
     PredefinedProofsServiceInternal
 > {
     constructor(
-        proof: string,
+        rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
         modelParams: PredefinedProofsModelParams,
         llmServiceInternal: PredefinedProofsServiceInternal
     ) {
-        super(proof, proofGenerationContext, modelParams, llmServiceInternal);
+        super(
+            rawProof,
+            proofGenerationContext,
+            modelParams,
+            llmServiceInternal
+        );
     }
 
     async fixProof(
@@ -129,13 +137,13 @@ class PredefinedProofsServiceInternal extends LLMServiceInternal<
     PredefinedProofsServiceInternal
 > {
     constructGeneratedProof(
-        proof: string,
+        rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
         modelParams: PredefinedProofsModelParams,
         _previousProofVersions?: ProofVersion[]
     ): PredefinedProof {
         return new PredefinedProof(
-            proof,
+            rawProof,
             proofGenerationContext,
             modelParams as PredefinedProofsModelParams,
             this

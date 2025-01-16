@@ -91,7 +91,7 @@ export abstract class LLMServiceInternal<
      * It is needed only to link the service and its proof properly.
      */
     abstract constructGeneratedProof(
-        proof: string,
+        rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
         modelParams: ResolvedModelParams,
         previousProofVersions?: ProofVersion[]
@@ -145,7 +145,7 @@ export abstract class LLMServiceInternal<
         choices: number,
         metadataHolder: ProofGenerationMetadataHolder | undefined,
         buildAndValidateChat: () => AnalyzedChatHistory,
-        wrapRawProofContent: (proof: string) => T
+        wrapRawProofContent: (rawProof: GeneratedRawContentItem) => T
     ): Promise<T[]> => {
         return this.logGenerationAndHandleErrors<T>(
             ProofGenerationType.CHAT_BASED,
@@ -216,7 +216,7 @@ export abstract class LLMServiceInternal<
         generateProofs: (
             request: LLMServiceRequest
         ) => Promise<GeneratedRawContent>,
-        wrapRawProofContent: (proof: string) => T
+        wrapRawProofContent: (rawProof: GeneratedRawContentItem) => T
     ): Promise<T[]> => {
         const request: LLMServiceRequest = {
             llmService: this.llmService,
@@ -241,7 +241,7 @@ export abstract class LLMServiceInternal<
             const rawGeneratedContent = await generateProofs(request);
             this.logSuccess(request, rawGeneratedContent, metadataHolder);
             return rawGeneratedContent.items.map((rawProof) =>
-                wrapRawProofContent(rawProof.content)
+                wrapRawProofContent(rawProof)
             );
         } catch (e) {
             const error = asErrorOrRethrow(e);

@@ -5,7 +5,10 @@ import {
     ChatHistory,
     ChatMessage,
 } from "../commonStructures/chat";
-import { GeneratedRawContent } from "../commonStructures/generatedRawContent";
+import {
+    GeneratedRawContent,
+    GeneratedRawContentItem,
+} from "../commonStructures/generatedRawContent";
 import { ProofVersion } from "../commonStructures/proofVersion";
 import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
@@ -44,14 +47,14 @@ export class GrazieGeneratedProof extends GeneratedProofImpl<
     GrazieServiceInternal
 > {
     constructor(
-        proof: string,
+        rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
         modelParams: GrazieModelParams,
         llmServiceInternal: GrazieServiceInternal,
         previousProofVersions?: ProofVersion[]
     ) {
         super(
-            proof,
+            rawProof,
             proofGenerationContext,
             modelParams,
             llmServiceInternal,
@@ -69,13 +72,13 @@ class GrazieServiceInternal extends LLMServiceInternal<
     readonly api = new GrazieApi(this.logDebug);
 
     constructGeneratedProof(
-        proof: string,
+        rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
         modelParams: GrazieModelParams,
         previousProofVersions?: ProofVersion[] | undefined
     ): GrazieGeneratedProof {
         return new GrazieGeneratedProof(
-            proof,
+            rawProof,
             proofGenerationContext,
             modelParams,
             this,

@@ -176,7 +176,7 @@ export abstract class LLMServiceImpl<
             choices,
             metadataHolder,
             () => analyzedChat,
-            (proof) => proof
+            (rawProof) => rawProof.content
         );
     }
 
@@ -207,9 +207,9 @@ export abstract class LLMServiceImpl<
             choices,
             metadataHolder,
             () => buildProofGenerationChat(proofGenerationContext, params),
-            (proof) =>
+            (rawProof) =>
                 this.internal.constructGeneratedProof(
-                    proof,
+                    rawProof,
                     proofGenerationContext,
                     params
                 )
