@@ -3,7 +3,13 @@ import { ErrorWithCause } from "../utils/errorsUtils";
 /**
  * Base class for the errors thrown by `LLMService`.
  */
-export abstract class LLMServiceError extends ErrorWithCause {}
+export abstract class LLMServiceError extends ErrorWithCause {
+    constructor(message: string = "", cause: Error | undefined = undefined) {
+        super(message, cause);
+        Object.setPrototypeOf(this, new.target.prototype);
+        this.name = "LLMServiceError";
+    }
+}
 
 /**
  * Represents the failure of the generation request caused by invalid parameters
@@ -12,6 +18,8 @@ export abstract class LLMServiceError extends ErrorWithCause {}
 export class ConfigurationError extends LLMServiceError {
     constructor(message: string) {
         super(message);
+        Object.setPrototypeOf(this, new.target.prototype);
+        this.name = "ConfigurationError";
     }
 }
 
@@ -25,6 +33,8 @@ export class ConfigurationError extends LLMServiceError {
 export class RemoteConnectionError extends LLMServiceError {
     constructor(message: string) {
         super(message);
+        Object.setPrototypeOf(this, new.target.prototype);
+        this.name = "RemoteConnectionError";
     }
 }
 
@@ -35,5 +45,7 @@ export class RemoteConnectionError extends LLMServiceError {
 export class GenerationFailedError extends LLMServiceError {
     constructor(readonly cause: Error) {
         super("", cause);
+        Object.setPrototypeOf(this, new.target.prototype);
+        this.name = "GenerationFailedError";
     }
 }
