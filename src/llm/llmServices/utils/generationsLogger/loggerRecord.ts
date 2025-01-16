@@ -21,6 +21,7 @@ export class ParsingError extends Error {
     }
 }
 
+// TODO: support `proofGenerationType` if ever needed
 export class LoggerRecord {
     /**
      * Even though this value is in millis, effectively it represents seconds.

@@ -128,7 +128,7 @@ export abstract class LLMServiceImpl<
      * @param generationLogsFilePath if it is not specified, a temporary file will be used.
      */
     constructor(
-        eventLogger: EventLogger | undefined,
+        eventLogger: EventLogger | undefined = undefined,
         errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.RETHROW_ERRORS,
         generationLogsFilePath: string | undefined = undefined,
         debugLogs: boolean = false

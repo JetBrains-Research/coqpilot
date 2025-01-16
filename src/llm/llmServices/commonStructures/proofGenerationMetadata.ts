@@ -33,6 +33,7 @@ interface FailureMetadata {
     llmServiceError: LLMServiceError;
 }
 
+// TODO: document, especially its invariant to be used only once
 export class ProofGenerationMetadataHolder {
     private _configuration: ConfigurationMetadata | undefined = undefined;
     private _success: SuccessMetadata | undefined = undefined;
@@ -121,10 +122,11 @@ export class ProofGenerationMetadataHolder {
         currentValue: any | undefined,
         propertyName: string
     ) {
-        if (currentValue === undefined) {
+        if (currentValue !== undefined) {
             illegalState(
-                `\`ProofGenerationMetadata\` should be updated with ${propertyName} `,
-                "only once by the `LLMService` internals"
+                `\`ProofGenerationMetadata\` is updated with ${propertyName} more than once;\n`,
+                "Possible reasone: the same `ProofGenerationMetadata` should not be used ",
+                "more than for one proof generation"
             );
         }
     }
