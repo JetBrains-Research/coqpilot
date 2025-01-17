@@ -122,11 +122,18 @@ export async function executeBenchmarkingTask(
                 nextGeneratedProofId: nextGeneratedProofId,
                 roundNumber: roundNumber,
             };
+            const parentProofDesc =
+                parentProof === undefined
+                    ? "generate proofs"
+                    : `proof to fix id: ${parentProof?.benchmarkedProof.generatedProofId}`;
+            const thisRoundLogger = itemLogger.createChildLoggerWithIdentifier(
+                `[round: ${roundNumber}, ${parentProofDesc}]`
+            );
             const result = await benchmarkSingleCompletionGeneration(
                 thisRoundGenerationArgs,
                 options,
                 modelsScheduler,
-                itemLogger,
+                thisRoundLogger,
                 proofsChecker,
                 abortSignal
             );

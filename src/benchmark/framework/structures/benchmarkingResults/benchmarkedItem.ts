@@ -118,6 +118,7 @@ abstract class AbstractBenchmarkedCompletionGeneration<
         );
     }
 
+    // TODO: can be cached and updated only on linking
     isSuccessfulCompletion(): boolean {
         return this.getAllValidProofs().length > 0;
     }

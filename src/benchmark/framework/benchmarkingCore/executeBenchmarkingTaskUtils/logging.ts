@@ -28,14 +28,14 @@ export namespace ExecuteBenchmarkingTaskLoggingUtils {
                     .debug("First valid proof:")
                     .debug(roundResult.thisRoundValidProofs[0].asString);
             } else {
-                asOneRecordLogs.debug(
+                asOneRecordLogs.info(
                     `However, no valid proofs have been found ${heavyCrossMark}`
                 );
             }
             const generatedProofsIds = roundResult.generatedProofs
                 .map((proof) => `${proof.generatedProofId}`)
                 .join(", ");
-            asOneRecordLogs.debug(
+            asOneRecordLogs.info(
                 `Newly generated proofs id-s are: [${generatedProofsIds}]`
             );
             logElapsedTime();

@@ -3,10 +3,7 @@ import { ModelParams } from "../../../../llm/llmServices/modelParams";
 
 import { buildErrorCompleteLog } from "../../../../utils/errorsUtils";
 import { IllegalStateError } from "../../../../utils/throwErrors";
-import {
-    AsOneRecordLogsBuilder,
-    BenchmarkingLogger,
-} from "../../logging/benchmarkingLogger";
+import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { BenchmarkingModelParams } from "../../structures/benchmarkingCore/benchmarkingModelParams";
 import { BenchmarkingOptions } from "../../structures/benchmarkingCore/benchmarkingOptions";
 import { FailFastAbortError } from "../../utils/asyncUtils/abortUtils";
@@ -82,13 +79,14 @@ export namespace ExecuteBenchmarkingTaskErrorHandlingUtils {
     }
 
     export function logCommonError(
-        e: any,
+        e: ExpectedError,
         itemLogger: BenchmarkingLogger,
         params: BenchmarkingModelParams<ModelParams>,
         options: BenchmarkingOptions,
         abortSignal: AbortSignal
     ) {
-        const logConclusion = (errorRecordLogger: AsOneRecordLogsBuilder) => {
+        const errorRecordLogger = itemLogger.asOneRecord();
+        const logConclusion = () => {
             if (options.failFast) {
                 if (abortSignal.aborted) {
                     errorRecordLogger.info(
@@ -107,22 +105,16 @@ export namespace ExecuteBenchmarkingTaskErrorHandlingUtils {
         };
 
         if (e instanceof BenchmarkingError) {
-            logConclusion(itemLogger.asOneRecord().error(e.message));
+            errorRecordLogger.error(e.message);
         } else if (e instanceof ConfigurationError) {
-            logConclusion(
-                itemLogger
-                    .asOneRecord()
-                    .error(
-                        `"${params.modelParams.modelId}" is configured incorrectly: ${e.message}`
-                    )
+            errorRecordLogger.error(
+                `"${params.modelParams.modelId}" is configured incorrectly: ${e.message}`
             );
         } else {
-            logConclusion(
-                itemLogger
-                    .asOneRecord()
-                    .error(`Error occurred:`)
-                    .error(buildErrorCompleteLog(e), "gray")
-            );
+            errorRecordLogger
+                .error(`Error occurred:`)
+                .error(buildErrorCompleteLog(e), "gray");
         }
+        logConclusion();
     }
 }

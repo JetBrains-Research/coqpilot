@@ -31,6 +31,7 @@ import {
 } from "../../../../utils/time";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { writeTeamCityStatisticsValue } from "../../logging/consoleWriteUtils";
+import { infinitySymbol } from "../../logging/specialSymbols";
 import { BenchmarkingModelParams } from "../../structures/benchmarkingCore/benchmarkingModelParams";
 import { BenchmarkingOptions } from "../../structures/benchmarkingCore/benchmarkingOptions";
 import {
@@ -129,15 +130,6 @@ export async function benchmarkSingleCompletionGeneration<
         logger,
         abortSignal
     );
-    logger
-        .asOneRecord()
-        .info(
-            `Successfully generated ${proofGenerationResult.generatedProofs.length} proof(s)`
-        )
-        .debug(
-            `Effective elapsed time: ${proofGenerationResult.effectiveElapsedTimeMillis} ms`,
-            "gray"
-        );
     const preparedProofs: [string, GeneratedProof, number][] =
         proofGenerationResult.generatedProofs.map(
             (generatedProof: GeneratedProof, index: number) => [
@@ -266,6 +258,12 @@ export async function benchmarkSingleCompletionGeneration<
     return result;
 }
 
+/**
+ * Prevents from buggy delay estimates:
+ * infinite cycle with zero delays might cause some troubles.
+ */
+export const minDelayMillis = 100;
+
 namespace RemoteConnectionErrorDelays {
     export const initialDelayMillis = 10_000;
     export const exponentialMultiplier = 2;
@@ -341,6 +339,7 @@ async function generateProofWithRetriesExclusively<
             generateProof,
             generationArgs.llmService,
             options,
+            generationArgs.roundNumber,
             logger,
             abortSignal
         );
@@ -353,19 +352,29 @@ async function generateProofWithRetriesMeasured(
     ) => Promise<GeneratedProof[]>,
     llmService: LLMService<any, any>,
     options: BenchmarkingOptions,
+    roundNumber: number,
     logger: BenchmarkingLogger,
     abortSignal: AbortSignal
 ): Promise<ProofGenerationResult> {
     let delayMillis = 0;
     let prevFailureIsConnectionError = false;
-    let attemptIndex = 0;
+    let attemptIndex = 1;
+    const maxAttemptsString = options.proofGenerationRetries ?? infinitySymbol;
 
     let totalTime = new TimeMark();
     while (true) {
+        const attemptLogger = logger.createChildLoggerWithIdentifier(
+            `[proof generation attempt ${attemptIndex}/${maxAttemptsString}]`
+        );
         // `options.proofGenerationRetries` might be undefined meaning the unlimited retries case
-        if (attemptIndex === options.proofGenerationRetries) {
+        if (attemptIndex - 1 === options.proofGenerationRetries) {
+            attemptLogger.error(
+                `max retries (${options.proofGenerationRetries}) has been reached`,
+                "default"
+            );
             throwBenchmarkingError(
-                `Proof generation failed: max retries (${options.proofGenerationRetries}) has been reached`
+                `Proof generation failed: max retries (${options.proofGenerationRetries}) `,
+                `has been reached at round ${roundNumber}`
             );
         }
         throwOnAbort(abortSignal);
@@ -386,10 +395,10 @@ async function generateProofWithRetriesMeasured(
             };
 
             const tokens = result.tokensSpentInTotal;
-            logger
+            attemptLogger
                 .asOneRecord()
-                .debug(
-                    `Attempt #${attemptIndex}, successfully generated proofs`
+                .info(
+                    `Successfully generated ${generatedProofs.length} proof(s)`
                 )
                 .debug(
                     `Tokens spent: ${tokens.tokensSpentInTotal} = ${tokens.promptTokens} (prompt) + ${tokens.generatedTokens} (generated answer)`
@@ -415,19 +424,23 @@ async function generateProofWithRetriesMeasured(
             const llmServiceError = e as LLMServiceError;
 
             if (llmServiceError instanceof ConfigurationError) {
-                logger.debug(
-                    `Attempt #${attemptIndex}, configuration error: ${llmServiceError.message}`
+                attemptLogger.error(
+                    `Configuration error: ${llmServiceError.message}`,
+                    "default"
                 );
                 throw llmServiceError;
             }
             if (llmServiceError instanceof GenerationFailedError) {
                 const estimatedTime =
                     llmService.estimateTimeToBecomeAvailable();
-                delayMillis = timeToMillis(estimatedTime);
-                logger
+                delayMillis = Math.max(
+                    timeToMillis(estimatedTime),
+                    minDelayMillis
+                );
+                attemptLogger
                     .asOneRecord()
                     .debug(
-                        `Attempt #${attemptIndex}, generation failed error: ${llmServiceError.message}`
+                        `Generation failed error: ${llmServiceError.message}`
                     )
                     .debug(
                         `Estimated time to become available: ${timeToString(estimatedTime)}`
@@ -441,10 +454,10 @@ async function generateProofWithRetriesMeasured(
                         RemoteConnectionErrorDelays.initialDelayMillis;
                     prevFailureIsConnectionError = true;
                 }
-                logger
+                attemptLogger
                     .asOneRecord()
                     .debug(
-                        `Attempt #${attemptIndex}, remote connection error: ${stringifyAnyValue(llmServiceError.message)}`
+                        `Remote connection error: ${stringifyAnyValue(llmServiceError.message)}`
                     )
                     .debug(`Delay to wait for: ${millisToString(delayMillis)}`);
             } else {
