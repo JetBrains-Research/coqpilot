@@ -1,3 +1,4 @@
+import { asErrorOrRethrow } from "../../../utils/errorsUtils";
 import { toUnformattedJsonString } from "../../../utils/printers";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { LMStudioUserModelParams } from "../../userModelParams";
@@ -106,10 +107,7 @@ class LMStudioServiceInternal extends LLMServiceInternal<
                 this.logDebug.event("Completion failed", {
                     error: err,
                 });
-                if ((err as Error) === null) {
-                    throw err;
-                }
-                lastErrorThrown = err as Error;
+                lastErrorThrown = asErrorOrRethrow(err);
             }
             attempts--;
         }

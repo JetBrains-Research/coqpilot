@@ -8,6 +8,8 @@ import {
     LLMServiceRequest,
     LLMServiceRequestFailed,
     LLMServiceRequestSucceeded,
+    isLLMServiceRequestFailed,
+    isLLMServiceRequestSucceeded,
 } from "../../../llm/llmServices/commonStructures/llmServiceRequest";
 import { LLMServiceImpl } from "../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
@@ -101,6 +103,7 @@ function reactToRequestSucceededEvent(
         const [requestSucceeded, uiState] =
             parseLLMServiceRequestEvent<LLMServiceRequestSucceeded>(
                 data,
+                isLLMServiceRequestSucceeded,
                 llmServiceToUIState,
                 `data of the ${LLMServiceImpl.requestSucceededEvent} event should be a \`LLMServiceRequestSucceeded\` object`
             );
@@ -133,6 +136,7 @@ function reactToRequestFailedEvent(
         const [requestFailed, uiState] =
             parseLLMServiceRequestEvent<LLMServiceRequestFailed>(
                 data,
+                isLLMServiceRequestFailed,
                 llmServiceToUIState,
                 `data of the ${LLMServiceImpl.requestFailedEvent} event should be a \`LLMServiceRequestFailed\` object`
             );
@@ -201,17 +205,17 @@ function reactToRequestFailedEvent(
 
 function parseLLMServiceRequestEvent<T extends LLMServiceRequest>(
     data: any,
+    checkType: (data: any) => data is T,
     llmServiceToUIState: LLMServiceToUIState,
     errorMessage: string
 ): [T, LLMServiceUIState] {
-    const request = data as T;
-    if (request === null) {
+    if (!checkType(data)) {
         throw Error(`${errorMessage}, but data = ${stringifyAnyValue(data)}`);
     }
-    const serviceName = request.llmService.serviceName;
+    const serviceName = data.llmService.serviceName;
     const uiState = llmServiceToUIState.get(serviceName);
     if (uiState === undefined) {
         throw Error(`no UI state for \`${serviceName}\``);
     }
-    return [request, uiState];
+    return [data, uiState];
 }

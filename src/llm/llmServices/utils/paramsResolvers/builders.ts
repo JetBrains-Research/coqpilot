@@ -398,6 +398,7 @@ class SingleParamResolverImpl<InputType, T> extends AbstractSingleParamResolver<
             return userValueAsT;
         } else {
             // unfortunately, this case is unreachable: TypeScript does not provide the way to check that `userValue` is of the `T` type indeed
+            // TODO: actually, it does: the type validator should be passed and used (for example, Ajv one)
             throw Error(
                 `cast of \`any\` to generic \`T\` type should always succeed, value = ${stringifyAnyValue(userValue)} for ${this.quotedName()} parameter`
             );

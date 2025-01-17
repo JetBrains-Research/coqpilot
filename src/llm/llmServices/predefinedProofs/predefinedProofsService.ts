@@ -145,7 +145,7 @@ class PredefinedProofsServiceInternal extends LLMServiceInternal<
         return new PredefinedProof(
             rawProof,
             proofGenerationContext,
-            modelParams as PredefinedProofsModelParams,
+            modelParams,
             this
         );
     }

@@ -9,9 +9,13 @@ export function asErrorOrRethrow(e: any): Error {
 
 export function asErrorOrRethrowWrapped(e: any, description: string): Error {
     if (!(e instanceof Error)) {
-        throw Error(`${description}: "${stringifyAnyValue(e)}"`);
+        throw wrapNonError(e, description);
     }
     return e;
+}
+
+export function wrapNonError(e: any, description: string): Error {
+    return Error(`${description}: ${stringifyAnyValue(e)}`);
 }
 
 export function asErrorOrUndefined(e: any): Error | undefined {

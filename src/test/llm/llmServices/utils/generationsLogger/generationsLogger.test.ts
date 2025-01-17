@@ -361,7 +361,6 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
                 const records = generationsLogger.readLogs();
                 expect(records).toHaveLength(1);
                 const record = records[0] as DebugLoggerRecord;
-                expect(record).not.toBeNullish();
 
                 expect(record.params.tokensLimit).toEqual(censorInt);
                 expect((record.params as OpenAiModelParams)?.apiKey).toEqual(

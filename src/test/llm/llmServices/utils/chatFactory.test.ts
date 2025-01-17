@@ -49,7 +49,7 @@ suite("[LLMService-s utils] Building chats test", () => {
         return theorems;
     }
 
-    interface TestMessages {
+    interface BasicTestMessages {
         systemMessage: ChatMessage;
 
         // user messages
@@ -60,7 +60,9 @@ suite("[LLMService-s utils] Building chats test", () => {
         // assistant messages
         plusTheoremProof: ChatMessage;
         plusAssocTheoremProof: ChatMessage;
+    }
 
+    interface TestMessages extends BasicTestMessages {
         firstTheorem: ChatHistory;
         secondTheorem: ChatHistory;
 
@@ -77,32 +79,32 @@ suite("[LLMService-s utils] Building chats test", () => {
         const [plusTheorem, plusAssocTheorem, theoremToComplete] =
             await readTheorems();
 
-        const messages = {
+        const messages: BasicTestMessages = {
             systemMessage: {
                 role: "system",
                 content: "Generate proofs in Coq!",
-            } as ChatMessage,
+            },
             plusTheoremStatement: {
                 role: "user",
                 content: plusTheorem.statement,
-            } as ChatMessage,
+            },
             plusAssocTheoremStatement: {
                 role: "user",
                 content: plusAssocTheorem.statement,
-            } as ChatMessage,
+            },
             theoremToCompleteStatement: {
                 role: "user",
                 content: theoremToComplete.statement,
-            } as ChatMessage,
+            },
 
             plusTheoremProof: {
                 role: "assistant",
                 content: plusTheorem.proof.onlyText(),
-            } as ChatMessage,
+            },
             plusAssocTheoremProof: {
                 role: "assistant",
                 content: plusAssocTheorem.proof.onlyText(),
-            } as ChatMessage,
+            },
         };
         const firstTheorem = [
             messages.plusTheoremStatement,

@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 
+import { wrapNonError } from "../../../../utils/errorsUtils";
 import { illegalState } from "../../../../utils/throwErrors";
 
 export function getRootDir(): string {
@@ -21,7 +22,7 @@ export function readFile<T>(
     try {
         return fs.readFileSync(filePath, defaultEncoding);
     } catch (e) {
-        return onError(e as Error);
+        return handleThrownObject(e, onError);
     }
 }
 
@@ -38,7 +39,7 @@ export function writeToFile<T>(
         fs.writeFileSync(filePath, text, defaultEncoding);
         return undefined;
     } catch (e) {
-        return onError(e as Error);
+        return handleThrownObject(e, onError);
     }
 }
 
@@ -51,8 +52,17 @@ export function appendToFile<T>(
         fs.appendFileSync(filePath, text, defaultEncoding);
         return undefined;
     } catch (e) {
+        return handleThrownObject(e, onError);
+    }
+}
+
+function handleThrownObject<T>(e: any, onError: (e: any) => T): T {
+    if (e instanceof Error) {
         return onError(e);
     }
+    return onError(
+        wrapNonError(e, "non-`Error` object is thrown inside `writeToFile`")
+    );
 }
 
 export function clearFile(filePath: string) {

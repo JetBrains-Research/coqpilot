@@ -2,7 +2,7 @@ import * as assert from "assert";
 import * as fs from "fs";
 
 import { LLMServices } from "../../llm/llmServices";
-import { LLMServiceRequest } from "../../llm/llmServices/commonStructures/llmServiceRequest";
+import { isLLMServiceRequest } from "../../llm/llmServices/commonStructures/llmServiceRequest";
 import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
 import { LLMServiceImpl } from "../../llm/llmServices/llmService";
 import { LMStudioService } from "../../llm/llmServices/lmStudio/lmStudioService";
@@ -412,13 +412,12 @@ function reactToRequestEvent(
     contextTheorems: ContextTheoremsHolder
 ): (data: any) => void {
     return (data: any) => {
-        const request = data as LLMServiceRequest;
-        if (request === null) {
+        if (!isLLMServiceRequest(data)) {
             throw Error(
                 `Request succeeded event received with null data: ${data}`
             );
         }
-        contextTheorems.contextTheorems = request.analyzedChat?.contextTheorems;
+        contextTheorems.contextTheorems = data.analyzedChat?.contextTheorems;
     };
 }
 
