@@ -50,5 +50,7 @@ export abstract class ErrorWithCause extends Error {
                   ? message
                   : `${message}, cause: ${causeMessage}`;
         super(errorMessage);
+        Object.setPrototypeOf(this, new.target.prototype);
+        this.name = "ErrorWithCause";
     }
 }

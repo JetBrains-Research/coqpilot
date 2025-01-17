@@ -19,10 +19,12 @@ export interface LoggedError {
     message: string;
 }
 
-export class ParsingError extends Error {
+export class GenerationsLogsParsingError extends Error {
     constructor(message: string, rawParsingData: string) {
         const parsingDataInfo = `\n>> \`${rawParsingData}\``;
         super(`failed to parse log record: ${message}${parsingDataInfo}`);
+        Object.setPrototypeOf(this, new.target.prototype);
+        this.name = "ParsingError";
     }
 }
 
@@ -260,7 +262,7 @@ export class LoggerRecord {
     protected static splitByFirstLine(text: string): [string, string] {
         const firstLineEndIndex = text.indexOf("\n");
         if (firstLineEndIndex === -1) {
-            throw new ParsingError("line expected", text);
+            throw new GenerationsLogsParsingError("line expected", text);
         }
         return [
             text.substring(0, firstLineEndIndex),
@@ -274,7 +276,7 @@ export class LoggerRecord {
         checkType: (rawValue: RawType) => rawValue is ParsedType
     ): ParsedType {
         if (!checkType(rawValue)) {
-            throw new ParsingError(
+            throw new GenerationsLogsParsingError(
                 `invalid ${valueName}`,
                 stringifyAnyValue(rawValue)
             );
@@ -286,7 +288,10 @@ export class LoggerRecord {
         try {
             return new Date(rawTimestamp).getTime();
         } catch (e) {
-            throw new ParsingError("invalid timestampt", rawTimestamp);
+            throw new GenerationsLogsParsingError(
+                "invalid timestampt",
+                rawTimestamp
+            );
         }
     }
 
@@ -297,7 +302,10 @@ export class LoggerRecord {
         try {
             return parseInt(rawValue);
         } catch (e) {
-            throw new ParsingError(`invalid ${valueName}`, rawValue);
+            throw new GenerationsLogsParsingError(
+                `invalid ${valueName}`,
+                rawValue
+            );
         }
     }
 
@@ -318,7 +326,7 @@ export class LoggerRecord {
     ): string[] {
         const match = text.match(pattern);
         if (!match) {
-            throw new ParsingError(`invalid ${valueName}`, text);
+            throw new GenerationsLogsParsingError(`invalid ${valueName}`, text);
         }
         return match.slice(1);
     }
@@ -592,7 +600,7 @@ export class DebugLoggerRecord extends LoggerRecord {
             toJsonString(params, this.jsonStringifyIndent).length
         );
         if (!restRawRecord.startsWith("\n")) {
-            throw new ParsingError(
+            throw new GenerationsLogsParsingError(
                 `invalid model's params suffix`,
                 restRawRecord
             );

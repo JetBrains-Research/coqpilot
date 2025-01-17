@@ -155,6 +155,7 @@ export interface DocumentPerfParams {
 export class CoqLspError extends Error {
     constructor(message: string) {
         super(message);
+        Object.setPrototypeOf(this, new.target.prototype);
         this.name = "CoqLspError";
     }
 
@@ -171,6 +172,7 @@ export class CoqParsingError extends CoqLspError {
         public data?: any
     ) {
         super(message);
+        Object.setPrototypeOf(this, new.target.prototype);
         this.name = "CoqParsingError";
     }
 }
@@ -178,6 +180,7 @@ export class CoqParsingError extends CoqLspError {
 export class CoqLspTimeoutError extends CoqLspError {
     constructor(message: string) {
         super(message);
+        Object.setPrototypeOf(this, new.target.prototype);
         this.name = "CoqLspTimeoutError";
     }
 }
@@ -188,6 +191,7 @@ export class CoqLspStartupError extends CoqLspError {
         readonly path: string
     ) {
         super(message);
+        Object.setPrototypeOf(this, new.target.prototype);
         this.name = "CoqLspStartupError";
     }
 }
