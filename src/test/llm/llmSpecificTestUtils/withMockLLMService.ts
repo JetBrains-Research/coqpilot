@@ -23,6 +23,7 @@ export async function withMockLLMService(
                 systemPrompt: MockLLMService.systemPromptToOverrideWith,
                 maxTokensToGenerate: 100,
                 tokensLimit: 1000,
+                maxContextTheoremsNumber: Number.MAX_SAFE_INTEGER,
                 multiroundProfile: {
                     maxRoundsNumber: 1,
                     defaultProofFixChoices: 0,

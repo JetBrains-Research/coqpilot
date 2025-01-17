@@ -2,7 +2,11 @@ import { expect } from "earl";
 
 import { LLMService } from "../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
-import { defaultMultiroundProfile } from "../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";
+import {
+    defaultMaxContextTheoremsNumber,
+    defaultMultiroundProfile,
+    defaultSystemMessageContent,
+} from "../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";
 import {
     UserModelParams,
     UserMultiroundProfile,
@@ -17,6 +21,12 @@ export const defaultUserMultiroundProfile: UserMultiroundProfile = {
     maxRoundsNumber: defaultMultiroundProfile.maxRoundsNumber,
     proofFixChoices: defaultMultiroundProfile.defaultProofFixChoices,
     proofFixPrompt: defaultMultiroundProfile.proofFixPrompt,
+};
+
+export const paramsResolvedWithBasicDefaults = {
+    maxContextTheoremsNumber: defaultMaxContextTheoremsNumber,
+    systemPrompt: defaultSystemMessageContent,
+    multiroundProfile: defaultUserMultiroundProfile,
 };
 
 export function testResolveValidCompleteParameters<

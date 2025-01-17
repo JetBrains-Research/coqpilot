@@ -194,6 +194,7 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                         systemPrompt: "asking for something",
                         maxTokensToGenerate: 2000,
                         tokensLimit: 4000,
+                        maxContextTheoremsNumber: 20,
                         multiroundProfile: {
                             maxRoundsNumber: 10,
                             proofFixChoices: 5,
@@ -222,6 +223,7 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                         ...simpleTactics.map((tactic) => tactic.length)
                     ),
                     tokensLimit: Number.MAX_SAFE_INTEGER,
+                    maxContextTheoremsNumber: Number.MAX_SAFE_INTEGER,
                     multiroundProfile: {
                         maxRoundsNumber: 1,
                         defaultProofFixChoices: 0,

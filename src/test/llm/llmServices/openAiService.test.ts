@@ -3,7 +3,6 @@ import { expect } from "earl";
 import { ConfigurationError } from "../../../llm/llmServiceErrors";
 import { OpenAiModelParams } from "../../../llm/llmServices/modelParams";
 import { OpenAiService } from "../../../llm/llmServices/openai/openAiService";
-import { defaultSystemMessageContent } from "../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";
 import { OpenAiUserModelParams } from "../../../llm/userModelParams";
 
 import { testIf } from "../../commonTestFunctions/conditionalTest";
@@ -18,7 +17,7 @@ import {
 } from "../llmSpecificTestUtils/constants";
 import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testAdmitCompletion";
 import {
-    defaultUserMultiroundProfile,
+    paramsResolvedWithBasicDefaults,
     testResolveParametersFailsWithSingleCause,
     testResolveValidCompleteParameters,
 } from "../llmSpecificTestUtils/testResolveParameters";
@@ -66,10 +65,9 @@ suite("[LLMService] Test `OpenAiService`", function () {
                 openAiService,
                 {
                     ...inputParams,
-                    systemPrompt: defaultSystemMessageContent,
+                    ...paramsResolvedWithBasicDefaults,
                     maxTokensToGenerate: 2000,
                     tokensLimit: 4000,
-                    multiroundProfile: defaultUserMultiroundProfile,
                 },
                 true
             );

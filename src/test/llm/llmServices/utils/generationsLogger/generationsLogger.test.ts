@@ -56,6 +56,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
         systemPrompt: "hi system",
         maxTokensToGenerate: 10000,
         tokensLimit: 1000000,
+        maxContextTheoremsNumber: Number.MAX_SAFE_INTEGER,
         multiroundProfile: {
             maxRoundsNumber: 1,
             defaultProofFixChoices: 1,

@@ -8,6 +8,7 @@ import {
 } from "../../../../llm/llmServices/modelParams";
 import {
     BasicModelParamsResolver,
+    defaultMaxContextTheoremsNumber,
     defaultMultiroundProfile,
     defaultSystemMessageContent,
 } from "../../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";
@@ -20,16 +21,12 @@ import {
     MockLLMService,
     MockLLMUserModelParams,
 } from "../../llmSpecificTestUtils/mockLLMService";
-import {
-    ModelParamsAddOns,
-    UserModelParamsAddOns,
-} from "../../llmSpecificTestUtils/modelParamsAddOns";
 
 suite("[LLMService] Test model-params resolution", () => {
     function testBasicResolverSucceeded(
         testName: string,
-        inputParamsAddOns: UserModelParamsAddOns = {},
-        expectedResolvedParamsAddOns: ModelParamsAddOns = {}
+        inputParamsAddOns: Partial<UserModelParams> = {},
+        expectedResolvedParamsAddOns: Partial<ModelParams> = {}
     ) {
         test(testName, () => {
             const inputParams: UserModelParams = {
@@ -38,6 +35,7 @@ suite("[LLMService] Test model-params resolution", () => {
                 // `systemPrompt` will be resolved with default
                 maxTokensToGenerate: 100,
                 tokensLimit: 1000,
+                // `maxContextTheoremsNumber` will be resolved with default
                 multiroundProfile: {
                     proofFixChoices: 3,
                     // `maxRoundsNumber` and `proofFixPrompt` will be resolved with defaults
@@ -55,6 +53,7 @@ suite("[LLMService] Test model-params resolution", () => {
                 systemPrompt: defaultSystemMessageContent,
                 maxTokensToGenerate: 100,
                 tokensLimit: 1000,
+                maxContextTheoremsNumber: defaultMaxContextTheoremsNumber,
                 multiroundProfile: {
                     maxRoundsNumber: defaultMultiroundProfile.maxRoundsNumber,
                     defaultProofFixChoices: 3,
@@ -132,6 +131,7 @@ suite("[LLMService] Test model-params resolution", () => {
                  */
                 const expectedResolvedMockParams = {
                     ...unresolvedMockUserParams,
+                    maxContextTheoremsNumber: defaultMaxContextTheoremsNumber,
                     multiroundProfile: defaultMultiroundProfile,
                     systemPrompt: MockLLMService.systemPromptToOverrideWith,
                     workerId: 0,
