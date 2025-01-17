@@ -75,6 +75,12 @@ export class BasicModelParamsResolver<
         .requiredToBeConfigured()
         .validate(ValidationRules.bePositiveNumber);
 
+    readonly maxContextTheoremsNumber = this.resolveParam<number>(
+        "maxContextTheoremsNumber"
+    )
+        .default(() => defaultMaxContextTheoremsNumber)
+        .validate(ValidationRules.beNonNegativeNumber);
+
     readonly multiroundProfile = this.resolveNestedParams(
         "multiroundProfile",
         new BasicMultiroundProfileResolver()
@@ -85,5 +91,7 @@ export class BasicModelParamsResolver<
         .validate(ValidationRules.bePositiveNumber);
 }
 
-export const defaultSystemMessageContent: string =
+export const defaultSystemMessageContent =
     "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'.";
+
+export const defaultMaxContextTheoremsNumber = Number.MAX_SAFE_INTEGER;

@@ -74,7 +74,7 @@ export type ValidParamsResolverImpl<InputType, ResolveToType> = {
  *
  *    Implementation note:
  *    * if you need to declare any utility properties in your class,
- *      it is okay to do by starting the proeprty name with an underscore (for example, `_utilityProp`).
+ *      it is okay to do by starting the property name with an underscore (for example, `_utilityProp`).
  *
  * 3. Check that all resolvers for the `ResolveToType` properties are specified correctly. To do this, make your
  *    parameters resolver class implement `ValidParamsResolverImpl<InputType, ResolveToType>`. It will check exactly this contract.

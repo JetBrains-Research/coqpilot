@@ -83,7 +83,7 @@ export interface SingleParamResolverBuilder<InputType, T> {
      *   (since default resolution is the last step).
      *
      * @param valueBuilder lambda to build the default value.
-     * @param helpMessageIfNotResolved optional message to show to the user if `valueBuilder` have not built a default value for the parameter (i.e. returned `undefined`).
+     * @param helpMessageIfNotResolved optional message to show to the user if `valueBuilder` has not built a default value for the parameter (i.e. returned `undefined`).
      */
     default(
         valueBuilder: ValueBuilder<InputType, T>,
@@ -181,6 +181,11 @@ export namespace ValidationRules {
     export const bePositiveNumber: ValidationRule<any, number> = [
         (value: number) => value > 0,
         "be positive",
+    ];
+
+    export const beNonNegativeNumber: ValidationRule<any, number> = [
+        (value: number) => value >= 0,
+        "be non-negative",
     ];
 }
 

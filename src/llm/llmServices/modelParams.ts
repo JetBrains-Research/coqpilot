@@ -16,8 +16,11 @@ export interface MultiroundProfile {
 export interface ModelParams {
     modelId: string;
     systemPrompt: string;
+
     maxTokensToGenerate: number;
     tokensLimit: number;
+    maxContextTheoremsNumber: number;
+
     multiroundProfile: MultiroundProfile;
 
     /**
@@ -77,6 +80,7 @@ export const modelParamsSchema: JSONSchemaType<ModelParams> = {
 
         maxTokensToGenerate: { type: "number" },
         tokensLimit: { type: "number" },
+        maxContextTheoremsNumber: { type: "number" },
 
         multiroundProfile: {
             type: "object",
@@ -90,6 +94,7 @@ export const modelParamsSchema: JSONSchemaType<ModelParams> = {
         "systemPrompt",
         "maxTokensToGenerate",
         "tokensLimit",
+        "maxContextTheoremsNumber",
         "multiroundProfile",
         "defaultChoices",
     ],

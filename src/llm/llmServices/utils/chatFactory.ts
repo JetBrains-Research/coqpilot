@@ -105,7 +105,10 @@ export function buildProofGenerationChat(
         fitter.fitRequiredMessage(completionTargetMessage);
 
         const fittedContextTheorems = fitter.fitOptionalObjects(
-            proofGenerationContext.contextTheorems,
+            proofGenerationContext.contextTheorems.slice(
+                0,
+                modelParams.maxContextTheoremsNumber
+            ),
             (theorem) => chatItemToContent(theoremToChatItem(theorem))
         );
         const contextTheoremsChat = buildTheoremsChat(fittedContextTheorems);
@@ -161,7 +164,10 @@ export function buildProofFixChat(
             buildPreviousProofVersionsChat(fittedProofVersions);
 
         const fittedContextTheorems = fitter.fitOptionalObjects(
-            proofGenerationContext.contextTheorems,
+            proofGenerationContext.contextTheorems.slice(
+                0,
+                modelParams.maxContextTheoremsNumber
+            ),
             (theorem) => chatItemToContent(theoremToChatItem(theorem))
         );
         const contextTheoremsChat = buildTheoremsChat(fittedContextTheorems);
