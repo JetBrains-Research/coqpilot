@@ -199,6 +199,7 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                             maxRoundsNumber: 10,
                             proofFixChoices: 5,
                             proofFixPrompt: "asking for more of something",
+                            maxPreviousProofVersionsNumber: 2,
                         },
                     });
 
@@ -228,6 +229,7 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                         maxRoundsNumber: 1,
                         defaultProofFixChoices: 0,
                         proofFixPrompt: "",
+                        maxPreviousProofVersionsNumber: 0,
                     },
                     defaultChoices: simpleTactics.length,
                 });

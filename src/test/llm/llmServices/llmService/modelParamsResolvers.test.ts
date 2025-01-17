@@ -38,7 +38,7 @@ suite("[LLMService] Test model-params resolution", () => {
                 // `maxContextTheoremsNumber` will be resolved with default
                 multiroundProfile: {
                     proofFixChoices: 3,
-                    // `maxRoundsNumber` and `proofFixPrompt` will be resolved with defaults
+                    // `maxRoundsNumber`, `proofFixPrompt` and `maxPreviousProofVersionsNumber` will be resolved with defaults
                 },
                 ...inputParamsAddOns,
             };
@@ -58,6 +58,8 @@ suite("[LLMService] Test model-params resolution", () => {
                     maxRoundsNumber: defaultMultiroundProfile.maxRoundsNumber,
                     defaultProofFixChoices: 3,
                     proofFixPrompt: defaultMultiroundProfile.proofFixPrompt,
+                    maxPreviousProofVersionsNumber:
+                        defaultMultiroundProfile.maxPreviousProofVersionsNumber,
                 } as MultiroundProfile,
                 defaultChoices: 1,
                 ...expectedResolvedParamsAddOns,

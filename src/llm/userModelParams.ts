@@ -17,6 +17,12 @@ export interface UserMultiroundProfile {
      * Use `${diagnostic}` syntax to include a diagnostic message into the prompt.
      */
     proofFixPrompt?: string;
+
+    /**
+     * Specifies the maximum number of the latest proof versions
+     * to include in the proof-fix chat as previous attempts to fix the proof.
+     */
+    maxPreviousProofVersionsNumber?: number;
 }
 
 export interface UserModelParams {
@@ -79,6 +85,7 @@ export const userMultiroundProfileSchema: JSONSchemaType<UserMultiroundProfile> 
             maxRoundsNumber: { type: "number", nullable: true },
             proofFixChoices: { type: "number", nullable: true },
             proofFixPrompt: { type: "string", nullable: true },
+            maxPreviousProofVersionsNumber: { type: "number", nullable: true },
         },
         required: [],
         additionalProperties: false,

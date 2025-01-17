@@ -155,8 +155,17 @@ export function buildProofFixChat(
         fitter.fitRequiredMessage(proofMessage);
         fitter.fitRequiredMessage(proofFixMessage);
 
+        const previousProofVersionsLength = proofVersions.length - 1;
         const fittedProofVersions = fitter.fitOptionalObjects(
-            proofVersions.slice(0, proofVersions.length - 1),
+            proofVersions.slice(
+                Math.max(
+                    0,
+                    previousProofVersionsLength -
+                        modelParams.multiroundProfile
+                            .maxPreviousProofVersionsNumber
+                ),
+                previousProofVersionsLength
+            ),
             (proofVersion) =>
                 chatItemToContent(proofVersionToChatItem(proofVersion))
         );

@@ -28,6 +28,7 @@ export async function withMockLLMService(
                     maxRoundsNumber: 1,
                     defaultProofFixChoices: 0,
                     proofFixPrompt: "Fix proof",
+                    maxPreviousProofVersionsNumber: Number.MAX_SAFE_INTEGER,
                 },
                 defaultChoices: proofsToGenerate.length,
                 proofsToGenerate: proofsToGenerate,

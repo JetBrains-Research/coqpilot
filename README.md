@@ -196,7 +196,8 @@ The most commonly used service is `OpenAI` (`Grazie` and `LmStudio` are configur
             "multiroundProfile": {
                 "maxRoundsNumber": 1,
                 "proofFixChoices": 1,
-                "proofFixPrompt": "Unfortunately, the last proof is not correct..."
+                "proofFixPrompt": "Unfortunately, the last proof is not correct...",
+                "maxPreviousProofVersionsNumber": 100
             }
         }
     ],

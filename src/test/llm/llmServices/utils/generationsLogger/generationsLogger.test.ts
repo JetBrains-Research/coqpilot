@@ -61,6 +61,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
             maxRoundsNumber: 1,
             defaultProofFixChoices: 1,
             proofFixPrompt: "fix it",
+            maxPreviousProofVersionsNumber: Number.MAX_SAFE_INTEGER,
         },
         defaultChoices: 1,
     };

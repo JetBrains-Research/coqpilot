@@ -51,6 +51,7 @@ export class PredefinedProofsModelParamsResolver
             maxRoundsNumber: 1,
             defaultProofFixChoices: 0,
             proofFixPrompt: "",
+            maxPreviousProofVersionsNumber: 0,
         };
     });
 

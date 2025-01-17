@@ -18,9 +18,8 @@ import {
  * parameters have different names.
  */
 export const defaultUserMultiroundProfile: UserMultiroundProfile = {
-    maxRoundsNumber: defaultMultiroundProfile.maxRoundsNumber,
+    ...defaultMultiroundProfile,
     proofFixChoices: defaultMultiroundProfile.defaultProofFixChoices,
-    proofFixPrompt: defaultMultiroundProfile.proofFixPrompt,
 };
 
 export const paramsResolvedWithBasicDefaults = {

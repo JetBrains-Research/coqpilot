@@ -3,6 +3,7 @@ import { PropertiesSchema } from "ajv/dist/types/json-schema";
 
 export interface MultiroundProfile {
     maxRoundsNumber: number;
+
     /**
      * Is handled the same way as `ModelParams.defaultChoices` is, i.e. `defaultProofFixChoices` is used
      * only as a default `choices` value in the corresponding `fixProof` facade method.
@@ -10,7 +11,9 @@ export interface MultiroundProfile {
      * Do not use it inside the implementation, use the `choices` instead.
      */
     defaultProofFixChoices: number;
+
     proofFixPrompt: string;
+    maxPreviousProofVersionsNumber: number;
 }
 
 export interface ModelParams {
@@ -66,6 +69,7 @@ export const multiroundProfileSchema: JSONSchemaType<MultiroundProfile> = {
         maxRoundsNumber: { type: "number" },
         defaultProofFixChoices: { type: "number" },
         proofFixPrompt: { type: "string" },
+        maxPreviousProofVersionsNumber: { type: "number" },
     },
     required: ["maxRoundsNumber", "defaultProofFixChoices", "proofFixPrompt"],
     additionalProperties: false,

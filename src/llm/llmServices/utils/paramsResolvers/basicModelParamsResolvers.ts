@@ -35,6 +35,12 @@ export class BasicMultiroundProfileResolver
     readonly proofFixPrompt = this.resolveParam<string>("proofFixPrompt")
         .default(() => defaultMultiroundProfile.proofFixPrompt)
         .noValidationNeeded();
+
+    readonly maxPreviousProofVersionsNumber = this.resolveParam<number>(
+        "maxPreviousProofVersionsNumber"
+    )
+        .default(() => defaultMultiroundProfile.maxPreviousProofVersionsNumber)
+        .validate(ValidationRules.beNonNegativeNumber);
 }
 
 /**
@@ -42,12 +48,14 @@ export class BasicMultiroundProfileResolver
  * - Multiround is disabled by default.
  * - 1 fix version per proof by default.
  * - Default `proofFixPrompt` includes `${diagnostic}` message.
+ * - The default maximum number of the latest proof versions is not limited.
  */
 export const defaultMultiroundProfile: MultiroundProfile = {
     maxRoundsNumber: 1,
     defaultProofFixChoices: 1,
     proofFixPrompt:
         "Unfortunately, the last proof is not correct. Here is the compiler's feedback: `${diagnostic}`. Please, fix the proof.",
+    maxPreviousProofVersionsNumber: Number.MAX_SAFE_INTEGER,
 };
 
 export class BasicModelParamsResolver<
