@@ -147,6 +147,11 @@
                   "description": "Total length of input and generated tokens, it is determined by the model. For known models, CoqPilot provides a recommended default value (the maximum model context length), but it can be customized for more advanced proof generation.",
                   "default": 4096
                 },
+                "maxContextTheoremsNumber": {
+                  "type": "number",
+                  "description": "Maximum number of context theorems to include in the prompt sent to the OpenAI model as examples for proof generation. Lower values reduce token usage but may decrease the likelihood of generating correct proofs.",
+                  "default": 100
+                },
                 "multiroundProfile": {
                   "type": "object",
                   "properties": {
@@ -184,6 +189,7 @@
                 "systemPrompt": "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'.",
                 "maxTokensToGenerate": 2048,
                 "tokensLimit": 4096,
+                "maxContextTheoremsNumber": 100,
                 "multiroundProfile": {
                   "maxRoundsNumber": 1,
                   "proofFixChoices": 1,
@@ -238,6 +244,11 @@
                   "type": "number",
                   "description": "Total length of input and generated tokens, it is determined by the model. For OpenAI models, tokens limits could be found [here](https://platform.openai.com/docs/models/).",
                   "default": 4096
+                },
+                "maxContextTheoremsNumber": {
+                  "type": "number",
+                  "description": "Maximum number of context theorems to include in the prompt sent to the Grazie model as examples for proof generation. Lower values reduce token usage but may decrease the likelihood of generating correct proofs.",
+                  "default": 100
                 },
                 "multiroundProfile": {
                   "type": "object",
@@ -309,6 +320,11 @@
                   "type": "number",
                   "description": "Total length of input and generated tokens, usually it is determined by the model.",
                   "default": 2048
+                },
+                "maxContextTheoremsNumber": {
+                  "type": "number",
+                  "description": "Maximum number of context theorems to include in the prompt sent to the LM Studio model as examples for proof generation. Lower values reduce token usage but may decrease the likelihood of generating correct proofs.",
+                  "default": 100
                 },
                 "multiroundProfile": {
                   "type": "object",
