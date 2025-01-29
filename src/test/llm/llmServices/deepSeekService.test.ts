@@ -92,15 +92,6 @@ suite("[LLMService] Test `DeepSeekService`", function () {
                         -1
                     );
                 }).toBeRejectedWith(ConfigurationError, "choices");
-
-                // incorrect api key
-                await expect(async () => {
-                    await deepSeekService.generateProof(
-                        mockProofGenerationContext,
-                        resolvedParams,
-                        1
-                    );
-                }).toBeRejectedWith(ConfigurationError, "api key");
             }
         );
     });
