@@ -175,7 +175,7 @@ export const lmStudioUserModelParamsSchema: JSONSchemaType<LMStudioUserModelPara
         additionalProperties: false,
     };
 
-    export const deepSeekUserModelParamsSchema: JSONSchemaType<DeepSeekUserModelParams> =
+export const deepSeekUserModelParamsSchema: JSONSchemaType<DeepSeekUserModelParams> =
     {
         title: "deepSeekModelsParameters",
         type: "object",

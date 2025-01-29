@@ -2,10 +2,10 @@ import { JSONSchemaType } from "ajv";
 import { expect } from "earl";
 
 import {
+    deepSeekUserModelParamsSchema,
     grazieUserModelParamsSchema,
     lmStudioUserModelParamsSchema,
     openAiUserModelParamsSchema,
-    deepSeekUserModelParamsSchema,
     predefinedProofsUserModelParamsSchema,
     userModelParamsSchema,
     userMultiroundProfileSchema,

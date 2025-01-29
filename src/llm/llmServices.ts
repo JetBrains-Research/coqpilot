@@ -1,6 +1,6 @@
 import { illegalState } from "../utils/throwErrors";
-import { DeepSeekService } from "./llmServices/deepSeek/deepSeekService";
 
+import { DeepSeekService } from "./llmServices/deepSeek/deepSeekService";
 import { GrazieService } from "./llmServices/grazie/grazieService";
 import { LLMService } from "./llmServices/llmService";
 import { LMStudioService } from "./llmServices/lmStudio/lmStudioService";

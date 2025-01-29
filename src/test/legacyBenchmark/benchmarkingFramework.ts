@@ -3,6 +3,7 @@ import * as fs from "fs";
 
 import { LLMServices } from "../../llm/llmServices";
 import { isLLMServiceRequestSucceeded } from "../../llm/llmServices/commonStructures/llmServiceRequest";
+import { DeepSeekService } from "../../llm/llmServices/deepSeek/deepSeekService";
 import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
 import { LLMServiceImpl } from "../../llm/llmServices/llmService";
 import { LMStudioService } from "../../llm/llmServices/lmStudio/lmStudioService";
@@ -39,7 +40,6 @@ import { AdditionalFileImport } from "./additionalImports";
 import { InputModelsParams } from "./inputModelsParams";
 import { BenchmarkReportHolder, TheoremProofResult } from "./reportHolder";
 import { consoleLog, consoleLogSeparatorLine } from "./utils/loggingUtils";
-import { DeepSeekService } from "../../llm/llmServices/deepSeek/deepSeekService";
 
 export interface TestBenchmarkOptions extends TestBenchmarkOptionsWithDefaults {
     filePath: string;

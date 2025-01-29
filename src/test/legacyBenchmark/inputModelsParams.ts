@@ -24,6 +24,7 @@ export const onlyAutoModelsParams: InputModelsParams = {
         },
     ],
     lmStudioParams: [],
+    deepSeekParams: [],
 };
 
 export const tacticianModelsParams: InputModelsParams = {
@@ -36,4 +37,5 @@ export const tacticianModelsParams: InputModelsParams = {
         },
     ],
     lmStudioParams: [],
+    deepSeekParams: [],
 };
