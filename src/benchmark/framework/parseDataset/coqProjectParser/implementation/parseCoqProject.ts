@@ -4,7 +4,7 @@ import { CoqLspError } from "../../../../../coqLsp/coqLspTypes";
 
 import { createSourceFileEnvironment } from "../../../../../core/inspectSourceFile";
 
-import { asErrorOrRethrow } from "../../../../../utils/errorsUtils";
+import { unexpectedError } from "../../../../../utils/throwErrors";
 import { Uri } from "../../../../../utils/uri";
 import { BenchmarkingLogger } from "../../../logging/benchmarkingLogger";
 import { TargetType } from "../../../structures/benchmarkingCore/completionGenerationTask";
@@ -17,6 +17,7 @@ import {
     TheoremData,
     serializeTheoremData,
 } from "../../../structures/parsedCoqFile/theoremData";
+import { FailFastAbortError } from "../../../utils/asyncUtils/abortUtils";
 import {
     mappedObjectValues,
     packIntoMappedObject,
@@ -254,13 +255,16 @@ export namespace ParseCoqProjectImpl {
             );
             return serializeGoal(goal);
         } catch (err) {
-            const coqLspError = asErrorOrRethrow(err) as CoqLspError;
-            const stack =
-                coqLspError.stack === undefined ? "" : `\n${coqLspError.stack}`;
-            logger.error(
-                `Failed to retrieve target goal at point: "${coqLspError.message}" at ${startPosition}, "${serializedParsedFile.filePath}"${stack}`
-            );
-            throw coqLspError;
+            if (err instanceof CoqLspError) {
+                const stack = err.stack === undefined ? "" : `\n${err.stack}`;
+                logger.error(
+                    `Failed to retrieve target goal at point: "${err.message}" at ${startPosition}, "${serializedParsedFile.filePath}"${stack}`
+                );
+                throw err;
+            } else if (err instanceof FailFastAbortError) {
+                throw err;
+            }
+            unexpectedError(err);
         }
     }
 }

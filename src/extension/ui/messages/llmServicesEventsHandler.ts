@@ -15,8 +15,10 @@ import { LLMServiceImpl } from "../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
 
 import { EventLogger } from "../../../logging/eventLogger";
+import { buildErrorCompleteLog } from "../../../utils/errorsUtils";
 import { stringifyAnyValue } from "../../../utils/printers";
 import { SimpleSet } from "../../../utils/simpleSet";
+import { illegalState } from "../../../utils/throwErrors";
 import { toSettingName } from "../../settings/settingsValidationError";
 
 import {
@@ -164,8 +166,10 @@ function reactToRequestFailedEvent(
                 llmServiceError instanceof GenerationFailedError
             )
         ) {
-            throw Error(
-                `\`llmServiceError\` of the received ${LLMServiceImpl.requestFailedEvent} event data is expected to be either a \` ConfigurationError\`, \`RemoteConnectionError\`, or \`GenerationFailedError\`, but got: "${llmServiceError}"`
+            illegalState(
+                `\`llmServiceError\` of the received ${LLMServiceImpl.requestFailedEvent} event data `,
+                `is expected to be either a \` ConfigurationError\`, \`RemoteConnectionError\`, or \`GenerationFailedError\`, `,
+                `but got: ${buildErrorCompleteLog(llmServiceError)}`
             );
         }
 
@@ -210,12 +214,12 @@ function parseLLMServiceRequestEvent<T extends LLMServiceRequest>(
     errorMessage: string
 ): [T, LLMServiceUIState] {
     if (!checkType(data)) {
-        throw Error(`${errorMessage}, but data = ${stringifyAnyValue(data)}`);
+        illegalState(`${errorMessage}, but data = ${stringifyAnyValue(data)}`);
     }
     const serviceName = data.llmService.serviceName;
     const uiState = llmServiceToUIState.get(serviceName);
     if (uiState === undefined) {
-        throw Error(`no UI state for \`${serviceName}\``);
+        illegalState(`no UI state for \`${serviceName}\``);
     }
     return [data, uiState];
 }

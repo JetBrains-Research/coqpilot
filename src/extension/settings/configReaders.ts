@@ -24,6 +24,7 @@ import { ContextTheoremsRanker } from "../../core/contextTheoremRanker/contextTh
 
 import { AjvMode, buildAjv } from "../../utils/ajvErrorsHandling";
 import { stringifyAnyValue, stringifyDefinedValue } from "../../utils/printers";
+import { illegalState, throwError } from "../../utils/throwErrors";
 import {
     EditorMessages,
     showMessageToUserWithSettingsHint,
@@ -39,7 +40,7 @@ export function parseCoqLspServerPath(): string {
     const workspaceConfig = workspace.getConfiguration(pluginId);
     const coqLspServerPath = workspaceConfig.get("coqLspServerPath");
     if (typeof coqLspServerPath !== "string") {
-        throw new Error("coqLspServerPath is not properly configured");
+        throwError("`coqLspServerPath` is not properly configured");
     }
     return coqLspServerPath;
 }
@@ -155,14 +156,16 @@ function validateAndParseJson<T>(
     if (!validate(instance)) {
         const settingsName = targetClassSchema.title;
         if (settingsName === undefined) {
-            throw Error(
-                `specified \`targetClassSchema\` does not have \`title\`; while resolving json: ${stringifyAnyValue(json)}`
+            illegalState(
+                "specified `targetClassSchema` does not have `title`; ",
+                `while resolving json: ${stringifyAnyValue(json)}`
             );
         }
         const ajvErrors = validate.errors as DefinedError[];
         if (ajvErrors === null || ajvErrors === undefined) {
-            throw Error(
-                `validation with Ajv failed, but \`validate.errors\` are not defined; while resolving json: ${stringifyAnyValue(json)}`
+            illegalState(
+                "validation with Ajv failed, but `validate.errors` are not defined; ",
+                `while resolving json: ${stringifyAnyValue(json)}`
             );
         }
         throw new SettingsValidationError(

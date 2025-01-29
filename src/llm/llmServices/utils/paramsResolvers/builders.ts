@@ -2,6 +2,7 @@ import {
     stringifyAnyValue,
     stringifyDefinedValue,
 } from "../../../../utils/printers";
+import { illegalState, unreachable } from "../../../../utils/throwErrors";
 
 import { AbstractSingleParamResolver, PropertyKey } from "./abstractResolvers";
 import { SingleParamResolutionResult } from "./abstractResolvers";
@@ -214,8 +215,8 @@ class SingleParamResolverBuilderImpl<InputType, T>
         paramMessage?: Message<InputType>
     ): SingleParamResolverBuilder<InputType, T> {
         if (this.overrider !== undefined) {
-            throw new Error(
-                `parameter \'${String(this.inputParamKey)}\'is overriden multiple times`
+            illegalState(
+                `parameter \`${String(this.inputParamKey)}\` is overriden multiple times`
             );
         }
         this.overrider = {
@@ -399,8 +400,9 @@ class SingleParamResolverImpl<InputType, T> extends AbstractSingleParamResolver<
         } else {
             // unfortunately, this case is unreachable: TypeScript does not provide the way to check that `userValue` is of the `T` type indeed
             // TODO: actually, it does: the type validator should be passed and used (for example, Ajv one)
-            throw Error(
-                `cast of \`any\` to generic \`T\` type should always succeed, value = ${stringifyAnyValue(userValue)} for ${this.quotedName()} parameter`
+            unreachable(
+                "cast of `any` to generic `T` type should always succeed, ",
+                `value = ${stringifyAnyValue(userValue)} for ${this.quotedName()} parameter`
             );
         }
     }
@@ -422,8 +424,9 @@ class SingleParamResolverImpl<InputType, T> extends AbstractSingleParamResolver<
             // no checks and logs are needed, just return the mock value
             result.resultValue = valueToOverrideWith;
             if (valueToOverrideWith === undefined) {
-                throw Error(
-                    `${this.quotedName()} is expected to be a mock value, but its builder resolved with "undefined"`
+                illegalState(
+                    `${this.quotedName()} is expected to be a mock value, `,
+                    "but its builder resolves with `undefined`"
                 );
             }
             return [valueToOverrideWith, true];

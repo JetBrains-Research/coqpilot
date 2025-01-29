@@ -11,6 +11,7 @@ import { PredefinedProofsUserModelParams } from "../../../llm/userModelParams";
 
 import { EventLogger } from "../../../logging/eventLogger";
 import { delay } from "../../../utils/delay";
+import { throwError } from "../../../utils/throwErrors";
 import { timeZero } from "../../../utils/time";
 import { withLLMService } from "../../commonTestFunctions/withLLMService";
 import { testModelId } from "../llmSpecificTestUtils/constants";
@@ -322,12 +323,7 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                 );
                 const cursedParams: PredefinedProofsModelParams = {
                     ...resolvedParams,
-                    tactics: [
-                        "auto.",
-                        () => {
-                            throw Error("a curse");
-                        },
-                    ] as any[],
+                    tactics: ["auto.", () => throwError("a curse")] as any[],
                 };
                 await predefinedProofsService.generateProof(
                     proofGenerationContext,

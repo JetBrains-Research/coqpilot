@@ -50,7 +50,7 @@ export class PredefinedProofsService extends LLMServiceImpl<
                 const tactics = params.tactics;
                 if (choices > tactics.length) {
                     throw new ConfigurationError(
-                        `requested ${choices} choices, there are only ${tactics.length} predefined tactics available`
+                        `requested ${choices} choices, but there are only ${tactics.length} predefined tactics available`
                     );
                 }
             },
@@ -150,13 +150,20 @@ class PredefinedProofsServiceInternal extends LLMServiceInternal<
         );
     }
 
-    generateFromChatImpl(
+    async generateFromChatImpl(
         _analyzedChat: AnalyzedChatHistory,
         _params: PredefinedProofsModelParams,
         _choices: number
     ): Promise<GeneratedRawContent> {
-        throw new ConfigurationError(
-            "`PredefinedProofsService` does not support generation from chat"
+        this.unsupportedMethod(
+            "`PredefinedProofsService` does not support generation from chat",
+            ProofGenerationType.NO_CHAT,
+            _params,
+            _choices
         );
+        return {
+            items: [],
+            tokensSpentInTotal: zeroTokens(),
+        };
     }
 }

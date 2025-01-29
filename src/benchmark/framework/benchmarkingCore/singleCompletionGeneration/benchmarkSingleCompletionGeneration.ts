@@ -211,6 +211,8 @@ export async function benchmarkSingleCompletionGeneration<
                 }
             );
         } else {
+            // Potential bug (!): all unexpected errors should be wrapped into
+            // IllegalsStateError - it should be checked here and performed
             throw error;
         }
     }

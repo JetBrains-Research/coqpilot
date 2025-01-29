@@ -135,13 +135,13 @@ export async function generateCompletion(
         console.error(
             `Error occurred during completion generation:\n${buildErrorCompleteLog(error)}`
         );
-        if (error instanceof CoqLspTimeoutError) {
+        if (error instanceof CompletionAbortError) {
+            throw error;
+        } else if (error instanceof CoqLspTimeoutError) {
             return new FailureGenerationResult(
                 FailureGenerationStatus.TIMEOUT_EXCEEDED,
                 error.message
             );
-        } else if (error instanceof CompletionAbortError) {
-            throw error;
         } else {
             return new FailureGenerationResult(
                 FailureGenerationStatus.ERROR_OCCURRED,

@@ -11,6 +11,7 @@ import { OpenAiService } from "../llm/llmServices/openai/openAiService";
 import { PredefinedProofsService } from "../llm/llmServices/predefinedProofs/predefinedProofsService";
 
 import { EventLogger, Severity } from "../logging/eventLogger";
+import { illegalState } from "../utils/throwErrors";
 
 import VSCodeLogWriter from "./ui/vscodeLogWriter";
 import { pluginId } from "./utils/pluginId";
@@ -76,7 +77,7 @@ export class PluginContext implements Disposable {
             case "debug":
                 return Severity.DEBUG;
             default:
-                throw Error(`unknown logging verbosity: ${verbosity}`);
+                illegalState(`unknown logging verbosity: ${verbosity}`);
         }
     }
 

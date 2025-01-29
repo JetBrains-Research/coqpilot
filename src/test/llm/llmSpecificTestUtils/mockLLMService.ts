@@ -28,6 +28,7 @@ import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { UserModelParams } from "../../../llm/userModelParams";
 
 import { EventLogger } from "../../../logging/eventLogger";
+import { throwError } from "../../../utils/throwErrors";
 
 export interface MockLLMUserModelParams extends UserModelParams {
     proofsToGenerate: string[];
@@ -149,7 +150,7 @@ export class MockLLMService extends LLMServiceImpl<
      * Workers are meant to be any external entities that would like to separate their behaviour.
      */
     throwErrorOnNextGeneration(error: Error, workerId: number = 0) {
-        this.internal.throwErrorOnNextGenerationMap.set(workerId, error);
+        this.internal.errorToThrowOnNextGenerationMap.set(workerId, error);
     }
 
     /**
@@ -240,7 +241,7 @@ class MockLLMServiceInternal extends LLMServiceInternal<
     MockLLMGeneratedProof,
     MockLLMServiceInternal
 > {
-    throwErrorOnNextGenerationMap: Map<number, Error | undefined> = new Map();
+    errorToThrowOnNextGenerationMap: Map<number, Error | undefined> = new Map();
 
     constructGeneratedProof(
         rawProof: GeneratedRawContentItem,
@@ -280,14 +281,14 @@ class MockLLMServiceInternal extends LLMServiceInternal<
             chat
         );
 
-        const throwError = this.throwErrorOnNextGenerationMap.get(
+        const errorToThrow = this.errorToThrowOnNextGenerationMap.get(
             params.workerId
         );
-        if (throwError !== undefined) {
+        if (errorToThrow !== undefined) {
             try {
-                throw throwError;
+                throw errorToThrow;
             } finally {
-                this.throwErrorOnNextGenerationMap.set(
+                this.errorToThrowOnNextGenerationMap.set(
                     params.workerId,
                     undefined
                 );
@@ -313,7 +314,7 @@ class MockLLMServiceInternal extends LLMServiceInternal<
 
         const proofsLength = params.proofsToGenerate.length - skipFirstNProofs;
         if (choices > proofsLength) {
-            throw Error(
+            throwError(
                 `\`choices = ${choices}\` > \`available proofs length = ${proofsLength}\``
             );
         }

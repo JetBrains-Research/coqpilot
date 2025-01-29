@@ -18,6 +18,8 @@ import { BasicModelParamsResolver } from "../../../llm/llmServices/utils/paramsR
 import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { UserModelParams } from "../../../llm/userModelParams";
 
+import { unsupported } from "../../../utils/throwErrors";
+
 /**
  * Mock implementation that always throws on any proof-generation call.
  * Its only mission is to exist: for example, it can be useful to build mock `LLMServiceRequest`-s.
@@ -60,7 +62,7 @@ export class DummyLLMService extends LLMServiceImpl<
         _choices: number,
         _metadataHolder: ProofGenerationMetadataHolder | undefined
     ): Promise<string[]> {
-        throw Error("I'm a teapot");
+        unsupported("I'm a teapot");
     }
 
     generateProof(
@@ -69,7 +71,7 @@ export class DummyLLMService extends LLMServiceImpl<
         _choices: number,
         _metadataHolder: ProofGenerationMetadataHolder | undefined
     ): Promise<DummyGeneratedProof[]> {
-        throw Error("I'm a teapot");
+        unsupported("I'm a teapot");
     }
 }
 
@@ -100,7 +102,7 @@ export class DummyGeneratedProof extends GeneratedProofImpl<
         _choices: number,
         _metadataHolder: ProofGenerationMetadataHolder | undefined
     ): Promise<DummyGeneratedProof[]> {
-        throw Error("I'm a teapot");
+        unsupported("I'm a teapot");
     }
 }
 
@@ -116,7 +118,7 @@ class DummyLLMServiceInternal extends LLMServiceInternal<
         _modelParams: ModelParams,
         _previousProofVersions?: ProofVersion[] | undefined
     ): DummyGeneratedProof {
-        throw Error("I'm a teapot");
+        unsupported("I'm a teapot");
     }
 
     async generateFromChatImpl(
@@ -124,6 +126,6 @@ class DummyLLMServiceInternal extends LLMServiceInternal<
         _params: ModelParams,
         _choices: number
     ): Promise<GeneratedRawContent> {
-        throw Error("I'm a teapot");
+        unsupported("I'm a teapot");
     }
 }

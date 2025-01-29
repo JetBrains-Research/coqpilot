@@ -7,6 +7,7 @@ import {
 import { LanguageClient, ServerOptions } from "vscode-languageclient/node";
 
 import { EventLogger } from "../logging/eventLogger";
+import { getErrorMessage } from "../utils/errorsUtils";
 
 import { CoqLspClientConfig, CoqLspServerConfig } from "./coqLspConfig";
 
@@ -66,10 +67,12 @@ export class CoqLspConnector extends LanguageClient {
         await super
             .start()
             .then()
-            .catch((error) => {
-                let emsg = error.toString();
-                this.eventLogger?.log("coq-lsp-start-error", emsg);
-                throw error;
+            .catch((e) => {
+                this.eventLogger?.log(
+                    "coq-lsp-start-error",
+                    getErrorMessage(e)
+                );
+                throw e;
             });
     }
 

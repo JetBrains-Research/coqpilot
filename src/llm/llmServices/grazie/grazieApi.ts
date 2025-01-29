@@ -1,7 +1,9 @@
 import axios from "axios";
 import { ResponseType } from "axios";
 
+import { buildErrorCompleteLog } from "../../../utils/errorsUtils";
 import { toUnformattedJsonString } from "../../../utils/printers";
+import { illegalState, throwError } from "../../../utils/throwErrors";
 import { DebugLogsWrappers } from "../llmServiceInternal";
 import { GrazieModelParams } from "../modelParams";
 
@@ -95,13 +97,16 @@ export class GrazieApi {
             const versionData = packageJson.default || packageJson;
 
             if (!versionData || !versionData.version) {
-                throw new Error(
-                    "Not able to retrieve app version from package.json"
+                illegalState(
+                    "not able to retrieve app version from `package.json`"
                 );
             }
             return versionData.version;
         } catch (error) {
-            throw new Error("Error loading package.json: " + error);
+            throwError(
+                "Error occurred during loading `package.json`:\n",
+                buildErrorCompleteLog(error)
+            );
         }
     }
 
@@ -139,11 +144,7 @@ export class GrazieApi {
                 const messageData = JSON.parse(validJSON);
                 messages.push(messageData.current);
             } else {
-                throw Error(
-                    "Unexpected chunk: " +
-                        tokenWrapped +
-                        ". Please report this error."
-                );
+                illegalState(`Unexpected chunk: ${tokenWrapped}`);
             }
         });
 

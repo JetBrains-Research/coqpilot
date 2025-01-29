@@ -6,6 +6,8 @@ import {
     VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
 
+import { buildErrorCompleteLog } from "../utils/errorsUtils";
+
 export type ProofGoal = Goal<PpString>;
 
 export interface Hyp<Pp> {
@@ -159,9 +161,11 @@ export class CoqLspError extends Error {
         this.name = "CoqLspError";
     }
 
-    static unknownError(): CoqLspError {
+    static unknownError(err?: any): CoqLspError {
+        const errorLog =
+            err === undefined ? "" : `:\n${buildErrorCompleteLog(err)}`;
         return new CoqLspError(
-            "Unknown CoqLSP error, please report this issue"
+            `Unknown CoqLSP error, please report this issue${errorLog}`
         );
     }
 }

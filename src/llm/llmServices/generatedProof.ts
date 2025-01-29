@@ -1,3 +1,4 @@
+import { invariantFailed } from "../../utils/throwErrors";
 import { ConfigurationError } from "../llmServiceErrors";
 import { ProofGenerationContext } from "../proofGenerationContext";
 import { UserModelParams } from "../userModelParams";
@@ -106,8 +107,10 @@ export abstract class GeneratedProofImpl<
         this.maxRoundsNumber =
             this.modelParams.multiroundProfile.maxRoundsNumber;
         if (this.maxRoundsNumber < this.proofVersions.length) {
-            throw Error(
-                `proof cannot be instantiated: max rounds number (${this.maxRoundsNumber}) was already reached`
+            invariantFailed(
+                "`GeneratedProof`",
+                "proof cannot be instantiated: max rounds number ",
+                `(${this.maxRoundsNumber}) has been already reached`
             );
         }
     }
