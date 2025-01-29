@@ -3,4 +3,5 @@ export enum LLMServiceIdentifier {
     OPENAI = "Open AI",
     GRAZIE = "Grazie",
     LMSTUDIO = "LM Studio",
+    DEEPSEEK = "DeepSeek",
 }

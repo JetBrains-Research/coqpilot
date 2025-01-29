@@ -67,6 +67,7 @@ export interface ModelsParams {
     openAiParams: OpenAiModelParams[];
     grazieParams: GrazieModelParams[];
     lmStudioParams: LMStudioModelParams[];
+    deepSeekParams: DeepSeekModelParams[];
 }
 
 export const multiroundProfileSchema: JSONSchemaType<MultiroundProfile> = {

@@ -10,7 +10,8 @@ export type LLMServiceStringIdentifier =
     | "predefined"
     | "openai"
     | "grazie"
-    | "lmstudio";
+    | "lmstudio"
+    | "deepseek";
 
 export type CorrespondingInputParams<T extends LLMServiceStringIdentifier> =
     T extends "predefined"
@@ -20,8 +21,10 @@ export type CorrespondingInputParams<T extends LLMServiceStringIdentifier> =
           : T extends "grazie"
             ? InputBenchmarkingModelParams.GrazieParams
             : T extends "lmstudio"
-              ? InputBenchmarkingModelParams.LMStudioParams
-              : never;
+              ? InputBenchmarkingModelParams.DeepSeekParams
+              : T extends "deepseek"
+                ? InputBenchmarkingModelParams.LMStudioParams
+                : never;
 
 export class BenchmarkingBundle {
     constructor() {}
@@ -46,6 +49,8 @@ export class BenchmarkingBundle {
                 return LLMServiceIdentifier.GRAZIE;
             case "lmstudio":
                 return LLMServiceIdentifier.LMSTUDIO;
+            case "deepseek":
+                return LLMServiceIdentifier.DEEPSEEK;
         }
     }
 }

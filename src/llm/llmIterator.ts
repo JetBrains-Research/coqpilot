@@ -66,6 +66,12 @@ export class LLMSequentialIterator
                 services.lmStudioService,
                 "lm-studio"
             ),
+            ...this.createLLMServiceHooks(
+                proofGenerationContext,
+                modelsParams.deepSeekParams,
+                services.deepSeekService,
+                "deepseek"
+            ),
         ];
     }
 

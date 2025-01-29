@@ -6,11 +6,13 @@ import { LLMService } from "../../llm/llmServices/llmService";
 import { ModelParams, ModelsParams } from "../../llm/llmServices/modelParams";
 import { SingleParamResolutionResult } from "../../llm/llmServices/utils/paramsResolvers/abstractResolvers";
 import {
+    DeepSeekUserModelParams,
     GrazieUserModelParams,
     LMStudioUserModelParams,
     OpenAiUserModelParams,
     PredefinedProofsUserModelParams,
     UserModelParams,
+    deepSeekUserModelParamsSchema,
     grazieUserModelParamsSchema,
     lmStudioUserModelParamsSchema,
     openAiUserModelParamsSchema,
@@ -108,12 +110,21 @@ export function readAndValidateUserModelsParams(
                 jsonSchemaValidator
             )
         );
+    const deepSeekUserParams: DeepSeekUserModelParams[] =
+        config.deepSeekModelsParameters.map((params: any) =>
+            validateAndParseJson(
+                params,
+                deepSeekUserModelParamsSchema,
+                jsonSchemaValidator
+            )
+        );
 
     validateIdsAreUnique([
         ...predefinedProofsUserParams,
         ...openAiUserParams,
         ...grazieUserParams,
         ...lmStudioUserParams,
+        ...deepSeekUserParams,
     ]);
     validateApiKeysAreProvided(openAiUserParams, grazieUserParams);
 
@@ -133,6 +144,10 @@ export function readAndValidateUserModelsParams(
         lmStudioParams: resolveParamsAndShowResolutionLogs(
             llmServices.lmStudioService,
             lmStudioUserParams
+        ),
+        deepSeekParams: resolveParamsAndShowResolutionLogs(
+            llmServices.deepSeekService,
+            deepSeekUserParams
         ),
     };
 

@@ -174,3 +174,17 @@ export const lmStudioUserModelParamsSchema: JSONSchemaType<LMStudioUserModelPara
         required: ["modelId", "temperature", "port"],
         additionalProperties: false,
     };
+
+    export const deepSeekUserModelParamsSchema: JSONSchemaType<DeepSeekUserModelParams> =
+    {
+        title: "deepSeekModelsParameters",
+        type: "object",
+        properties: {
+            modelName: { type: "string" },
+            temperature: { type: "number" },
+            apiKey: { type: "string" },
+            ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
+        },
+        required: ["modelId", "modelName", "temperature", "apiKey"],
+        additionalProperties: false,
+    };

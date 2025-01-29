@@ -1,4 +1,5 @@
 import {
+    DeepSeekUserModelParams,
     GrazieUserModelParams,
     LMStudioUserModelParams,
     OpenAiUserModelParams,
@@ -22,4 +23,6 @@ export namespace InputBenchmarkingModelParams {
     export interface GrazieParams extends GrazieUserModelParams, Params {}
 
     export interface LMStudioParams extends LMStudioUserModelParams, Params {}
+
+    export interface DeepSeekParams extends DeepSeekUserModelParams, Params {}
 }

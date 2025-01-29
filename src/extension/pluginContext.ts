@@ -15,6 +15,7 @@ import { illegalState } from "../utils/throwErrors";
 
 import VSCodeLogWriter from "./ui/vscodeLogWriter";
 import { pluginId } from "./utils/pluginId";
+import { DeepSeekService } from "../llm/llmServices/deepSeek/deepSeekService";
 
 export class PluginContext implements Disposable {
     readonly eventLogger: EventLogger = new EventLogger();
@@ -67,6 +68,12 @@ export class PluginContext implements Disposable {
             path.join(this.llmServicesLogsDir, "lmstudio-logs.txt"),
             this.llmServicesSetup.debugLogs
         ),
+        deepSeekService: new DeepSeekService(
+            this.llmServicesSetup.eventLogger,
+            this.llmServicesSetup.errorsHandlingMode,
+            path.join(this.llmServicesLogsDir, "deepseek-logs.txt"),
+            this.llmServicesSetup.debugLogs
+        )
     };
 
     private parseLoggingVerbosity(config: WorkspaceConfiguration): Severity {

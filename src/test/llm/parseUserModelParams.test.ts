@@ -5,6 +5,7 @@ import {
     grazieUserModelParamsSchema,
     lmStudioUserModelParamsSchema,
     openAiUserModelParamsSchema,
+    deepSeekUserModelParamsSchema,
     predefinedProofsUserModelParamsSchema,
     userModelParamsSchema,
     userMultiroundProfileSchema,
@@ -78,6 +79,12 @@ suite("Parse `UserModelParams` from JSON test", () => {
         ...validUserModelParamsCompelete,
         temperature: 36.6,
         port: 555,
+    };
+    const validDeepSeekUserModelParamsComplete = {
+        ...validUserModelParamsCompelete,
+        modelName: "deepseek-chat",
+        temperature: 36.6,
+        apiKey: "api-key",
     };
 
     test("Validate `UserMultiroundProfile`", () => {
@@ -170,6 +177,13 @@ suite("Parse `UserModelParams` from JSON test", () => {
         isValidJSON(
             validLMStudioUserModelParamsComplete,
             lmStudioUserModelParamsSchema
+        );
+    });
+
+    test("Validate `DeepSeekUserModelParams`", () => {
+        isValidJSON(
+            validDeepSeekUserModelParamsComplete,
+            deepSeekUserModelParamsSchema
         );
     });
 });

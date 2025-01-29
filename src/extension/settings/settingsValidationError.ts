@@ -34,7 +34,8 @@ export function toSettingName(llmService: LLMService<any, any>): string {
         () => "predefinedProofs",
         () => "openAi",
         () => "grazie",
-        () => "lmStudio"
+        () => "lmStudio",
+        () => "deepSeek"
     );
     return `${pluginId}.${serviceNameInSettings}ModelsParameters`;
 }

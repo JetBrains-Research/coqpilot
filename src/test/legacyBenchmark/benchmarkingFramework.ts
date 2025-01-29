@@ -39,6 +39,7 @@ import { AdditionalFileImport } from "./additionalImports";
 import { InputModelsParams } from "./inputModelsParams";
 import { BenchmarkReportHolder, TheoremProofResult } from "./reportHolder";
 import { consoleLog, consoleLogSeparatorLine } from "./utils/loggingUtils";
+import { DeepSeekService } from "../../llm/llmServices/deepSeek/deepSeekService";
 
 export interface TestBenchmarkOptions extends TestBenchmarkOptionsWithDefaults {
     filePath: string;
@@ -461,6 +462,7 @@ async function prepareForBenchmarkCompletions(
         grazieService: new GrazieService(eventLogger),
         predefinedProofsService: new PredefinedProofsService(eventLogger),
         lmStudioService: new LMStudioService(eventLogger),
+        deepSeekService: new DeepSeekService(eventLogger),
     };
     const processEnvironment: ProcessEnvironment = {
         coqProofChecker: coqProofChecker,
@@ -603,6 +605,9 @@ function resolveInputModelsParametersOrThrow(
         ),
         lmStudioParams: inputModelsParams.lmStudioParams.map((inputParams) =>
             resolveParametersOrThrow(llmServices.lmStudioService, inputParams)
+        ),
+        deepSeekParams: inputModelsParams.deepSeekParams.map((inputParams) =>
+            resolveParametersOrThrow(llmServices.deepSeekService, inputParams)
         ),
     };
 }
