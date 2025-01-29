@@ -1,6 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
 
+import { illegalState } from "../../../../utils/throwErrors";
+
 export function getRootDir(): string {
     const relativeRoot = path.join(__dirname, "/../../../../../");
     return path.resolve(relativeRoot);
@@ -121,6 +123,22 @@ export function clearDirectory(dirPath: string) {
     createDirectory(true, dirPath);
 }
 
+export function provideEmptyDirectoryOrThrow(
+    dirPath: string,
+    dirNameDescription: string,
+    throwError: (errorMessage: string) => never
+) {
+    if (exists(dirPath)) {
+        if (!checkDirectoryIsEmpty(dirPath)) {
+            throwError(
+                `${dirNameDescription} directory should be empty: "${dirPath}"`
+            );
+        }
+    } else {
+        createDirectory(true, dirPath);
+    }
+}
+
 export type FileCreationModeOnExisting = "throw" | "clear" | "return";
 
 export function createFileWithParentDirectories(
@@ -130,7 +148,7 @@ export function createFileWithParentDirectories(
     if (fs.existsSync(filePath)) {
         switch (mode) {
             case "throw":
-                throw Error(`failed to create ${filePath}: it already exists`);
+                illegalState(`failed to create ${filePath}: it already exists`);
             case "clear":
                 clearFile(filePath);
                 return;
@@ -203,7 +221,7 @@ function listFiles(
     predicate: (filePath: string) => boolean
 ): string[] {
     if (depth !== undefined && depth < 0) {
-        throw Error(`Files listing depth should be non-negative: ${depth}`);
+        illegalState(`Files listing depth should be non-negative: ${depth}`);
     }
     let resultFilePaths: string[] = [];
 

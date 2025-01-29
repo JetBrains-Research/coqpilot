@@ -14,6 +14,5 @@ export class ExperimentResults {
     }
 
     // TODO: add convenient getters
-
-    // TODO: add proper JSON serialization-deserialization
+    // TODO: add proper JSON deserialization
 }

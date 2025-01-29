@@ -1,4 +1,4 @@
-import { colorize } from "./colorLogging";
+import { colorize } from "../../../utils/colorLogging";
 
 /**
  * Unlike `stdout`, writing to `stderr` is not usually suppressed, for example, by Mocha tests.

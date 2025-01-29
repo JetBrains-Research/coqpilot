@@ -3,6 +3,7 @@ import { CompletionContext } from "../../completionGenerationContext";
 import { ContextTheoremsRanker } from "../contextTheoremsRanker";
 
 export class RandomContextTheoremsRanker implements ContextTheoremsRanker {
+    readonly type = "random";
     readonly needsUnwrappedNotations = false;
 
     private shuffleArray(array: any[]) {

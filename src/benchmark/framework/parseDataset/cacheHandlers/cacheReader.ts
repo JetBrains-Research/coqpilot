@@ -5,6 +5,7 @@ import {
     buildAjv,
     failedAjvValidatorErrorsAsString,
 } from "../../../../utils/ajvErrorsHandling";
+import { buildErrorCompleteLog } from "../../../../utils/errorsUtils";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
 import { deserializeCodeElementRange } from "../../structures/common/codeElementPositions";
@@ -110,7 +111,7 @@ function readCachedCoqFile(
         return cachedCoqFile;
     } catch (e) {
         logger.error(
-            `Failed to parse a cache file "${cachedFilePath}", bad format: ${e as Error}`
+            `Failed to parse a cache file "${cachedFilePath}", bad format:\n${buildErrorCompleteLog(e)}`
         );
         return undefined;
     }

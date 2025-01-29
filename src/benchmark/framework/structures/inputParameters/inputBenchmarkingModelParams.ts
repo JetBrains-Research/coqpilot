@@ -6,7 +6,7 @@ import {
     UserModelParams,
 } from "../../../../llm/userModelParams";
 
-export type RankerType = "distance" | "random" | "jaccardIndex";
+import { RankerType } from "../../../../core/contextTheoremRanker/contextTheoremsRanker";
 
 export namespace InputBenchmarkingModelParams {
     export interface Params extends UserModelParams {

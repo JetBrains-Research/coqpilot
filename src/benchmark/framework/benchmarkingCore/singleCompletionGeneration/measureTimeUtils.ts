@@ -1,10 +1,4 @@
-import { GenerationTokens } from "../../../../llm/llmServices/commonStructures/generationTokens";
-
-import {
-    CompletionGenerationTime,
-    MeasuredProof,
-} from "../../structures/benchmarkingResults/benchmarkedItem";
-import { LengthMetrics } from "../../structures/common/measureStructures";
+import { CompletionGenerationTime } from "../../structures/benchmarkingResults/benchmarkedItem";
 
 export async function measureElapsedMillis<T>(
     block: () => Promise<T>
@@ -12,14 +6,6 @@ export async function measureElapsedMillis<T>(
     const timeMark = new TimeMark();
     const result = await block();
     return [result, timeMark.measureElapsedMillis()];
-}
-
-export function measureLength(proof: string): LengthMetrics {
-    return {
-        inSymbols: proof.length,
-        inSteps: proof.split(".").length, // TODO: check and perform more accurately
-        inTokens: undefined, // TODO
-    };
 }
 
 export class CompletionGenerationTimeImpl implements CompletionGenerationTime {
@@ -37,13 +23,19 @@ export class CompletionGenerationTimeImpl implements CompletionGenerationTime {
     }
 }
 
-export class MeasuredProofImpl implements MeasuredProof {
-    constructor(
-        readonly asString: string,
-        readonly tokensSpent: GenerationTokens
-    ) {}
-
-    readonly length = measureLength(this.asString);
+/**
+ * Modifies and returns `totalTime`.
+ */
+export function addToTotalTime(
+    totalTime: CompletionGenerationTime,
+    otherTime: CompletionGenerationTime
+): CompletionGenerationTime {
+    totalTime.proofsGenerationMillis += otherTime.proofsGenerationMillis;
+    totalTime.proofsValidationMillis =
+        (totalTime.proofsValidationMillis ?? 0) +
+        (otherTime.proofsValidationMillis ?? 0);
+    totalTime.totalMillis += otherTime.totalMillis;
+    return totalTime;
 }
 
 export class TimeMark {

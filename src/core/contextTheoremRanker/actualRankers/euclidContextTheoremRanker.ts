@@ -10,6 +10,7 @@ import { goalAsTheoremString } from "../utils/tokenUtils";
  *
  */
 export class EuclidContextTheoremsRanker implements ContextTheoremsRanker {
+    readonly type = "euclid";
     readonly needsUnwrappedNotations = true;
 
     rankContextTheorems(

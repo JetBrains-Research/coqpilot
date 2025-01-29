@@ -23,6 +23,10 @@ export class CoqProofChecker {
         private eventLogger?: EventLogger
     ) {}
 
+    /**
+     * _Note:_ current implementation allows `proofs` to have duplicates,
+     * returning duplicate `ProofCheckResult`-s for them.
+     */
     async checkProofs(
         fileUri: Uri,
         documentVersion: number,
@@ -86,7 +90,7 @@ export class CoqProofChecker {
             if (goalsResult.err) {
                 this.eventLogger?.log(
                     "new-proof-check",
-                    `Checking proog: ${proof}, goalsResult: ${goalsResult.val.message}`
+                    `Checking proof: ${proof}, goalsResult: ${goalsResult.val.message}`
                 );
             }
 

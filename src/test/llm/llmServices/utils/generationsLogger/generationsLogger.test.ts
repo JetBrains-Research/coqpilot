@@ -21,6 +21,7 @@ import {
     LLMServiceRequestFailed,
     LLMServiceRequestSucceeded,
 } from "../../../../../llm/llmServices/commonStructures/llmServiceRequest";
+import { ProofGenerationType } from "../../../../../llm/llmServices/commonStructures/proofGenerationType";
 import {
     ModelParams,
     OpenAiModelParams,
@@ -154,6 +155,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
         const llmService = new DummyLLMService(generationsLogger);
         const mockRequest: LLMServiceRequest = {
             llmService: llmService,
+            proofGenerationType: ProofGenerationType.CHAT_BASED,
             params: params,
             choices: mockChoices,
             analyzedChat: analyzedMockChat,
@@ -298,7 +300,13 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
                 )
             ).toThrow(Error);
 
-            class DummyLLMServiceError extends LLMServiceError {}
+            class DummyLLMServiceError extends LLMServiceError {
+                constructor() {
+                    super("dummy");
+                    Object.setPrototypeOf(this, new.target.prototype);
+                    this.name = "DummyLLMServiceError";
+                }
+            }
             expect(() =>
                 generationsLogger.logGenerationFailed(
                     failed(mockRequest, new DummyLLMServiceError())

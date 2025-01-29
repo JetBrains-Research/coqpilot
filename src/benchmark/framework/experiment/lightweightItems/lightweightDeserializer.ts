@@ -1,5 +1,6 @@
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 
+import { throwError } from "../../../../utils/throwErrors";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { readRequestedFilesCache } from "../../parseDataset/cacheHandlers/cacheReader";
 import { resolveInputBenchmarkingModelParams } from "../../parseDataset/core/itemsBuilder/buildBenchmarkingItems";
@@ -68,11 +69,12 @@ export namespace LightweightDeserializer {
             1
         );
         const parsedItems = jsonFiles.map((filePath) => {
-            const jsonString = readFile(filePath, (err) => {
-                throw Error(
-                    `Lightweight items parsing failed: failed to read ${filePath} file, ${err.message}`
-                );
-            });
+            const jsonString = readFile(filePath, (err) =>
+                throwError(
+                    "Lightweight items parsing failed: ",
+                    `failed to read ${filePath} file, ${err.message}`
+                )
+            );
             // TODO: validate with JSON schema
             return JSON.parse(jsonString) as T;
         });
@@ -205,11 +207,10 @@ export namespace LightweightDeserializer {
                 const cachedFile = workspaceCache.getCachedFile(filePath);
                 if (cachedFile === undefined) {
                     // TODO: parse file if it is missing in cache
-                    throw Error(
-                        [
-                            `Lightweight deserialization failed: file "${filePath}" is requested, `,
-                            `but is not present in cache under "${datasetCacheDirectoryPath}" directory`,
-                        ].join("")
+                    throwError(
+                        "Lightweight deserialization failed: ",
+                        `file "${filePath}" is requested, but is not present in cache `,
+                        `under "${datasetCacheDirectoryPath}" directory`
                     );
                 }
                 return cachedFile.restoreParsedCoqFileData();

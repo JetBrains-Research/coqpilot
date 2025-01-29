@@ -1,3 +1,4 @@
+import { ErrorsHandlingMode } from "../../../../llm/llmServices/commonStructures/errorsHandlingMode";
 import { GrazieModelParamsResolver } from "../../../../llm/llmServices/grazie/grazieModelParamsResolver";
 import { GrazieService } from "../../../../llm/llmServices/grazie/grazieService";
 import { LLMService } from "../../../../llm/llmServices/llmService";
@@ -14,6 +15,10 @@ import { UserModelParams } from "../../../../llm/userModelParams";
 import { EventLogger } from "../../../../logging/eventLogger";
 import { LLMServiceIdentifier } from "../../structures/common/llmServiceIdentifier";
 
+/**
+ * Regardless of the string values defined in the implementation of `LLMServiceIdentifier` (they can change with time),
+ * this function guarantees to provide nice and human-readable names of the services.
+ */
 export function getShortName(identifier: LLMServiceIdentifier): string {
     switch (identifier) {
         case LLMServiceIdentifier.PREDEFINED_PROOFS:
@@ -27,31 +32,28 @@ export function getShortName(identifier: LLMServiceIdentifier): string {
     }
 }
 
-export type LLMServiceBuilder = () => [LLMService<any, any>, EventLogger];
+export type LLMServiceBuilder = (
+    eventLogger: EventLogger | undefined,
+    errorsHandlingMode: ErrorsHandlingMode
+) => LLMService<UserModelParams, ModelParams>;
 
 export function selectLLMServiceBuilder(
     identifier: LLMServiceIdentifier
 ): LLMServiceBuilder {
-    let createService: (eventLogger: EventLogger) => LLMService<any, any>;
     switch (identifier) {
         case LLMServiceIdentifier.PREDEFINED_PROOFS:
-            createService = (eventLogger) =>
-                new PredefinedProofsService(eventLogger);
-            break;
+            return (eventLogger, errorsHandlingMode) =>
+                new PredefinedProofsService(eventLogger, errorsHandlingMode);
         case LLMServiceIdentifier.OPENAI:
-            createService = (eventLogger) => new OpenAiService(eventLogger);
-            break;
+            return (eventLogger, errorsHandlingMode) =>
+                new OpenAiService(eventLogger, errorsHandlingMode);
         case LLMServiceIdentifier.GRAZIE:
-            createService = (eventLogger) => new GrazieService(eventLogger);
-            break;
+            return (eventLogger, errorsHandlingMode) =>
+                new GrazieService(eventLogger, errorsHandlingMode);
         case LLMServiceIdentifier.LMSTUDIO:
-            createService = (eventLogger) => new LMStudioService(eventLogger);
-            break;
+            return (eventLogger, errorsHandlingMode) =>
+                new LMStudioService(eventLogger, errorsHandlingMode);
     }
-    return () => {
-        const eventLogger = new EventLogger();
-        return [createService(eventLogger), eventLogger];
-    };
 }
 
 export interface LLMServicesParamsResolvers {

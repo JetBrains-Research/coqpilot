@@ -1,3 +1,5 @@
+import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
+
 import { EventLogger } from "../../../logging/eventLogger";
 import { withLLMService } from "../../commonTestFunctions/withLLMService";
 
@@ -5,6 +7,7 @@ import { proofsToGenerate, testModelId } from "./constants";
 import { MockLLMModelParams, MockLLMService } from "./mockLLMService";
 
 export async function withMockLLMService(
+    errorsHandlingMode: ErrorsHandlingMode,
     block: (
         mockService: MockLLMService,
         basicMockParams: MockLLMModelParams,
@@ -13,7 +16,7 @@ export async function withMockLLMService(
 ) {
     const testEventLogger = new EventLogger();
     return withLLMService(
-        new MockLLMService(testEventLogger, true),
+        new MockLLMService(testEventLogger, errorsHandlingMode),
         async (mockService) => {
             const basicMockParams: MockLLMModelParams = {
                 modelId: testModelId,

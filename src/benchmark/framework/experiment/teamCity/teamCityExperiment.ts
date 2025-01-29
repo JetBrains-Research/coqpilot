@@ -1,3 +1,4 @@
+import { unsupported } from "../../../../utils/throwErrors";
 import { ExperimentResults } from "../../structures/benchmarkingResults/experimentResults";
 import { ExperimentRunOptions } from "../../structures/inputParameters/experimentRunOptions";
 import { LightweightSerialization } from "../lightweightItems/lightweightSerialization";
@@ -91,7 +92,7 @@ export class TeamCityExperiment extends MultiWorkspacesExperiment {
         _artifactsDirPath: string,
         _runOptions: Partial<ExperimentRunOptions> = {}
     ): Promise<ExperimentResults> {
-        throw Error(
+        unsupported(
             "TeamCityExperiment does not support running benchmarks locally"
         );
     }

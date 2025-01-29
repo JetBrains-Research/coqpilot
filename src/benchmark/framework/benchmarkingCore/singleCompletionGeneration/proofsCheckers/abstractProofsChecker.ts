@@ -12,7 +12,9 @@ export interface ProofsCheckResult {
     effectiveElapsedMillis: number;
 }
 
-export type ProofsCheckFailureType = "TIMEOUT" | "COQ_PROOF_CHECKER_ERROR";
+export type ProofsCheckFailureType =
+    | "COQ_LSP_TIMEOUT"
+    | "COQ_PROOF_CHECKER_ERROR";
 
 export class ProofsCheckFailedError extends Error {
     constructor(
@@ -20,6 +22,8 @@ export class ProofsCheckFailedError extends Error {
         readonly causeMessage: string
     ) {
         super(causeMessage);
+        Object.setPrototypeOf(this, new.target.prototype);
+        this.name = "ProofsCheckFailedError";
     }
 }
 

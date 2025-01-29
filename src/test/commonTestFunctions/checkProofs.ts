@@ -25,7 +25,7 @@ export async function checkTheoremProven(
     environment: PreparedEnvironment
 ) {
     const proofsToCheck = generatedProofs.map((generatedProof) =>
-        prepareProofToCheck(generatedProof.proof())
+        prepareProofToCheck(generatedProof.proof)
     );
     const checkResults = await checkProofs(
         proofsToCheck,

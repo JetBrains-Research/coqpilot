@@ -3,8 +3,8 @@ import { CacheTargets } from "../../benchmark/framework/experiment/setupDSL/data
 import { TargetsBuilder } from "../../benchmark/framework/experiment/setupDSL/targetsBuilder";
 import { SingleWorkspaceExperiment } from "../../benchmark/framework/experiment/singleWorkspaceExperiment";
 import { SeverityLevel } from "../../benchmark/framework/logging/benchmarkingLogger";
-import { colorize } from "../../benchmark/framework/logging/colorLogging";
 import { DatasetCacheUsageMode } from "../../benchmark/framework/structures/inputParameters/datasetCaching";
+import { colorize } from "../../utils/colorLogging";
 import { time, timeToMillis } from "../../utils/time";
 
 suite("[SourceExecutable] Single Workspace Benchmark", () => {
