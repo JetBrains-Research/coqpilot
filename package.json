@@ -147,6 +147,11 @@
                   "description": "Total length of input and generated tokens, it is determined by the model. For known models, CoqPilot provides a recommended default value (the maximum model context length), but it can be customized for more advanced proof generation.",
                   "default": 4096
                 },
+                "maxContextTheoremsNumber": {
+                  "type": "number",
+                  "description": "Maximum number of context theorems to include in the prompt sent to the OpenAI model as examples for proof generation. Lower values reduce token usage but may decrease the likelihood of generating correct proofs.",
+                  "default": 100
+                },
                 "multiroundProfile": {
                   "type": "object",
                   "properties": {
@@ -164,12 +169,18 @@
                       "type": "string",
                       "description": "Prompt for the proof-fix request that will be sent as a user chat message in response to an incorrect proof. It may include the `${diagnostic}` substring, which will be replaced by the actual compiler diagnostic.",
                       "default": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: `${diagnostic}`. Please, fix the proof."
+                    },
+                    "maxPreviousProofVersionsNumber": {
+                      "type": "number",
+                      "description": "Maximum number of previous proof versions to include in the proof-fix chat, each presented as a dialogue: the user's diagnostic followed by the assistant's corresponding proof attempt. The most recent proof version being fixed is always included and is not affected by this parameter.",
+                      "default": 100
                     }
                   },
                   "default": {
                     "maxRoundsNumber": 1,
                     "proofFixChoices": 1,
-                    "proofFixPrompt": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: `${diagnostic}`. Please, fix the proof."
+                    "proofFixPrompt": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: `${diagnostic}`. Please, fix the proof.",
+                    "maxPreviousProofVersionsNumber": 100
                   }
                 }
               }
@@ -184,10 +195,12 @@
                 "systemPrompt": "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'.",
                 "maxTokensToGenerate": 2048,
                 "tokensLimit": 4096,
+                "maxContextTheoremsNumber": 100,
                 "multiroundProfile": {
                   "maxRoundsNumber": 1,
                   "proofFixChoices": 1,
-                  "proofFixPrompt": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: '${diagnostic}'. Please, fix the proof."
+                  "proofFixPrompt": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: '${diagnostic}'. Please, fix the proof.",
+                  "maxPreviousProofVersionsNumber": 100
                 }
               }
             ],
@@ -239,6 +252,11 @@
                   "description": "Total length of input and generated tokens, it is determined by the model. For OpenAI models, tokens limits could be found [here](https://platform.openai.com/docs/models/).",
                   "default": 4096
                 },
+                "maxContextTheoremsNumber": {
+                  "type": "number",
+                  "description": "Maximum number of context theorems to include in the prompt sent to the Grazie model as examples for proof generation. Lower values reduce token usage but may decrease the likelihood of generating correct proofs.",
+                  "default": 100
+                },
                 "multiroundProfile": {
                   "type": "object",
                   "properties": {
@@ -256,12 +274,18 @@
                       "type": "string",
                       "description": "Prompt for the proof-fix request that will be sent as a user chat message in response to an incorrect proof. It may include the `${diagnostic}` substring, which will be replaced by the actual compiler diagnostic.",
                       "default": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: `${diagnostic}`. Please, fix the proof."
+                    },
+                    "maxPreviousProofVersionsNumber": {
+                      "type": "number",
+                      "description": "Maximum number of previous proof versions to include in the proof-fix chat, each presented as a dialogue: the user's diagnostic followed by the assistant's corresponding proof attempt. The most recent proof version being fixed is always included and is not affected by this parameter.",
+                      "default": 100
                     }
                   },
                   "default": {
                     "maxRoundsNumber": 1,
                     "proofFixChoices": 1,
-                    "proofFixPrompt": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: `${diagnostic}`. Please, fix the proof."
+                    "proofFixPrompt": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: `${diagnostic}`. Please, fix the proof.",
+                    "maxPreviousProofVersionsNumber": 100
                   }
                 }
               }
@@ -310,6 +334,11 @@
                   "description": "Total length of input and generated tokens, usually it is determined by the model.",
                   "default": 2048
                 },
+                "maxContextTheoremsNumber": {
+                  "type": "number",
+                  "description": "Maximum number of context theorems to include in the prompt sent to the LM Studio model as examples for proof generation. Lower values reduce token usage but may decrease the likelihood of generating correct proofs.",
+                  "default": 100
+                },
                 "multiroundProfile": {
                   "type": "object",
                   "properties": {
@@ -327,12 +356,18 @@
                       "type": "string",
                       "description": "Prompt for the proof-fix request that will be sent as a user chat message in response to an incorrect proof. It may include the `${diagnostic}` substring, which will be replaced by the actual compiler diagnostic.",
                       "default": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: `${diagnostic}`. Please, fix the proof."
+                    },
+                    "maxPreviousProofVersionsNumber": {
+                      "type": "number",
+                      "description": "Maximum number of previous proof versions to include in the proof-fix chat, each presented as a dialogue: the user's diagnostic followed by the assistant's corresponding proof attempt. The most recent proof version being fixed is always included and is not affected by this parameter.",
+                      "default": 100
                     }
                   },
                   "default": {
                     "maxRoundsNumber": 1,
                     "proofFixChoices": 1,
-                    "proofFixPrompt": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: `${diagnostic}`. Please, fix the proof."
+                    "proofFixPrompt": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: `${diagnostic}`. Please, fix the proof.",
+                    "maxPreviousProofVersionsNumber": 100
                   }
                 }
               }

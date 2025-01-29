@@ -21,8 +21,8 @@ export function failedAjvValidatorErrorsAsString(
         return "there are not errors, validation is successfull";
     }
     const definedErrors = validator.errors as DefinedError[];
-    if (definedErrors === null) {
-        return `errors are not defined: "${stringifyAnyValue(validator.errors)}"`;
+    if (definedErrors === undefined) {
+        return `errors are not defined: ${stringifyAnyValue(validator.errors)}`;
     }
     return ajvErrorsAsString(definedErrors, ignoreErrorsWithKeywords);
 }

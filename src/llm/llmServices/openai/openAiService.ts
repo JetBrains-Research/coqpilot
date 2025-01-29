@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 
 import { asErrorOrUndefined } from "../../../utils/errorsUtils";
+import { illegalState } from "../../../utils/throwErrors";
 import {
     ConfigurationError,
     RemoteConnectionError,
@@ -106,7 +107,7 @@ class OpenAiServiceInternal extends LLMServiceInternal<
             const rawContentItems = completion.choices.map((choice) => {
                 const content = choice.message.content;
                 if (content === null) {
-                    throw Error("response message content is null");
+                    illegalState("response message content is null");
                 }
                 return content;
             });

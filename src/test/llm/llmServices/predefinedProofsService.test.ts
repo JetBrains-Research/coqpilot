@@ -11,6 +11,7 @@ import { PredefinedProofsUserModelParams } from "../../../llm/userModelParams";
 
 import { EventLogger } from "../../../logging/eventLogger";
 import { delay } from "../../../utils/delay";
+import { throwError } from "../../../utils/throwErrors";
 import { timeZero } from "../../../utils/time";
 import { withLLMService } from "../../commonTestFunctions/withLLMService";
 import { testModelId } from "../llmSpecificTestUtils/constants";
@@ -194,10 +195,12 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                         systemPrompt: "asking for something",
                         maxTokensToGenerate: 2000,
                         tokensLimit: 4000,
+                        maxContextTheoremsNumber: 20,
                         multiroundProfile: {
                             maxRoundsNumber: 10,
                             proofFixChoices: 5,
                             proofFixPrompt: "asking for more of something",
+                            maxPreviousProofVersionsNumber: 2,
                         },
                     });
 
@@ -222,10 +225,12 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                         ...simpleTactics.map((tactic) => tactic.length)
                     ),
                     tokensLimit: Number.MAX_SAFE_INTEGER,
+                    maxContextTheoremsNumber: Number.MAX_SAFE_INTEGER,
                     multiroundProfile: {
                         maxRoundsNumber: 1,
                         defaultProofFixChoices: 0,
                         proofFixPrompt: "",
+                        maxPreviousProofVersionsNumber: 0,
                     },
                     defaultChoices: simpleTactics.length,
                 });
@@ -318,12 +323,7 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
                 );
                 const cursedParams: PredefinedProofsModelParams = {
                     ...resolvedParams,
-                    tactics: [
-                        "auto.",
-                        () => {
-                            throw Error("a curse");
-                        },
-                    ] as any[],
+                    tactics: ["auto.", () => throwError("a curse")] as any[],
                 };
                 await predefinedProofsService.generateProof(
                     proofGenerationContext,

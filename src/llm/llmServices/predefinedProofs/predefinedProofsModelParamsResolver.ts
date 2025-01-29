@@ -40,6 +40,10 @@ export class PredefinedProofsModelParamsResolver
         "tokensLimit"
     ).overrideWithMock(() => Number.MAX_SAFE_INTEGER);
 
+    readonly maxContextTheoremsNumber = this.resolveParam<number>(
+        "maxContextTheoremsNumber"
+    ).overrideWithMock(() => Number.MAX_SAFE_INTEGER);
+
     readonly multiroundProfile = this.resolveParam<MultiroundProfile>(
         "multiroundProfile"
     ).overrideWithMock(() => {
@@ -47,6 +51,7 @@ export class PredefinedProofsModelParamsResolver
             maxRoundsNumber: 1,
             defaultProofFixChoices: 0,
             proofFixPrompt: "",
+            maxPreviousProofVersionsNumber: 0,
         };
     });
 

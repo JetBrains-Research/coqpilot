@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { colorize } from "../../utils/colorLogging";
+import { illegalState } from "../../utils/throwErrors";
 
 import { AdditionalFileImport } from "./additionalImports";
 import { BenchmarkResult, runTestBenchmark } from "./benchmarkingFramework";
@@ -94,7 +95,7 @@ suite("[SourceExecutable] Legacy Benchmark", () => {
                 const resolvedItemPath = path.join(datasetDir, item.path);
                 const itemPathStats = getPathStats(resolvedItemPath);
                 if (!itemPathStats.isDirectory() && !itemPathStats.isFile()) {
-                    throw Error(`unsupported path type: ${item.path}`);
+                    illegalState(`unsupported path type: ${item.path}`);
                 }
                 const resolvedFilePaths = itemPathStats.isDirectory()
                     ? findSourceFiles(resolvedItemPath)

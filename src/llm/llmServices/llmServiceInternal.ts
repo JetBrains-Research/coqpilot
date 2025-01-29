@@ -281,7 +281,9 @@ export abstract class LLMServiceInternal<
      */
     static validateChoices(choices: number) {
         if (choices <= 0) {
-            throw new ConfigurationError("choices number should be positive");
+            throw new ConfigurationError(
+                `choices number should be positive, but got: ${choices}`
+            );
         }
     }
 

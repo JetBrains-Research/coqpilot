@@ -5,6 +5,7 @@ import { ErrorsHandlingMode } from "../../../../llm/llmServices/commonStructures
 import { GeneratedRawContentItem } from "../../../../llm/llmServices/commonStructures/generatedRawContent";
 import { ProofGenerationMetadataHolder } from "../../../../llm/llmServices/commonStructures/proofGenerationMetadata";
 
+import { illegalState } from "../../../../utils/throwErrors";
 import {
     mockChat,
     mockProofGenerationContext,
@@ -316,8 +317,10 @@ suite("[LLMService] Test `GeneratedProof`", () => {
     ): Promise<string[]> {
         const initialGeneratedProof = preparedData;
         if (initialGeneratedProof === undefined) {
-            throw Error(
-                `test is configured incorrectly: \`fixProof\` got "undefined" as \`preparedData\` instead of \`MockLLMGeneratedProof\``
+            illegalState(
+                "test is configured incorrectly: ",
+                "`fixProof` got `undefined` as `preparedData` ",
+                "instead of `MockLLMGeneratedProof`"
             );
         }
         const fixedGeneratedProofs = await initialGeneratedProof.fixProof(

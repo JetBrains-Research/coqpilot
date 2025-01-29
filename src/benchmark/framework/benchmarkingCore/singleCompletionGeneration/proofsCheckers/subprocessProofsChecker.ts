@@ -3,6 +3,7 @@ import {
     SourceFileEnvironment,
 } from "../../../../../core/completionGenerationContext";
 
+import { throwError } from "../../../../../utils/throwErrors";
 import { BenchmarkingLogger } from "../../../logging/benchmarkingLogger";
 import { WorkspaceRoot } from "../../../structures/common/workspaceRoot";
 import { checkGeneratedProofsInSubprocess } from "../../../subprocessCalls/checkGeneratedProofs/callChildProcess";
@@ -42,7 +43,8 @@ export class SubprocessProofsChecker extends AbstractProofsChecker {
                 this.enableSubprocessLifetimeDebugLogs
             );
         if (proofsCheckExecutionResult.isFailed()) {
-            throw Error(proofsCheckExecutionResult.errorMessage);
+            // TODO: this throw should be revised
+            throwError(proofsCheckExecutionResult.errorMessage);
         }
         return ProofsCheckerUtils.unpackSuccessResultOrThrow(
             proofsCheckExecutionResult.maybeResult!

@@ -1,3 +1,5 @@
+import { buildErrorCompleteLog } from "../../../../utils/errorsUtils";
+import { illegalState } from "../../../../utils/throwErrors";
 import { nowTimestampMillis } from "../../../../utils/time";
 import {
     GenerationFailedError,
@@ -161,14 +163,17 @@ export class GenerationsLogger {
 
     private extractAndValidateCause(llmServiceError: LLMServiceError): Error {
         if (!(llmServiceError instanceof GenerationFailedError)) {
-            throw Error(
-                `\`GenerationsLogger\` is capable of logging only generation errors, but got: "${this.toLoggedError(llmServiceError)}"`
+            illegalState(
+                "`GenerationsLogger` is capable of logging only generation errors, ",
+                `but got: ${buildErrorCompleteLog(llmServiceError)}`
             );
         }
         const cause = llmServiceError.cause;
         if (cause instanceof LLMServiceError) {
-            throw Error(
-                `received doubled-wrapped error to log, cause is instance of \`LLMServiceError\`: "${this.toLoggedError(llmServiceError)}"`
+            illegalState(
+                "received doubled-wrapped error to log, ",
+                "cause is instance of `LLMServiceError`: ",
+                buildErrorCompleteLog(cause)
             );
         }
         return cause;

@@ -5,6 +5,7 @@ import {
     buildAjv,
     failedAjvValidatorErrorsAsString,
 } from "../../../../utils/ajvErrorsHandling";
+import { throwError } from "../../../../utils/throwErrors";
 
 import {
     ParamsResolutionResult,
@@ -74,7 +75,7 @@ export type ValidParamsResolverImpl<InputType, ResolveToType> = {
  *
  *    Implementation note:
  *    * if you need to declare any utility properties in your class,
- *      it is okay to do by starting the proeprty name with an underscore (for example, `_utilityProp`).
+ *      it is okay to do by starting the property name with an underscore (for example, `_utilityProp`).
  *
  * 3. Check that all resolvers for the `ResolveToType` properties are specified correctly. To do this, make your
  *    parameters resolver class implement `ValidParamsResolverImpl<InputType, ResolveToType>`. It will check exactly this contract.
@@ -205,8 +206,9 @@ export abstract class ParamsResolverImpl<
             const paramResolver = this[prop] as ParamsResolver<InputType, any>;
             // no generic parametrization check in runtime is possible, unfortunately
             if (!isParamsResolver(paramResolver)) {
-                throw Error(
-                    `\`ParamsResolver\` is configured incorrectly because of \`${prop}\`: all properties should be built up to \`ParamsResolver<InputType, any>\` type`
+                throwError(
+                    `\`ParamsResolver\` is configured incorrectly because of \`${prop}\`: `,
+                    "all properties should be built up to `ParamsResolver<InputType, any>` type"
                 );
             }
             const paramResolutionResult = paramResolver.resolve(inputParams);
@@ -226,8 +228,10 @@ export abstract class ParamsResolverImpl<
 
         const resolvedParams = resolvedParamsObject as ResolveToType;
         if (!this._resolveToTypeValidator(resolvedParams)) {
-            throw Error(
-                `\`ParamsResolver\` is most likely configured incorrectly. Resulting object could not be interpreted as \`${this._resolveToTypeName}\`: ${failedAjvValidatorErrorsAsString(this._resolveToTypeValidator)}.`
+            throwError(
+                "`ParamsResolver` is most likely configured incorrectly. ",
+                `Resulting object could not be interpreted as \`${this._resolveToTypeName}\`: `,
+                `${failedAjvValidatorErrorsAsString(this._resolveToTypeValidator)}.`
             );
         }
         return {

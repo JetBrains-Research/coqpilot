@@ -56,10 +56,12 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
         systemPrompt: "hi system",
         maxTokensToGenerate: 10000,
         tokensLimit: 1000000,
+        maxContextTheoremsNumber: Number.MAX_SAFE_INTEGER,
         multiroundProfile: {
             maxRoundsNumber: 1,
             defaultProofFixChoices: 1,
             proofFixPrompt: "fix it",
+            maxPreviousProofVersionsNumber: Number.MAX_SAFE_INTEGER,
         },
         defaultChoices: 1,
     };
@@ -359,7 +361,6 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
                 const records = generationsLogger.readLogs();
                 expect(records).toHaveLength(1);
                 const record = records[0] as DebugLoggerRecord;
-                expect(record).not.toBeNullish();
 
                 expect(record.params.tokensLimit).toEqual(censorInt);
                 expect((record.params as OpenAiModelParams)?.apiKey).toEqual(

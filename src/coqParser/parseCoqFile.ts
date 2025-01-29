@@ -12,7 +12,9 @@ import {
 import { throwOnAbort } from "../core/abortUtils";
 
 import { EventLogger } from "../logging/eventLogger";
-import { asErrorOrRethrow } from "../utils/errorsUtils";
+import { getErrorMessage } from "../utils/errorsUtils";
+import { stringifyAnyValue } from "../utils/printers";
+import { throwError } from "../utils/throwErrors";
 import { Uri } from "../utils/uri";
 
 import { ProofStep, Theorem, TheoremProof, Vernacexpr } from "./parsedTypes";
@@ -45,9 +47,9 @@ export async function parseCoqFile(
                 eventLogger
             );
         })
-        .catch((error) => {
+        .catch((e) => {
             throw new CoqParsingError(
-                `failed to parse file with Error: ${error.message}`
+                `failed to parse file: ${getErrorMessage(e)}`
             );
         });
 }
@@ -62,7 +64,7 @@ async function parseFlecheDocument(
     eventLogger?: EventLogger
 ): Promise<Theorem[]> {
     if (doc === null) {
-        throw Error("could not parse file");
+        throwError("could not parse file, document is not available");
     }
 
     const theorems: Theorem[] = [];
@@ -120,7 +122,7 @@ async function parseFlecheDocument(
                                 );
                         } catch (err) {
                             throw new CoqParsingError(
-                                `Unable to get initial goal for theorem: ${thrName}\nCause: ${asErrorOrRethrow(err).message}`
+                                `unable to get initial goal for theorem: ${thrName};\ncause: ${getErrorMessage(err)}`
                             );
                         }
                     }
@@ -176,7 +178,9 @@ function getName(expr: any): string {
         case Vernacexpr.VernacStartTheoremProof:
             return getTheoremName(expr);
         default:
-            throw new CoqParsingError(`invalid name for expression: "${expr}"`);
+            throw new CoqParsingError(
+                `invalid name for expression: ${stringifyAnyValue(expr)}`
+            );
     }
 }
 
@@ -247,7 +251,7 @@ function parseProof(
         const vernacType = getVernacexpr(getExpr(span));
         if (!vernacType) {
             throw new CoqParsingError(
-                "unable to derive the vernac type of the sentence"
+                `unable to derive the vernac type of the sentence;\nat ${stringifyAnyValue(span)}`
             );
         }
 

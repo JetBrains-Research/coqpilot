@@ -4,6 +4,7 @@ export class CompletionAbortError extends Error {
 
     constructor() {
         super(CompletionAbortError.abortMessage);
+        Object.setPrototypeOf(this, new.target.prototype);
         this.name = "CompletionAbortError";
     }
 }

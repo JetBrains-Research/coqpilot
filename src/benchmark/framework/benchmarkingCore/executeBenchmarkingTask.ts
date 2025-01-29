@@ -250,6 +250,9 @@ export async function executeBenchmarkingTask(
                 abortSignal
             );
             if (isUnexpectedError) {
+                // Potential bug (!): this error will stop the top-level
+                // execution, but if fail-fast is disabled, noone will
+                // cancel other promises.
                 throw error;
             }
             return undefined;

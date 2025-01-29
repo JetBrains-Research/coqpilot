@@ -1,9 +1,17 @@
+import { buildErrorCompleteLog } from "./errorsUtils";
+
 export function throwError(...message: string[]): never {
     throw Error(message.join(""));
 }
 
 export function illegalState(...message: string[]): never {
     throw new IllegalStateError(`Illegal state: ${message.join("")}`);
+}
+
+export function unexpectedError(err: any): never {
+    throw new IllegalStateError(
+        `unexpected error occurred:\n${buildErrorCompleteLog(err)}`
+    );
 }
 
 export function invariantFailed(

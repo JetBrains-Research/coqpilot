@@ -23,6 +23,8 @@ import {
 import { throwOnAbort } from "../core/abortUtils";
 
 import { EventLogger } from "../logging/eventLogger";
+import { getErrorMessage } from "../utils/errorsUtils";
+import { millisToString } from "../utils/time";
 import { Uri } from "../utils/uri";
 
 import { CoqLspClientConfig, CoqLspServerConfig } from "./coqLspConfig";
@@ -128,9 +130,9 @@ export class CoqLspClientImpl implements CoqLspClient {
             logOutputChannel,
             eventLogger
         );
-        await connector.start().catch((error) => {
+        await connector.start().catch((e) => {
             throw new CoqLspStartupError(
-                `failed to start coq-lsp with Error: ${error.message}`,
+                `failed to start coq-lsp with error: ${getErrorMessage(e)}`,
                 clientConfig.coq_lsp_server_path
             );
         });
@@ -169,7 +171,9 @@ export class CoqLspClientImpl implements CoqLspClient {
                 command
             );
             if (goals.err) {
-                throw goals.val;
+                throw new CoqLspError(
+                    `Failed to get the first goal: ${getErrorMessage(goals.val)}`
+                );
             } else if (goals.val.length === 0) {
                 throw new CoqLspError(
                     `Failed to get the first goal: list of goals is empty at the position ${position} of ${documentUri.fsPath}`
@@ -349,7 +353,7 @@ export class CoqLspClientImpl implements CoqLspClient {
                 );
             }
 
-            return Err(CoqLspError.unknownError());
+            return Err(CoqLspError.unknownError(e));
         }
     }
 
@@ -363,7 +367,7 @@ export class CoqLspClientImpl implements CoqLspClient {
         uri: Uri,
         version: number,
         lastDocumentEndPosition?: Position,
-        timeout: number = 300000
+        timeoutMillis: number = 300000
     ): Promise<DiagnosticMessage> {
         await this.client.sendNotification(requestType, params);
 
@@ -404,18 +408,21 @@ export class CoqLspClientImpl implements CoqLspClient {
             )
         );
 
-        while (timeout > 0 && (pendingProgress || pendingDiagnostic)) {
+        const initialTimeout = timeoutMillis;
+        while (timeoutMillis > 0 && (pendingProgress || pendingDiagnostic)) {
             await this.sleep(100);
-            timeout -= 100;
+            timeoutMillis -= 100;
         }
 
         if (
-            timeout <= 0 ||
+            timeoutMillis <= 0 ||
             pendingProgress ||
             pendingDiagnostic ||
             awaitedDiagnostics === undefined
         ) {
-            throw new CoqLspError("coq-lsp did not respond in time");
+            throw new CoqLspError(
+                `coq-lsp did not respond in ${millisToString(initialTimeout)}`
+            );
         }
 
         this.subscriptions.forEach((d) => d.dispose());

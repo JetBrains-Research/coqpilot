@@ -35,6 +35,12 @@ export class BasicMultiroundProfileResolver
     readonly proofFixPrompt = this.resolveParam<string>("proofFixPrompt")
         .default(() => defaultMultiroundProfile.proofFixPrompt)
         .noValidationNeeded();
+
+    readonly maxPreviousProofVersionsNumber = this.resolveParam<number>(
+        "maxPreviousProofVersionsNumber"
+    )
+        .default(() => defaultMultiroundProfile.maxPreviousProofVersionsNumber)
+        .validate(ValidationRules.beNonNegativeNumber);
 }
 
 /**
@@ -42,12 +48,14 @@ export class BasicMultiroundProfileResolver
  * - Multiround is disabled by default.
  * - 1 fix version per proof by default.
  * - Default `proofFixPrompt` includes `${diagnostic}` message.
+ * - The default maximum number of the latest proof versions is not limited.
  */
 export const defaultMultiroundProfile: MultiroundProfile = {
     maxRoundsNumber: 1,
     defaultProofFixChoices: 1,
     proofFixPrompt:
         "Unfortunately, the last proof is not correct. Here is the compiler's feedback: `${diagnostic}`. Please, fix the proof.",
+    maxPreviousProofVersionsNumber: Number.MAX_SAFE_INTEGER,
 };
 
 export class BasicModelParamsResolver<
@@ -75,6 +83,12 @@ export class BasicModelParamsResolver<
         .requiredToBeConfigured()
         .validate(ValidationRules.bePositiveNumber);
 
+    readonly maxContextTheoremsNumber = this.resolveParam<number>(
+        "maxContextTheoremsNumber"
+    )
+        .default(() => defaultMaxContextTheoremsNumber)
+        .validate(ValidationRules.beNonNegativeNumber);
+
     readonly multiroundProfile = this.resolveNestedParams(
         "multiroundProfile",
         new BasicMultiroundProfileResolver()
@@ -85,5 +99,7 @@ export class BasicModelParamsResolver<
         .validate(ValidationRules.bePositiveNumber);
 }
 
-export const defaultSystemMessageContent: string =
+export const defaultSystemMessageContent =
     "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'.";
+
+export const defaultMaxContextTheoremsNumber = Number.MAX_SAFE_INTEGER;

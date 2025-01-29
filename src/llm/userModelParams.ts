@@ -17,6 +17,12 @@ export interface UserMultiroundProfile {
      * Use `${diagnostic}` syntax to include a diagnostic message into the prompt.
      */
     proofFixPrompt?: string;
+
+    /**
+     * Specifies the maximum number of the latest proof versions
+     * to include in the proof-fix chat as previous attempts to fix the proof.
+     */
+    maxPreviousProofVersionsNumber?: number;
 }
 
 export interface UserModelParams {
@@ -39,6 +45,7 @@ export interface UserModelParams {
      * i.e. should be greater than or equal to `maxTokensToGenerate`.
      */
     tokensLimit?: number;
+    maxContextTheoremsNumber?: number;
 
     multiroundProfile?: UserMultiroundProfile;
 }
@@ -59,6 +66,10 @@ export interface OpenAiUserModelParams extends UserModelParams {
 export interface GrazieUserModelParams extends UserModelParams {
     modelName: string;
     apiKey: string;
+
+    /**
+     * Use `"stgn"` if you are an internal JetBrains AI user and `"prod"` otherwise.
+     */
     authType: string;
 }
 
@@ -74,6 +85,7 @@ export const userMultiroundProfileSchema: JSONSchemaType<UserMultiroundProfile> 
             maxRoundsNumber: { type: "number", nullable: true },
             proofFixChoices: { type: "number", nullable: true },
             proofFixPrompt: { type: "string", nullable: true },
+            maxPreviousProofVersionsNumber: { type: "number", nullable: true },
         },
         required: [],
         additionalProperties: false,
@@ -89,6 +101,7 @@ export const userModelParamsSchema: JSONSchemaType<UserModelParams> = {
 
         maxTokensToGenerate: { type: "number", nullable: true },
         tokensLimit: { type: "number", nullable: true },
+        maxContextTheoremsNumber: { type: "number", nullable: true },
 
         multiroundProfile: {
             type: "object",

@@ -1,3 +1,5 @@
+import { illegalState } from "../utils/throwErrors";
+
 import { GrazieService } from "./llmServices/grazie/grazieService";
 import { LLMService } from "./llmServices/llmService";
 import { LMStudioService } from "./llmServices/lmStudio/lmStudioService";
@@ -44,8 +46,8 @@ export function switchByLLMServiceType<T>(
     } else if (llmService instanceof LMStudioService) {
         return onLMStudioService();
     } else {
-        throw Error(
-            `switch by unknown LLMService: "${llmService.serviceName}"`
+        illegalState(
+            `switch by unknown \`LLMService\`: "${llmService.serviceName}"`
         );
     }
 }

@@ -15,6 +15,8 @@ export class SettingsValidationError extends Error {
         private readonly severity: UIMessageSeverity = "error"
     ) {
         super(errorMessage);
+        Object.setPrototypeOf(this, new.target.prototype);
+        this.name = "SettingsValidationError";
     }
 
     showAsMessageToUser() {

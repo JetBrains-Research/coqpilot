@@ -1,11 +1,16 @@
-import { JsonSpacing, toJsonString } from "../../../../utils/printers";
+import { AjvMode, buildAjv } from "../../../../utils/ajvErrorsHandling";
+import {
+    JsonSpacing,
+    stringifyAnyValue,
+    toJsonString,
+} from "../../../../utils/printers";
 import {
     ChatHistory,
     ChatRole,
     EstimatedTokens,
 } from "../../commonStructures/chat";
 import { GenerationTokens } from "../../commonStructures/generationTokens";
-import { ModelParams } from "../../modelParams";
+import { ModelParams, modelParamsSchema } from "../../modelParams";
 
 export type ResponseStatus = "SUCCESS" | "FAILURE";
 
@@ -14,10 +19,12 @@ export interface LoggedError {
     message: string;
 }
 
-export class ParsingError extends Error {
+export class GenerationsLogsParsingError extends Error {
     constructor(message: string, rawParsingData: string) {
         const parsingDataInfo = `\n>> \`${rawParsingData}\``;
         super(`failed to parse log record: ${message}${parsingDataInfo}`);
+        Object.setPrototypeOf(this, new.target.prototype);
+        this.name = "ParsingError";
     }
 }
 
@@ -125,9 +132,10 @@ export class LoggerRecord {
                 "intro line"
             );
         const timestampMillis = this.parseTimestampMillis(rawTimestamp);
-        const responseStatus = this.parseAsType<ResponseStatus>(
+        const responseStatus = this.parseAsType<string, ResponseStatus>(
             rawResponseStatus,
-            "response status"
+            "response status",
+            (rawValue) => rawValue === "SUCCESS" || rawValue === "FAILURE"
         );
 
         const [error, afterLoggedErrorRawRecord] = this.parseOptional(
@@ -254,7 +262,7 @@ export class LoggerRecord {
     protected static splitByFirstLine(text: string): [string, string] {
         const firstLineEndIndex = text.indexOf("\n");
         if (firstLineEndIndex === -1) {
-            throw new ParsingError("line expected", text);
+            throw new GenerationsLogsParsingError("line expected", text);
         }
         return [
             text.substring(0, firstLineEndIndex),
@@ -262,19 +270,28 @@ export class LoggerRecord {
         ];
     }
 
-    protected static parseAsType<T>(rawValue: string, valueName: string): T {
-        const parsedValue = rawValue as T;
-        if (parsedValue === null) {
-            throw new ParsingError(`invalid ${valueName}`, rawValue);
+    protected static parseAsType<RawType, ParsedType extends RawType>(
+        rawValue: RawType,
+        valueName: string,
+        checkType: (rawValue: RawType) => rawValue is ParsedType
+    ): ParsedType {
+        if (!checkType(rawValue)) {
+            throw new GenerationsLogsParsingError(
+                `invalid ${valueName}`,
+                stringifyAnyValue(rawValue)
+            );
         }
-        return parsedValue;
+        return rawValue;
     }
 
     protected static parseTimestampMillis(rawTimestamp: string): number {
         try {
             return new Date(rawTimestamp).getTime();
         } catch (e) {
-            throw new ParsingError("invalid timestampt", rawTimestamp);
+            throw new GenerationsLogsParsingError(
+                "invalid timestampt",
+                rawTimestamp
+            );
         }
     }
 
@@ -285,7 +302,10 @@ export class LoggerRecord {
         try {
             return parseInt(rawValue);
         } catch (e) {
-            throw new ParsingError(`invalid ${valueName}`, rawValue);
+            throw new GenerationsLogsParsingError(
+                `invalid ${valueName}`,
+                rawValue
+            );
         }
     }
 
@@ -306,7 +326,7 @@ export class LoggerRecord {
     ): string[] {
         const match = text.match(pattern);
         if (!match) {
-            throw new ParsingError(`invalid ${valueName}`, text);
+            throw new GenerationsLogsParsingError(`invalid ${valueName}`, text);
         }
         return match.slice(1);
     }
@@ -515,7 +535,14 @@ export class DebugLoggerRecord extends LoggerRecord {
                     "chat history's message"
                 );
             chat.push({
-                role: this.parseAsType<ChatRole>(rawRole, "chat role"),
+                role: this.parseAsType<string, ChatRole>(
+                    rawRole,
+                    "chat role",
+                    (rawValue) =>
+                        rawValue === "system" ||
+                        rawValue === "user" ||
+                        rawValue === "assistant"
+                ),
                 content: this.unescapeNewlines(rawContent),
             });
             restRawRecord = newRestRawRecord;
@@ -553,22 +580,27 @@ export class DebugLoggerRecord extends LoggerRecord {
         return [generatedProofs, restRawRecord];
     }
 
+    private static modelParamsResolver = buildAjv(
+        AjvMode.RETURN_AFTER_FIRST_ERROR
+    ).compile({ ...modelParamsSchema, additionalProperties: true });
+
     private static parseModelParams(text: string): [ModelParams, string] {
         let [restRawRecord] = this.parseFirstLineByRegex(
             this.paramsHeaderPattern,
             text,
             "model's params header"
         );
-        const params = this.parseAsType<ModelParams>(
+        const params = this.parseAsType<any, ModelParams>(
             JSON.parse(restRawRecord),
-            "model's params"
+            "model's params",
+            this.modelParamsResolver
         );
 
         restRawRecord = restRawRecord.slice(
             toJsonString(params, this.jsonStringifyIndent).length
         );
         if (!restRawRecord.startsWith("\n")) {
-            throw new ParsingError(
+            throw new GenerationsLogsParsingError(
                 `invalid model's params suffix`,
                 restRawRecord
             );

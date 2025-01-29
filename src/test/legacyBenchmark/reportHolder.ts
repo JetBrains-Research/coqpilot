@@ -183,7 +183,7 @@ export class BenchmarkReportHolder {
                     );
                     return null;
                 }
-                return proofResult as TheoremProofResult;
+                return proofResult;
             });
 
             report[theoremName] = parsedProofResults.filter(

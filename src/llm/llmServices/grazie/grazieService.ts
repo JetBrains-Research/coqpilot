@@ -95,8 +95,7 @@ class GrazieServiceInternal extends LLMServiceInternal<
         const completions: Promise<string>[] = [];
         const formattedChat = this.formatChatHistory(analyzedChat.chat, params);
 
-        // TODO: this is the bug causing `choices + 1` generations instead of `choices`
-        while (completions.length <= choices) {
+        while (completions.length < choices) {
             completions.push(
                 this.api.requestChatCompletion(params, formattedChat)
             );
