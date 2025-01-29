@@ -31,6 +31,8 @@ suite("[LLMService] Test `DeepSeekService`", function () {
         modelName: deepSeekModelName,
         temperature: 1,
         choices: choices,
+        maxTokensToGenerate: 2000,
+        tokensLimit: 4000,
     };
 
     testIf(
