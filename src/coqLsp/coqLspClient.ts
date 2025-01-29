@@ -171,8 +171,9 @@ export class CoqLspClientImpl implements CoqLspClient {
                 command
             );
             if (goals.err) {
-                // Potential bug (!): shouldn't it be wrapped into `CoqLspError`?
-                throw goals.val;
+                throw new CoqLspError(
+                    `Failed to get the first goal: ${getErrorMessage(goals.val)}`
+                );
             } else if (goals.val.length === 0) {
                 throw new CoqLspError(
                     `Failed to get the first goal: list of goals is empty at the position ${position} of ${documentUri.fsPath}`
