@@ -231,12 +231,14 @@ function extractBenchmarkingOptions(
         failFast,
         logFailFastTasksAborting,
         proofGenerationRetries,
+        proofCheckTimeoutMillis,
         logTeamCityStatistics,
     } = experimentRunOptions;
     return {
         failFast: failFast,
         logFailFastTasksAborting: logFailFastTasksAborting,
         proofGenerationRetries: proofGenerationRetries,
+        proofCheckTimeoutMillis: proofCheckTimeoutMillis,
         logTeamCityStatistics: logTeamCityStatistics,
     };
 }

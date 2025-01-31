@@ -331,6 +331,8 @@ export abstract class AbstractExperiment {
                 optionsAfterStartupResolution.logFailFastTasksAborting ?? false,
             proofGenerationRetries:
                 optionsAfterStartupResolution.proofGenerationRetries,
+            proofCheckTimeoutMillis:
+                optionsAfterStartupResolution.proofCheckTimeoutMillis,
             logTeamCityStatistics:
                 optionsAfterStartupResolution.logTeamCityStatistics ?? false,
         };

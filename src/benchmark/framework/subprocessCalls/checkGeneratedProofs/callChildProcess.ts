@@ -22,7 +22,8 @@ export async function checkGeneratedProofsInSubprocess(
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     workspaceRoot: WorkspaceRoot,
-    timeoutMillis: number | undefined,
+    proofCheckTimeoutMillis: number | undefined,
+    subprocessTimeoutMillis: number | undefined,
     subprocessesScheduler: AsyncScheduler,
     benchmarkingLogger: BenchmarkingLogger,
     enableProcessLifetimeDebugLogs: boolean = false
@@ -36,12 +37,13 @@ export async function checkGeneratedProofsInSubprocess(
         preparedProofs,
         completionContext,
         sourceFileEnvironment,
-        workspaceRoot
+        workspaceRoot,
+        proofCheckTimeoutMillis
     );
     const options: ChildProcessOptions = {
         workingDirectory:
             enterWorkspaceAndExecuteSubprocessCommand.workingDirectory,
-        timeoutMillis: timeoutMillis,
+        timeoutMillis: subprocessTimeoutMillis,
     };
     return subprocessesScheduler.scheduleTask(
         () =>

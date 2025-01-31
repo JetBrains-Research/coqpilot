@@ -13,6 +13,7 @@ export namespace CheckProofsInternalSignature {
         documentVersion: number;
         positionToCheckAt: Position;
         preparedProofs: string[];
+        proofCheckTimeoutMillis: number | undefined;
     }
 
     export interface Position {
@@ -93,6 +94,10 @@ export namespace CheckProofsInternalSignature {
                 items: {
                     type: "string",
                 },
+            },
+            proofCheckTimeoutMillis: {
+                type: "number",
+                nullable: true,
             },
         },
         required: [

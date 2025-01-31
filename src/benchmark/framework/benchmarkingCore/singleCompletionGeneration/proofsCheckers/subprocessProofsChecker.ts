@@ -29,7 +29,9 @@ export class SubprocessProofsChecker extends AbstractProofsChecker {
         completionContext: CompletionContext,
         sourceFileEnvironment: SourceFileEnvironment,
         workspaceRoot: WorkspaceRoot,
-        logger: BenchmarkingLogger
+        proofCheckTimeoutMillis: number | undefined,
+        logger: BenchmarkingLogger,
+        _abortSignal: AbortSignal
     ): Promise<ProofsCheckResult> {
         const proofsCheckExecutionResult =
             await checkGeneratedProofsInSubprocess(
@@ -38,6 +40,7 @@ export class SubprocessProofsChecker extends AbstractProofsChecker {
                 sourceFileEnvironment,
                 workspaceRoot,
                 this.checkProofsSubprocessTimeoutMillis,
+                proofCheckTimeoutMillis,
                 this.subprocessesScheduler,
                 logger,
                 this.enableSubprocessLifetimeDebugLogs

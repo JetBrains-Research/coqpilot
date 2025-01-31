@@ -8,13 +8,24 @@ export interface BenchmarkingOptions {
      * - all tasks execution will be stopped as soon as any task `Promise` rejects.
      */
     failFast: boolean;
-
     logFailFastTasksAborting: boolean;
 
     /**
      * If `undefined`, the retries number will not be limited.
      */
     proofGenerationRetries: number | undefined;
+
+    /**
+     * If `undefined`, the default one specified by CoqPilot will be used (`15_000 ms`).
+     *
+     * It is recommened to define and increase `proofCheckTimeoutMillis` value,
+     * if `CoqProofChecker` does not manage to type-check a proof inside large input file
+     * you are working with in the time limit set by default.
+     * However, sometimes such a timeout might signalize about `coq-lsp`
+     * not being able to properly type-check the file;
+     * thus, it is better not to set this parameter to effectively infinite values.
+     */
+    proofCheckTimeoutMillis: number | undefined;
 
     logTeamCityStatistics: boolean;
 }
