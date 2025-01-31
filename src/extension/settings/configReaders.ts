@@ -126,7 +126,11 @@ export function readAndValidateUserModelsParams(
         ...lmStudioUserParams,
         ...deepSeekUserParams,
     ]);
-    validateApiKeysAreProvided(openAiUserParams, grazieUserParams, deepSeekUserParams);
+    validateApiKeysAreProvided(
+        openAiUserParams,
+        grazieUserParams,
+        deepSeekUserParams
+    );
 
     const modelsParams: ModelsParams = {
         predefinedProofsModelParams: resolveParamsAndShowResolutionLogs(

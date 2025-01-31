@@ -9,7 +9,7 @@ const o1ClassModelsOpenAI = [
 
 const o1ClassModelsGrazie = ["openai-o1", "openai-o1-mini"];
 
-// TODO: When DeepSeek API becomes stable: 
+// TODO: When DeepSeek API becomes stable:
 // check whether the r1 model chat history is compatible with o1 model
 const o1ClassModelsDeepSeek = ["deepseek-reasoner"];
 
@@ -28,9 +28,9 @@ export function toO1CompatibleChatHistory(
         service === "openai"
             ? o1ClassModelsOpenAI
             : service === "grazie"
-            ? o1ClassModelsGrazie
-            : o1ClassModelsDeepSeek;
-        
+              ? o1ClassModelsGrazie
+              : o1ClassModelsDeepSeek;
+
     if (o1ClassModels.includes(modelName)) {
         return chatHistory.map((message: ChatMessage) => {
             return {

@@ -119,7 +119,7 @@
                 },
                 "temperature": {
                   "type": "number",
-                  "description": "Temperature of the OpenAI model.",
+                  "description": "Temperature of the OpenAI model. Should be in range [0, 2], otherwise an error will be produced.",
                   "default": 1
                 },
                 "apiKey": {
@@ -306,7 +306,7 @@
                 },
                 "temperature": {
                   "type": "number",
-                  "description": "Temperature of the LM Studio model.",
+                  "description": "Temperature of the LM Studio model. Should be in range [0, 2], otherwise an error will be produced.",
                   "default": 1
                 },
                 "port": {
@@ -393,7 +393,7 @@
                 },
                 "temperature": {
                   "type": "number",
-                  "description": "Temperature of the DeepSeek model.",
+                  "description": "Temperature of the DeepSeek model. Should be in range [0, 2], otherwise an error will be produced.",
                   "default": 1
                 },
                 "apiKey": {
@@ -423,7 +423,7 @@
                 },
                 "maxContextTheoremsNumber": {
                   "type": "number",
-                  "description": "Maximum number of context theorems to include in the prompt sent to the OpenAI model as examples for proof generation. Lower values reduce token usage but may decrease the likelihood of generating correct proofs.",
+                  "description": "Maximum number of context theorems to include in the prompt sent to the DeepSeek model as examples for proof generation. Lower values reduce token usage but may decrease the likelihood of generating correct proofs.",
                   "default": 100
                 },
                 "multiroundProfile": {
@@ -459,25 +459,7 @@
                 }
               }
             },
-            "default": [
-              {
-                "modelId": "deep-seek-v3",
-                "modelName": "deepseek-chat",
-                "temperature": 1,
-                "apiKey": "None",
-                "choices": 15,
-                "systemPrompt": "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'.",
-                "maxTokensToGenerate": 2048,
-                "tokensLimit": 4096,
-                "maxContextTheoremsNumber": 100,
-                "multiroundProfile": {
-                  "maxRoundsNumber": 1,
-                  "proofFixChoices": 1,
-                  "proofFixPrompt": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: '${diagnostic}'. Please, fix the proof.",
-                  "maxPreviousProofVersionsNumber": 100
-                }
-              }
-            ],
+            "default": [],
             "markdownDescription": "List of configurations for DeepSeek models. Each configuration will be fetched for completions independently in the order they are listed.",
             "order": 4
           },

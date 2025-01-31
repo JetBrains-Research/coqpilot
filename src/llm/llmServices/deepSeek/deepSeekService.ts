@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 
+import { illegalState } from "../../../utils/throwErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { DeepSeekUserModelParams } from "../../userModelParams";
 import { AnalyzedChatHistory, ChatHistory } from "../commonStructures/chat";
@@ -15,7 +16,6 @@ import { DeepSeekModelParams } from "../modelParams";
 import { toO1CompatibleChatHistory } from "../utils/o1ClassModels";
 
 import { DeepSeekModelParamsResolver } from "./deepSeekModelParamsResolver";
-import { illegalState } from "../../../utils/throwErrors";
 
 export class DeepSeekService extends LLMServiceImpl<
     DeepSeekUserModelParams,
@@ -96,14 +96,15 @@ class DeepSeekServiceInternal extends LLMServiceInternal<
         });
 
         try {
-            const completion = await openaiCompatibleApi.chat.completions.create({
-                messages: formattedChat,
-                model: params.modelName,
-                n: choices,
-                temperature: params.temperature,
-                // eslint-disable-next-line @typescript-eslint/naming-convention
-                max_tokens: params.maxTokensToGenerate,
-            });
+            const completion =
+                await openaiCompatibleApi.chat.completions.create({
+                    messages: formattedChat,
+                    model: params.modelName,
+                    n: choices,
+                    temperature: params.temperature,
+                    // eslint-disable-next-line @typescript-eslint/naming-convention
+                    max_tokens: params.maxTokensToGenerate,
+                });
             const rawContentItems = completion.choices.map((choice) => {
                 const content = choice.message.content;
                 if (content === null) {
@@ -152,6 +153,10 @@ class DeepSeekServiceInternal extends LLMServiceInternal<
         chat: ChatHistory,
         modelParams: DeepSeekModelParams
     ): ChatHistory {
-        return toO1CompatibleChatHistory(chat, modelParams.modelName, "deepseek");
+        return toO1CompatibleChatHistory(
+            chat,
+            modelParams.modelName,
+            "deepseek"
+        );
     }
 }

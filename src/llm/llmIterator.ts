@@ -51,7 +51,7 @@ export class LLMSequentialIterator
             ),
             // Here DeepSeek service is reordered to the beginning
             // of the list, due to it's strong performance and
-            // low costs. Refer to discussion: 
+            // low costs. Refer to discussion:
             // https://github.com/JetBrains-Research/coqpilot/pull/56#discussion_r1935180516
             ...this.createLLMServiceHooks(
                 proofGenerationContext,
