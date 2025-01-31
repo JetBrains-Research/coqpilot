@@ -5,6 +5,7 @@ import {
     WorkspaceRoot,
     isStandaloneFilesRoot,
 } from "../../structures/common/workspaceRoot";
+import { ExperimentRunOptions } from "../../structures/inputParameters/experimentRunOptions";
 import { throwBenchmarkingError } from "../../utils/throwErrors";
 import { updateWorkspaceCache } from "../cacheHandlers/cacheUpdater";
 import { WorkspaceCacheHolder } from "../cacheStructures/cacheHolders";
@@ -18,12 +19,14 @@ export async function parseMissingTargetsAndUpdateCache(
     missingTargets: WorkspaceInputTargets,
     workspaceCacheToUpdate: WorkspaceCacheHolder,
     workspaceRoot: WorkspaceRoot,
+    runOptions: ExperimentRunOptions, // TODO: extract dataset-parsing options into separate interface
     logger: BenchmarkingLogger,
     parser: AbstractCoqProjectParser
 ) {
     const parsedWorkspace = await parseCoqProject(
         missingTargets,
         workspaceRoot,
+        runOptions.openDocumentTimeoutMillis,
         logger,
         parser
     );
@@ -37,6 +40,7 @@ export async function parseMissingTargetsAndUpdateCache(
 async function parseCoqProject(
     missingTargets: WorkspaceInputTargets,
     workspaceRoot: WorkspaceRoot,
+    openDocumentTimeoutMillis: number | undefined,
     logger: BenchmarkingLogger,
     parser: AbstractCoqProjectParser
 ): Promise<ParsedWorkspaceHolder> {
@@ -47,6 +51,7 @@ async function parseCoqProject(
         const parsedWorkspace = await parser.parseCoqProject(
             missingTargets,
             workspaceRoot,
+            openDocumentTimeoutMillis,
             logger
         );
         logger.info(
@@ -56,7 +61,7 @@ async function parseCoqProject(
     } catch (error) {
         const errorRecordLogger = logger
             .asOneRecord()
-            .error(`failed to build and parse ${projectId}`, undefined, "")
+            .error(`Failed to build and parse ${projectId}`, undefined, "")
             .debug(`: ${missingTargets.filePaths().join(", ")}`, undefined, "");
         if (error instanceof CoqProjectParsingFailedError) {
             errorRecordLogger.error(

@@ -186,12 +186,15 @@ export async function benchmarkSingleCompletionGeneration<
         // Therefore, the following code handles proofs duplicates by itself.
         proofsCheckResult = await proofsChecker.checkProofs(
             Array.from(allGeneratedProofsMap.keys()),
-            generationArgs.completionContext,
-            generationArgs.sourceFileEnvironment,
-            generationArgs.workspaceRoot,
-            options.proofCheckTimeoutMillis,
-            logger,
-            abortSignal
+            {
+                completionContext: generationArgs.completionContext,
+                sourceFileEnvironment: generationArgs.sourceFileEnvironment,
+                workspaceRoot: generationArgs.workspaceRoot,
+                openDocumentTimeoutMillis: options.openDocumentTimeoutMillis,
+                proofCheckTimeoutMillis: options.proofCheckTimeoutMillis,
+                logger: logger,
+                abortSignal: abortSignal,
+            }
         );
     } catch (error) {
         if (error instanceof ProofsCheckFailedError) {

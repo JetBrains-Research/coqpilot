@@ -28,14 +28,19 @@ export class ProofsCheckFailedError extends Error {
     }
 }
 
+export interface ProofsCheckArgs {
+    completionContext: CompletionContext;
+    sourceFileEnvironment: SourceFileEnvironment;
+    workspaceRoot: WorkspaceRoot;
+    openDocumentTimeoutMillis: number | undefined;
+    proofCheckTimeoutMillis: number | undefined;
+    logger: BenchmarkingLogger;
+    abortSignal: AbortSignal;
+}
+
 export abstract class AbstractProofsChecker {
     abstract checkProofs(
         preparedProofs: string[],
-        completionContext: CompletionContext,
-        sourceFileEnvironment: SourceFileEnvironment,
-        workspaceRoot: WorkspaceRoot,
-        timeoutMillis: number | undefined,
-        logger: BenchmarkingLogger,
-        abortSignal: AbortSignal
+        inputArgs: ProofsCheckArgs
     ): Promise<ProofsCheckResult>;
 }

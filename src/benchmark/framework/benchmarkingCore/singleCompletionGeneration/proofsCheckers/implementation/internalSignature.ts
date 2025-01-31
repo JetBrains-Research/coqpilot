@@ -13,6 +13,7 @@ export namespace CheckProofsInternalSignature {
         documentVersion: number;
         positionToCheckAt: Position;
         preparedProofs: string[];
+        openDocumentTimeoutMillis: number | undefined;
         proofCheckTimeoutMillis: number | undefined;
     }
 
@@ -104,6 +105,10 @@ export namespace CheckProofsInternalSignature {
                 },
             },
             proofCheckTimeoutMillis: {
+                type: "number",
+                nullable: true,
+            },
+            openDocumentTimeoutMillis: {
                 type: "number",
                 nullable: true,
             },

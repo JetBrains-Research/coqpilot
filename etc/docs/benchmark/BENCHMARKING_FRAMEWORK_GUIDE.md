@@ -179,6 +179,16 @@ experiment.updateRunOptions({
     // Can be left `undefined` to make the retries unlimited.
     proofGenerationRetries: 10,
 
+    // Timeout for `coq-lsp` to type-check a source Coq file.
+    // Such type-check is needed to be performed
+    // before parsing a file or checking a new proof inside it.
+    // Can be left `undefined` to use the default value set by CoqPilot.
+    openDocumentTimeoutMillis: 300_000,
+
+    // Timeout for `CoqProofChecker` to check a proof.
+    // Can be left `undefined` to use the default value set by CoqPilot.
+    proofCheckTimeoutMillis: 10_000;
+
     // There might be many parallel proof-generation requests to the same model
     // (in terms of model type, for example, "gpt-4o" models from OpenAI service),
     // and it might be useful to limit their number to guarantee the overall system progress.

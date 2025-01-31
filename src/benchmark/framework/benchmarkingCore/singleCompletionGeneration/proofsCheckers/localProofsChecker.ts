@@ -1,13 +1,6 @@
 import {
-    CompletionContext,
-    SourceFileEnvironment,
-} from "../../../../../core/completionGenerationContext";
-
-import { BenchmarkingLogger } from "../../../logging/benchmarkingLogger";
-import { WorkspaceRoot } from "../../../structures/common/workspaceRoot";
-
-import {
     AbstractProofsChecker,
+    ProofsCheckArgs,
     ProofsCheckResult,
 } from "./abstractProofsChecker";
 import { CheckProofsImpl } from "./implementation/checkProofs";
@@ -20,24 +13,13 @@ import { ProofsCheckerUtils } from "./implementation/proofsCheckerUtils";
 export class LocalProofsChecker extends AbstractProofsChecker {
     async checkProofs(
         preparedProofs: string[],
-        completionContext: CompletionContext,
-        sourceFileEnvironment: SourceFileEnvironment,
-        workspaceRoot: WorkspaceRoot,
-        proofCheckTimeoutMillis: number | undefined,
-        _logger: BenchmarkingLogger,
-        abortSignal: AbortSignal
+        inputArgs: ProofsCheckArgs
     ): Promise<ProofsCheckResult> {
-        const args = ProofsCheckerUtils.buildArgs(
-            preparedProofs,
-            completionContext,
-            sourceFileEnvironment,
-            workspaceRoot,
-            proofCheckTimeoutMillis
-        );
+        const args = ProofsCheckerUtils.buildArgs(preparedProofs, inputArgs);
         const proofsCheckResult = await CheckProofsImpl.checkProofsMeasured(
             args,
             undefined,
-            abortSignal
+            inputArgs.abortSignal
         );
         return ProofsCheckerUtils.unpackSuccessResultOrThrow(proofsCheckResult);
     }

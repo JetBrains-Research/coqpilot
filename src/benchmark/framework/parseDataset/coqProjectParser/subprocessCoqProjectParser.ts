@@ -25,11 +25,13 @@ export class SubprocessCoqProjectParser extends AbstractCoqProjectParser {
     async parseCoqProject(
         targets: WorkspaceInputTargets,
         workspaceRoot: WorkspaceRoot,
+        openDocumentTimeoutMillis: number | undefined,
         logger: BenchmarkingLogger
     ): Promise<ParsedWorkspaceHolder> {
         const executionResult = await buildAndParseCoqProjectInSubprocess(
             workspaceRoot,
             CoqProjectParserUtils.packWorkspaceTargets(targets),
+            openDocumentTimeoutMillis,
             false, // TODO: support turning projects building on
             this.buildAndParseCoqProjectSubprocessTimeoutMillis,
             this.subprocessesScheduler,

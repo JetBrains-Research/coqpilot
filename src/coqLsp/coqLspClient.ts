@@ -32,6 +32,7 @@ import { CoqLspConnector } from "./coqLspConnector";
 import {
     CoqLspError,
     CoqLspStartupError,
+    CoqLspTimeoutError,
     FlecheDocument,
     FlecheDocumentParams,
     GoalAnswer,
@@ -40,16 +41,17 @@ import {
     ProofGoal,
 } from "./coqLspTypes";
 
-export interface DocumentSpec {
+export interface OpenDocumentSpec {
     uri: Uri;
     version?: number;
+    timeoutMillis?: number;
 }
 
 export interface CoqLspClient extends Disposable {
     /**
      * Fetches all goals present at the given position in the document.
      * This method doesn't open the document implicitly, therefore
-     * it assumes that openTextDocument has been called before.
+     * it assumes that `openTextDocument` has been called before.
      * @param position Position in the document where to fetch the goals
      * @param documentUri Uri of the document
      * @param version Version of the document
@@ -77,16 +79,20 @@ export interface CoqLspClient extends Disposable {
     /**
      * Returns a FlecheDocument for the given uri.
      * This method doesn't open the document implicitly, therefore
-     * it assumes that openTextDocument has been called before.
+     * it assumes that `openTextDocument` has been called before.
      */
     getFlecheDocument(uri: Uri): Promise<FlecheDocument>;
 
-    openTextDocument(uri: Uri, version?: number): Promise<DiagnosticMessage>;
+    openTextDocument(
+        uri: Uri,
+        version?: number,
+        timeoutMillis?: number
+    ): Promise<DiagnosticMessage>;
 
     closeTextDocument(uri: Uri): Promise<void>;
 
     withTextDocument<T>(
-        documentSpec: DocumentSpec,
+        openDocumentSpec: OpenDocumentSpec,
         block: (openedDocDiagnostic: DiagnosticMessage) => Promise<T>
     ): Promise<T>;
 }
@@ -107,6 +113,8 @@ export class CoqLspClientImpl implements CoqLspClient {
     private client: BaseLanguageClient;
     private subscriptions: Disposable[] = [];
     private mutex = new Mutex();
+
+    static readonly defaultTimeoutMillis = 300_000;
 
     private constructor(
         coqLspConnector: CoqLspConnector,
@@ -185,11 +193,12 @@ export class CoqLspClientImpl implements CoqLspClient {
 
     async openTextDocument(
         uri: Uri,
-        version: number = 1
+        version: number = 1,
+        timeoutMillis: number = CoqLspClientImpl.defaultTimeoutMillis
     ): Promise<DiagnosticMessage> {
         return await this.mutex.runExclusive(async () => {
             throwOnAbort(this.abortSignal);
-            return this.openTextDocumentUnsafe(uri, version);
+            return this.openTextDocumentUnsafe(uri, version, timeoutMillis);
         });
     }
 
@@ -201,19 +210,20 @@ export class CoqLspClientImpl implements CoqLspClient {
     }
 
     async withTextDocument<T>(
-        documentSpec: DocumentSpec,
+        openDocumentSpec: OpenDocumentSpec,
         block: (openedDocDiagnostic: DiagnosticMessage) => Promise<T>
     ): Promise<T> {
         const diagnostic = await this.openTextDocument(
-            documentSpec.uri,
-            documentSpec.version
+            openDocumentSpec.uri,
+            openDocumentSpec.version,
+            openDocumentSpec.timeoutMillis
         );
         // TODO: discuss whether coq-lsp is capable of maintaining several docs opened
         // or we need a common lock for open-close here
         try {
             return await block(diagnostic);
         } finally {
-            await this.closeTextDocument(documentSpec.uri);
+            await this.closeTextDocument(openDocumentSpec.uri);
         }
     }
 
@@ -367,7 +377,7 @@ export class CoqLspClientImpl implements CoqLspClient {
         uri: Uri,
         version: number,
         lastDocumentEndPosition?: Position,
-        timeoutMillis: number = 300000
+        timeoutMillis: number = CoqLspClientImpl.defaultTimeoutMillis
     ): Promise<DiagnosticMessage> {
         await this.client.sendNotification(requestType, params);
 
@@ -420,8 +430,8 @@ export class CoqLspClientImpl implements CoqLspClient {
             pendingDiagnostic ||
             awaitedDiagnostics === undefined
         ) {
-            throw new CoqLspError(
-                `coq-lsp did not respond in ${millisToString(initialTimeout)}`
+            throw new CoqLspTimeoutError(
+                `\`coq-lsp\` did not respond in ${millisToString(initialTimeout)}`
             );
         }
 
@@ -435,7 +445,8 @@ export class CoqLspClientImpl implements CoqLspClient {
 
     private async openTextDocumentUnsafe(
         uri: Uri,
-        version: number = 1
+        version: number = 1,
+        timeoutMillis: number = CoqLspClientImpl.defaultTimeoutMillis
     ): Promise<DiagnosticMessage> {
         const docText = readFileSync(uri.fsPath).toString();
 
@@ -452,7 +463,9 @@ export class CoqLspClientImpl implements CoqLspClient {
             DidOpenTextDocumentNotification.type,
             params,
             uri,
-            version
+            version,
+            undefined,
+            timeoutMillis
         );
     }
 

@@ -5,6 +5,7 @@ import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { CoqLspTimeoutError } from "../coqLsp/coqLspTypes";
 
 import { EventLogger } from "../logging/eventLogger";
+import { millisToString } from "../utils/time";
 import { Uri } from "../utils/uri";
 
 export interface ProofCheckResult {
@@ -40,7 +41,7 @@ export class CoqProofChecker {
                     setTimeout(() => {
                         reject(
                             new CoqLspTimeoutError(
-                                `timed out after ${timeoutMillis} ms`
+                                `timed out after ${millisToString(timeoutMillis)}`
                             )
                         );
                     }, timeoutMillis);
