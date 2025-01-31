@@ -9,7 +9,8 @@ import { WorkspaceRoot } from "../../../structures/common/workspaceRoot";
 
 export interface ProofsCheckResult {
     checkedProofs: ProofCheckResult[];
-    effectiveElapsedMillis: number;
+    proofCheckElapsedMillis: number;
+    totalEffectiveElapsedMillis: number;
 }
 
 export type ProofsCheckFailureType =

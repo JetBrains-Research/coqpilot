@@ -240,7 +240,7 @@ export async function benchmarkSingleCompletionGeneration<
     }
 
     measuredTime.addProofsValidationMillis(
-        proofsCheckResult.effectiveElapsedMillis
+        proofsCheckResult.totalEffectiveElapsedMillis
     );
     const result = new SuccessfulCompletionGenerationBenchmarking(
         validatedProofs,
@@ -255,7 +255,11 @@ export async function benchmarkSingleCompletionGeneration<
             `Successfully verified proofs: ${result.thisRoundValidProofs.length} / ${allGeneratedProofsNumber} are valid`
         )
         .debug(
-            `Effective elapsed time: ${proofsCheckResult.effectiveElapsedMillis} ms`,
+            `Proof-check effective elapsed time: ${proofsCheckResult.proofCheckElapsedMillis} ms`,
+            "gray"
+        )
+        .debug(
+            `Proof-check & \`coq-lsp\` setup effective elapsed time: ${proofsCheckResult.totalEffectiveElapsedMillis} ms`,
             "gray"
         );
     return result;
