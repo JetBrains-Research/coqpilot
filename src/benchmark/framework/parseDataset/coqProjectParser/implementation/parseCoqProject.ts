@@ -55,7 +55,10 @@ export namespace ParseCoqProjectImpl {
                 for (const filePath in args.workspaceTargets) {
                     parsedWorkspace[filePath] =
                         await coqLspClient.withTextDocument(
-                            { uri: Uri.fromPath(filePath) },
+                            {
+                                uri: Uri.fromPath(filePath),
+                                timeoutMillis: args.openDocumentTimeoutMillis,
+                            },
                             () =>
                                 parseFileTargets(
                                     args.workspaceTargets[filePath],

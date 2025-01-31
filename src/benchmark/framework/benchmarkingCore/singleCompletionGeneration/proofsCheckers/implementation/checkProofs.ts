@@ -39,7 +39,11 @@ export namespace CheckProofsImpl {
                 await withDocumentOpenedByTestCoqLsp<
                     [ProofCheckResult[], number]
                 >(
-                    { uri: fileUri, version: args.documentVersion },
+                    {
+                        uri: fileUri,
+                        version: args.documentVersion,
+                        timeoutMillis: args.openDocumentTimeoutMillis,
+                    },
                     {
                         workspaceRootPath: args.workspaceRootPath,
                         abortSignal: abortSignal,

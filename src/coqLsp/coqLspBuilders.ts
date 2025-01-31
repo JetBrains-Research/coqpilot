@@ -6,7 +6,7 @@ import {
     CoqLspClient,
     CoqLspClientImpl,
     DiagnosticMessage,
-    DocumentSpec,
+    OpenDocumentSpec,
 } from "./coqLspClient";
 import { CoqLspClientConfig, CoqLspConfig } from "./coqLspConfig";
 
@@ -27,6 +27,7 @@ export async function createCoqLspClient(
 export interface TestCoqLspClientOptions {
     workspaceRootPath?: string;
     abortSignal?: AbortSignal;
+    openDocumentTimeoutMillis?: number;
 }
 
 export async function createTestCoqLspClient(
@@ -56,7 +57,7 @@ export async function withTestCoqLspClient<T>(
 }
 
 export async function withDocumentOpenedByTestCoqLsp<T>(
-    documentSpec: DocumentSpec,
+    openDocumentSpec: OpenDocumentSpec,
     options: TestCoqLspClientOptions,
     block: (
         coqLspClient: CoqLspClient,
@@ -64,7 +65,7 @@ export async function withDocumentOpenedByTestCoqLsp<T>(
     ) => Promise<T>
 ): Promise<T> {
     return withTestCoqLspClient(options, (coqLspClient) =>
-        coqLspClient.withTextDocument(documentSpec, (openedDocDiagnostic) =>
+        coqLspClient.withTextDocument(openDocumentSpec, (openedDocDiagnostic) =>
             block(coqLspClient, openedDocDiagnostic)
         )
     );

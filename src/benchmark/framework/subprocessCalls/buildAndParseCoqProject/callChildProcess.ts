@@ -18,8 +18,9 @@ import Signature = ParseCoqProjectInternalSignature;
 export async function buildAndParseCoqProjectInSubprocess(
     workspaceRoot: WorkspaceRoot,
     workspaceTargets: Signature.ArgsModels.FilePathToFileTargets,
+    openDocumentTimeoutMillis: number | undefined,
     buildProject: boolean,
-    timeoutMillis: number | undefined,
+    subprocessTimeoutMillis: number | undefined,
     subprocessesScheduler: AsyncScheduler,
     benchmarkingLogger: BenchmarkingLogger,
     enableProcessLifetimeDebugLogs: boolean = false
@@ -39,12 +40,13 @@ export async function buildAndParseCoqProjectInSubprocess(
 
     const args = CoqProjectParserUtils.buildArgs(
         workspaceTargets,
-        workspaceRoot
+        workspaceRoot,
+        openDocumentTimeoutMillis
     );
     const options: ChildProcessOptions = {
         workingDirectory:
             enterWorkspaceAndExecuteSubprocessCommand.workingDirectory,
-        timeoutMillis: timeoutMillis,
+        timeoutMillis: subprocessTimeoutMillis,
     };
 
     return subprocessesScheduler.scheduleTask(

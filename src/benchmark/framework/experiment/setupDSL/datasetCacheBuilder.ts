@@ -33,6 +33,7 @@ export namespace DatasetCacheBuildingImpl {
     ): Promise<DatasetCacheHolder> {
         const datasetCache = await parseDataset(
             cacheTargets,
+            runOptions,
             logger,
             coqProjectParser
         );
@@ -49,6 +50,7 @@ export namespace DatasetCacheBuildingImpl {
 
     async function parseDataset(
         cacheTargets: DatasetInputTargets,
+        runOptions: ExperimentRunOptions,
         logger: BenchmarkingLogger,
         coqProjectParser: AbstractCoqProjectParser
     ): Promise<DatasetCacheHolder> {
@@ -62,6 +64,7 @@ export namespace DatasetCacheBuildingImpl {
                 workspaceTargets,
                 workspaceCache,
                 workspaceRoot,
+                runOptions,
                 logger,
                 coqProjectParser
             );

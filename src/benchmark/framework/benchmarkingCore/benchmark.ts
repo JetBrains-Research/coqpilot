@@ -231,6 +231,7 @@ function extractBenchmarkingOptions(
         failFast,
         logFailFastTasksAborting,
         proofGenerationRetries,
+        openDocumentTimeoutMillis,
         proofCheckTimeoutMillis,
         logTeamCityStatistics,
     } = experimentRunOptions;
@@ -238,6 +239,7 @@ function extractBenchmarkingOptions(
         failFast: failFast,
         logFailFastTasksAborting: logFailFastTasksAborting,
         proofGenerationRetries: proofGenerationRetries,
+        openDocumentTimeoutMillis: openDocumentTimeoutMillis,
         proofCheckTimeoutMillis: proofCheckTimeoutMillis,
         logTeamCityStatistics: logTeamCityStatistics,
     };

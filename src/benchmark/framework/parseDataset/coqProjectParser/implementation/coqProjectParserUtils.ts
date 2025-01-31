@@ -48,13 +48,15 @@ export namespace CoqProjectParserUtils {
 
     export function buildArgs(
         workspaceTargets: Signature.ArgsModels.FilePathToFileTargets,
-        workspaceRoot: WorkspaceRoot
+        workspaceRoot: WorkspaceRoot,
+        openDocumentTimeoutMillis: number | undefined
     ): Signature.ArgsModels.Args {
         return {
             workspaceRootPath: isStandaloneFilesRoot(workspaceRoot)
                 ? undefined
                 : workspaceRoot.directoryPath,
             workspaceTargets: workspaceTargets,
+            openDocumentTimeoutMillis: openDocumentTimeoutMillis,
         };
     }
 }

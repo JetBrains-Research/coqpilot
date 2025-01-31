@@ -37,7 +37,7 @@ import { saveBuiltCache } from "./saveBuiltCache";
 export async function parseDatasetForBenchmarkingItems(
     inputBundles: InputBenchmarkingBundle[],
     mergedRequestedTargets: DatasetInputTargets,
-    runOptions: ExperimentRunOptions,
+    runOptions: ExperimentRunOptions, // TODO: extract dataset-parsing options into separate interface
     logger: BenchmarkingLogger,
     coqProjectParser: AbstractCoqProjectParser
 ): Promise<BenchmarkingItem[]> {
@@ -73,6 +73,7 @@ export async function parseDatasetForBenchmarkingItems(
                 missingTargets,
                 workspaceCache,
                 workspaceRoot,
+                runOptions,
                 logger,
                 coqProjectParser
             );
