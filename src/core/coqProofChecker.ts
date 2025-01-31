@@ -32,7 +32,7 @@ export class CoqProofChecker {
         documentVersion: number,
         positionToCheckAt: Position,
         proofs: Proof[],
-        coqLspTimeoutMillis: number = 15000
+        timeoutMillis: number = 15000
     ): Promise<ProofCheckResult[]> {
         return await this.mutex.runExclusive(async () => {
             const timeoutPromise = new Promise<ProofCheckResult[]>(
@@ -40,10 +40,10 @@ export class CoqProofChecker {
                     setTimeout(() => {
                         reject(
                             new CoqLspTimeoutError(
-                                `checkProofs timed out after ${coqLspTimeoutMillis} milliseconds`
+                                `timed out after ${timeoutMillis} ms`
                             )
                         );
-                    }, coqLspTimeoutMillis);
+                    }, timeoutMillis);
                 }
             );
 

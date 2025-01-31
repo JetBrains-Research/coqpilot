@@ -102,7 +102,7 @@ export namespace ExecuteBenchmarkingTaskLoggingUtils {
                 }
                 const firstFailedRound = allFailedRounds[0];
                 switch (firstFailedRound.failureMetadata.failureType) {
-                    case "`coq-lsp` timeout":
+                    case "proof-check timeout":
                         failureMessage = "Proofs validation timeout";
                         break;
                     case "`CoqProofChecker` error":

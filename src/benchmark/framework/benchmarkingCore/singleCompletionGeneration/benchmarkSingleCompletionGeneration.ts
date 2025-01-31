@@ -99,7 +99,7 @@ export interface ParentProofToFix {
  *
  * The function handles errors as follows:
  * - throws a `BenchmarkingError` if proof generation fails within the configured `proofGenerationRetries` attempts;
- * - captures proof-checking errors, such as `coq-lsp` timeouts or `CoqProofChecker` failures,
+ * - captures proof-checking errors, such as proof-check timeouts or `CoqProofChecker` failures,
  *   within `FailedCompletionGenerationBenchmarking`.
  *
  * However, the following exceptions are always rethrown:
@@ -189,6 +189,7 @@ export async function benchmarkSingleCompletionGeneration<
             generationArgs.completionContext,
             generationArgs.sourceFileEnvironment,
             generationArgs.workspaceRoot,
+            options.proofCheckTimeoutMillis,
             logger,
             abortSignal
         );

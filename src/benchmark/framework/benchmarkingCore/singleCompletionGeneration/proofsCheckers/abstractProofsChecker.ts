@@ -33,7 +33,8 @@ export abstract class AbstractProofsChecker {
         completionContext: CompletionContext,
         sourceFileEnvironment: SourceFileEnvironment,
         workspaceRoot: WorkspaceRoot,
+        timeoutMillis: number | undefined,
         logger: BenchmarkingLogger,
-        abortSignal?: AbortSignal
+        abortSignal: AbortSignal
     ): Promise<ProofsCheckResult>;
 }

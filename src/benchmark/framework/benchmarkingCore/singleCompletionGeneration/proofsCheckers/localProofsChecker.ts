@@ -23,6 +23,7 @@ export class LocalProofsChecker extends AbstractProofsChecker {
         completionContext: CompletionContext,
         sourceFileEnvironment: SourceFileEnvironment,
         workspaceRoot: WorkspaceRoot,
+        proofCheckTimeoutMillis: number | undefined,
         _logger: BenchmarkingLogger,
         abortSignal: AbortSignal
     ): Promise<ProofsCheckResult> {
@@ -30,7 +31,8 @@ export class LocalProofsChecker extends AbstractProofsChecker {
             preparedProofs,
             completionContext,
             sourceFileEnvironment,
-            workspaceRoot
+            workspaceRoot,
+            proofCheckTimeoutMillis
         );
         const proofsCheckResult = await CheckProofsImpl.checkProofsMeasured(
             args,

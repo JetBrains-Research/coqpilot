@@ -46,7 +46,8 @@ export namespace CheckProofsImpl {
                         fileUri,
                         args.documentVersion,
                         args.positionToCheckAt,
-                        args.preparedProofs
+                        args.preparedProofs,
+                        args.proofCheckTimeoutMillis
                     )
             );
             const proofsValidationMillis = timeMark.measureElapsedMillis();

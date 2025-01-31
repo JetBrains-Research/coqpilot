@@ -22,7 +22,8 @@ export namespace ProofsCheckerUtils {
         preparedProofs: string[],
         completionContext: CompletionContext,
         sourceFileEnvironment: SourceFileEnvironment,
-        workspaceRoot: WorkspaceRoot
+        workspaceRoot: WorkspaceRoot,
+        proofCheckTimeoutMillis: number | undefined
     ): Signature.Args {
         return {
             workspaceRootPath: isStandaloneFilesRoot(workspaceRoot)
@@ -32,6 +33,7 @@ export namespace ProofsCheckerUtils {
             documentVersion: sourceFileEnvironment.documentVersion,
             positionToCheckAt: completionContext.admitRange.start,
             preparedProofs: preparedProofs,
+            proofCheckTimeoutMillis: proofCheckTimeoutMillis,
         };
     }
 
