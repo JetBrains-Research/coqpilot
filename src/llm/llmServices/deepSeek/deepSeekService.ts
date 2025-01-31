@@ -11,11 +11,11 @@ import { ProofVersion } from "../commonStructures/proofVersion";
 import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
 import { LLMServiceInternal } from "../llmServiceInternal";
-import { OpenAiModelParams } from "../modelParams";
 import { DeepSeekModelParams } from "../modelParams";
 import { toO1CompatibleChatHistory } from "../utils/o1ClassModels";
 
 import { DeepSeekModelParamsResolver } from "./deepSeekModelParamsResolver";
+import { illegalState } from "../../../utils/throwErrors";
 
 export class DeepSeekService extends LLMServiceImpl<
     DeepSeekUserModelParams,
@@ -31,8 +31,6 @@ export class DeepSeekService extends LLMServiceImpl<
         this.generationsLoggerBuilder
     );
     protected readonly modelParamsResolver = new DeepSeekModelParamsResolver();
-
-    static readonly baseApiUrl = "https://api.deepseek.com/v1";
 }
 
 export class DeepSeekGeneratedProof extends GeneratedProofImpl<
@@ -44,7 +42,7 @@ export class DeepSeekGeneratedProof extends GeneratedProofImpl<
     constructor(
         rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
-        modelParams: OpenAiModelParams,
+        modelParams: DeepSeekModelParams,
         llmServiceInternal: DeepSeekServiceInternal,
         previousProofVersions?: ProofVersion[]
     ) {
@@ -64,10 +62,12 @@ class DeepSeekServiceInternal extends LLMServiceInternal<
     DeepSeekGeneratedProof,
     DeepSeekServiceInternal
 > {
+    static readonly baseApiUrl = "https://api.deepseek.com/v1";
+
     constructGeneratedProof(
         rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
-        modelParams: OpenAiModelParams,
+        modelParams: DeepSeekModelParams,
         previousProofVersions?: ProofVersion[] | undefined
     ): DeepSeekGeneratedProof {
         return new DeepSeekGeneratedProof(
@@ -81,14 +81,14 @@ class DeepSeekServiceInternal extends LLMServiceInternal<
 
     async generateFromChatImpl(
         analyzedChat: AnalyzedChatHistory,
-        params: OpenAiModelParams,
+        params: DeepSeekModelParams,
         choices: number
     ): Promise<GeneratedRawContent> {
         LLMServiceInternal.validateChoices(choices);
 
-        const openai = new OpenAI({
+        const openaiCompatibleApi = new OpenAI({
             apiKey: params.apiKey,
-            baseURL: DeepSeekService.baseApiUrl,
+            baseURL: DeepSeekServiceInternal.baseApiUrl,
         });
         const formattedChat = this.formatChatHistory(analyzedChat.chat, params);
         this.logDebug.event("Completion requested", {
@@ -96,7 +96,7 @@ class DeepSeekServiceInternal extends LLMServiceInternal<
         });
 
         try {
-            const completion = await openai.chat.completions.create({
+            const completion = await openaiCompatibleApi.chat.completions.create({
                 messages: formattedChat,
                 model: params.modelName,
                 n: choices,
@@ -107,7 +107,7 @@ class DeepSeekServiceInternal extends LLMServiceInternal<
             const rawContentItems = completion.choices.map((choice) => {
                 const content = choice.message.content;
                 if (content === null) {
-                    throw Error("response message content is null");
+                    illegalState("response message content is null");
                 }
                 return content;
             });
@@ -131,7 +131,7 @@ class DeepSeekServiceInternal extends LLMServiceInternal<
         rawContentItems: string[],
         tokensUsage: OpenAI.Completions.CompletionUsage | undefined,
         analyzedChat: AnalyzedChatHistory,
-        params: OpenAiModelParams
+        params: DeepSeekModelParams
     ): GeneratedRawContent {
         const promptTokens =
             tokensUsage?.prompt_tokens ??
@@ -150,8 +150,8 @@ class DeepSeekServiceInternal extends LLMServiceInternal<
 
     private formatChatHistory(
         chat: ChatHistory,
-        modelParams: OpenAiModelParams
+        modelParams: DeepSeekModelParams
     ): ChatHistory {
-        return toO1CompatibleChatHistory(chat, modelParams.modelName, "openai");
+        return toO1CompatibleChatHistory(chat, modelParams.modelName, "deepseek");
     }
 }

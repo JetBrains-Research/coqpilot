@@ -19,8 +19,8 @@ export class DeepSeekModelParamsResolver
         .requiredToBeConfigured()
         .validate([
             (value) =>
-                DeepSeekModelParamsResolver._allowedModels.includes(value),
-            `be one of the allowed models: ${DeepSeekModelParamsResolver._allowedModels.join(
+                DeepSeekModelParamsResolver.allowedModels.includes(value),
+            `be one of the allowed models: ${DeepSeekModelParamsResolver.allowedModels.join(
                 ", "
             )}`,
         ]);
@@ -36,5 +36,5 @@ export class DeepSeekModelParamsResolver
         .requiredToBeConfigured()
         .validateAtRuntimeOnly();
 
-    static readonly _allowedModels = ["deepseek-chat", "deepseek-reasoner"];
+    static readonly allowedModels = ["deepseek-chat", "deepseek-reasoner"];
 }

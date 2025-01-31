@@ -21,9 +21,9 @@ export type CorrespondingInputParams<T extends LLMServiceStringIdentifier> =
           : T extends "grazie"
             ? InputBenchmarkingModelParams.GrazieParams
             : T extends "lmstudio"
-              ? InputBenchmarkingModelParams.DeepSeekParams
+              ? InputBenchmarkingModelParams.LMStudioParams
               : T extends "deepseek"
-                ? InputBenchmarkingModelParams.LMStudioParams
+                ? InputBenchmarkingModelParams.DeepSeekParams
                 : never;
 
 export class BenchmarkingBundle {

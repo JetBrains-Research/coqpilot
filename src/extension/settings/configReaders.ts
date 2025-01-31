@@ -126,7 +126,7 @@ export function readAndValidateUserModelsParams(
         ...lmStudioUserParams,
         ...deepSeekUserParams,
     ]);
-    validateApiKeysAreProvided(openAiUserParams, grazieUserParams);
+    validateApiKeysAreProvided(openAiUserParams, grazieUserParams, deepSeekUserParams);
 
     const modelsParams: ModelsParams = {
         predefinedProofsModelParams: resolveParamsAndShowResolutionLogs(
@@ -213,7 +213,8 @@ function validateIdsAreUnique(allModels: UserModelParams[]) {
 
 function validateApiKeysAreProvided(
     openAiUserParams: OpenAiUserModelParams[],
-    grazieUserParams: GrazieUserModelParams[]
+    grazieUserParams: GrazieUserModelParams[],
+    deepSeekUserParams: DeepSeekUserModelParams[]
 ) {
     const buildApiKeyError = (
         serviceName: string,
@@ -232,6 +233,9 @@ function validateApiKeysAreProvided(
     }
     if (grazieUserParams.some((params) => params.apiKey === "None")) {
         throw buildApiKeyError("Grazie", "grazie");
+    }
+    if (deepSeekUserParams.some((params) => params.apiKey === "None")) {
+        throw buildApiKeyError("Deep Seek", "deepSeek");
     }
 }
 
