@@ -25,7 +25,15 @@ export namespace CheckProofsInternalSignature {
 
     export interface SuccessResult {
         checkedProofs: ProofCheckResult[];
-        effectiveElapsedMillis: number;
+        /**
+         * Pure `CoqProofChecker.checkProofs(...)` call measured.
+         */
+        proofCheckElapsedMillis: number;
+        /**
+         * `CoqProofChecker.checkProofs(...)` call together with
+         * the time spent to open and close the source document via `coq-lsp`.
+         */
+        totalEffectiveElapsedMillis: number;
     }
 
     export type FailureType = "COQ_LSP_TIMEOUT" | "COQ_PROOF_CHECKER_ERROR";
@@ -116,11 +124,18 @@ export namespace CheckProofsInternalSignature {
                 type: "array",
                 items: proofCheckResultSchema,
             },
-            effectiveElapsedMillis: {
+            proofCheckElapsedMillis: {
+                type: "number",
+            },
+            totalEffectiveElapsedMillis: {
                 type: "number",
             },
         },
-        required: ["checkedProofs", "effectiveElapsedMillis"],
+        required: [
+            "checkedProofs",
+            "proofCheckElapsedMillis",
+            "totalEffectiveElapsedMillis",
+        ],
         additionalProperties: false,
     };
 

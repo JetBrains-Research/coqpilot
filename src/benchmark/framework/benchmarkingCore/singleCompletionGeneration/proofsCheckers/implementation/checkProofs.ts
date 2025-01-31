@@ -32,29 +32,41 @@ export namespace CheckProofsImpl {
         abortSignal?: AbortSignal
     ): Promise<Signature.Result> {
         const fileUri = deserializeUri(args.serializedFileUri);
-        const timeMark = new TimeMark();
+        const totalTimeMark = new TimeMark();
 
         try {
-            const proofCheckResults = await withDocumentOpenedByTestCoqLsp(
-                { uri: fileUri, version: args.documentVersion },
-                {
-                    workspaceRootPath: args.workspaceRootPath,
-                    abortSignal: abortSignal,
-                },
-                (coqLspClient) =>
-                    new CoqProofChecker(coqLspClient).checkProofs(
-                        fileUri,
-                        args.documentVersion,
-                        args.positionToCheckAt,
-                        args.preparedProofs,
-                        args.proofCheckTimeoutMillis
-                    )
-            );
-            const proofsValidationMillis = timeMark.measureElapsedMillis();
+            const [proofCheckResults, proofCheckMillis] =
+                await withDocumentOpenedByTestCoqLsp<
+                    [ProofCheckResult[], number]
+                >(
+                    { uri: fileUri, version: args.documentVersion },
+                    {
+                        workspaceRootPath: args.workspaceRootPath,
+                        abortSignal: abortSignal,
+                    },
+                    async (coqLspClient) => {
+                        const proofCheckTimeMark = new TimeMark();
+                        const proofCheckResults = await new CoqProofChecker(
+                            coqLspClient
+                        ).checkProofs(
+                            fileUri,
+                            args.documentVersion,
+                            args.positionToCheckAt,
+                            args.preparedProofs,
+                            args.proofCheckTimeoutMillis
+                        );
+                        return [
+                            proofCheckResults,
+                            proofCheckTimeMark.measureElapsedMillis(),
+                        ];
+                    }
+                );
+            const totalMillis = totalTimeMark.measureElapsedMillis();
 
             return buildSuccessResult(
                 proofCheckResults,
-                proofsValidationMillis,
+                proofCheckMillis,
+                totalMillis,
                 providedLogger
             );
         } catch (e) {
@@ -84,15 +96,17 @@ export namespace CheckProofsImpl {
 
     function buildSuccessResult(
         proofCheckResults: ProofCheckResult[],
-        proofsValidationMillis: number,
+        proofCheckMillis: number,
+        totalMillis: number,
         providedLogger: ProvidedLogger
     ): Signature.SuccessResult {
         providedLogger?.debug(
-            `Proofs were successfully checked in ${proofsValidationMillis} ms`
+            `Proofs were successfully checked in ${totalMillis} ms`
         );
         return {
             checkedProofs: proofCheckResults,
-            effectiveElapsedMillis: proofsValidationMillis,
+            proofCheckElapsedMillis: proofCheckMillis,
+            totalEffectiveElapsedMillis: totalMillis,
         };
     }
 
