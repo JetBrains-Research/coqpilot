@@ -5,6 +5,7 @@ import { Disposable, WorkspaceConfiguration, window, workspace } from "vscode";
 
 import { LLMServices, disposeServices } from "../llm/llmServices";
 import { ErrorsHandlingMode } from "../llm/llmServices/commonStructures/errorsHandlingMode";
+import { DeepSeekService } from "../llm/llmServices/deepSeek/deepSeekService";
 import { GrazieService } from "../llm/llmServices/grazie/grazieService";
 import { LMStudioService } from "../llm/llmServices/lmStudio/lmStudioService";
 import { OpenAiService } from "../llm/llmServices/openai/openAiService";
@@ -65,6 +66,12 @@ export class PluginContext implements Disposable {
             this.llmServicesSetup.eventLogger,
             this.llmServicesSetup.errorsHandlingMode,
             path.join(this.llmServicesLogsDir, "lmstudio-logs.txt"),
+            this.llmServicesSetup.debugLogs
+        ),
+        deepSeekService: new DeepSeekService(
+            this.llmServicesSetup.eventLogger,
+            this.llmServicesSetup.errorsHandlingMode,
+            path.join(this.llmServicesLogsDir, "deepseek-logs.txt"),
             this.llmServicesSetup.debugLogs
         ),
     };

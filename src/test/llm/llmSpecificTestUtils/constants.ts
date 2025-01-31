@@ -18,6 +18,8 @@ export const testModelId = "test model";
 
 export const gptModelName = "gpt-4o-mini-2024-07-18";
 
+export const deepSeekModelName = "deepseek-chat";
+
 export const mockChat: AnalyzedChatHistory = {
     chat: [{ role: "system", content: "Generate proofs." }],
     contextTheorems: [],

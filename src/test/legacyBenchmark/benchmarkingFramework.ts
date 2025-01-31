@@ -3,6 +3,7 @@ import * as fs from "fs";
 
 import { LLMServices } from "../../llm/llmServices";
 import { isLLMServiceRequestSucceeded } from "../../llm/llmServices/commonStructures/llmServiceRequest";
+import { DeepSeekService } from "../../llm/llmServices/deepSeek/deepSeekService";
 import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
 import { LLMServiceImpl } from "../../llm/llmServices/llmService";
 import { LMStudioService } from "../../llm/llmServices/lmStudio/lmStudioService";
@@ -461,6 +462,7 @@ async function prepareForBenchmarkCompletions(
         grazieService: new GrazieService(eventLogger),
         predefinedProofsService: new PredefinedProofsService(eventLogger),
         lmStudioService: new LMStudioService(eventLogger),
+        deepSeekService: new DeepSeekService(eventLogger),
     };
     const processEnvironment: ProcessEnvironment = {
         coqProofChecker: coqProofChecker,
@@ -603,6 +605,9 @@ function resolveInputModelsParametersOrThrow(
         ),
         lmStudioParams: inputModelsParams.lmStudioParams.map((inputParams) =>
             resolveParametersOrThrow(llmServices.lmStudioService, inputParams)
+        ),
+        deepSeekParams: inputModelsParams.deepSeekParams.map((inputParams) =>
+            resolveParametersOrThrow(llmServices.deepSeekService, inputParams)
         ),
     };
 }

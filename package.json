@@ -119,7 +119,7 @@
                 },
                 "temperature": {
                   "type": "number",
-                  "description": "Temperature of the OpenAI model.",
+                  "description": "Temperature of the OpenAI model. Should be in range [0, 2], otherwise an error will be produced.",
                   "default": 1
                 },
                 "apiKey": {
@@ -306,7 +306,7 @@
                 },
                 "temperature": {
                   "type": "number",
-                  "description": "Temperature of the LM Studio model.",
+                  "description": "Temperature of the LM Studio model. Should be in range [0, 2], otherwise an error will be produced.",
                   "default": 1
                 },
                 "port": {
@@ -376,6 +376,93 @@
             "markdownDescription": "List of configurations that fetch completions from a locally running LLM inside [LM Studio](https://lmstudio.ai).",
             "order": 3
           },
+          "coqpilot.deepSeekModelsParameters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "modelId": {
+                  "type": "string",
+                  "markdownDescription": "Unique identifier of this model to distinguish it from others. Could be any string.",
+                  "default": "deep-seek-v3"
+                },
+                "modelName": {
+                  "type": "string",
+                  "markdownDescription": "Model to use from the DeepSeek public API. List of models known to CoqPilot: \n * deepseek-chat \n * deepseek-reasoner",
+                  "default": "deepseek-chat"
+                },
+                "temperature": {
+                  "type": "number",
+                  "description": "Temperature of the DeepSeek model. Should be in range [0, 2], otherwise an error will be produced.",
+                  "default": 1
+                },
+                "apiKey": {
+                  "type": "string",
+                  "description": "Api key to communicate with the DeepSeek api. You can get one [here](https://platform.deepseek.com/api_keys).",
+                  "default": "None"
+                },
+                "choices": {
+                  "type": "number",
+                  "description": "Number of attempts to generate proof for one hole with this model. All attempts are made as a single request, so this parameter should not have a significant impact on performance. However, more choices mean more tokens spent on generation.",
+                  "default": 15
+                },
+                "systemPrompt": {
+                  "type": "string",
+                  "description": "Prompt for the DeepSeek model to begin a chat with. It is sent as a system message, which means it has more impact than other messages.",
+                  "default": "Generate proof of the theorem from user input in Coq. You should only generate proofs in Coq. Never add special comments to the proof. Your answer should be a valid Coq proof. It should start with 'Proof.' and end with 'Qed.'."
+                },
+                "maxTokensToGenerate": {
+                  "type": "number",
+                  "description": "Number of tokens that the model is allowed to generate as a response message (i.e. message with proof).",
+                  "default": 2048
+                },
+                "tokensLimit": {
+                  "type": "number",
+                  "description": "Total length of input and generated tokens, it is determined by the model.",
+                  "default": 4096
+                },
+                "maxContextTheoremsNumber": {
+                  "type": "number",
+                  "description": "Maximum number of context theorems to include in the prompt sent to the DeepSeek model as examples for proof generation. Lower values reduce token usage but may decrease the likelihood of generating correct proofs.",
+                  "default": 100
+                },
+                "multiroundProfile": {
+                  "type": "object",
+                  "properties": {
+                    "maxRoundsNumber": {
+                      "type": "number",
+                      "description": "Maximum number of rounds to generate and further fix the proof. Default value is 1, which means each proof will be only generated, but not fixed.",
+                      "default": 1
+                    },
+                    "proofFixChoices": {
+                      "type": "number",
+                      "description": "Number of attempts to generate a proof fix for each proof in one round. Warning: increasing `proofFixChoices` can lead to exponential growth in generation requests if `maxRoundsNumber` is relatively large.",
+                      "default": 1
+                    },
+                    "proofFixPrompt": {
+                      "type": "string",
+                      "description": "Prompt for the proof-fix request that will be sent as a user chat message in response to an incorrect proof. It may include the `${diagnostic}` substring, which will be replaced by the actual compiler diagnostic.",
+                      "default": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: `${diagnostic}`. Please, fix the proof."
+                    },
+                    "maxPreviousProofVersionsNumber": {
+                      "type": "number",
+                      "description": "Maximum number of previous proof versions to include in the proof-fix chat, each presented as a dialogue: the user's diagnostic followed by the assistant's corresponding proof attempt. The most recent proof version being fixed is always included and is not affected by this parameter.",
+                      "default": 100
+                    }
+                  },
+                  "default": {
+                    "maxRoundsNumber": 1,
+                    "proofFixChoices": 1,
+                    "proofFixPrompt": "Unfortunately, the last proof is not correct. Here is the compiler's feedback: `${diagnostic}`. Please, fix the proof.",
+                    "maxPreviousProofVersionsNumber": 100
+                  }
+                }
+              }
+            },
+            "default": [],
+            "markdownDescription": "List of configurations for DeepSeek models. Each configuration will be fetched for completions independently in the order they are listed.",
+            "order": 4
+          },
           "coqpilot.contextTheoremsRankerType": {
             "type": "string",
             "enum": [
@@ -390,7 +477,7 @@
             ],
             "description": "Context of the LLM is limited. Usually not all theorems from the file may be used in the completion request. This parameter defines the way theorems are selected for the completion.",
             "default": "distance",
-            "order": 4
+            "order": 5
           },
           "coqpilot.loggingVerbosity": {
             "type": "string",
@@ -404,13 +491,13 @@
             ],
             "description": "The verbosity of the logs.",
             "default": "info",
-            "order": 5
+            "order": 6
           },
           "coqpilot.coqLspServerPath": {
             "type": "string",
             "description": "Path to the Coq LSP server. If not specified, CoqPilot will try to find the server automatically at the default location: coq-lsp at PATH.",
             "default": "coq-lsp",
-            "order": 6
+            "order": 7
           }
         }
       }

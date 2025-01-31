@@ -1,4 +1,5 @@
 import {
+    DeepSeekUserModelParams,
     GrazieUserModelParams,
     LMStudioUserModelParams,
     OpenAiUserModelParams,
@@ -10,6 +11,7 @@ export interface InputModelsParams {
     openAiParams: OpenAiUserModelParams[];
     grazieParams: GrazieUserModelParams[];
     lmStudioParams: LMStudioUserModelParams[];
+    deepSeekParams: DeepSeekUserModelParams[];
 }
 
 export const onlyAutoModelsParams: InputModelsParams = {
@@ -22,6 +24,7 @@ export const onlyAutoModelsParams: InputModelsParams = {
         },
     ],
     lmStudioParams: [],
+    deepSeekParams: [],
 };
 
 export const tacticianModelsParams: InputModelsParams = {
@@ -34,4 +37,5 @@ export const tacticianModelsParams: InputModelsParams = {
         },
     ],
     lmStudioParams: [],
+    deepSeekParams: [],
 };

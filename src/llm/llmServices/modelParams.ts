@@ -56,11 +56,18 @@ export interface LMStudioModelParams extends ModelParams {
     port: number;
 }
 
+export interface DeepSeekModelParams extends ModelParams {
+    modelName: string;
+    temperature: number;
+    apiKey: string;
+}
+
 export interface ModelsParams {
     predefinedProofsModelParams: PredefinedProofsModelParams[];
     openAiParams: OpenAiModelParams[];
     grazieParams: GrazieModelParams[];
     lmStudioParams: LMStudioModelParams[];
+    deepSeekParams: DeepSeekModelParams[];
 }
 
 export const multiroundProfileSchema: JSONSchemaType<MultiroundProfile> = {
@@ -168,5 +175,23 @@ export const lmStudioModelParamsSchema: JSONSchemaType<LMStudioModelParams> = {
         ...(modelParamsSchema.properties as PropertiesSchema<ModelParams>),
     },
     required: ["temperature", "port", ...modelParamsSchema.required],
+    additionalProperties: false,
+};
+
+export const deepSeekModelParamsSchema: JSONSchemaType<DeepSeekModelParams> = {
+    title: "deepSeekModelsParameters",
+    type: "object",
+    properties: {
+        modelName: { type: "string" },
+        temperature: { type: "number" },
+        apiKey: { type: "string" },
+        ...(modelParamsSchema.properties as PropertiesSchema<ModelParams>),
+    },
+    required: [
+        "modelName",
+        "temperature",
+        "apiKey",
+        ...modelParamsSchema.required,
+    ],
     additionalProperties: false,
 };

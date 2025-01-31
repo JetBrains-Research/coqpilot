@@ -78,6 +78,12 @@ export interface LMStudioUserModelParams extends UserModelParams {
     port: number;
 }
 
+export interface DeepSeekUserModelParams extends UserModelParams {
+    modelName: string;
+    temperature: number;
+    apiKey: string;
+}
+
 export const userMultiroundProfileSchema: JSONSchemaType<UserMultiroundProfile> =
     {
         type: "object",
@@ -166,5 +172,19 @@ export const lmStudioUserModelParamsSchema: JSONSchemaType<LMStudioUserModelPara
             ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
         },
         required: ["modelId", "temperature", "port"],
+        additionalProperties: false,
+    };
+
+export const deepSeekUserModelParamsSchema: JSONSchemaType<DeepSeekUserModelParams> =
+    {
+        title: "deepSeekModelsParameters",
+        type: "object",
+        properties: {
+            modelName: { type: "string" },
+            temperature: { type: "number" },
+            apiKey: { type: "string" },
+            ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
+        },
+        required: ["modelId", "modelName", "temperature", "apiKey"],
         additionalProperties: false,
     };
