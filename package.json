@@ -8,7 +8,7 @@
     "url": "https://github.com/JetBrains-Research/coqpilot"
   },
   "publisher": "JetBrains-Research",
-  "version": "2.5.0",
+  "version": "2.4.3",
   "engines": {
     "vscode": "^1.95.0"
   },

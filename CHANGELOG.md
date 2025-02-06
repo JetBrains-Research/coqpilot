@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.5.0
+## 2.4.3
 
 Much work has been done in the benchmarking module; bugs have been detected and eliminated, performance has improved, and feature space has been extended. In the upcoming minor, we plan to finalize the features in the benchmarking framework and make it as cool as never before.
 
