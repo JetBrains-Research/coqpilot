@@ -160,6 +160,7 @@ export function readAndValidateUserModelsParams(
         ...modelsParams.openAiParams,
         ...modelsParams.grazieParams,
         ...modelsParams.lmStudioParams,
+        ...modelsParams.deepSeekParams,
     ]);
 
     return modelsParams;

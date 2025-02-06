@@ -8,7 +8,7 @@
     "url": "https://github.com/JetBrains-Research/coqpilot"
   },
   "publisher": "JetBrains-Research",
-  "version": "2.4.3",
+  "version": "2.4.2",
   "engines": {
     "vscode": "^1.95.0"
   },
@@ -393,8 +393,8 @@
                 },
                 "temperature": {
                   "type": "number",
-                  "description": "Temperature of the DeepSeek model. Should be in range [0, 2], otherwise an error will be produced.",
-                  "default": 1
+                  "description": "Temperature of the DeepSeek model. Should be in range [0, 2], otherwise an error will be produced. According to the API [documentation](https://api-docs.deepseek.com/quick_start/parameter_settings) the recommended value for Coding/Math is 0.0.",
+                  "default": 0.0
                 },
                 "apiKey": {
                   "type": "string",
