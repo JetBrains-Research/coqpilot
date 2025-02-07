@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 
+import { asErrorOrRethrow } from "../../../utils/errorsUtils";
 import { illegalState } from "../../../utils/throwErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { DeepSeekUserModelParams } from "../../userModelParams";
@@ -16,7 +17,6 @@ import { DeepSeekModelParams } from "../modelParams";
 import { toO1CompatibleChatHistory } from "../utils/o1ClassModels";
 
 import { DeepSeekModelParamsResolver } from "./deepSeekModelParamsResolver";
-import { asErrorOrRethrow } from "../../../utils/errorsUtils";
 
 export class DeepSeekService extends LLMServiceImpl<
     DeepSeekUserModelParams,
@@ -121,7 +121,6 @@ class DeepSeekServiceInternal extends LLMServiceInternal<
                     );
                 }
                 const content = completion.choices[0].message.content;
-                completion.usage
                 if (content === null) {
                     illegalState("response message content is null");
                 }
@@ -155,9 +154,8 @@ class DeepSeekServiceInternal extends LLMServiceInternal<
         );
     }
 
-    private accumulateTokenMetrics(
-        tokenUsages: TokenMetrics[]
-    ): TokenMetrics {
+    /* eslint-disable @typescript-eslint/naming-convention */
+    private accumulateTokenMetrics(tokenUsages: TokenMetrics[]): TokenMetrics {
         const availableTokenUsages = tokenUsages.filter(
             (usage): usage is OpenAI.Completions.CompletionUsage =>
                 usage !== undefined
@@ -170,7 +168,8 @@ class DeepSeekServiceInternal extends LLMServiceInternal<
         return availableTokenUsages.reduce(
             (acc, usage) => {
                 return {
-                    completion_tokens: acc.completion_tokens + usage.completion_tokens,
+                    completion_tokens:
+                        acc.completion_tokens + usage.completion_tokens,
                     prompt_tokens: acc.prompt_tokens + usage.prompt_tokens,
                     total_tokens: acc.total_tokens + usage.total_tokens,
                 };
