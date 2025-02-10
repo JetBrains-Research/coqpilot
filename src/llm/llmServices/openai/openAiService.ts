@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 
-import { EventLogger } from "../../../logging/eventLogger";
+import { asErrorOrUndefined } from "../../../utils/errorsUtils";
+import { illegalState } from "../../../utils/throwErrors";
 import {
     ConfigurationError,
     RemoteConnectionError,
@@ -8,7 +9,10 @@ import {
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { OpenAiUserModelParams } from "../../userModelParams";
 import { AnalyzedChatHistory, ChatHistory } from "../commonStructures/chat";
-import { GeneratedRawContent } from "../commonStructures/generatedRawContent";
+import {
+    GeneratedRawContent,
+    GeneratedRawContentItem,
+} from "../commonStructures/generatedRawContent";
 import { ProofVersion } from "../commonStructures/proofVersion";
 import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
@@ -25,21 +29,13 @@ export class OpenAiService extends LLMServiceImpl<
     OpenAiGeneratedProof,
     OpenAiServiceInternal
 > {
-    protected readonly internal: OpenAiServiceInternal;
+    readonly serviceName = "OpenAiService";
+    protected readonly internal = new OpenAiServiceInternal(
+        this,
+        this.eventLogger,
+        this.generationsLoggerBuilder
+    );
     protected readonly modelParamsResolver = new OpenAiModelParamsResolver();
-
-    constructor(
-        eventLogger?: EventLogger,
-        debugLogs: boolean = false,
-        generationsLogsFilePath?: string
-    ) {
-        super("OpenAiService", eventLogger, debugLogs, generationsLogsFilePath);
-        this.internal = new OpenAiServiceInternal(
-            this,
-            this.eventLoggerGetter,
-            this.generationsLoggerBuilder
-        );
-    }
 }
 
 export class OpenAiGeneratedProof extends GeneratedProofImpl<
@@ -49,14 +45,14 @@ export class OpenAiGeneratedProof extends GeneratedProofImpl<
     OpenAiServiceInternal
 > {
     constructor(
-        proof: string,
+        rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
         modelParams: OpenAiModelParams,
         llmServiceInternal: OpenAiServiceInternal,
         previousProofVersions?: ProofVersion[]
     ) {
         super(
-            proof,
+            rawProof,
             proofGenerationContext,
             modelParams,
             llmServiceInternal,
@@ -72,13 +68,13 @@ class OpenAiServiceInternal extends LLMServiceInternal<
     OpenAiServiceInternal
 > {
     constructGeneratedProof(
-        proof: string,
+        rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
         modelParams: OpenAiModelParams,
         previousProofVersions?: ProofVersion[] | undefined
     ): OpenAiGeneratedProof {
         return new OpenAiGeneratedProof(
-            proof,
+            rawProof,
             proofGenerationContext,
             modelParams,
             this,
@@ -95,7 +91,7 @@ class OpenAiServiceInternal extends LLMServiceInternal<
 
         const openai = new OpenAI({ apiKey: params.apiKey });
         const formattedChat = this.formatChatHistory(analyzedChat.chat, params);
-        this.debug.logEvent("Completion requested", {
+        this.logDebug.event("Completion requested", {
             history: formattedChat,
         });
 
@@ -111,7 +107,7 @@ class OpenAiServiceInternal extends LLMServiceInternal<
             const rawContentItems = completion.choices.map((choice) => {
                 const content = choice.message.content;
                 if (content === null) {
-                    throw Error("response message content is null");
+                    illegalState("response message content is null");
                 }
                 return content;
             });
@@ -152,8 +148,8 @@ class OpenAiServiceInternal extends LLMServiceInternal<
         caughtObject: any,
         params: OpenAiModelParams
     ): any {
-        const error = caughtObject as Error;
-        if (error === null) {
+        const error = asErrorOrUndefined(caughtObject);
+        if (error === undefined) {
             return caughtObject;
         }
         const errorMessage = error.message;
@@ -211,7 +207,7 @@ class OpenAiServiceInternal extends LLMServiceInternal<
         /^The model `(.*)` does not exist or you do not have access to it\.$/;
 
     private static readonly incorrectApiKeyPattern =
-        /^Incorrect API key provided: (.*)\.(.*)$/;
+        /^401 Incorrect API key provided: (.*)\.(.*)$/;
 
     private static readonly maximumContextLengthExceededPattern =
         /^This model's maximum context length is ([0-9]+) tokens\. However, you requested ([0-9]+) tokens \(([0-9]+) in the messages, ([0-9]+) in the completion\)\..*$/;

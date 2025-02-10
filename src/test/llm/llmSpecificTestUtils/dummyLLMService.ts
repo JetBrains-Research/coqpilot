@@ -1,6 +1,10 @@
 import { AnalyzedChatHistory } from "../../../llm/llmServices/commonStructures/chat";
 import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
-import { GeneratedRawContent } from "../../../llm/llmServices/commonStructures/generatedRawContent";
+import {
+    GeneratedRawContent,
+    GeneratedRawContentItem,
+} from "../../../llm/llmServices/commonStructures/generatedRawContent";
+import { ProofGenerationMetadataHolder } from "../../../llm/llmServices/commonStructures/proofGenerationMetadata";
 import { ProofVersion } from "../../../llm/llmServices/commonStructures/proofVersion";
 import { GeneratedProofImpl } from "../../../llm/llmServices/generatedProof";
 import { LLMServiceImpl } from "../../../llm/llmServices/llmService";
@@ -13,6 +17,8 @@ import { GenerationsLogger } from "../../../llm/llmServices/utils/generationsLog
 import { BasicModelParamsResolver } from "../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";
 import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { UserModelParams } from "../../../llm/userModelParams";
+
+import { unsupported } from "../../../utils/throwErrors";
 
 /**
  * Mock implementation that always throws on any proof-generation call.
@@ -27,6 +33,7 @@ export class DummyLLMService extends LLMServiceImpl<
     DummyGeneratedProof,
     DummyLLMServiceInternal
 > {
+    readonly serviceName = "DummyLLMService";
     protected readonly internal: DummyLLMServiceInternal;
     protected readonly modelParamsResolver = new BasicModelParamsResolver(
         modelParamsSchema,
@@ -34,10 +41,15 @@ export class DummyLLMService extends LLMServiceImpl<
     );
 
     constructor(generationsLogger: GenerationsLogger) {
-        super("DummyLLMService", undefined, true, undefined);
+        super(
+            undefined,
+            ErrorsHandlingMode.RETHROW_ERRORS,
+            generationsLogger.filePath,
+            true
+        );
         this.internal = new DummyLLMServiceInternal(
             this,
-            this.eventLoggerGetter,
+            this.eventLogger,
             () => generationsLogger
         );
     }
@@ -48,18 +60,18 @@ export class DummyLLMService extends LLMServiceImpl<
         _analyzedChat: AnalyzedChatHistory,
         _params: ModelParams,
         _choices: number,
-        _errorsHandlingMode?: ErrorsHandlingMode
+        _metadataHolder: ProofGenerationMetadataHolder | undefined
     ): Promise<string[]> {
-        throw Error("I'm a teapot");
+        unsupported("I'm a teapot");
     }
 
     generateProof(
         _proofGenerationContext: ProofGenerationContext,
         _params: ModelParams,
         _choices: number,
-        _errorsHandlingMode?: ErrorsHandlingMode
+        _metadataHolder: ProofGenerationMetadataHolder | undefined
     ): Promise<DummyGeneratedProof[]> {
-        throw Error("I'm a teapot");
+        unsupported("I'm a teapot");
     }
 }
 
@@ -70,14 +82,14 @@ export class DummyGeneratedProof extends GeneratedProofImpl<
     DummyLLMServiceInternal
 > {
     constructor(
-        proof: string,
+        rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
         modelParams: ModelParams,
         llmServiceInternal: DummyLLMServiceInternal,
         previousProofVersions?: ProofVersion[]
     ) {
         super(
-            proof,
+            rawProof,
             proofGenerationContext,
             modelParams,
             llmServiceInternal,
@@ -87,10 +99,10 @@ export class DummyGeneratedProof extends GeneratedProofImpl<
 
     fixProof(
         _diagnostic: string,
-        _choices?: number,
-        _errorsHandlingMode?: ErrorsHandlingMode
+        _choices: number,
+        _metadataHolder: ProofGenerationMetadataHolder | undefined
     ): Promise<DummyGeneratedProof[]> {
-        throw Error("I'm a teapot");
+        unsupported("I'm a teapot");
     }
 }
 
@@ -101,12 +113,12 @@ class DummyLLMServiceInternal extends LLMServiceInternal<
     DummyLLMServiceInternal
 > {
     constructGeneratedProof(
-        _proof: string,
+        _rawProof: GeneratedRawContentItem,
         _proofGenerationContext: ProofGenerationContext,
         _modelParams: ModelParams,
         _previousProofVersions?: ProofVersion[] | undefined
     ): DummyGeneratedProof {
-        throw Error("I'm a teapot");
+        unsupported("I'm a teapot");
     }
 
     async generateFromChatImpl(
@@ -114,6 +126,6 @@ class DummyLLMServiceInternal extends LLMServiceInternal<
         _params: ModelParams,
         _choices: number
     ): Promise<GeneratedRawContent> {
-        throw Error("I'm a teapot");
+        unsupported("I'm a teapot");
     }
 }

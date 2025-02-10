@@ -2,7 +2,10 @@ import { expect } from "earl";
 
 import { AnalyzedChatHistory } from "../../../../llm/llmServices/commonStructures/chat";
 import { ErrorsHandlingMode } from "../../../../llm/llmServices/commonStructures/errorsHandlingMode";
+import { GeneratedRawContentItem } from "../../../../llm/llmServices/commonStructures/generatedRawContent";
+import { ProofGenerationMetadataHolder } from "../../../../llm/llmServices/commonStructures/proofGenerationMetadata";
 
+import { illegalState } from "../../../../utils/throwErrors";
 import {
     mockChat,
     mockProofGenerationContext,
@@ -18,6 +21,7 @@ import {
     MockLLMService,
 } from "../../llmSpecificTestUtils/mockLLMService";
 import { testFailedGenerationCompletely } from "../../llmSpecificTestUtils/testFailedGeneration";
+import { expectSuccessfullyGeneratedProofs } from "../../llmSpecificTestUtils/testSuccessfulGeneration";
 import { enhanceMockParams } from "../../llmSpecificTestUtils/transformParams";
 import { withMockLLMService } from "../../llmSpecificTestUtils/withMockLLMService";
 
@@ -45,10 +49,15 @@ suite("[LLMService] Test `GeneratedProof`", () => {
         };
     }
 
+    interface ConstructedProof {
+        generatedProof: MockLLMGeneratedProof;
+        rawProofMetadata: GeneratedRawContentItem;
+    }
+
     async function constructInitialGeneratedProof(
         mockService: MockLLMService,
         basicMockParams: MockLLMModelParams
-    ): Promise<MockLLMGeneratedProof> {
+    ): Promise<ConstructedProof> {
         const unlimitedTokensWithFixesMockParams = enhanceMockParams(
             basicMockParams,
             {
@@ -61,28 +70,40 @@ suite("[LLMService] Test `GeneratedProof`", () => {
                 proofFixPrompt: MockLLMService.proofFixPrompt,
             }
         );
+        const metadataHolder = new ProofGenerationMetadataHolder();
         const generatedProofs = await mockService.generateProof(
             mockProofGenerationContext,
             unlimitedTokensWithFixesMockParams,
             1,
-            ErrorsHandlingMode.RETHROW_ERRORS
+            metadataHolder
         );
+        const successMetadata =
+            metadataHolder.getSuccessfulProofGenerationMetadata();
+
         expect(generatedProofs).toHaveLength(1);
-        return generatedProofs[0] as MockLLMGeneratedProof;
+        expect(successMetadata.generatedRawProofs).toHaveLength(1);
+        return {
+            generatedProof: generatedProofs[0],
+            rawProofMetadata: successMetadata.generatedRawProofs[0],
+        };
     }
 
     test("Build initial version", async () => {
         await withMockLLMService(
-            async (mockService, basicMockParams, _testEventLogger) => {
-                const initialGeneratedProof =
+            ErrorsHandlingMode.RETHROW_ERRORS,
+            async (mockService, basicMockParams) => {
+                const { generatedProof, rawProofMetadata } =
                     await constructInitialGeneratedProof(
                         mockService,
                         basicMockParams
                     );
-                expectGeneratedProof(initialGeneratedProof, {
+                expectGeneratedProof(generatedProof, {
                     proof: proofsToGenerate[0],
                     versionNumber: 1,
-                    proofVersions: [toProofVersion(proofsToGenerate[0])],
+                    rawProofMetadata: rawProofMetadata,
+                    proofVersions: [
+                        toProofVersion(proofsToGenerate[0], rawProofMetadata),
+                    ],
                     nextVersionCanBeGenerated: true,
                     canBeFixed: true,
                 });
@@ -95,18 +116,24 @@ suite("[LLMService] Test `GeneratedProof`", () => {
         expectedExtractedProof: string
     ): Promise<void> {
         return withMockLLMService(
-            async (mockService, basicMockParams, _testEventLogger) => {
-                const generatedProof = await constructInitialGeneratedProof(
-                    mockService,
-                    {
+            ErrorsHandlingMode.RETHROW_ERRORS,
+            async (mockService, basicMockParams) => {
+                const { generatedProof, rawProofMetadata } =
+                    await constructInitialGeneratedProof(mockService, {
                         ...basicMockParams,
                         proofsToGenerate: [dirtyProof],
-                    }
-                );
+                    });
+                expect(rawProofMetadata.content).toEqual(dirtyProof);
                 expectGeneratedProof(generatedProof, {
                     proof: expectedExtractedProof,
                     versionNumber: 1,
-                    proofVersions: [toProofVersion(expectedExtractedProof)],
+                    rawProofMetadata: rawProofMetadata,
+                    proofVersions: [
+                        toProofVersion(
+                            expectedExtractedProof,
+                            rawProofMetadata
+                        ),
+                    ],
                 });
             }
         );
@@ -176,84 +203,108 @@ suite("[LLMService] Test `GeneratedProof`", () => {
 
     test("Mock multiround: generate next version, happy path", async () => {
         await withMockLLMService(
-            async (mockService, basicMockParams, _testEventLogger) => {
-                const initialGeneratedProof =
-                    await constructInitialGeneratedProof(
-                        mockService,
-                        basicMockParams
-                    );
-
-                const newVersionChoices = 3;
-                const secondVersionGeneratedProofs =
-                    await initialGeneratedProof.generateNextVersion(
-                        transformChatToSkipProofs(mockChat, mockService, 1),
-                        newVersionChoices,
-                        ErrorsHandlingMode.RETHROW_ERRORS
-                    );
-                expect(secondVersionGeneratedProofs).toHaveLength(
-                    newVersionChoices
+            ErrorsHandlingMode.RETHROW_ERRORS,
+            async (mockService, basicMockParams) => {
+                const {
+                    generatedProof: parentProof,
+                    rawProofMetadata: parentProofMetadata,
+                } = await constructInitialGeneratedProof(
+                    mockService,
+                    basicMockParams
                 );
 
+                const newVersionChoices = 3;
+                const secondRoundMetadataHolder =
+                    new ProofGenerationMetadataHolder();
+                const secondRoundGeneratedProofs =
+                    await parentProof.generateNextVersion(
+                        transformChatToSkipProofs(mockChat, mockService, 1),
+                        newVersionChoices,
+                        secondRoundMetadataHolder
+                    );
+
                 // test that `proofVersions` of the initial proof didn't change
-                expect(initialGeneratedProof.proofVersions).toEqual([
-                    toProofVersion(proofsToGenerate[0]),
+                expect(parentProof.proofVersions).toEqual([
+                    toProofVersion(proofsToGenerate[0], parentProofMetadata),
                 ]);
 
-                for (let i = 0; i < newVersionChoices; i++) {
-                    const expectedNewProof = proofsToGenerate[i + 1];
-                    expectGeneratedProof(secondVersionGeneratedProofs[i], {
-                        proof: expectedNewProof,
-                        versionNumber: 2,
-                        proofVersions: [
-                            toProofVersion(proofsToGenerate[0]),
-                            toProofVersion(expectedNewProof),
+                expectSuccessfullyGeneratedProofs(
+                    secondRoundGeneratedProofs,
+                    secondRoundMetadataHolder,
+                    {
+                        proofsToGenerateNumber: newVersionChoices,
+                        getProof: (i) => proofsToGenerate[i + 1],
+                        getVersionNumber: () => 2,
+                        getProofVersions: (i, rawProofMetadata) => [
+                            toProofVersion(
+                                proofsToGenerate[0],
+                                parentProofMetadata
+                            ),
+                            toProofVersion(
+                                proofsToGenerate[i + 1],
+                                rawProofMetadata
+                            ),
                         ],
-                        nextVersionCanBeGenerated: false, // `maxRoundsNumber`: 2
-                    });
-                }
+                        getCanBeFixed: () => false, // `maxRoundsNumber`: 2
+                    }
+                );
             }
         );
     });
 
     test("Fix proof, happy path", async () => {
         await withMockLLMService(
-            async (mockService, basicMockParams, _testEventLogger) => {
-                const initialGeneratedProof =
-                    await constructInitialGeneratedProof(
-                        mockService,
-                        basicMockParams
-                    );
+            ErrorsHandlingMode.RETHROW_ERRORS,
+            async (mockService, basicMockParams, _) => {
+                const {
+                    generatedProof: parentProof,
+                    rawProofMetadata: parentProofMetadata,
+                } = await constructInitialGeneratedProof(
+                    mockService,
+                    basicMockParams
+                );
 
                 const fixedVersionChoices = 3;
-                const initialProofDiagnostic = `Proof \`${initialGeneratedProof.proof()}\` was incorrect...`;
-                const fixedGeneratedProofs =
-                    await initialGeneratedProof.fixProof(
-                        initialProofDiagnostic,
-                        fixedVersionChoices,
-                        ErrorsHandlingMode.RETHROW_ERRORS
-                    );
-                expect(fixedGeneratedProofs).toHaveLength(fixedVersionChoices);
+                const initialProofDiagnostic = `Proof \`${parentProof.proof}\` was incorrect...`;
+                const secondRoundMetadataHolder =
+                    new ProofGenerationMetadataHolder();
+                const fixedGeneratedProofs = await parentProof.fixProof(
+                    initialProofDiagnostic,
+                    fixedVersionChoices,
+                    secondRoundMetadataHolder
+                );
 
-                // test that `proofVersions` of the initial proof was updated correctly
-                expect(initialGeneratedProof.proofVersions).toEqual([
-                    toProofVersion(proofsToGenerate[0], initialProofDiagnostic),
+                // test that `proofVersions` of the initial proof is updated correctly
+                expect(parentProof.proofVersions).toEqual([
+                    toProofVersion(
+                        proofsToGenerate[0],
+                        parentProofMetadata,
+                        initialProofDiagnostic
+                    ),
                 ]);
 
                 const expectedFixedProof = MockLLMService.fixedProofString;
-                fixedGeneratedProofs.forEach((fixedGeneratedProof) => {
-                    expectGeneratedProof(fixedGeneratedProof, {
-                        proof: expectedFixedProof,
-                        versionNumber: 2,
-                        proofVersions: [
+                expectSuccessfullyGeneratedProofs(
+                    fixedGeneratedProofs,
+                    secondRoundMetadataHolder,
+                    {
+                        proofsToGenerateNumber: fixedVersionChoices,
+                        getProof: () => expectedFixedProof,
+                        getVersionNumber: () => 2,
+                        getProofVersions: (_, rawProofMetadata) => [
                             toProofVersion(
                                 proofsToGenerate[0],
+                                parentProofMetadata,
                                 initialProofDiagnostic
                             ),
-                            toProofVersion(expectedFixedProof),
+                            toProofVersion(
+                                expectedFixedProof,
+                                rawProofMetadata
+                            ),
                         ],
-                        canBeFixed: false,
-                    });
-                });
+                        getCanBeFixed: () => false,
+                    }
+                );
             }
         );
     });
@@ -261,23 +312,25 @@ suite("[LLMService] Test `GeneratedProof`", () => {
     async function fixProof(
         _mockService: MockLLMService,
         _mockParams: MockLLMModelParams,
-        errorsHandlingMode: ErrorsHandlingMode,
+        metadataHolder: ProofGenerationMetadataHolder,
         preparedData?: MockLLMGeneratedProof
     ): Promise<string[]> {
         const initialGeneratedProof = preparedData;
         if (initialGeneratedProof === undefined) {
-            throw Error(
-                `test is configured incorrectly: \`fixProof\` got "undefined" as \`preparedData\` instead of \`MockLLMGeneratedProof\``
+            illegalState(
+                "test is configured incorrectly: ",
+                "`fixProof` got `undefined` as `preparedData` ",
+                "instead of `MockLLMGeneratedProof`"
             );
         }
         const fixedGeneratedProofs = await initialGeneratedProof.fixProof(
             "Proof was incorrect",
             1,
-            errorsHandlingMode
+            metadataHolder
         );
 
-        return fixedGeneratedProofs.map((generatedProof) =>
-            generatedProof.proof()
+        return fixedGeneratedProofs.map(
+            (generatedProof) => generatedProof.proof
         );
     }
 
@@ -285,12 +338,12 @@ suite("[LLMService] Test `GeneratedProof`", () => {
         mockService: MockLLMService,
         basicMockParams: MockLLMModelParams
     ): Promise<MockLLMGeneratedProof> {
-        const initialGeneratedProof = await constructInitialGeneratedProof(
+        const constructedProof = await constructInitialGeneratedProof(
             mockService,
             basicMockParams
         );
         mockService.clearGenerationLogs();
-        return initialGeneratedProof;
+        return constructedProof.generatedProof;
     }
 
     testFailedGenerationCompletely(

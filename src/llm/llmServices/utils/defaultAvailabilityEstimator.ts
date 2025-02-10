@@ -1,3 +1,4 @@
+import { illegalState } from "../../../utils/throwErrors";
 import {
     Time,
     millisToTime,
@@ -84,8 +85,9 @@ function validateInputLogsAreFailures(
 ): LoggerRecord[] {
     for (const record of logsSinceLastSuccess) {
         if (record.responseStatus !== "FAILURE") {
-            throw Error(
-                `invalid input logs: a non-first record is not a failed one;\n\`${record}\``
+            illegalState(
+                "invalid input logs: a non-first record is not a failed one;\n",
+                `\`${record}\``
             );
         }
     }

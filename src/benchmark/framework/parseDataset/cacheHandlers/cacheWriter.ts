@@ -1,4 +1,8 @@
-import { stringifyAnyValue, toJsonString } from "../../../../utils/printers";
+import {
+    stringifyAnyValue,
+    toFormattedJsonString,
+} from "../../../../utils/printers";
+import { invariantFailed } from "../../../../utils/throwErrors";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
 import { serializeCodeElementRange } from "../../structures/common/codeElementPositions";
@@ -67,7 +71,7 @@ export function rewriteDatasetCache(
             );
             const fileSuccessfullySaved =
                 writeToFile(
-                    toJsonString(serializedCachedFile, 2),
+                    toFormattedJsonString(serializedCachedFile),
                     cachedFilePath,
                     (error) => {
                         logger
@@ -133,12 +137,12 @@ namespace SerializeCacheHolders {
             TargetType.PROVE_THEOREM
         );
         if (proofTargets.length > 1) {
-            const errorMessageLines = [
-                "Cache serialization invariant failed: ",
+            invariantFailed(
+                "Cache serialization",
                 "there are more than 1 proof targets stored for the theorem.",
-                `\n\tCause: proof targets ${stringifyAnyValue(proofTargets)} of theorem "${cachedTheoremData.theoremData.name}" from ${sourceFilePath} file`,
-            ];
-            throw Error(errorMessageLines.join(""));
+                `\n\tCause: proof targets ${stringifyAnyValue(proofTargets)} `,
+                `of theorem "${cachedTheoremData.theoremData.name}" from ${sourceFilePath} file`
+            );
         }
         return {
             theorem: serializeTheoremData(cachedTheoremData.theoremData),

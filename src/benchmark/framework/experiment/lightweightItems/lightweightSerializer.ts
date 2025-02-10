@@ -1,6 +1,7 @@
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 
-import { toJsonString } from "../../../../utils/printers";
+import { toFormattedJsonString } from "../../../../utils/printers";
+import { throwError } from "../../../../utils/throwErrors";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { BenchmarkingItem } from "../../structures/benchmarkingCore/benchmarkingItem";
 import { BenchmarkingModelParams } from "../../structures/benchmarkingCore/benchmarkingModelParams";
@@ -94,7 +95,7 @@ export namespace LightweightSerializer {
         };
     }
 
-    function buildLightweightWorkspaceRoot(
+    export function buildLightweightWorkspaceRoot(
         workspaceRoot: WorkspaceRoot
     ): LightweightWorkspaceRoot {
         return {
@@ -106,7 +107,7 @@ export namespace LightweightSerializer {
         };
     }
 
-    function buildLightweightTask(
+    export function buildLightweightTask(
         task: CompletionGenerationTask
     ): LightweightCompletionGenerationTask {
         return {
@@ -188,11 +189,12 @@ export namespace LightweightSerializer {
                 itemsDirPath,
                 buildItemFileName(item, i)
             );
-            writeToFile(toJsonString(item, 2), itemFilePath, (err) => {
-                throw Error(
-                    `Lightweight serialization failed: failed to save ${itemFilePath} file, ${err.message}`
-                );
-            });
+            writeToFile(toFormattedJsonString(item), itemFilePath, (err) =>
+                throwError(
+                    "Lightweight serialization failed: ",
+                    `failed to save ${itemFilePath} file, ${err.message}`
+                )
+            );
         }
     }
 }

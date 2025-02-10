@@ -1,25 +1,30 @@
+import { illegalState } from "./throwErrors";
+
 export type LogColor =
+    | "default"
     | "red"
     | "green"
     | "yellow"
     | "blue"
     | "magenta"
-    | "gray"
-    | "reset";
+    | "gray";
 
-export function colorize(text: string, color: LogColor | undefined): string {
-    if (color === undefined) {
+export function colorize(text: string, color: LogColor): string {
+    if (color === "default") {
         return text;
     }
-    const resetCode = code("reset");
     const colorCode = code(color);
     return `${colorCode}${text}${resetCode}`;
 }
 
+export const resetCode = "\x1b[0m";
+
 export function code(color: LogColor): string {
     switch (color) {
-        case "reset":
-            return "\x1b[0m";
+        case "default":
+            illegalState(
+                "default color does not have a code: it is just plain text"
+            );
         case "red":
             return "\x1b[31m";
         case "green":

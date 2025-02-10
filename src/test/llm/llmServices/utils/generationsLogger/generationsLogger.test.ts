@@ -21,6 +21,7 @@ import {
     LLMServiceRequestFailed,
     LLMServiceRequestSucceeded,
 } from "../../../../../llm/llmServices/commonStructures/llmServiceRequest";
+import { ProofGenerationType } from "../../../../../llm/llmServices/commonStructures/proofGenerationType";
 import {
     ModelParams,
     OpenAiModelParams,
@@ -55,10 +56,12 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
         systemPrompt: "hi system",
         maxTokensToGenerate: 10000,
         tokensLimit: 1000000,
+        maxContextTheoremsNumber: Number.MAX_SAFE_INTEGER,
         multiroundProfile: {
             maxRoundsNumber: 1,
             defaultProofFixChoices: 1,
             proofFixPrompt: "fix it",
+            maxPreviousProofVersionsNumber: Number.MAX_SAFE_INTEGER,
         },
         defaultChoices: 1,
     };
@@ -154,6 +157,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
         const llmService = new DummyLLMService(generationsLogger);
         const mockRequest: LLMServiceRequest = {
             llmService: llmService,
+            proofGenerationType: ProofGenerationType.CHAT_BASED,
             params: params,
             choices: mockChoices,
             analyzedChat: analyzedMockChat,
@@ -298,7 +302,13 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
                 )
             ).toThrow(Error);
 
-            class DummyLLMServiceError extends LLMServiceError {}
+            class DummyLLMServiceError extends LLMServiceError {
+                constructor() {
+                    super("dummy");
+                    Object.setPrototypeOf(this, new.target.prototype);
+                    this.name = "DummyLLMServiceError";
+                }
+            }
             expect(() =>
                 generationsLogger.logGenerationFailed(
                     failed(mockRequest, new DummyLLMServiceError())
@@ -351,7 +361,6 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
                 const records = generationsLogger.readLogs();
                 expect(records).toHaveLength(1);
                 const record = records[0] as DebugLoggerRecord;
-                expect(record).not.toBeNullish();
 
                 expect(record.params.tokensLimit).toEqual(censorInt);
                 expect((record.params as OpenAiModelParams)?.apiKey).toEqual(

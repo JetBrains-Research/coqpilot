@@ -1,3 +1,5 @@
+import { toUnformattedJsonString } from "../../../../utils/printers";
+
 export interface EqualTo<T> {
     equalTo(other: T): boolean;
 
@@ -25,7 +27,7 @@ export namespace HashUtils {
 
     export function hashAsStrings(...elements: any[]): number {
         return hashString(
-            elements.map((element) => JSON.stringify(element)).join()
+            elements.map((element) => toUnformattedJsonString(element)).join()
         );
     }
 }

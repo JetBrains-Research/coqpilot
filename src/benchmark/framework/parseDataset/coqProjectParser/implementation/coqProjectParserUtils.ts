@@ -1,3 +1,4 @@
+import { illegalState } from "../../../../../utils/throwErrors";
 import {
     AllTheoremsTarget,
     SpecificTheoremTarget,
@@ -35,8 +36,8 @@ export namespace CoqProjectParserUtils {
                                 specificTheoremName: fileTarget.theoremName,
                             };
                         } else {
-                            throw Error(
-                                `Unknown input file target: ${fileTarget.toString("", "")}`
+                            illegalState(
+                                `unknown input file target: ${fileTarget.toString("", "")}`
                             );
                         }
                     }),

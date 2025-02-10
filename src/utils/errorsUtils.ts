@@ -1,25 +1,21 @@
 import { stringifyAnyValue } from "./printers";
 
-export abstract class ErrorWithCause extends Error {
-    constructor(
-        message: string = "",
-        readonly cause: Error | undefined = undefined
-    ) {
-        let errorMessage = message;
-        if (cause !== undefined) {
-            const causeMessage = `cause: [${cause.name}] "${cause.message}"`;
-            errorMessage =
-                message === "" ? causeMessage : `${message}, ${causeMessage}`;
-        }
-        super(errorMessage);
-    }
-}
-
 export function asErrorOrRethrow(e: any): Error {
     if (!(e instanceof Error)) {
         throw e;
     }
     return e;
+}
+
+export function asErrorOrRethrowWrapped(e: any, description: string): Error {
+    if (!(e instanceof Error)) {
+        throw wrapNonError(e, description);
+    }
+    return e;
+}
+
+export function wrapNonError(e: any, description: string): Error {
+    return Error(`${description}: ${stringifyAnyValue(e)}`);
 }
 
 export function asErrorOrUndefined(e: any): Error | undefined {
@@ -38,4 +34,23 @@ export function getErrorMessage(e: any): string {
         return stringifyAnyValue(e);
     }
     return e.message;
+}
+
+export abstract class ErrorWithCause extends Error {
+    constructor(
+        message: string | undefined,
+        readonly cause: Error | undefined = undefined
+    ) {
+        const causeMessage =
+            cause === undefined ? "" : `[${cause.name}] "${cause.message}"`;
+        const errorMessage =
+            message === undefined
+                ? causeMessage
+                : cause === undefined
+                  ? message
+                  : `${message}, cause: ${causeMessage}`;
+        super(errorMessage);
+        Object.setPrototypeOf(this, new.target.prototype);
+        this.name = "ErrorWithCause";
+    }
 }

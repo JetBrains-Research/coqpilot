@@ -7,6 +7,7 @@ import { UserModelParams } from "../userModelParams";
 
 import { AnalyzedChatHistory } from "./commonStructures/chat";
 import { ErrorsHandlingMode } from "./commonStructures/errorsHandlingMode";
+import { ProofGenerationMetadataHolder } from "./commonStructures/proofGenerationMetadata";
 import { GeneratedProofImpl } from "./generatedProof";
 import { LLMServiceInternal } from "./llmServiceInternal";
 import { ModelParams } from "./modelParams";
@@ -107,65 +108,75 @@ export abstract class LLMServiceImpl<
         LLMServiceInternalType
     >,
 > {
+    abstract readonly serviceName: string;
     protected abstract readonly internal: LLMServiceInternalType;
     protected abstract readonly modelParamsResolver: ParamsResolver<
         InputModelParams,
         ResolvedModelParams
     >;
-    protected readonly eventLoggerGetter: () => EventLogger | undefined;
+
+    protected readonly eventLogger: EventLogger | undefined;
+    readonly errorsHandlingMode: ErrorsHandlingMode;
+    readonly generationLogsFilePath: string;
     protected readonly generationsLoggerBuilder: () => GenerationsLogger;
 
     /**
      * Creates an instance of `LLMServiceImpl`.
-     * @param eventLogger if it is not specified, events won't be logged and passing `LOG_EVENTS_AND_SWALLOW_ERRORS` will throw an error.
+     * @param eventLogger is used to send proof generation events. If not specified, event logging will be disabled.
+     * @param errorsHandlingMode defines how errors during method calls are handled: whether they are rethrown or swallowed. Regardless of the mode, errors are logged.
      * @param debugLogs enables debug logs for the internal `GenerationsLogger`.
      * @param generationLogsFilePath if it is not specified, a temporary file will be used.
      */
     constructor(
-        readonly serviceName: string,
-        eventLogger: EventLogger | undefined,
-        debugLogs: boolean,
-        generationLogsFilePath: string | undefined
+        eventLogger: EventLogger | undefined = undefined,
+        errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.RETHROW_ERRORS,
+        generationLogsFilePath: string | undefined = undefined,
+        debugLogs: boolean = false
     ) {
-        this.eventLoggerGetter = () => eventLogger;
+        this.eventLogger = eventLogger;
+        this.errorsHandlingMode = errorsHandlingMode;
+        this.generationLogsFilePath =
+            generationLogsFilePath ?? tmp.fileSync().name;
         this.generationsLoggerBuilder = () =>
-            new GenerationsLogger(
-                generationLogsFilePath ?? tmp.fileSync().name,
-                {
-                    debug: debugLogs,
-                    paramsPropertiesToCensor: {
-                        apiKey: GenerationsLogger.censorString,
-                    },
-                    cleanLogsOnStart: true,
-                }
-            );
+            new GenerationsLogger(this.generationLogsFilePath, {
+                debug: debugLogs,
+                paramsPropertiesToCensor: {
+                    apiKey: GenerationsLogger.censorString,
+                },
+                cleanLogsOnStart: true,
+            });
     }
 
     static readonly requestSucceededEvent = `llmservice-request-succeeded`;
     static readonly requestFailedEvent = `llmservice-request-failed`;
 
     /**
-     * Generates proofs from chat.
+     * Generates proofs based on chat input.
      * This method performs errors-handling and logging, check `LLMServiceImpl` docs for more details.
      *
-     * The default implementation is based on the `LLMServiceInternal.generateFromChatImpl`.
-     * If it is not the desired way, `generateFromChat` should be overriden.
+     * The default implementation relies on `LLMServiceInternal.generateFromChatImpl`.
+     * If a different behavior is required, the `generateFromChat` method should be overridden;
+     * however, maintaining all errors-handling and logging invariants.
+     * Consider `LLMServiceInternal.logGenerationAndHandleErrors` for help.
      *
-     * @param choices if specified, overrides `ModelParams.defaultChoices`.
-     * @returns generated proofs as raw strings.
+     * @param analyzedChat the analyzed chat history used as input for proof generation.
+     * @param params resolved model parameters for configuring the generation process.
+     * @param choices specifies the number of choices for generation. If not provided, the `params.defaultChoices` value is used.
+     * @param metadataHolder if provided, stores metadata about the proof generation process, which can be analyzed later.
+     * @returns an array of generated proofs as raw strings.
      */
     async generateFromChat(
         analyzedChat: AnalyzedChatHistory,
         params: ResolvedModelParams,
         choices: number = params.defaultChoices,
-        errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
+        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined
     ): Promise<string[]> {
         return this.internal.generateFromChatWrapped(
             params,
             choices,
-            errorsHandlingMode,
+            metadataHolder,
             () => analyzedChat,
-            (proof) => proof
+            (rawProof) => rawProof.content
         );
     }
 
@@ -175,25 +186,30 @@ export abstract class LLMServiceImpl<
      *
      * The default implementation is based on the generation from chat, namely,
      * it calls `LLMServiceInternal.generateFromChatImpl`.
-     * If it is not the desired way, `generateProof` should be overriden.
+     * If it is not the desired way, `generateProof` should be overriden;
+     * however, maintaining all errors-handling and logging invariants.
+     * Consider `LLMServiceInternal.logGenerationAndHandleErrors` for help.
      *
-     * @param choices if specified, overrides `ModelParams.defaultChoices`.
-     * @returns generated proofs as `GeneratedProofImpl`-s.
+     * @param proofGenerationContext the context used as input for proof generation.
+     * @param params resolved model parameters for configuring the generation process.
+     * @param choices specifies the number of choices for generation. If not provided, the `params.defaultChoices` value is used.
+     * @param metadataHolder if provided, stores metadata about the proof generation process, which can be analyzed later.
+     * @returns an array of generated proofs as `GeneratedProofImpl`-s.
      */
     async generateProof(
         proofGenerationContext: ProofGenerationContext,
         params: ResolvedModelParams,
         choices: number = params.defaultChoices,
-        errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
+        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined
     ): Promise<GeneratedProofType[]> {
         return this.internal.generateFromChatWrapped(
             params,
             choices,
-            errorsHandlingMode,
+            metadataHolder,
             () => buildProofGenerationChat(proofGenerationContext, params),
-            (proof) =>
+            (rawProof) =>
                 this.internal.constructGeneratedProof(
-                    proof,
+                    rawProof,
                     proofGenerationContext,
                     params
                 )

@@ -6,11 +6,13 @@ import { LLMService } from "../../llm/llmServices/llmService";
 import { ModelParams, ModelsParams } from "../../llm/llmServices/modelParams";
 import { SingleParamResolutionResult } from "../../llm/llmServices/utils/paramsResolvers/abstractResolvers";
 import {
+    DeepSeekUserModelParams,
     GrazieUserModelParams,
     LMStudioUserModelParams,
     OpenAiUserModelParams,
     PredefinedProofsUserModelParams,
     UserModelParams,
+    deepSeekUserModelParamsSchema,
     grazieUserModelParamsSchema,
     lmStudioUserModelParamsSchema,
     openAiUserModelParamsSchema,
@@ -24,6 +26,7 @@ import { ContextTheoremsRanker } from "../../core/contextTheoremRanker/contextTh
 
 import { AjvMode, buildAjv } from "../../utils/ajvErrorsHandling";
 import { stringifyAnyValue, stringifyDefinedValue } from "../../utils/printers";
+import { illegalState, throwError } from "../../utils/throwErrors";
 import {
     EditorMessages,
     showMessageToUserWithSettingsHint,
@@ -39,7 +42,7 @@ export function parseCoqLspServerPath(): string {
     const workspaceConfig = workspace.getConfiguration(pluginId);
     const coqLspServerPath = workspaceConfig.get("coqLspServerPath");
     if (typeof coqLspServerPath !== "string") {
-        throw new Error("coqLspServerPath is not properly configured");
+        throwError("`coqLspServerPath` is not properly configured");
     }
     return coqLspServerPath;
 }
@@ -107,14 +110,27 @@ export function readAndValidateUserModelsParams(
                 jsonSchemaValidator
             )
         );
+    const deepSeekUserParams: DeepSeekUserModelParams[] =
+        config.deepSeekModelsParameters.map((params: any) =>
+            validateAndParseJson(
+                params,
+                deepSeekUserModelParamsSchema,
+                jsonSchemaValidator
+            )
+        );
 
     validateIdsAreUnique([
         ...predefinedProofsUserParams,
         ...openAiUserParams,
         ...grazieUserParams,
         ...lmStudioUserParams,
+        ...deepSeekUserParams,
     ]);
-    validateApiKeysAreProvided(openAiUserParams, grazieUserParams);
+    validateApiKeysAreProvided(
+        openAiUserParams,
+        grazieUserParams,
+        deepSeekUserParams
+    );
 
     const modelsParams: ModelsParams = {
         predefinedProofsModelParams: resolveParamsAndShowResolutionLogs(
@@ -133,6 +149,10 @@ export function readAndValidateUserModelsParams(
             llmServices.lmStudioService,
             lmStudioUserParams
         ),
+        deepSeekParams: resolveParamsAndShowResolutionLogs(
+            llmServices.deepSeekService,
+            deepSeekUserParams
+        ),
     };
 
     validateModelsArePresent([
@@ -140,6 +160,7 @@ export function readAndValidateUserModelsParams(
         ...modelsParams.openAiParams,
         ...modelsParams.grazieParams,
         ...modelsParams.lmStudioParams,
+        ...modelsParams.deepSeekParams,
     ]);
 
     return modelsParams;
@@ -155,14 +176,16 @@ function validateAndParseJson<T>(
     if (!validate(instance)) {
         const settingsName = targetClassSchema.title;
         if (settingsName === undefined) {
-            throw Error(
-                `specified \`targetClassSchema\` does not have \`title\`; while resolving json: ${stringifyAnyValue(json)}`
+            illegalState(
+                "specified `targetClassSchema` does not have `title`; ",
+                `while resolving json: ${stringifyAnyValue(json)}`
             );
         }
         const ajvErrors = validate.errors as DefinedError[];
         if (ajvErrors === null || ajvErrors === undefined) {
-            throw Error(
-                `validation with Ajv failed, but \`validate.errors\` are not defined; while resolving json: ${stringifyAnyValue(json)}`
+            illegalState(
+                "validation with Ajv failed, but `validate.errors` are not defined; ",
+                `while resolving json: ${stringifyAnyValue(json)}`
             );
         }
         throw new SettingsValidationError(
@@ -195,7 +218,8 @@ function validateIdsAreUnique(allModels: UserModelParams[]) {
 
 function validateApiKeysAreProvided(
     openAiUserParams: OpenAiUserModelParams[],
-    grazieUserParams: GrazieUserModelParams[]
+    grazieUserParams: GrazieUserModelParams[],
+    deepSeekUserParams: DeepSeekUserModelParams[]
 ) {
     const buildApiKeyError = (
         serviceName: string,
@@ -214,6 +238,9 @@ function validateApiKeysAreProvided(
     }
     if (grazieUserParams.some((params) => params.apiKey === "None")) {
         throw buildApiKeyError("Grazie", "grazie");
+    }
+    if (deepSeekUserParams.some((params) => params.apiKey === "None")) {
+        throw buildApiKeyError("Deep Seek", "deepSeek");
     }
 }
 

@@ -1,10 +1,8 @@
 import { expect } from "earl";
 
 import { ConfigurationError } from "../../../llm/llmServiceErrors";
-import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
 import { LMStudioService } from "../../../llm/llmServices/lmStudio/lmStudioService";
 import { LMStudioModelParams } from "../../../llm/llmServices/modelParams";
-import { defaultSystemMessageContent } from "../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";
 import { LMStudioUserModelParams } from "../../../llm/userModelParams";
 
 import { testIf } from "../../commonTestFunctions/conditionalTest";
@@ -18,7 +16,7 @@ import {
 } from "../llmSpecificTestUtils/constants";
 import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testAdmitCompletion";
 import {
-    defaultUserMultiroundProfile,
+    paramsResolvedWithBasicDefaults,
     testResolveParametersFailsWithSingleCause,
     testResolveValidCompleteParameters,
 } from "../llmSpecificTestUtils/testResolveParameters";
@@ -67,8 +65,7 @@ suite("[LLMService] Test `LMStudioService`", function () {
                 lmStudioService,
                 {
                     ...inputParams,
-                    systemPrompt: defaultSystemMessageContent,
-                    multiroundProfile: defaultUserMultiroundProfile,
+                    ...paramsResolvedWithBasicDefaults,
                 },
                 true
             );
@@ -103,12 +100,11 @@ suite("[LLMService] Test `LMStudioService`", function () {
             inputParams,
             async (lmStudioService, resolvedParams: LMStudioModelParams) => {
                 // non-positive choices
-                expect(async () => {
+                await expect(async () => {
                     await lmStudioService.generateProof(
                         mockProofGenerationContext,
                         resolvedParams,
-                        -1,
-                        ErrorsHandlingMode.RETHROW_ERRORS
+                        -1
                     );
                 }).toBeRejectedWith(ConfigurationError, "choices");
             }

@@ -4,51 +4,75 @@ import * as tmp from "tmp";
 import { Disposable, WorkspaceConfiguration, window, workspace } from "vscode";
 
 import { LLMServices, disposeServices } from "../llm/llmServices";
+import { ErrorsHandlingMode } from "../llm/llmServices/commonStructures/errorsHandlingMode";
+import { DeepSeekService } from "../llm/llmServices/deepSeek/deepSeekService";
 import { GrazieService } from "../llm/llmServices/grazie/grazieService";
 import { LMStudioService } from "../llm/llmServices/lmStudio/lmStudioService";
 import { OpenAiService } from "../llm/llmServices/openai/openAiService";
 import { PredefinedProofsService } from "../llm/llmServices/predefinedProofs/predefinedProofsService";
 
 import { EventLogger, Severity } from "../logging/eventLogger";
+import { illegalState } from "../utils/throwErrors";
 
 import VSCodeLogWriter from "./ui/vscodeLogWriter";
 import { pluginId } from "./utils/pluginId";
 
 export class PluginContext implements Disposable {
-    public readonly eventLogger: EventLogger = new EventLogger();
-    public readonly logWriter: VSCodeLogWriter = new VSCodeLogWriter(
+    readonly eventLogger: EventLogger = new EventLogger();
+    readonly logWriter: VSCodeLogWriter = new VSCodeLogWriter(
         this.eventLogger,
         this.parseLoggingVerbosity(workspace.getConfiguration(pluginId))
     );
-    public readonly logOutputChannel = window.createOutputChannel(
+    readonly logOutputChannel = window.createOutputChannel(
         "CoqPilot: coq-lsp events"
     );
 
-    public readonly llmServicesLogsDir = path.join(
+    readonly llmServicesLogsDir = path.join(
         tmp.dirSync().name,
         "llm-services-logs"
     );
 
-    public readonly llmServices: LLMServices = {
+    private readonly llmServicesSetup = {
+        // must be defined to provide UI with proof generation event to show to the user
+        eventLogger: this.eventLogger,
+        // all the necessary information about failures is obtained from the result and events;
+        // so no need to abort the execution through errors, the top-level logic does not expect that
+        // (even though protects from any errors being thrown at the user)
+        errorsHandlingMode: ErrorsHandlingMode.SWALLOW_ERRORS,
+        // could be turned on if debug is needed
+        debugLogs: false,
+    };
+
+    readonly llmServices: LLMServices = {
         predefinedProofsService: new PredefinedProofsService(
-            this.eventLogger,
-            false,
-            path.join(this.llmServicesLogsDir, "predefined-proofs-logs.txt")
+            this.llmServicesSetup.eventLogger,
+            this.llmServicesSetup.errorsHandlingMode,
+            path.join(this.llmServicesLogsDir, "predefined-proofs-logs.txt"),
+            this.llmServicesSetup.debugLogs
         ),
         openAiService: new OpenAiService(
-            this.eventLogger,
-            false,
-            path.join(this.llmServicesLogsDir, "openai-logs.txt")
+            this.llmServicesSetup.eventLogger,
+            this.llmServicesSetup.errorsHandlingMode,
+            path.join(this.llmServicesLogsDir, "openai-logs.txt"),
+            this.llmServicesSetup.debugLogs
         ),
         grazieService: new GrazieService(
-            this.eventLogger,
-            false,
-            path.join(this.llmServicesLogsDir, "grazie-logs.txt")
+            this.llmServicesSetup.eventLogger,
+            this.llmServicesSetup.errorsHandlingMode,
+            path.join(this.llmServicesLogsDir, "grazie-logs.txt"),
+            this.llmServicesSetup.debugLogs
         ),
         lmStudioService: new LMStudioService(
-            this.eventLogger,
-            false,
-            path.join(this.llmServicesLogsDir, "lmstudio-logs.txt")
+            this.llmServicesSetup.eventLogger,
+            this.llmServicesSetup.errorsHandlingMode,
+            path.join(this.llmServicesLogsDir, "lmstudio-logs.txt"),
+            this.llmServicesSetup.debugLogs
+        ),
+        deepSeekService: new DeepSeekService(
+            this.llmServicesSetup.eventLogger,
+            this.llmServicesSetup.errorsHandlingMode,
+            path.join(this.llmServicesLogsDir, "deepseek-logs.txt"),
+            this.llmServicesSetup.debugLogs
         ),
     };
 
@@ -60,7 +84,7 @@ export class PluginContext implements Disposable {
             case "debug":
                 return Severity.DEBUG;
             default:
-                throw Error(`unknown logging verbosity: ${verbosity}`);
+                illegalState(`unknown logging verbosity: ${verbosity}`);
         }
     }
 

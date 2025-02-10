@@ -1,4 +1,4 @@
-# CoqPilot ![Version](https://img.shields.io/badge/version-v2.4.2-blue?style=flat-square)
+# CoqPilot ![Version](https://img.shields.io/badge/version-v2.4.3-blue?style=flat-square)
 
 *Authors:* Andrei Kozyrev, Gleb Solovev, Nikita Khramov, and Anton Podkopaev, [Programming Languages and Tools Lab](https://lp.jetbrains.com/research/plt_lab/) at JetBrains Research.
 
@@ -184,18 +184,20 @@ The most commonly used service is `OpenAI` (`Grazie` and `LmStudio` are configur
 {
     "coqpilot.openAiModelsParameters": [
         {
-            "modelId": "openai-gpt-3.5",
-            "modelName": "gpt-3.5-turbo-0301",
+            "modelId": "openai-gpt-4o-mini",
+            "modelName": "gpt-4o-mini",
             "temperature": 1,
             "apiKey": "***your-api-key***",
-            "choices": 10,
+            "choices": 15,
             "systemPrompt": "Generate proof...",
-            "maxTokensToGenerate": 2000,
+            "maxTokensToGenerate": 2048,
             "tokensLimit": 4096,
+            "maxContextTheoremsNumber": 100,
             "multiroundProfile": {
                 "maxRoundsNumber": 1,
                 "proofFixChoices": 1,
-                "proofFixPrompt": "Unfortunately, the last proof is not correct..."
+                "proofFixPrompt": "Unfortunately, the last proof is not correct...",
+                "maxPreviousProofVersionsNumber": 100
             }
         }
     ],

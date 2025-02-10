@@ -1,4 +1,4 @@
-import { color } from "./colorPrinter";
+import { colorize } from "../../utils/colorLogging";
 
 export function testIf(
     condition: boolean,
@@ -11,7 +11,7 @@ export function testIf(
         return test(testName, func);
     }
     console.warn(
-        `${color("WARNING", "yellow")}: test will be skipped: \"${suiteName}\" # \"${testName}\"\n\t> cause: ${testWillBeSkippedCause}`
+        `${colorize("WARNING", "yellow")}: test will be skipped: \"${suiteName}\" # \"${testName}\"\n\t> cause: ${testWillBeSkippedCause}`
     );
     return undefined;
 }

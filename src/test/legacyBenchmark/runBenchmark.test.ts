@@ -1,16 +1,15 @@
 import * as fs from "fs";
 import * as path from "path";
 
+import { colorize } from "../../utils/colorLogging";
+import { illegalState } from "../../utils/throwErrors";
+
 import { AdditionalFileImport } from "./additionalImports";
 import { BenchmarkResult, runTestBenchmark } from "./benchmarkingFramework";
 import { InputModelsParams, onlyAutoModelsParams } from "./inputModelsParams";
 import { BenchmarkReportHolder } from "./reportHolder";
 import { DatasetItem } from "./utils/datasetConstructionUtils";
-import {
-    code,
-    consoleLog,
-    consoleLogSeparatorLine,
-} from "./utils/loggingUtils";
+import { consoleLog, consoleLogSeparatorLine } from "./utils/loggingUtils";
 
 interface Benchmark {
     name: string;
@@ -96,7 +95,7 @@ suite("[SourceExecutable] Legacy Benchmark", () => {
                 const resolvedItemPath = path.join(datasetDir, item.path);
                 const itemPathStats = getPathStats(resolvedItemPath);
                 if (!itemPathStats.isDirectory() && !itemPathStats.isFile()) {
-                    throw Error(`unsupported path type: ${item.path}`);
+                    illegalState(`unsupported path type: ${item.path}`);
                 }
                 const resolvedFilePaths = itemPathStats.isDirectory()
                     ? findSourceFiles(resolvedItemPath)
@@ -125,7 +124,7 @@ suite("[SourceExecutable] Legacy Benchmark", () => {
             consoleLogSeparatorLine();
             consoleLogSeparatorLine("\n");
             consoleLog(
-                `${code("magenta")}BENCHMARK REPORT:${code("reset")} ${benchmark.name}`
+                `${colorize("BENCHMARK REPORT", "magenta")} ${benchmark.name}`
             );
             consoleLog(
                 `- ADMITS COMPLETED IN TOTAL: ${admitsCompletedInTotal}`

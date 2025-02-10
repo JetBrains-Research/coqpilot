@@ -8,6 +8,8 @@ import {
 import {
     LLMServiceRequestFailed,
     LLMServiceRequestSucceeded,
+    isLLMServiceRequestFailed,
+    isLLMServiceRequestSucceeded,
 } from "../../../llm/llmServices/commonStructures/llmServiceRequest";
 import {
     LLMService,
@@ -65,7 +67,7 @@ export function subscribeToTrackMockEvents(
         MockLLMService.generationFromChatEvent,
         (chatData) => {
             if (expectedMockChat === undefined) {
-                expect((chatData as ChatHistory) !== null).toBeTruthy();
+                expect(chatData).toBeTruthy();
             } else {
                 expect(chatData as ChatHistory).toEqual(expectedMockChat.chat);
             }
@@ -92,8 +94,9 @@ function subscribeToLogicEvents<LLMServiceType extends LLMService<any, any>>(
     testEventLogger.subscribeToLogicEvent(
         LLMServiceImpl.requestSucceededEvent,
         (data) => {
+            expect(isLLMServiceRequestSucceeded(data)).toBeTruthy();
             const requestSucceeded = data as LLMServiceRequestSucceeded;
-            expect(requestSucceeded).toBeTruthy();
+
             expect(requestSucceeded.llmService).toEqual(expectedService);
             expect(requestSucceeded.params.modelId).toEqual(expectedModelId);
             eventsTracker.successfulRequestEventsN += 1;
@@ -102,8 +105,9 @@ function subscribeToLogicEvents<LLMServiceType extends LLMService<any, any>>(
     testEventLogger.subscribeToLogicEvent(
         LLMServiceImpl.requestFailedEvent,
         (data) => {
+            expect(isLLMServiceRequestFailed(data)).toBeTruthy();
             const requestFailed = data as LLMServiceRequestFailed;
-            expect(requestFailed).toBeTruthy();
+
             expect(requestFailed.llmService).toEqual(expectedService);
             expect(requestFailed.params.modelId).toEqual(expectedModelId);
             if (expectedError !== undefined) {

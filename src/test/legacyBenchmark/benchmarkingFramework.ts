@@ -2,7 +2,8 @@ import * as assert from "assert";
 import * as fs from "fs";
 
 import { LLMServices } from "../../llm/llmServices";
-import { LLMServiceRequest } from "../../llm/llmServices/commonStructures/llmServiceRequest";
+import { isLLMServiceRequestSucceeded } from "../../llm/llmServices/commonStructures/llmServiceRequest";
+import { DeepSeekService } from "../../llm/llmServices/deepSeek/deepSeekService";
 import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
 import { LLMServiceImpl } from "../../llm/llmServices/llmService";
 import { LMStudioService } from "../../llm/llmServices/lmStudio/lmStudioService";
@@ -31,6 +32,8 @@ import { createSourceFileEnvironment } from "../../core/inspectSourceFile";
 
 import { ProofStep, Theorem } from "../../coqParser/parsedTypes";
 import { EventLogger } from "../../logging/eventLogger";
+import { stringifyAnyValue } from "../../utils/printers";
+import { illegalState, throwError } from "../../utils/throwErrors";
 import { Uri } from "../../utils/uri";
 
 import { AdditionalFileImport } from "./additionalImports";
@@ -225,9 +228,7 @@ function getSingleModelId(inputModelsParams: InputModelsParams): string {
         ...inputModelsParams.lmStudioParams.map((params) => params.modelId),
     ];
     if (modelIds.length !== 1) {
-        throw Error(
-            `Expected exactly one model id, but got ${modelIds.length}`
-        );
+        throwError(`expected exactly one model id, but got ${modelIds.length}`);
     }
 
     return modelIds[0];
@@ -412,13 +413,14 @@ function reactToRequestEvent(
     contextTheorems: ContextTheoremsHolder
 ): (data: any) => void {
     return (data: any) => {
-        const request = data as LLMServiceRequest;
-        if (request === null) {
-            throw Error(
-                `Request succeeded event received with null data: ${data}`
+        if (!isLLMServiceRequestSucceeded(data)) {
+            illegalState(
+                `data of the ${LLMServiceImpl.requestSucceededEvent} event `,
+                "should be a `LLMServiceRequestSucceeded` object, but got: ",
+                stringifyAnyValue(data)
             );
         }
-        contextTheorems.contextTheorems = request.analyzedChat?.contextTheorems;
+        contextTheorems.contextTheorems = data.analyzedChat?.contextTheorems;
     };
 }
 
@@ -460,6 +462,7 @@ async function prepareForBenchmarkCompletions(
         grazieService: new GrazieService(eventLogger),
         predefinedProofsService: new PredefinedProofsService(eventLogger),
         lmStudioService: new LMStudioService(eventLogger),
+        deepSeekService: new DeepSeekService(eventLogger),
     };
     const processEnvironment: ProcessEnvironment = {
         coqProofChecker: coqProofChecker,
@@ -602,6 +605,9 @@ function resolveInputModelsParametersOrThrow(
         ),
         lmStudioParams: inputModelsParams.lmStudioParams.map((inputParams) =>
             resolveParametersOrThrow(llmServices.lmStudioService, inputParams)
+        ),
+        deepSeekParams: inputModelsParams.deepSeekParams.map((inputParams) =>
+            resolveParametersOrThrow(llmServices.deepSeekService, inputParams)
         ),
     };
 }

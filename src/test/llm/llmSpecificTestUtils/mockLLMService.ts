@@ -8,7 +8,11 @@ import {
     ChatMessage,
 } from "../../../llm/llmServices/commonStructures/chat";
 import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
-import { GeneratedRawContent } from "../../../llm/llmServices/commonStructures/generatedRawContent";
+import {
+    GeneratedRawContent,
+    GeneratedRawContentItem,
+} from "../../../llm/llmServices/commonStructures/generatedRawContent";
+import { ProofGenerationMetadataHolder } from "../../../llm/llmServices/commonStructures/proofGenerationMetadata";
 import { ProofVersion } from "../../../llm/llmServices/commonStructures/proofVersion";
 import { GeneratedProofImpl } from "../../../llm/llmServices/generatedProof";
 import { LLMServiceImpl } from "../../../llm/llmServices/llmService";
@@ -24,6 +28,7 @@ import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { UserModelParams } from "../../../llm/userModelParams";
 
 import { EventLogger } from "../../../logging/eventLogger";
+import { throwError } from "../../../utils/throwErrors";
 
 export interface MockLLMUserModelParams extends UserModelParams {
     proofsToGenerate: string[];
@@ -110,25 +115,26 @@ export class MockLLMService extends LLMServiceImpl<
     MockLLMGeneratedProof,
     MockLLMServiceInternal
 > {
-    protected readonly internal: MockLLMServiceInternal;
-    protected readonly modelParamsResolver = new MockLLMModelParamsResolver();
-
-    constructor(
-        eventLogger?: EventLogger,
-        debugLogs: boolean = false,
-        generationsLogsFilePath?: string
-    ) {
-        super(
-            "MockLLMService",
-            eventLogger,
-            debugLogs,
-            generationsLogsFilePath
-        );
-        this.internal = new MockLLMServiceInternal(
+    readonly serviceName = "MockLLMService";
+    protected readonly internal: MockLLMServiceInternal =
+        new MockLLMServiceInternal(
             this,
-            this.eventLoggerGetter,
+            this.eventLogger,
             this.generationsLoggerBuilder
         );
+    protected readonly modelParamsResolver = new MockLLMModelParamsResolver();
+
+    /**
+     * _**Invariant:**_ `MockLLMService` has `debugLogs` always enabled,
+     * meaning the generation logs are never cleaned automatically.
+     * The cleaning can be done manually via `this.clearGenerationLogs()`.
+     */
+    constructor(
+        eventLogger: EventLogger | undefined,
+        errorsHandlingMode: ErrorsHandlingMode,
+        generationLogsFilePath: string | undefined = undefined
+    ) {
+        super(eventLogger, errorsHandlingMode, generationLogsFilePath, true);
     }
 
     static readonly generationFromChatEvent = "mockllm-generation-from-chat";
@@ -144,7 +150,7 @@ export class MockLLMService extends LLMServiceImpl<
      * Workers are meant to be any external entities that would like to separate their behaviour.
      */
     throwErrorOnNextGeneration(error: Error, workerId: number = 0) {
-        this.internal.throwErrorOnNextGenerationMap.set(workerId, error);
+        this.internal.errorToThrowOnNextGenerationMap.set(workerId, error);
     }
 
     /**
@@ -174,14 +180,14 @@ export class MockLLMGeneratedProof extends GeneratedProofImpl<
     MockLLMServiceInternal
 > {
     constructor(
-        proof: string,
+        rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
         modelParams: MockLLMModelParams,
         llmServiceInternal: MockLLMServiceInternal,
         previousProofVersions?: ProofVersion[]
     ) {
         super(
-            proof,
+            rawProof,
             proofGenerationContext,
             modelParams,
             llmServiceInternal,
@@ -204,23 +210,23 @@ export class MockLLMGeneratedProof extends GeneratedProofImpl<
     async generateNextVersion(
         analyzedChat: AnalyzedChatHistory,
         choices: number,
-        errorsHandlingMode: ErrorsHandlingMode
+        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined
     ): Promise<MockLLMGeneratedProof[]> {
         return this.llmServiceInternal.generateFromChatWrapped(
             this.modelParams,
             choices,
-            errorsHandlingMode,
+            metadataHolder,
             () => {
                 if (!this.nextVersionCanBeGenerated()) {
                     throw new ConfigurationError(
-                        `next version could not be generated: version ${this.versionNumber()} >= max rounds number ${this.maxRoundsNumber}`
+                        `next version could not be generated: version ${this.versionNumber} >= max rounds number ${this.maxRoundsNumber}`
                     );
                 }
                 return analyzedChat;
             },
-            (proof: string) =>
+            (rawProof) =>
                 this.llmServiceInternal.constructGeneratedProof(
-                    proof,
+                    rawProof,
                     this.proofGenerationContext,
                     this.modelParams,
                     this.proofVersions
@@ -235,16 +241,16 @@ class MockLLMServiceInternal extends LLMServiceInternal<
     MockLLMGeneratedProof,
     MockLLMServiceInternal
 > {
-    throwErrorOnNextGenerationMap: Map<number, Error | undefined> = new Map();
+    errorToThrowOnNextGenerationMap: Map<number, Error | undefined> = new Map();
 
     constructGeneratedProof(
-        proof: string,
+        rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
         modelParams: MockLLMModelParams,
         previousProofVersions?: ProofVersion[] | undefined
     ): MockLLMGeneratedProof {
         return new MockLLMGeneratedProof(
-            proof,
+            rawProof,
             proofGenerationContext,
             modelParams as MockLLMModelParams,
             this,
@@ -275,14 +281,14 @@ class MockLLMServiceInternal extends LLMServiceInternal<
             chat
         );
 
-        const throwError = this.throwErrorOnNextGenerationMap.get(
+        const errorToThrow = this.errorToThrowOnNextGenerationMap.get(
             params.workerId
         );
-        if (throwError !== undefined) {
+        if (errorToThrow !== undefined) {
             try {
-                throw throwError;
+                throw errorToThrow;
             } finally {
-                this.throwErrorOnNextGenerationMap.set(
+                this.errorToThrowOnNextGenerationMap.set(
                     params.workerId,
                     undefined
                 );
@@ -308,7 +314,7 @@ class MockLLMServiceInternal extends LLMServiceInternal<
 
         const proofsLength = params.proofsToGenerate.length - skipFirstNProofs;
         if (choices > proofsLength) {
-            throw Error(
+            throwError(
                 `\`choices = ${choices}\` > \`available proofs length = ${proofsLength}\``
             );
         }

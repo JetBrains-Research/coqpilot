@@ -1,9 +1,10 @@
+import { colorize } from "../utils/colorLogging";
+
 import { BenchmarkingBundle } from "./framework/experiment/setupDSL/benchmarkingBundleBuilder";
 import { CacheTargets } from "./framework/experiment/setupDSL/datasetCacheBuilder";
 import { TargetsBuilder } from "./framework/experiment/setupDSL/targetsBuilder";
 import { TeamCityExperiment } from "./framework/experiment/teamCity/teamCityExperiment";
 import { SeverityLevel } from "./framework/logging/benchmarkingLogger";
-import { colorize } from "./framework/logging/colorLogging";
 import { DatasetCacheUsageMode } from "./framework/structures/inputParameters/datasetCaching";
 
 const experiment = new TeamCityExperiment();

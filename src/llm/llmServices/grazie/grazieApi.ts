@@ -1,7 +1,10 @@
 import axios from "axios";
 import { ResponseType } from "axios";
 
-import { DebugWrappers } from "../llmServiceInternal";
+import { buildErrorCompleteLog } from "../../../utils/errorsUtils";
+import { toUnformattedJsonString } from "../../../utils/printers";
+import { illegalState, throwError } from "../../../utils/throwErrors";
+import { DebugLogsWrappers } from "../llmServiceInternal";
 import { GrazieModelParams } from "../modelParams";
 
 export type GrazieChatRole = "User" | "System" | "Assistant";
@@ -24,7 +27,7 @@ export class GrazieApi {
             "https://api.app.prod.grazie.aws.intellij.net/application/",
     };
 
-    constructor(private readonly debug: DebugWrappers) {}
+    constructor(private readonly logDebug: DebugLogsWrappers) {}
 
     async requestChatCompletion(
         params: GrazieModelParams,
@@ -52,7 +55,7 @@ export class GrazieApi {
         history: GrazieFormattedHistory,
         params: GrazieModelParams
     ): string {
-        return JSON.stringify({
+        return toUnformattedJsonString({
             chat: {
                 messages: history,
             },
@@ -68,7 +71,7 @@ export class GrazieApi {
     ): Promise<string> {
         const headers = await this.createHeaders(apiToken);
 
-        this.debug.logEvent("Completion requested", {
+        this.logDebug.event("Completion requested", {
             url: url,
             body: body,
             headers: headers,
@@ -94,13 +97,16 @@ export class GrazieApi {
             const versionData = packageJson.default || packageJson;
 
             if (!versionData || !versionData.version) {
-                throw new Error(
-                    "Not able to retrieve app version from package.json"
+                illegalState(
+                    "not able to retrieve app version from `package.json`"
                 );
             }
             return versionData.version;
         } catch (error) {
-            throw new Error("Error loading package.json: " + error);
+            throwError(
+                "Error occurred during loading `package.json`:\n",
+                buildErrorCompleteLog(error)
+            );
         }
     }
 
@@ -110,7 +116,7 @@ export class GrazieApi {
             Accept: "*/*",
             "Content-Type": "application/json",
             "Grazie-Authenticate-Jwt": token,
-            "Grazie-Agent": JSON.stringify({
+            "Grazie-Agent": toUnformattedJsonString({
                 name: "coq-pilot",
                 version: await this.getAgentVersion(),
             }),
@@ -138,11 +144,7 @@ export class GrazieApi {
                 const messageData = JSON.parse(validJSON);
                 messages.push(messageData.current);
             } else {
-                throw Error(
-                    "Unexpected chunk: " +
-                        tokenWrapped +
-                        ". Please report this error."
-                );
+                illegalState(`Unexpected chunk: ${tokenWrapped}`);
             }
         });
 

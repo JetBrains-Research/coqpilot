@@ -5,6 +5,7 @@ import {
     WorkspaceRoot,
     isStandaloneFilesRoot,
 } from "../../structures/common/workspaceRoot";
+import { throwBenchmarkingError } from "../../utils/throwErrors";
 import { updateWorkspaceCache } from "../cacheHandlers/cacheUpdater";
 import { WorkspaceCacheHolder } from "../cacheStructures/cacheHolders";
 import {
@@ -66,7 +67,7 @@ async function parseCoqProject(
                 `\n\tcaused by an unexpected error: ${stringifyAnyValue(error)}`
             );
         }
-        throw Error("failed to build benchmarking items");
+        throwBenchmarkingError("failed to build benchmarking items");
     }
 }
 

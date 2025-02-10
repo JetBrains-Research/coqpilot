@@ -1,4 +1,5 @@
 import {
+    DeepSeekUserModelParams,
     GrazieUserModelParams,
     LMStudioUserModelParams,
     OpenAiUserModelParams,
@@ -6,7 +7,7 @@ import {
     UserModelParams,
 } from "../../../../llm/userModelParams";
 
-export type RankerType = "distance" | "random" | "jaccardIndex";
+import { RankerType } from "../../../../core/contextTheoremRanker/contextTheoremsRanker";
 
 export namespace InputBenchmarkingModelParams {
     export interface Params extends UserModelParams {
@@ -22,4 +23,6 @@ export namespace InputBenchmarkingModelParams {
     export interface GrazieParams extends GrazieUserModelParams, Params {}
 
     export interface LMStudioParams extends LMStudioUserModelParams, Params {}
+
+    export interface DeepSeekParams extends DeepSeekUserModelParams, Params {}
 }

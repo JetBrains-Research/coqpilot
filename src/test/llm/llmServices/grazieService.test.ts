@@ -1,10 +1,8 @@
 import { expect } from "earl";
 
 import { ConfigurationError } from "../../../llm/llmServiceErrors";
-import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
 import { GrazieService } from "../../../llm/llmServices/grazie/grazieService";
 import { GrazieModelParams } from "../../../llm/llmServices/modelParams";
-import { defaultSystemMessageContent } from "../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";
 import { resolveParametersOrThrow } from "../../../llm/llmServices/utils/resolveOrThrow";
 import { GrazieUserModelParams } from "../../../llm/userModelParams";
 
@@ -19,7 +17,7 @@ import {
 } from "../llmSpecificTestUtils/constants";
 import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testAdmitCompletion";
 import {
-    defaultUserMultiroundProfile,
+    paramsResolvedWithBasicDefaults,
     testResolveValidCompleteParameters,
 } from "../llmSpecificTestUtils/testResolveParameters";
 
@@ -70,8 +68,7 @@ suite("[LLMService] Test `GrazieService`", function () {
                 grazieService,
                 {
                     ...inputParams,
-                    systemPrompt: defaultSystemMessageContent,
-                    multiroundProfile: defaultUserMultiroundProfile,
+                    ...paramsResolvedWithBasicDefaults,
                 },
                 true
             );
@@ -107,12 +104,11 @@ suite("[LLMService] Test `GrazieService`", function () {
             inputParams,
             async (grazieService, resolvedParams: GrazieModelParams) => {
                 // non-positive choices
-                expect(async () => {
+                await expect(async () => {
                     await grazieService.generateProof(
                         mockProofGenerationContext,
                         resolvedParams,
-                        -1,
-                        ErrorsHandlingMode.RETHROW_ERRORS
+                        -1
                     );
                 }).toBeRejectedWith(ConfigurationError, "choices");
             }

@@ -13,23 +13,26 @@ import { abortAsFailFast } from "../utils/asyncUtils/abortUtils";
 import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
 import { groupBy, mapValues } from "../utils/collectionUtils/mapUtils";
 import { getShortName } from "../utils/commonStructuresUtils/llmServicesUtils";
-import { buildSafeJsonFileName } from "../utils/fileUtils/fileNameUtils";
+import { translateToSafeFileName } from "../utils/fileUtils/fileNameUtils";
 import {
-    checkDirectoryIsEmpty,
     createDirectory,
-    exists,
     getDatasetDir,
     joinPaths,
+    provideEmptyDirectoryOrThrow,
     relativizeAbsolutePaths,
     writeToFile,
 } from "../utils/fileUtils/fs";
 import { prependWithZeros } from "../utils/serializationUtils";
+import {
+    benchmarkingInvariantFailed,
+    throwBenchmarkingError,
+} from "../utils/throwErrors";
 
 import { executeBenchmarkingTask } from "./executeBenchmarkingTask";
-import { TimeMark } from "./singleCompletionGeneration/measureUtils";
+import { TimeMark } from "./singleCompletionGeneration/measureTimeUtils";
 import { AbstractProofsChecker } from "./singleCompletionGeneration/proofsCheckers/abstractProofsChecker";
 
-namespace ArtifactsDirNames {
+namespace ArtifactsNames {
     export const itemsReportsDir = "items";
     export const experimentReportFileName = "experiment-report.json";
 }
@@ -42,19 +45,15 @@ export async function benchmark(
     totalTime: TimeMark,
     proofsChecker: AbstractProofsChecker
 ): Promise<ExperimentResults> {
-    if (exists(resolvedArtifactsDirPath)) {
-        if (!checkDirectoryIsEmpty(resolvedArtifactsDirPath)) {
-            throw Error(
-                `artifacts directory should be empty: "${resolvedArtifactsDirPath}"`
-            );
-        }
-    } else {
-        createDirectory(true, resolvedArtifactsDirPath);
-    }
-    const itemsReportsDirPath = createDirectory(
+    provideEmptyDirectoryOrThrow(
+        resolvedArtifactsDirPath,
+        "artifacts",
+        throwBenchmarkingError
+    );
+    const itemsDirPath = createDirectory(
         true,
         resolvedArtifactsDirPath,
-        ArtifactsDirNames.itemsReportsDir
+        ArtifactsNames.itemsReportsDir
     );
 
     const modelsSchedulers = ModelsSchedulers.buildModelsSchedulers(
@@ -68,10 +67,12 @@ export async function benchmark(
     const itemsPromises: Promise<BenchmarkedItem | undefined>[] = [];
     for (let i = 0; i < benchmarkingItems.length; i++) {
         const item = benchmarkingItems[i];
-        const itemReportPath = joinPaths(
-            itemsReportsDirPath,
-            buildUniqueItemReportFileName(i, benchmarkingItems.length - 1, item)
+        const itemArtifactsDirPath = createDirectory(
+            true,
+            itemsDirPath,
+            buildUniqueItemReportDirName(i, benchmarkingItems.length - 1, item)
         );
+
         const itemLogger = buildItemLogger(item, parentLogger);
         const modelsScheduler = ModelsSchedulers.getScheduler(
             modelsSchedulers,
@@ -81,7 +82,7 @@ export async function benchmark(
         itemsPromises.push(
             executeBenchmarkingTask(
                 item,
-                itemReportPath,
+                itemArtifactsDirPath,
                 options,
                 itemLogger,
                 modelsScheduler,
@@ -110,7 +111,7 @@ export async function benchmark(
 
     const experimentReportPath = joinPaths(
         resolvedArtifactsDirPath,
-        ArtifactsDirNames.experimentReportFileName
+        ArtifactsNames.experimentReportFileName
     );
     writeToFile(experimentResult.asJson(), experimentReportPath, (e) =>
         parentLogger
@@ -179,18 +180,17 @@ namespace ModelsSchedulers {
         item: BenchmarkingItem,
         itemLogger: BenchmarkingLogger
     ): AsyncScheduler {
-        const modelsScheduler = modelsSchedulers
-            .get(item.params.llmServiceIdentifier)
-            ?.get(ModelsSchedulers.getModelNameOrNoModelNameKeyword(item));
-        if (modelsScheduler === undefined) {
-            itemLogger.error(
-                "Unexpected error: no models scheduler for this benchmarking item"
-            );
-            throw Error(
-                `Benchmarking failed: no models scheduler for the benchmarking item`
-            );
-        }
-        return modelsScheduler;
+        return (
+            modelsSchedulers
+                .get(item.params.llmServiceIdentifier)
+                ?.get(
+                    ModelsSchedulers.getModelNameOrNoModelNameKeyword(item)
+                ) ??
+            benchmarkingInvariantFailed(
+                itemLogger,
+                "no models scheduler for the benchmarking item"
+            )
+        );
     }
 
     export function buildModelsSchedulers(
@@ -241,7 +241,7 @@ function extractBenchmarkingOptions(
     };
 }
 
-function buildUniqueItemReportFileName(
+function buildUniqueItemReportDirName(
     itemIndex: number,
     maxIndex: number,
     item: BenchmarkingItem
@@ -256,7 +256,7 @@ function buildUniqueItemReportFileName(
         `${augmentedIndex}-${getShortName(item.params.llmServiceIdentifier)}-${modelId}`,
         `-${fileIdentifier}-${item.task.sourceTheorem.name}`,
     ].join("");
-    return buildSafeJsonFileName(unsafeFileName);
+    return translateToSafeFileName(unsafeFileName);
 }
 
 function buildItemLogger(

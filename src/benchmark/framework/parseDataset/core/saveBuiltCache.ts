@@ -1,3 +1,4 @@
+import { illegalState } from "../../../../utils/throwErrors";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { DatasetCacheUsageMode } from "../../structures/inputParameters/datasetCaching";
 import { ExperimentRunOptions } from "../../structures/inputParameters/experimentRunOptions";
@@ -63,8 +64,9 @@ function shouldClearWorkspaceCacheDirectories(
     switch (cacheMode) {
         case DatasetCacheUsageMode.NO_CACHE_USAGE:
         case DatasetCacheUsageMode.READ_CACHE_ONLY:
-            throw Error(
-                `${cacheMode} mode should cause no modification of cache files; thus, this function should not have been called`
+            illegalState(
+                `${cacheMode} mode should cause no modification of cache files;`,
+                "thus, this function should not have been called"
             );
         case DatasetCacheUsageMode.EXTEND_CACHE_WITH_MISSING_TARGETS:
             return false;

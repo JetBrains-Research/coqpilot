@@ -1,5 +1,5 @@
 import { benchmark } from "../benchmarkingCore/benchmark";
-import { TimeMark } from "../benchmarkingCore/singleCompletionGeneration/measureUtils";
+import { TimeMark } from "../benchmarkingCore/singleCompletionGeneration/measureTimeUtils";
 import { AbstractProofsChecker } from "../benchmarkingCore/singleCompletionGeneration/proofsCheckers/abstractProofsChecker";
 import {
     BenchmarkingLogger,
@@ -23,6 +23,7 @@ import {
     joinPaths,
     resolveAsAbsolutePath,
 } from "../utils/fileUtils/fs";
+import { throwBenchmarkingError } from "../utils/throwErrors";
 
 import {
     CacheTargetsImpl,
@@ -161,7 +162,7 @@ export abstract class AbstractExperiment {
             this.setupCoqProjectParser(executionContext)
         );
         if (benchmarkingItems.length === 0) {
-            throw Error(
+            throwBenchmarkingError(
                 "No items to benchmark: make sure the experiment input is configured correctly"
             );
         }

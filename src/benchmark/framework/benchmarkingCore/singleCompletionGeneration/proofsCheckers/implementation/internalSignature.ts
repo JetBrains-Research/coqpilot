@@ -27,7 +27,7 @@ export namespace CheckProofsInternalSignature {
         effectiveElapsedMillis: number;
     }
 
-    export type FailureType = "TIMEOUT" | "COQ_PROOF_CHECKER_ERROR";
+    export type FailureType = "COQ_LSP_TIMEOUT" | "COQ_PROOF_CHECKER_ERROR";
 
     export interface FailureResult {
         failureType: FailureType;
@@ -124,7 +124,7 @@ export namespace CheckProofsInternalSignature {
         properties: {
             failureType: {
                 type: "string",
-                enum: ["TIMEOUT", "COQ_PROOF_CHECKER_ERROR"],
+                enum: ["COQ_LSP_TIMEOUT", "COQ_PROOF_CHECKER_ERROR"],
             },
             causeMessage: {
                 type: "string",

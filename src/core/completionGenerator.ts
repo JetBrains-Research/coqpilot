@@ -83,7 +83,9 @@ export async function generateCompletion(
             eventLogger?.log(
                 "core-new-proofs-ready-for-checking",
                 "Newly generated proofs are ready for checking",
-                newlyGeneratedProofs.map((proof) => proof.proof())
+                newlyGeneratedProofs.map(
+                    (generatedProof) => generatedProof.proof
+                )
             );
             const fixedProofsOrCompletion = await checkAndFixProofs(
                 newlyGeneratedProofs,
@@ -118,7 +120,9 @@ export async function generateCompletion(
             eventLogger?.log(
                 "core-new-proofs-ready-for-checking",
                 "Newly generated only proof fixes are ready for checking",
-                newlyGeneratedProofs.map((proof) => proof.proof())
+                newlyGeneratedProofs.map(
+                    (generatedProof) => generatedProof.proof
+                )
             );
         }
 
@@ -131,13 +135,13 @@ export async function generateCompletion(
         console.error(
             `Error occurred during completion generation:\n${buildErrorCompleteLog(error)}`
         );
-        if (error instanceof CoqLspTimeoutError) {
+        if (error instanceof CompletionAbortError) {
+            throw error;
+        } else if (error instanceof CoqLspTimeoutError) {
             return new FailureGenerationResult(
                 FailureGenerationStatus.TIMEOUT_EXCEEDED,
                 error.message
             );
-        } else if (error instanceof CompletionAbortError) {
-            throw error;
         } else {
             return new FailureGenerationResult(
                 FailureGenerationStatus.ERROR_OCCURRED,
@@ -184,8 +188,8 @@ async function checkAndFixProofs(
         "core-proofs-fixed",
         "Proofs were fixed",
         fixedProofs.map(
-            (proof) =>
-                `New proof: "${proof.proof()}" with version ${proof.versionNumber()}\n Previous version: ${stringifyAnyValue(proof.proofVersions.slice(-2))}`
+            (generatedProof) =>
+                `New proof: "${generatedProof.proof}" with version ${generatedProof.versionNumber}\n Previous version: ${stringifyAnyValue(generatedProof.proofVersions.slice(-2))}`
         )
     );
     return fixedProofs; // prepare to a new iteration
@@ -200,7 +204,7 @@ async function checkGeneratedProofs(
 ): Promise<ProofCheckResult[]> {
     const preparedProofBatch = generatedProofs.map(
         (generatedProof: GeneratedProof) =>
-            prepareProofToCheck(generatedProof.proof())
+            prepareProofToCheck(generatedProof.proof)
     );
 
     return processEnvironment.coqProofChecker.checkProofs(

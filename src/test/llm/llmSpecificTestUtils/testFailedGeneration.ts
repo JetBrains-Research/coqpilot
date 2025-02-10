@@ -7,6 +7,7 @@ import {
 } from "../../../llm/llmServiceErrors";
 import { AnalyzedChatHistory } from "../../../llm/llmServices/commonStructures/chat";
 import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
+import { ProofGenerationMetadataHolder } from "../../../llm/llmServices/commonStructures/proofGenerationMetadata";
 
 import { subscribeToTrackMockEvents } from "./eventsTracker";
 import { ExpectedRecord, expectLogs } from "./expectLogs";
@@ -17,10 +18,10 @@ export function testFailedGenerationCompletely<T>(
     generate: (
         mockService: MockLLMService,
         mockParams: MockLLMModelParams,
-        errorsHandlingMode: ErrorsHandlingMode,
+        metadataHolder: ProofGenerationMetadataHolder,
         preparedData?: T
     ) => Promise<string[]>,
-    additionalTestParams: any = {},
+    additionalTestParams: Partial<FailedGenerationTestParams> = {},
     prepareDataBeforeTest?: (
         mockService: MockLLMService,
         basicMockParams: MockLLMModelParams
@@ -42,21 +43,17 @@ export function testFailedGenerationCompletely<T>(
             testFailedGeneration(
                 {
                     ...commonTestParams,
-                    errorsHandlingMode:
-                        ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS,
+                    errorsHandlingMode: ErrorsHandlingMode.SWALLOW_ERRORS,
                     expectedFailedRequestEventsN: 1,
                 },
                 generate,
                 prepareDataBeforeTest
             );
-
             testFailedGeneration(
                 {
                     ...commonTestParams,
                     errorsHandlingMode: ErrorsHandlingMode.RETHROW_ERRORS,
-                    // `ErrorsHandlingMode.RETHROW_ERRORS` doesn't use failed-generation events
-                    expectedFailedRequestEventsN: 0,
-
+                    expectedFailedRequestEventsN: 1,
                     expectedThrownError: expectedThrownError,
                 },
                 generate,
@@ -106,7 +103,7 @@ export function testFailureAtChatBuilding<T>(
     generate: (
         mockService: MockLLMService,
         mockParams: MockLLMModelParams,
-        errorsHandlingMode: ErrorsHandlingMode,
+        metadataHolder: ProofGenerationMetadataHolder,
         preparedData?: T
     ) => Promise<string[]>,
     additionalTestParams: any = {},
@@ -117,8 +114,7 @@ export function testFailureAtChatBuilding<T>(
 ) {
     testFailedGeneration(
         {
-            errorsHandlingMode:
-                ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS,
+            errorsHandlingMode: ErrorsHandlingMode.SWALLOW_ERRORS,
             failureName: "failure at chat building",
             expectedGenerationLogs: [],
             expectedFailedRequestEventsN: 1,
@@ -164,7 +160,7 @@ export function testFailedGeneration<T>(
     generate: (
         mockService: MockLLMService,
         mockParams: MockLLMModelParams,
-        errorsHandlingMode: ErrorsHandlingMode,
+        metadataHolder: ProofGenerationMetadataHolder,
         preparedData?: T
     ) => Promise<string[]>,
     prepareDataBeforeTest?: (
@@ -176,6 +172,7 @@ export function testFailedGeneration<T>(
         testParams.testTargetName ?? "Test failed generation";
     test(`${testNamePrefix}: ${testParams.failureName}, ${testParams.errorsHandlingMode}`, async () => {
         await withMockLLMService(
+            testParams.errorsHandlingMode,
             async (mockService, basicMockParams, testEventLogger) => {
                 const preparedData =
                     prepareDataBeforeTest !== undefined
@@ -203,25 +200,34 @@ export function testFailedGeneration<T>(
                         ? testParams.buildErroneousMockParams(basicMockParams)
                         : basicMockParams;
 
+                const failureGenerationMetadataHolder =
+                    new ProofGenerationMetadataHolder();
                 try {
                     const noGeneratedProofs = await generate(
                         mockService,
                         maybeErroneousMockParams,
-                        testParams.errorsHandlingMode,
+                        failureGenerationMetadataHolder,
                         preparedData
                     );
                     expect(testParams.errorsHandlingMode).toEqual(
-                        ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
+                        ErrorsHandlingMode.SWALLOW_ERRORS
                     );
                     expect(noGeneratedProofs).toHaveLength(0);
                 } catch (e) {
                     expect(testParams.errorsHandlingMode).toEqual(
                         ErrorsHandlingMode.RETHROW_ERRORS
                     );
-                    expect(e as LLMServiceError).toBeTruthy();
+                    expect(e instanceof LLMServiceError).toBeTruthy();
                     if (testParams.expectedThrownError !== undefined) {
                         expect(e).toEqual(testParams.expectedThrownError);
                     }
+                }
+                const failureMetadata =
+                    failureGenerationMetadataHolder.getFailedProofGenerationMetadata();
+                if (testParams.expectedThrownError !== undefined) {
+                    expect(failureMetadata.llmServiceError).toEqual(
+                        testParams.expectedThrownError
+                    );
                 }
 
                 const expectedMockEventsN =
@@ -235,16 +241,25 @@ export function testFailedGeneration<T>(
                 expectLogs(testParams.expectedGenerationLogs, mockService);
 
                 // check if service stays available after an error occurred
+                const successfulGenerationMetadataHolder =
+                    new ProofGenerationMetadataHolder();
                 const generatedProofs = await generate(
                     mockService,
                     basicMockParams,
-                    testParams.errorsHandlingMode,
+                    successfulGenerationMetadataHolder,
                     preparedData
                 );
                 if (testParams.proofsToGenerate !== undefined) {
                     expect(generatedProofs).toEqual(
                         testParams.proofsToGenerate
                     );
+                    expect(
+                        successfulGenerationMetadataHolder
+                            .getSuccessfulProofGenerationMetadata()
+                            .generatedRawProofs.map(
+                                (rawProof) => rawProof.content
+                            )
+                    ).toEqual(testParams.proofsToGenerate);
                 }
 
                 expect(eventsTracker).toEqual({
@@ -254,6 +269,7 @@ export function testFailedGeneration<T>(
                         testParams.expectedFailedRequestEventsN,
                 });
                 // `mockLLM` was created with `debugLogs = true`, so logs are not cleaned on success
+                // TODO (test): should it be always created with `debugLogs` enabled?
                 expectLogs(
                     [
                         ...testParams.expectedGenerationLogs,

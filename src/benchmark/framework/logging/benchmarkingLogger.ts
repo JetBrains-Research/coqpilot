@@ -1,10 +1,10 @@
+import { LogColor, colorize } from "../../../utils/colorLogging";
 import { stringifyAnyValue } from "../../../utils/printers";
 import {
     appendToFile,
     createFileWithParentDirectories,
 } from "../utils/fileUtils/fs";
 
-import { LogColor, colorize } from "./colorLogging";
 import { writeToConsoleErr } from "./consoleWriteUtils";
 
 export enum SeverityLevel {
@@ -31,14 +31,14 @@ export abstract class BenchmarkingLogger {
     protected abstract log(
         severity: SeverityLevel,
         message: string,
-        color: LogColor | undefined,
+        color: LogColor,
         lineEnd: string,
         recordIdentifier: string
     ): void;
 
     error(
         message: string,
-        color: LogColor | undefined = "red",
+        color: LogColor = "red",
         lineEnd: string = this.lineEnd,
         recordIdentifier: string = this.recordIdentifier
     ) {
@@ -53,7 +53,7 @@ export abstract class BenchmarkingLogger {
 
     info(
         message: string,
-        color: LogColor | undefined = undefined,
+        color: LogColor = "default",
         lineEnd: string = this.lineEnd,
         recordIdentifier: string = this.recordIdentifier
     ) {
@@ -62,7 +62,7 @@ export abstract class BenchmarkingLogger {
 
     debug(
         message: string,
-        color: LogColor | undefined = "gray",
+        color: LogColor = "gray",
         lineEnd: string = this.lineEnd,
         recordIdentifier: string = this.recordIdentifier
     ) {
@@ -78,7 +78,7 @@ export abstract class BenchmarkingLogger {
     separatorLine(
         suffix: string = "",
         severity: SeverityLevel = SeverityLevel.INFO,
-        color: LogColor | undefined = undefined
+        color: LogColor = "default"
     ) {
         this.log(severity, `----------------------------`, color, "", suffix);
     }
@@ -99,12 +99,12 @@ export class AsOneRecordLogsBuilder {
     private logImpl(
         callLogger: (
             message: string,
-            color: LogColor | undefined,
+            color: LogColor,
             lineEnd: string,
             recordIdentifier?: string
         ) => void,
         message: string,
-        color: LogColor | undefined,
+        color: LogColor,
         lineEnd: string
     ): AsOneRecordLogsBuilder {
         if (this.firstMessageLogged) {
@@ -118,7 +118,7 @@ export class AsOneRecordLogsBuilder {
 
     error(
         message: string,
-        color: LogColor | undefined = "red",
+        color: LogColor = "red",
         lineEnd: string = this.lineEnd
     ): AsOneRecordLogsBuilder {
         return this.logImpl(
@@ -131,7 +131,7 @@ export class AsOneRecordLogsBuilder {
 
     info(
         message: string,
-        color: LogColor | undefined = undefined,
+        color: LogColor = "default",
         lineEnd: string = this.lineEnd
     ): AsOneRecordLogsBuilder {
         return this.logImpl(
@@ -144,7 +144,7 @@ export class AsOneRecordLogsBuilder {
 
     debug(
         message: string,
-        color: LogColor | undefined = "gray",
+        color: LogColor = "gray",
         lineEnd: string = this.lineEnd
     ): AsOneRecordLogsBuilder {
         return this.logImpl(
@@ -205,7 +205,7 @@ export class BenchmarkingLoggerImpl extends BenchmarkingLogger {
     protected log(
         severity: SeverityLevel,
         message: string,
-        color: LogColor | undefined,
+        color: LogColor,
         lineEnd: string,
         recordIdentifier: string
     ) {
@@ -216,7 +216,7 @@ export class BenchmarkingLoggerImpl extends BenchmarkingLogger {
         if (recordIdentifier !== "") {
             this.print(recordIdentifier, "\n");
         }
-        if (color === undefined || this.logsFile !== undefined) {
+        if (this.logsFile !== undefined) {
             // Typically, colors are not supported in files.
             this.print(message, lineEnd);
         } else {

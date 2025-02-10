@@ -1,4 +1,5 @@
 import { stringifyAnyValue } from "../../../../utils/printers";
+import { illegalState } from "../../../../utils/throwErrors";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import {
     AllTheoremsTarget,
@@ -139,7 +140,7 @@ function checkTargetCanBeRestored(
             cachedTheoremData.hasAllCachedGoalsOfType(target.requestType)
         );
     } else {
-        throw Error(`Unknown file target: ${stringifyAnyValue(target)}`);
+        illegalState(`unknown file target: ${stringifyAnyValue(target)}`);
     }
 }
 
@@ -157,7 +158,7 @@ function addTargetToMissingTargets(
             target.requestType
         );
     } else {
-        throw Error(`Unknown file target: ${stringifyAnyValue(target)}`);
+        illegalState(`unknown file target: ${stringifyAnyValue(target)}`);
     }
 }
 

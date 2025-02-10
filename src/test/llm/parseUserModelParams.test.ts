@@ -2,6 +2,7 @@ import { JSONSchemaType } from "ajv";
 import { expect } from "earl";
 
 import {
+    deepSeekUserModelParamsSchema,
     grazieUserModelParamsSchema,
     lmStudioUserModelParamsSchema,
     openAiUserModelParamsSchema,
@@ -65,7 +66,7 @@ suite("Parse `UserModelParams` from JSON test", () => {
     const validOpenAiUserModelParamsComplete = {
         ...validUserModelParamsCompelete,
         modelName: "gpt-model",
-        temperature: 36.6,
+        temperature: 0.8,
         apiKey: "api-key",
     };
     const validGrazieUserModelParamsComplete = {
@@ -76,8 +77,14 @@ suite("Parse `UserModelParams` from JSON test", () => {
     };
     const validLMStudioUserModelParamsComplete = {
         ...validUserModelParamsCompelete,
-        temperature: 36.6,
+        temperature: 0.8,
         port: 555,
+    };
+    const validDeepSeekUserModelParamsComplete = {
+        ...validUserModelParamsCompelete,
+        modelName: "deepseek-chat",
+        temperature: 0.8,
+        apiKey: "api-key",
     };
 
     test("Validate `UserMultiroundProfile`", () => {
@@ -170,6 +177,13 @@ suite("Parse `UserModelParams` from JSON test", () => {
         isValidJSON(
             validLMStudioUserModelParamsComplete,
             lmStudioUserModelParamsSchema
+        );
+    });
+
+    test("Validate `DeepSeekUserModelParams`", () => {
+        isValidJSON(
+            validDeepSeekUserModelParamsComplete,
+            deepSeekUserModelParamsSchema
         );
     });
 });

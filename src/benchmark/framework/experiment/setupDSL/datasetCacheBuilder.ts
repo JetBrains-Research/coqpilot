@@ -20,6 +20,7 @@ import {
     isDirectory,
     listCoqSourceFiles,
 } from "../../utils/fileUtils/fs";
+import { throwBenchmarkingError } from "../../utils/throwErrors";
 
 import { EnvironmentStringType, TargetsBuilderUtils } from "./targetsBuilder";
 
@@ -89,7 +90,7 @@ export namespace DatasetCacheBuildingImpl {
             logger
         );
         if (!cacheWasSuccessfullySaved) {
-            throw Error("Failed to save built cache");
+            throwBenchmarkingError("Failed to save built cache");
         }
     }
 }
@@ -130,7 +131,7 @@ export namespace CacheTargetsImpl {
             cacheTargetsBuilders.map((builder) => builder.buildCacheTargets())
         ).resolveRequests();
         if (cacheTargets.isEmpty()) {
-            throw Error(
+            throwBenchmarkingError(
                 "No targets for building dataset cache were selected. Configure some and try again."
             );
         }
@@ -179,7 +180,7 @@ export namespace CacheTargetsImpl {
             const resolvedFilePaths = resolvedDirectoryPaths.flatMap(
                 (resolvedDirectoryPath) => {
                     if (!isDirectory(resolvedDirectoryPath)) {
-                        throw Error(
+                        throwBenchmarkingError(
                             `Building dataset cache target is invalid: resolved path "${resolvedDirectoryPath}" should be a directory`
                         );
                     }

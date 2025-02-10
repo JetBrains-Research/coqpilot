@@ -1,8 +1,12 @@
-import { EventLogger } from "../../../logging/eventLogger";
+import { asErrorOrRethrow } from "../../../utils/errorsUtils";
+import { toUnformattedJsonString } from "../../../utils/printers";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { LMStudioUserModelParams } from "../../userModelParams";
 import { AnalyzedChatHistory, ChatHistory } from "../commonStructures/chat";
-import { GeneratedRawContent } from "../commonStructures/generatedRawContent";
+import {
+    GeneratedRawContent,
+    GeneratedRawContentItem,
+} from "../commonStructures/generatedRawContent";
 import { ProofVersion } from "../commonStructures/proofVersion";
 import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
@@ -18,26 +22,13 @@ export class LMStudioService extends LLMServiceImpl<
     LMStudioGeneratedProof,
     LMStudioServiceInternal
 > {
-    protected readonly internal: LMStudioServiceInternal;
+    readonly serviceName = "LMStudioService";
+    protected readonly internal = new LMStudioServiceInternal(
+        this,
+        this.eventLogger,
+        this.generationsLoggerBuilder
+    );
     protected readonly modelParamsResolver = new LMStudioModelParamsResolver();
-
-    constructor(
-        eventLogger?: EventLogger,
-        debugLogs: boolean = false,
-        generationsLogsFilePath?: string
-    ) {
-        super(
-            "LMStudioService",
-            eventLogger,
-            debugLogs,
-            generationsLogsFilePath
-        );
-        this.internal = new LMStudioServiceInternal(
-            this,
-            this.eventLoggerGetter,
-            this.generationsLoggerBuilder
-        );
-    }
 }
 
 export class LMStudioGeneratedProof extends GeneratedProofImpl<
@@ -47,14 +38,14 @@ export class LMStudioGeneratedProof extends GeneratedProofImpl<
     LMStudioServiceInternal
 > {
     constructor(
-        proof: string,
+        rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
         modelParams: LMStudioModelParams,
         llmServiceInternal: LMStudioServiceInternal,
         previousProofVersions?: ProofVersion[]
     ) {
         super(
-            proof,
+            rawProof,
             proofGenerationContext,
             modelParams,
             llmServiceInternal,
@@ -70,13 +61,13 @@ class LMStudioServiceInternal extends LLMServiceInternal<
     LMStudioServiceInternal
 > {
     constructGeneratedProof(
-        proof: string,
+        rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
         modelParams: LMStudioModelParams,
         previousProofVersions?: ProofVersion[] | undefined
     ): LMStudioGeneratedProof {
         return new LMStudioGeneratedProof(
-            proof,
+            rawProof,
             proofGenerationContext,
             modelParams,
             this,
@@ -92,7 +83,7 @@ class LMStudioServiceInternal extends LLMServiceInternal<
         LLMServiceInternal.validateChoices(choices);
         let attempts = choices * 2;
         const completions: string[] = [];
-        this.debug.logEvent("Completion requested", {
+        this.logDebug.event("Completion requested", {
             history: analyzedChat.chat,
         });
 
@@ -108,18 +99,15 @@ class LMStudioServiceInternal extends LLMServiceInternal<
                     const res = await responce.json();
                     const newCompletion = res.choices[0].message.content;
                     completions.push(newCompletion);
-                    this.debug.logEvent("Completion succeeded", {
+                    this.logDebug.event("Completion succeeded", {
                         newCompletion: newCompletion,
                     });
                 }
             } catch (err) {
-                this.debug.logEvent("Completion failed", {
+                this.logDebug.event("Completion failed", {
                     error: err,
                 });
-                if ((err as Error) === null) {
-                    throw err;
-                }
-                lastErrorThrown = err as Error;
+                lastErrorThrown = asErrorOrRethrow(err);
             }
             attempts--;
         }
@@ -141,7 +129,7 @@ class LMStudioServiceInternal extends LLMServiceInternal<
     };
 
     private body(messages: ChatHistory, params: LMStudioModelParams): string {
-        return JSON.stringify({
+        return toUnformattedJsonString({
             messages: messages,
             stream: false,
             temperature: params.temperature,

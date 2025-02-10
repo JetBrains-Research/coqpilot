@@ -7,6 +7,7 @@ import { CoqLspConnector } from "../coqLsp/coqLspConnector";
 import { CompletionAbortError } from "../core/abortUtils";
 
 import { EventLogger, Severity } from "../logging/eventLogger";
+import { illegalState } from "../utils/throwErrors";
 
 import { parseCoqLspServerPath } from "./settings/configReaders";
 import {
@@ -27,7 +28,7 @@ export class SessionState implements Disposable {
 
     throwOnInactiveSession(): void {
         if (!this._isActive) {
-            throw new Error("Trying to access a disposed session state");
+            illegalState("trying to access a disposed session state");
         }
     }
 

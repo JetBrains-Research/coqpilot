@@ -6,6 +6,7 @@ import { ModelParams } from "../modelParams";
 import { AnalyzedChatHistory } from "./chat";
 import { GeneratedRawContentItem } from "./generatedRawContent";
 import { GenerationTokens } from "./generationTokens";
+import { ProofGenerationType } from "./proofGenerationType";
 
 /**
  * Interface for `LLMServiceImpl` to package all generation request data.
@@ -14,6 +15,7 @@ import { GenerationTokens } from "./generationTokens";
  */
 export interface LLMServiceRequest {
     llmService: LLMService<UserModelParams, ModelParams>;
+    proofGenerationType: ProofGenerationType;
     params: ModelParams;
     choices: number;
     analyzedChat?: AnalyzedChatHistory;
@@ -26,4 +28,35 @@ export interface LLMServiceRequestSucceeded extends LLMServiceRequest {
 
 export interface LLMServiceRequestFailed extends LLMServiceRequest {
     llmServiceError: LLMServiceError;
+}
+
+export function isLLMServiceRequest(data: any): data is LLMServiceRequest {
+    const maybeRequest = data as LLMServiceRequest;
+    return (
+        maybeRequest.llmService !== undefined &&
+        maybeRequest.proofGenerationType !== undefined &&
+        maybeRequest.params !== undefined &&
+        maybeRequest.choices !== undefined
+    );
+}
+
+export function isLLMServiceRequestSucceeded(
+    data: any
+): data is LLMServiceRequestSucceeded {
+    const maybeSucceedRequest = data as LLMServiceRequestSucceeded;
+    return (
+        isLLMServiceRequest(data) &&
+        maybeSucceedRequest.generatedRawProofs !== undefined &&
+        maybeSucceedRequest.tokensSpentInTotal !== undefined
+    );
+}
+
+export function isLLMServiceRequestFailed(
+    data: any
+): data is LLMServiceRequestFailed {
+    const maybeFailedRequest = data as LLMServiceRequestFailed;
+    return (
+        isLLMServiceRequest(data) &&
+        maybeFailedRequest.llmServiceError !== undefined
+    );
 }

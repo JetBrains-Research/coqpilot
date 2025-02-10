@@ -2,6 +2,7 @@ import {
     stringifyAnyValue,
     stringifyDefinedValue,
 } from "../../../../utils/printers";
+import { illegalState, unreachable } from "../../../../utils/throwErrors";
 
 import { AbstractSingleParamResolver, PropertyKey } from "./abstractResolvers";
 import { SingleParamResolutionResult } from "./abstractResolvers";
@@ -83,7 +84,7 @@ export interface SingleParamResolverBuilder<InputType, T> {
      *   (since default resolution is the last step).
      *
      * @param valueBuilder lambda to build the default value.
-     * @param helpMessageIfNotResolved optional message to show to the user if `valueBuilder` have not built a default value for the parameter (i.e. returned `undefined`).
+     * @param helpMessageIfNotResolved optional message to show to the user if `valueBuilder` has not built a default value for the parameter (i.e. returned `undefined`).
      */
     default(
         valueBuilder: ValueBuilder<InputType, T>,
@@ -182,6 +183,11 @@ export namespace ValidationRules {
         (value: number) => value > 0,
         "be positive",
     ];
+
+    export const beNonNegativeNumber: ValidationRule<any, number> = [
+        (value: number) => value >= 0,
+        "be non-negative",
+    ];
 }
 
 /**
@@ -209,8 +215,8 @@ class SingleParamResolverBuilderImpl<InputType, T>
         paramMessage?: Message<InputType>
     ): SingleParamResolverBuilder<InputType, T> {
         if (this.overrider !== undefined) {
-            throw new Error(
-                `parameter \'${String(this.inputParamKey)}\'is overriden multiple times`
+            illegalState(
+                `parameter \`${String(this.inputParamKey)}\` is overriden multiple times`
             );
         }
         this.overrider = {
@@ -393,8 +399,10 @@ class SingleParamResolverImpl<InputType, T> extends AbstractSingleParamResolver<
             return userValueAsT;
         } else {
             // unfortunately, this case is unreachable: TypeScript does not provide the way to check that `userValue` is of the `T` type indeed
-            throw Error(
-                `cast of \`any\` to generic \`T\` type should always succeed, value = ${stringifyAnyValue(userValue)} for ${this.quotedName()} parameter`
+            // TODO: actually, it does: the type validator should be passed and used (for example, Ajv one)
+            unreachable(
+                "cast of `any` to generic `T` type should always succeed, ",
+                `value = ${stringifyAnyValue(userValue)} for ${this.quotedName()} parameter`
             );
         }
     }
@@ -416,8 +424,9 @@ class SingleParamResolverImpl<InputType, T> extends AbstractSingleParamResolver<
             // no checks and logs are needed, just return the mock value
             result.resultValue = valueToOverrideWith;
             if (valueToOverrideWith === undefined) {
-                throw Error(
-                    `${this.quotedName()} is expected to be a mock value, but its builder resolved with "undefined"`
+                illegalState(
+                    `${this.quotedName()} is expected to be a mock value, `,
+                    "but its builder resolves with `undefined`"
                 );
             }
             return [valueToOverrideWith, true];

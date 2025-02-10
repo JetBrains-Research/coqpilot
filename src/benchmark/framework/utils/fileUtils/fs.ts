@@ -1,6 +1,9 @@
 import * as fs from "fs";
 import * as path from "path";
 
+import { wrapNonError } from "../../../../utils/errorsUtils";
+import { illegalState } from "../../../../utils/throwErrors";
+
 export function getRootDir(): string {
     const relativeRoot = path.join(__dirname, "/../../../../../");
     return path.resolve(relativeRoot);
@@ -19,7 +22,7 @@ export function readFile<T>(
     try {
         return fs.readFileSync(filePath, defaultEncoding);
     } catch (e) {
-        return onError(e as Error);
+        return handleThrownObject(e, onError);
     }
 }
 
@@ -36,7 +39,7 @@ export function writeToFile<T>(
         fs.writeFileSync(filePath, text, defaultEncoding);
         return undefined;
     } catch (e) {
-        return onError(e as Error);
+        return handleThrownObject(e, onError);
     }
 }
 
@@ -49,8 +52,17 @@ export function appendToFile<T>(
         fs.appendFileSync(filePath, text, defaultEncoding);
         return undefined;
     } catch (e) {
+        return handleThrownObject(e, onError);
+    }
+}
+
+function handleThrownObject<T>(e: any, onError: (e: any) => T): T {
+    if (e instanceof Error) {
         return onError(e);
     }
+    return onError(
+        wrapNonError(e, "non-`Error` object is thrown inside `writeToFile`")
+    );
 }
 
 export function clearFile(filePath: string) {
@@ -121,6 +133,22 @@ export function clearDirectory(dirPath: string) {
     createDirectory(true, dirPath);
 }
 
+export function provideEmptyDirectoryOrThrow(
+    dirPath: string,
+    dirNameDescription: string,
+    throwError: (errorMessage: string) => never
+) {
+    if (exists(dirPath)) {
+        if (!checkDirectoryIsEmpty(dirPath)) {
+            throwError(
+                `${dirNameDescription} directory should be empty: "${dirPath}"`
+            );
+        }
+    } else {
+        createDirectory(true, dirPath);
+    }
+}
+
 export type FileCreationModeOnExisting = "throw" | "clear" | "return";
 
 export function createFileWithParentDirectories(
@@ -130,7 +158,7 @@ export function createFileWithParentDirectories(
     if (fs.existsSync(filePath)) {
         switch (mode) {
             case "throw":
-                throw Error(`failed to create ${filePath}: it already exists`);
+                illegalState(`failed to create ${filePath}: it already exists`);
             case "clear":
                 clearFile(filePath);
                 return;
@@ -203,7 +231,7 @@ function listFiles(
     predicate: (filePath: string) => boolean
 ): string[] {
     if (depth !== undefined && depth < 0) {
-        throw Error(`Files listing depth should be non-negative: ${depth}`);
+        illegalState(`Files listing depth should be non-negative: ${depth}`);
     }
     let resultFilePaths: string[] = [];
 

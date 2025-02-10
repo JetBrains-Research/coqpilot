@@ -1,6 +1,7 @@
 import { expect } from "earl";
 
 import { ErrorsHandlingMode } from "../../../../llm/llmServices/commonStructures/errorsHandlingMode";
+import { ProofGenerationMetadataHolder } from "../../../../llm/llmServices/commonStructures/proofGenerationMetadata";
 
 import {
     mockChat,
@@ -13,15 +14,17 @@ import {
     MockLLMService,
 } from "../../llmSpecificTestUtils/mockLLMService";
 import { testFailedGenerationCompletely } from "../../llmSpecificTestUtils/testFailedGeneration";
+import { expectSuccessfullyGeneratedItems } from "../../llmSpecificTestUtils/testSuccessfulGeneration";
 import { withMockLLMService } from "../../llmSpecificTestUtils/withMockLLMService";
 
 suite("[LLMService] Test `generateFromChat`", () => {
     [
-        ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS,
+        ErrorsHandlingMode.SWALLOW_ERRORS,
         ErrorsHandlingMode.RETHROW_ERRORS,
     ].forEach((errorsHandlingMode) => {
         test(`Test successful generation: ${errorsHandlingMode}`, async () => {
             await withMockLLMService(
+                ErrorsHandlingMode.RETHROW_ERRORS,
                 async (mockService, basicMockParams, testEventLogger) => {
                     const eventsTracker = subscribeToTrackMockEvents(
                         testEventLogger,
@@ -30,13 +33,23 @@ suite("[LLMService] Test `generateFromChat`", () => {
                         mockChat
                     );
 
+                    const metadataHolder = new ProofGenerationMetadataHolder();
                     const generatedProofs = await mockService.generateFromChat(
                         mockChat,
                         basicMockParams,
                         proofsToGenerate.length,
-                        errorsHandlingMode
+                        metadataHolder
                     );
-                    expect(generatedProofs).toEqual(proofsToGenerate);
+                    expectSuccessfullyGeneratedItems(
+                        generatedProofs,
+                        metadataHolder,
+                        proofsToGenerate.length,
+                        (i) => proofsToGenerate[i],
+                        (proof, rawProofMetadata, _, expectedProof) => {
+                            expect(proof).toEqual(expectedProof);
+                            expect(proof).toEqual(rawProofMetadata.content);
+                        }
+                    );
 
                     expect(eventsTracker).toEqual({
                         mockEventsN: 1,
@@ -52,13 +65,13 @@ suite("[LLMService] Test `generateFromChat`", () => {
     async function generateFromChat(
         mockService: MockLLMService,
         mockParams: MockLLMModelParams,
-        errorsHandlingMode: ErrorsHandlingMode
+        metadataHolder: ProofGenerationMetadataHolder
     ): Promise<string[]> {
         return mockService.generateFromChat(
             mockChat,
             mockParams,
             proofsToGenerate.length,
-            errorsHandlingMode
+            metadataHolder
         );
     }
 

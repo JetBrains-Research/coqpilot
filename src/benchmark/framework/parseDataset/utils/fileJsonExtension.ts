@@ -1,3 +1,5 @@
+import { illegalState } from "../../../../utils/throwErrors";
+
 const jsonExtension = ".json";
 
 export function joinJsonExtension(filePath: string): string {
@@ -5,13 +7,12 @@ export function joinJsonExtension(filePath: string): string {
 }
 
 export function trimJsonExtension(filePath: string): string {
-    const trimmedPath = trimSuffix(filePath, jsonExtension);
-    if (trimmedPath === undefined) {
-        throw Error(
-            `Failed to trim "${jsonExtension}" extension from file path: ${filePath}`
-        );
-    }
-    return trimmedPath;
+    return (
+        trimSuffix(filePath, jsonExtension) ??
+        illegalState(
+            `failed to trim "${jsonExtension}" extension from file path: ${filePath}`
+        )
+    );
 }
 
 function trimSuffix(input: string, suffix: string): string | undefined {

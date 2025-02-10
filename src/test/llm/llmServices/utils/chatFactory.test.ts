@@ -34,6 +34,7 @@ import {
     gptModelName,
     testModelId,
 } from "../../llmSpecificTestUtils/constants";
+import { toMockProofVersion } from "../../llmSpecificTestUtils/mockProofVersion";
 
 /*
  * Note: if in the future some of the tests will act against experiments with chats,
@@ -48,7 +49,7 @@ suite("[LLMService-s utils] Building chats test", () => {
         return theorems;
     }
 
-    interface TestMessages {
+    interface BasicTestMessages {
         systemMessage: ChatMessage;
 
         // user messages
@@ -59,8 +60,13 @@ suite("[LLMService-s utils] Building chats test", () => {
         // assistant messages
         plusTheoremProof: ChatMessage;
         plusAssocTheoremProof: ChatMessage;
+    }
 
-        proofGenerationChat: ChatHistory;
+    interface TestMessages extends BasicTestMessages {
+        firstTheorem: ChatHistory;
+        secondTheorem: ChatHistory;
+
+        completeProofGenerationChat: ChatHistory;
     }
 
     interface TestTheorems {
@@ -73,33 +79,41 @@ suite("[LLMService-s utils] Building chats test", () => {
         const [plusTheorem, plusAssocTheorem, theoremToComplete] =
             await readTheorems();
 
-        const messages = {
+        const messages: BasicTestMessages = {
             systemMessage: {
                 role: "system",
                 content: "Generate proofs in Coq!",
-            } as ChatMessage,
+            },
             plusTheoremStatement: {
                 role: "user",
                 content: plusTheorem.statement,
-            } as ChatMessage,
+            },
             plusAssocTheoremStatement: {
                 role: "user",
                 content: plusAssocTheorem.statement,
-            } as ChatMessage,
+            },
             theoremToCompleteStatement: {
                 role: "user",
                 content: theoremToComplete.statement,
-            } as ChatMessage,
+            },
 
             plusTheoremProof: {
                 role: "assistant",
                 content: plusTheorem.proof.onlyText(),
-            } as ChatMessage,
+            },
             plusAssocTheoremProof: {
                 role: "assistant",
                 content: plusAssocTheorem.proof.onlyText(),
-            } as ChatMessage,
+            },
         };
+        const firstTheorem = [
+            messages.plusTheoremStatement,
+            messages.plusTheoremProof,
+        ];
+        const secondTheorem = [
+            messages.plusAssocTheoremStatement,
+            messages.plusAssocTheoremProof,
+        ];
 
         return [
             {
@@ -109,26 +123,30 @@ suite("[LLMService-s utils] Building chats test", () => {
             },
             {
                 ...messages,
-                proofGenerationChat: [
+                firstTheorem: firstTheorem,
+                secondTheorem: secondTheorem,
+                completeProofGenerationChat: [
                     messages.systemMessage,
-                    messages.plusTheoremStatement,
-                    messages.plusTheoremProof,
-                    messages.plusAssocTheoremStatement,
-                    messages.plusAssocTheoremProof,
+                    ...firstTheorem,
+                    ...secondTheorem,
                     messages.theoremToCompleteStatement,
                 ],
             },
         ];
     }
 
-    const misspelledProof: ProofVersion = {
-        proof: "something???",
-        diagnostic: "Bad input...",
-    };
-    const incorrectProof: ProofVersion = {
-        proof: "auto.",
-        diagnostic: "It does not finish proof...",
-    };
+    const emptyProof = toMockProofVersion("", "No proof to check.");
+    const misspelledProof = toMockProofVersion("something???", "Bad input...");
+    const incorrectProof = toMockProofVersion(
+        "auto.",
+        "It does not finish proof..."
+    );
+    const allProofVersions = [emptyProof, misspelledProof, incorrectProof];
+
+    const firstRoundProofVersionChat: ChatHistory =
+        proofVersionToChat(emptyProof);
+    const secondRoundProofVersionChat: ChatHistory =
+        proofVersionToChat(misspelledProof);
 
     test("Test `validateChat`: valid chats", async () => {
         const [_, messages] = await buildTestData();
@@ -142,7 +160,7 @@ suite("[LLMService-s utils] Building chats test", () => {
         ];
         expect(validateChat(oneUserRequestChat)).toEqual([true, "ok"]);
 
-        expect(validateChat(messages.proofGenerationChat)).toEqual([
+        expect(validateChat(messages.completeProofGenerationChat)).toEqual([
             true,
             "ok",
         ]);
@@ -189,8 +207,8 @@ suite("[LLMService-s utils] Building chats test", () => {
     test("Test `buildChat`", async () => {
         const [_, messages] = await buildTestData();
 
-        expect(buildChat(messages.proofGenerationChat)).toEqual(
-            messages.proofGenerationChat
+        expect(buildChat(messages.completeProofGenerationChat)).toEqual(
+            messages.completeProofGenerationChat
         );
         expect(
             buildChat(
@@ -201,7 +219,7 @@ suite("[LLMService-s utils] Building chats test", () => {
                 messages.plusAssocTheoremProof,
                 messages.theoremToCompleteStatement
             )
-        ).toEqual(messages.proofGenerationChat);
+        ).toEqual(messages.completeProofGenerationChat);
         expect(
             buildChat(
                 buildChat(messages.systemMessage),
@@ -277,38 +295,40 @@ suite("[LLMService-s utils] Building chats test", () => {
 
     test("Test previous-proof-versions chat builder", () => {
         const builtProofVersionsChat = buildPreviousProofVersionsChat([
+            emptyProof,
             misspelledProof,
-            incorrectProof,
         ]);
         expect(builtProofVersionsChat).toEqual([
-            ...proofVersionToChat(misspelledProof),
-            ...proofVersionToChat(incorrectProof),
+            ...firstRoundProofVersionChat,
+            ...secondRoundProofVersionChat,
         ]);
     });
 
-    function buildUnlimitedTokensModel(
+    function buildUnlimitedModel(
         messages: TestMessages,
         modelName?: string
     ): ModelParams {
-        const unlimitedTokensModelParams = {
+        const unlimitedModelParams = {
             modelId: testModelId,
             systemPrompt: messages.systemMessage.content,
             maxTokensToGenerate: 100,
             tokensLimit: 100_000, // = super many, so all context will be used
+            maxContextTheoremsNumber: Number.MAX_SAFE_INTEGER, // context theorems are unlimited too
             multiroundProfile: {
                 maxRoundsNumber: 1,
                 defaultProofFixChoices: 3,
                 proofFixPrompt: "Fix proof, please",
+                maxPreviousProofVersionsNumber: Number.MAX_SAFE_INTEGER, // proof versions are unlimited, evet evet
             },
-            defaultChoices: 100, // any number will work, it's not used in the chat build
+            defaultChoices: 100, // any number will work, it is not used in the chat building
         };
         if (modelName !== undefined) {
             return {
-                ...unlimitedTokensModelParams,
+                ...unlimitedModelParams,
                 modelName: modelName,
             } as ModelParams;
         } else {
-            return unlimitedTokensModelParams;
+            return unlimitedModelParams;
         }
     }
 
@@ -321,24 +341,44 @@ suite("[LLMService-s utils] Building chats test", () => {
             completionTarget: theorems.theoremToComplete.statement,
             contextTheorems: [theorems.plusTheorem, theorems.plusAssocTheorem],
         };
-        const unlimitedTokensModelParams = buildUnlimitedTokensModel(
-            messages,
-            modelName
-        );
-        return [messages, proofGenerationContext, unlimitedTokensModelParams];
+        const unlimitedModelParams = buildUnlimitedModel(messages, modelName);
+        return [messages, proofGenerationContext, unlimitedModelParams];
+    }
+
+    function buildLimitedContextTheoremsParams(
+        maxContextTheoremsNumber: number,
+        unlimitedModelParams: ModelParams
+    ): ModelParams {
+        return {
+            ...unlimitedModelParams,
+            maxContextTheoremsNumber: maxContextTheoremsNumber,
+        };
+    }
+
+    function buildLimitedProofVersionsParams(
+        maxPreviousProofVersionsNumber: number,
+        unlimitedModelParams: ModelParams
+    ): ModelParams {
+        return {
+            ...unlimitedModelParams,
+            multiroundProfile: {
+                ...unlimitedModelParams.multiroundProfile,
+                maxPreviousProofVersionsNumber: maxPreviousProofVersionsNumber,
+            },
+        };
     }
 
     function buildLimitedTokensParams(
         chat: ChatHistory,
         tokens: (text: string) => number,
-        unlimitedTokensModelParams: ModelParams
+        unlimitedModelParams: ModelParams
     ): ModelParams {
         const estimatedTokens = chat.reduce(
             (sum, chatMessage) => sum + tokens(chatMessage.content),
             0
         );
         const limitedTokensModelParams: ModelParams = {
-            ...unlimitedTokensModelParams,
+            ...unlimitedModelParams,
             maxTokensToGenerate: 100,
             tokensLimit: 100 + estimatedTokens,
         };
@@ -364,36 +404,48 @@ suite("[LLMService-s utils] Building chats test", () => {
         ] as [string, string | undefined, (text: string) => number][]
     ).forEach(([tokensMethodName, modelName, tokens]) => {
         test(`Test proof-generation-chat builder: complete, ${tokensMethodName}`, async () => {
-            const [
-                messages,
-                proofGenerationContext,
-                unlimitedTokensModelParams,
-            ] = await prepareToChatBuilderTest(modelName);
+            const [messages, proofGenerationContext, unlimitedModelParams] =
+                await prepareToChatBuilderTest(modelName);
 
             const twoTheoremsChat = buildProofGenerationChat(
                 proofGenerationContext,
-                unlimitedTokensModelParams
+                unlimitedModelParams
             ).chat;
-            expect(twoTheoremsChat).toEqual(messages.proofGenerationChat);
+            expect(twoTheoremsChat).toEqual(
+                messages.completeProofGenerationChat
+            );
         });
 
-        test(`Test proof-generation-chat builder: only 1/2 theorem, ${tokensMethodName}`, async () => {
-            const [
-                messages,
-                proofGenerationContext,
-                unlimitedTokensModelParams,
-            ] = await prepareToChatBuilderTest(modelName);
+        test(`Test proof-generation-chat builder: only 1/2 theorem - limited context theorems, ${tokensMethodName}`, async () => {
+            const [messages, proofGenerationContext, unlimitedModelParams] =
+                await prepareToChatBuilderTest(modelName);
 
             const expectedChat = [
                 messages.systemMessage,
-                messages.plusTheoremStatement,
-                messages.plusTheoremProof,
+                ...messages.firstTheorem,
+                messages.theoremToCompleteStatement,
+            ];
+
+            const oneTheoremChat = buildProofGenerationChat(
+                proofGenerationContext,
+                buildLimitedContextTheoremsParams(1, unlimitedModelParams)
+            ).chat;
+            expect(oneTheoremChat).toEqual(expectedChat);
+        });
+
+        test(`Test proof-generation-chat builder: only 1/2 theorem - limited tokens, ${tokensMethodName}`, async () => {
+            const [messages, proofGenerationContext, unlimitedModelParams] =
+                await prepareToChatBuilderTest(modelName);
+
+            const expectedChat = [
+                messages.systemMessage,
+                ...messages.firstTheorem,
                 messages.theoremToCompleteStatement,
             ];
             const limitedTokensModelParams = buildLimitedTokensParams(
                 expectedChat,
                 tokens,
-                unlimitedTokensModelParams
+                unlimitedModelParams
             );
 
             const oneTheoremChat = buildProofGenerationChat(
@@ -406,12 +458,12 @@ suite("[LLMService-s utils] Building chats test", () => {
         function buildProofFixChatFromContext(
             messages: TestMessages,
             proofFixPrompt: string,
-            theoremsMessages: ChatMessage[],
+            contextTheoremsMessages: ChatMessage[],
             proofVersionsMessages: ChatMessage[]
         ): ChatHistory {
             return [
                 messages.systemMessage,
-                ...theoremsMessages,
+                ...contextTheoremsMessages,
                 messages.theoremToCompleteStatement,
                 ...proofVersionsMessages,
                 proofVersionToChat(incorrectProof)[0],
@@ -426,81 +478,124 @@ suite("[LLMService-s utils] Building chats test", () => {
         }
 
         test(`Test proof-fix-chat builder: complete, ${tokensMethodName}`, async () => {
-            const [
-                messages,
-                proofGenerationContext,
-                unlimitedTokensModelParams,
-            ] = await prepareToChatBuilderTest(modelName);
+            const [messages, proofGenerationContext, unlimitedModelParams] =
+                await prepareToChatBuilderTest(modelName);
 
             const expectedChat = buildProofFixChatFromContext(
                 messages,
-                unlimitedTokensModelParams.multiroundProfile.proofFixPrompt,
-                [
-                    messages.plusTheoremStatement,
-                    messages.plusTheoremProof,
-                    messages.plusAssocTheoremStatement,
-                    messages.plusAssocTheoremProof,
-                ],
-                proofVersionToChat(misspelledProof)
+                unlimitedModelParams.multiroundProfile.proofFixPrompt,
+                [...messages.firstTheorem, ...messages.secondTheorem],
+                [...firstRoundProofVersionChat, ...secondRoundProofVersionChat]
             );
 
             const completeProofFixChat = buildProofFixChat(
                 proofGenerationContext,
-                [misspelledProof, incorrectProof],
-                unlimitedTokensModelParams
+                allProofVersions,
+                unlimitedModelParams
             ).chat;
             expect(completeProofFixChat).toEqual(expectedChat);
         }).timeout(5000);
 
-        test(`Test proof-fix-chat builder: all diagnostics & only 1/2 theorem, ${tokensMethodName}`, async () => {
-            const [
-                messages,
-                proofGenerationContext,
-                unlimitedTokensModelParams,
-            ] = await prepareToChatBuilderTest(modelName);
+        test(`Test proof-fix-chat builder: all diagnostics & only 1/2 theorem - limited context theorems, ${tokensMethodName}`, async () => {
+            const [messages, proofGenerationContext, unlimitedModelParams] =
+                await prepareToChatBuilderTest(modelName);
 
             const expectedChat = buildProofFixChatFromContext(
                 messages,
-                unlimitedTokensModelParams.multiroundProfile.proofFixPrompt,
-                [messages.plusTheoremStatement, messages.plusTheoremProof],
-                proofVersionToChat(misspelledProof)
+                unlimitedModelParams.multiroundProfile.proofFixPrompt,
+                messages.firstTheorem,
+                [...firstRoundProofVersionChat, ...secondRoundProofVersionChat]
+            );
+
+            const completeProofFixChat = buildProofFixChat(
+                proofGenerationContext,
+                allProofVersions,
+                buildLimitedContextTheoremsParams(1, unlimitedModelParams)
+            ).chat;
+            expect(completeProofFixChat).toEqual(expectedChat);
+        }).timeout(5000);
+
+        test(`Test proof-fix-chat builder: all diagnostics & only 1/2 theorem - limited tokens, ${tokensMethodName}`, async () => {
+            const [messages, proofGenerationContext, unlimitedModelParams] =
+                await prepareToChatBuilderTest(modelName);
+
+            const expectedChat = buildProofFixChatFromContext(
+                messages,
+                unlimitedModelParams.multiroundProfile.proofFixPrompt,
+                messages.firstTheorem,
+                [...firstRoundProofVersionChat, ...secondRoundProofVersionChat]
             );
             const limitedTokensModelParams = buildLimitedTokensParams(
                 expectedChat,
                 tokens,
-                unlimitedTokensModelParams
+                unlimitedModelParams
             );
 
             const allDiagnosticsOneTheoremChat = buildProofFixChat(
                 proofGenerationContext,
-                [misspelledProof, incorrectProof],
+                allProofVersions,
                 limitedTokensModelParams
             ).chat;
             expect(allDiagnosticsOneTheoremChat).toEqual(expectedChat);
         }).timeout(10000);
 
-        test(`Test proof-fix-chat builder: no extra diagnostics & theorems, ${tokensMethodName}`, async () => {
-            const [
-                messages,
-                proofGenerationContext,
-                unlimitedTokensModelParams,
-            ] = await prepareToChatBuilderTest(modelName);
+        test(`Test proof-fix-chat builder: no extra diagnostics & 2 theorems - strictly limited proof versions, ${tokensMethodName}`, async () => {
+            const [messages, proofGenerationContext, unlimitedModelParams] =
+                await prepareToChatBuilderTest(modelName);
 
             const expectedChat = buildProofFixChatFromContext(
                 messages,
-                unlimitedTokensModelParams.multiroundProfile.proofFixPrompt,
+                unlimitedModelParams.multiroundProfile.proofFixPrompt,
+                [...messages.firstTheorem, ...messages.secondTheorem],
+                []
+            );
+
+            const noProofVersionsButWithTheoremsChat = buildProofFixChat(
+                proofGenerationContext,
+                allProofVersions,
+                buildLimitedProofVersionsParams(0, unlimitedModelParams)
+            ).chat;
+            expect(noProofVersionsButWithTheoremsChat).toEqual(expectedChat);
+        }).timeout(10000);
+
+        test(`Test proof-fix-chat builder: only 1/2 extra diagnostic & 2 theorems - limited proof versions, ${tokensMethodName}`, async () => {
+            const [messages, proofGenerationContext, unlimitedModelParams] =
+                await prepareToChatBuilderTest(modelName);
+
+            const expectedChat = buildProofFixChatFromContext(
+                messages,
+                unlimitedModelParams.multiroundProfile.proofFixPrompt,
+                [...messages.firstTheorem, ...messages.secondTheorem],
+                secondRoundProofVersionChat
+            );
+
+            const noProofVersionsButWithTheoremsChat = buildProofFixChat(
+                proofGenerationContext,
+                allProofVersions,
+                buildLimitedProofVersionsParams(1, unlimitedModelParams)
+            ).chat;
+            expect(noProofVersionsButWithTheoremsChat).toEqual(expectedChat);
+        }).timeout(10000);
+
+        test(`Test proof-fix-chat builder: no extra diagnostics & theorems - limited tokens, ${tokensMethodName}`, async () => {
+            const [messages, proofGenerationContext, unlimitedModelParams] =
+                await prepareToChatBuilderTest(modelName);
+
+            const expectedChat = buildProofFixChatFromContext(
+                messages,
+                unlimitedModelParams.multiroundProfile.proofFixPrompt,
                 [],
                 []
             );
             const limitedTokensModelParams = buildLimitedTokensParams(
                 expectedChat,
                 tokens,
-                unlimitedTokensModelParams
+                unlimitedModelParams
             );
 
             const noExtraContextChat = buildProofFixChat(
                 proofGenerationContext,
-                [misspelledProof, incorrectProof],
+                allProofVersions,
                 limitedTokensModelParams
             ).chat;
             expect(noExtraContextChat).toEqual(expectedChat);

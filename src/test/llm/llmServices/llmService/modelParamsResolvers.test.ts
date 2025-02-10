@@ -1,5 +1,6 @@
 import { expect } from "earl";
 
+import { ErrorsHandlingMode } from "../../../../llm/llmServices/commonStructures/errorsHandlingMode";
 import {
     ModelParams,
     MultiroundProfile,
@@ -7,6 +8,7 @@ import {
 } from "../../../../llm/llmServices/modelParams";
 import {
     BasicModelParamsResolver,
+    defaultMaxContextTheoremsNumber,
     defaultMultiroundProfile,
     defaultSystemMessageContent,
 } from "../../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";
@@ -19,16 +21,12 @@ import {
     MockLLMService,
     MockLLMUserModelParams,
 } from "../../llmSpecificTestUtils/mockLLMService";
-import {
-    ModelParamsAddOns,
-    UserModelParamsAddOns,
-} from "../../llmSpecificTestUtils/modelParamsAddOns";
 
 suite("[LLMService] Test model-params resolution", () => {
     function testBasicResolverSucceeded(
         testName: string,
-        inputParamsAddOns: UserModelParamsAddOns = {},
-        expectedResolvedParamsAddOns: ModelParamsAddOns = {}
+        inputParamsAddOns: Partial<UserModelParams> = {},
+        expectedResolvedParamsAddOns: Partial<ModelParams> = {}
     ) {
         test(testName, () => {
             const inputParams: UserModelParams = {
@@ -37,9 +35,10 @@ suite("[LLMService] Test model-params resolution", () => {
                 // `systemPrompt` will be resolved with default
                 maxTokensToGenerate: 100,
                 tokensLimit: 1000,
+                // `maxContextTheoremsNumber` will be resolved with default
                 multiroundProfile: {
                     proofFixChoices: 3,
-                    // `maxRoundsNumber` and `proofFixPrompt` will be resolved with defaults
+                    // `maxRoundsNumber`, `proofFixPrompt` and `maxPreviousProofVersionsNumber` will be resolved with defaults
                 },
                 ...inputParamsAddOns,
             };
@@ -54,10 +53,13 @@ suite("[LLMService] Test model-params resolution", () => {
                 systemPrompt: defaultSystemMessageContent,
                 maxTokensToGenerate: 100,
                 tokensLimit: 1000,
+                maxContextTheoremsNumber: defaultMaxContextTheoremsNumber,
                 multiroundProfile: {
                     maxRoundsNumber: defaultMultiroundProfile.maxRoundsNumber,
                     defaultProofFixChoices: 3,
                     proofFixPrompt: defaultMultiroundProfile.proofFixPrompt,
+                    maxPreviousProofVersionsNumber:
+                        defaultMultiroundProfile.maxPreviousProofVersionsNumber,
                 } as MultiroundProfile,
                 defaultChoices: 1,
                 ...expectedResolvedParamsAddOns,
@@ -109,39 +111,44 @@ suite("[LLMService] Test model-params resolution", () => {
     });
 
     test("Test resolution by LLMService", async () => {
-        await withLLMService(new MockLLMService(), async (mockService) => {
-            const unresolvedMockUserParams: MockLLMUserModelParams = {
-                modelId: testModelId,
-                systemPrompt: "This system prompt will be overriden by service",
-                maxTokensToGenerate: 100,
-                tokensLimit: 1000,
-                proofsToGenerate: ["auto.", "avto."],
-            };
+        await withLLMService(
+            new MockLLMService(undefined, ErrorsHandlingMode.RETHROW_ERRORS),
+            async (mockService) => {
+                const unresolvedMockUserParams: MockLLMUserModelParams = {
+                    modelId: testModelId,
+                    systemPrompt:
+                        "This system prompt will be overriden by the service",
+                    maxTokensToGenerate: 100,
+                    tokensLimit: 1000,
+                    proofsToGenerate: ["auto.", "avto."],
+                };
 
-            /*
-             * `MockLLMService` parameters resolution does 4 changes to `inputParams`:
-             * - resolves undefined `workerId` to 0;
-             * - adds extra `resolvedWithMockLLMService: true` property;
-             * - overrides original `systemPrompt` with `this.systemPromptToOverrideWith`.
-             * - overrides original `choices` to `defaultChoices` with `proofsToGenerate.length`.
-             * Everything else should be resolved with defaults, if needed.
-             */
-            const expectedResolvedMockParams = {
-                ...unresolvedMockUserParams,
-                multiroundProfile: defaultMultiroundProfile,
-                systemPrompt: MockLLMService.systemPromptToOverrideWith,
-                workerId: 0,
-                resolvedWithMockLLMService: true,
-                defaultChoices: 2,
-            } as MockLLMModelParams;
+                /*
+                 * `MockLLMService` parameters resolution does 4 changes to `inputParams`:
+                 * - resolves undefined `workerId` to 0;
+                 * - adds extra `resolvedWithMockLLMService: true` property;
+                 * - overrides original `systemPrompt` with `this.systemPromptToOverrideWith`.
+                 * - overrides original `choices` to `defaultChoices` with `proofsToGenerate.length`.
+                 * Everything else should be resolved with defaults, if needed.
+                 */
+                const expectedResolvedMockParams = {
+                    ...unresolvedMockUserParams,
+                    maxContextTheoremsNumber: defaultMaxContextTheoremsNumber,
+                    multiroundProfile: defaultMultiroundProfile,
+                    systemPrompt: MockLLMService.systemPromptToOverrideWith,
+                    workerId: 0,
+                    resolvedWithMockLLMService: true,
+                    defaultChoices: 2,
+                } as MockLLMModelParams;
 
-            const actualResolvedMockParams = mockService.resolveParameters(
-                unresolvedMockUserParams
-            ).resolved;
+                const actualResolvedMockParams = mockService.resolveParameters(
+                    unresolvedMockUserParams
+                ).resolved;
 
-            expect(actualResolvedMockParams).toEqual(
-                expectedResolvedMockParams
-            );
-        });
+                expect(actualResolvedMockParams).toEqual(
+                    expectedResolvedMockParams
+                );
+            }
+        );
     });
 });

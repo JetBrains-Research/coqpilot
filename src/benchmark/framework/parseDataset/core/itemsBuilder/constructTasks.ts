@@ -1,3 +1,7 @@
+import {
+    illegalState,
+    invariantFailed,
+} from "../../../../../utils/throwErrors";
 import { CompletionGenerationTask } from "../../../structures/benchmarkingCore/completionGenerationTask";
 import {
     AllTheoremsTarget,
@@ -68,8 +72,8 @@ export function constructTasksForBundleTargets(
                         )
                     );
                 } else {
-                    throw Error(
-                        `Unknown file target: ${fileTarget.toString("", "")}`
+                    illegalState(
+                        `unknown file target: ${fileTarget.toString("", "")}`
                     );
                 }
             }
@@ -107,10 +111,9 @@ function constructTasksForTargetsFromTheorem(
 }
 
 function throwInsufficientCacheError(missingObject: string): never {
-    const errorMessageLines = [
-        "Failed to build benchmarking items: ",
-        "invariant failed, updated cache is not sufficient to process requested targets.",
-        `\n\tCause: ${missingObject} data is missing.`,
-    ];
-    throw Error(errorMessageLines.join(""));
+    invariantFailed(
+        "Building benchmarking items",
+        "updated cache is not sufficient to process requested targets.",
+        `\n\tCause: ${missingObject} data is missing.`
+    );
 }

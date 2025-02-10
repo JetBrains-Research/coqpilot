@@ -1,5 +1,23 @@
 # Changelog
 
+## 2.4.3
+
+Much work has been done in the benchmarking module; bugs have been detected and eliminated, performance has improved, and feature space has been extended. In the upcoming minor, we plan to finalize the features in the benchmarking framework and make it as cool as never before.
+
+### Public changes
+- Multiround Benchmarking Support: Now it is possible to benchmark multiround proof generation, as is our tradition, with comprehensive error handling and logging.
+- Implement DeepSeek API as a standalone service and support its choice in Benchmarks and Plugin settings. However, due to DeepSeek API performance issues, service is not fully debugged and tested yet. 
+
+### Internal changes
+- Added and tested new model parameters. Introduced `maxContextTheoremsNumber` and `multiroundProfile.maxPreviousProofVersionsNumber` to better control the context sent to LLMs.
+- Fixed GrazieService bug. Resolved an issue where it generated `choices + 1` proofs instead of the expected `choices`. This was caused by an improperly updated loop after a prior refactor.
+- `LLMService` Interface Rework 🕊
+    - Simplified error-handling invariants without reducing functionality.
+    - Extended proof-generation methods with the ProofGenerationMetadataHolder object, enabling the collection of additional metadata.
+    - Improved `LLMService` constructors for cleaner implementations.
+    - Updated `GeneratedProof` to store raw proof metadata (e.g., statistics returned by the `LLMService` generation method), facilitating detailed proof analysis—especially useful for benchmarks.
+    - Enhanced getter methods for better usability.
+
 ## 2.4.2
 
 - Fix premise selection bug in benchmarks: in `v2.4.1`, a theorem for which the completion was issued was accidentally added to the list of premises. This was fixed in this release.

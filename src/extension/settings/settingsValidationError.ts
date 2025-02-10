@@ -15,6 +15,8 @@ export class SettingsValidationError extends Error {
         private readonly severity: UIMessageSeverity = "error"
     ) {
         super(errorMessage);
+        Object.setPrototypeOf(this, new.target.prototype);
+        this.name = "SettingsValidationError";
     }
 
     showAsMessageToUser() {
@@ -32,7 +34,8 @@ export function toSettingName(llmService: LLMService<any, any>): string {
         () => "predefinedProofs",
         () => "openAi",
         () => "grazie",
-        () => "lmStudio"
+        () => "lmStudio",
+        () => "deepSeek"
     );
     return `${pluginId}.${serviceNameInSettings}ModelsParameters`;
 }

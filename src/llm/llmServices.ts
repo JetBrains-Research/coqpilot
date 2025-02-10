@@ -1,3 +1,6 @@
+import { illegalState } from "../utils/throwErrors";
+
+import { DeepSeekService } from "./llmServices/deepSeek/deepSeekService";
 import { GrazieService } from "./llmServices/grazie/grazieService";
 import { LLMService } from "./llmServices/llmService";
 import { LMStudioService } from "./llmServices/lmStudio/lmStudioService";
@@ -11,6 +14,7 @@ export interface LLMServices {
     openAiService: OpenAiService;
     grazieService: GrazieService;
     lmStudioService: LMStudioService;
+    deepSeekService: DeepSeekService;
 }
 
 export function disposeServices(llmServices: LLMServices) {
@@ -25,6 +29,7 @@ export function asLLMServices(
         llmServices.openAiService,
         llmServices.grazieService,
         llmServices.lmStudioService,
+        llmServices.deepSeekService,
     ];
 }
 
@@ -33,7 +38,8 @@ export function switchByLLMServiceType<T>(
     onPredefinedProofsService: () => T,
     onOpenAiService: () => T,
     onGrazieService: () => T,
-    onLMStudioService: () => T
+    onLMStudioService: () => T,
+    onDeepSeekService: () => T
 ): T {
     if (llmService instanceof PredefinedProofsService) {
         return onPredefinedProofsService();
@@ -43,9 +49,11 @@ export function switchByLLMServiceType<T>(
         return onGrazieService();
     } else if (llmService instanceof LMStudioService) {
         return onLMStudioService();
+    } else if (llmService instanceof DeepSeekService) {
+        return onDeepSeekService();
     } else {
-        throw Error(
-            `switch by unknown LLMService: "${llmService.serviceName}"`
+        illegalState(
+            `switch by unknown \`LLMService\`: "${llmService.serviceName}"`
         );
     }
 }

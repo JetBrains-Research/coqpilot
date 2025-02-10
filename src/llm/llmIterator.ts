@@ -36,6 +36,7 @@ export class LLMSequentialIterator
         );
     }
 
+    // TODO: Implement a smarter way of ordering the services
     private createHooks(
         proofGenerationContext: ProofGenerationContext,
         modelsParams: ModelsParams,
@@ -47,6 +48,16 @@ export class LLMSequentialIterator
                 modelsParams.predefinedProofsModelParams,
                 services.predefinedProofsService,
                 "predefined-proofs"
+            ),
+            // Here DeepSeek service is reordered to the beginning
+            // of the list, due to it's strong performance and
+            // low costs. Refer to discussion:
+            // https://github.com/JetBrains-Research/coqpilot/pull/56#discussion_r1935180516
+            ...this.createLLMServiceHooks(
+                proofGenerationContext,
+                modelsParams.deepSeekParams,
+                services.deepSeekService,
+                "deepseek"
             ),
             ...this.createLLMServiceHooks(
                 proofGenerationContext,
@@ -117,7 +128,7 @@ export class LLMSequentialIterator
         return false;
     }
 
-    async next(): Promise<IteratorResult<GeneratedProofsBatch>> {
+    async next(): Promise<IteratorResult<GeneratedProofsBatch, undefined>> {
         const finished = await this.prepareFetched();
         if (finished) {
             return { done: true, value: undefined };
@@ -131,7 +142,7 @@ export class LLMSequentialIterator
         return { done: false, value: proofs };
     }
 
-    async nextProof(): Promise<IteratorResult<GeneratedProof>> {
+    async nextProof(): Promise<IteratorResult<GeneratedProof, undefined>> {
         const finished = await this.prepareFetched();
         if (finished) {
             return { done: true, value: undefined };

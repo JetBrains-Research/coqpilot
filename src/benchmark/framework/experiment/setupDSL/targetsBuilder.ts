@@ -15,6 +15,7 @@ import {
     listCoqSourceFiles,
     resolveAsAbsolutePath,
 } from "../../utils/fileUtils/fs";
+import { throwBenchmarkingError } from "../../utils/throwErrors";
 
 export type EnvironmentStringType = "nix" | "no-special-environment";
 
@@ -126,7 +127,7 @@ export class TargetsBuilderWithWorkspaceRoot {
             directoryPath
         );
         if (!isDirectory(resolvedDirectoryPath)) {
-            throw Error(
+            throwBenchmarkingError(
                 `resolved path "${directoryPath}" should be a directory: "${resolvedDirectoryPath}"`
             );
         }
@@ -151,7 +152,7 @@ export class TargetsBuilderWithWorkspaceRoot {
                 joinPaths(directoryPath, relativeFilePath)
             );
             if (!resolvedDirectoryFilesPathsSet.has(resolvedFilePath)) {
-                throw Error(
+                throwBenchmarkingError(
                     `resolved path "${relativeFilePath}" should be a Coq source file inside "${directoryPath}": "${resolvedFilePath}"`
                 );
             }
@@ -169,7 +170,7 @@ export class TargetsBuilderWithWorkspaceRoot {
             relativeFilePath
         );
         if (!isCoqSourceFile(resolvedFilePath)) {
-            throw Error(
+            throwBenchmarkingError(
                 `resolved path "${relativeFilePath}" should be a Coq source file: "${resolvedFilePath}"`
             );
         }

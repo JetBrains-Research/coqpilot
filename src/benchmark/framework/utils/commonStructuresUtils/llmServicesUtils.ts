@@ -1,3 +1,6 @@
+import { ErrorsHandlingMode } from "../../../../llm/llmServices/commonStructures/errorsHandlingMode";
+import { DeepSeekModelParamsResolver } from "../../../../llm/llmServices/deepSeek/deepSeekModelParamsResolver";
+import { DeepSeekService } from "../../../../llm/llmServices/deepSeek/deepSeekService";
 import { GrazieModelParamsResolver } from "../../../../llm/llmServices/grazie/grazieModelParamsResolver";
 import { GrazieService } from "../../../../llm/llmServices/grazie/grazieService";
 import { LLMService } from "../../../../llm/llmServices/llmService";
@@ -14,6 +17,10 @@ import { UserModelParams } from "../../../../llm/userModelParams";
 import { EventLogger } from "../../../../logging/eventLogger";
 import { LLMServiceIdentifier } from "../../structures/common/llmServiceIdentifier";
 
+/**
+ * Regardless of the string values defined in the implementation of `LLMServiceIdentifier` (they can change with time),
+ * this function guarantees to provide nice and human-readable names of the services.
+ */
 export function getShortName(identifier: LLMServiceIdentifier): string {
     switch (identifier) {
         case LLMServiceIdentifier.PREDEFINED_PROOFS:
@@ -24,34 +31,36 @@ export function getShortName(identifier: LLMServiceIdentifier): string {
             return "Grazie";
         case LLMServiceIdentifier.LMSTUDIO:
             return "LM Studio";
+        case LLMServiceIdentifier.DEEPSEEK:
+            return "DeepSeek";
     }
 }
 
-export type LLMServiceBuilder = () => [LLMService<any, any>, EventLogger];
+export type LLMServiceBuilder = (
+    eventLogger: EventLogger | undefined,
+    errorsHandlingMode: ErrorsHandlingMode
+) => LLMService<UserModelParams, ModelParams>;
 
 export function selectLLMServiceBuilder(
     identifier: LLMServiceIdentifier
 ): LLMServiceBuilder {
-    let createService: (eventLogger: EventLogger) => LLMService<any, any>;
     switch (identifier) {
         case LLMServiceIdentifier.PREDEFINED_PROOFS:
-            createService = (eventLogger) =>
-                new PredefinedProofsService(eventLogger);
-            break;
+            return (eventLogger, errorsHandlingMode) =>
+                new PredefinedProofsService(eventLogger, errorsHandlingMode);
         case LLMServiceIdentifier.OPENAI:
-            createService = (eventLogger) => new OpenAiService(eventLogger);
-            break;
+            return (eventLogger, errorsHandlingMode) =>
+                new OpenAiService(eventLogger, errorsHandlingMode);
         case LLMServiceIdentifier.GRAZIE:
-            createService = (eventLogger) => new GrazieService(eventLogger);
-            break;
+            return (eventLogger, errorsHandlingMode) =>
+                new GrazieService(eventLogger, errorsHandlingMode);
         case LLMServiceIdentifier.LMSTUDIO:
-            createService = (eventLogger) => new LMStudioService(eventLogger);
-            break;
+            return (eventLogger, errorsHandlingMode) =>
+                new LMStudioService(eventLogger, errorsHandlingMode);
+        case LLMServiceIdentifier.DEEPSEEK:
+            return (eventLogger, errorsHandlingMode) =>
+                new DeepSeekService(eventLogger, errorsHandlingMode);
     }
-    return () => {
-        const eventLogger = new EventLogger();
-        return [createService(eventLogger), eventLogger];
-    };
 }
 
 export interface LLMServicesParamsResolvers {
@@ -59,6 +68,7 @@ export interface LLMServicesParamsResolvers {
     openAiModelParamsResolver: OpenAiModelParamsResolver;
     grazieModelParamsResolver: GrazieModelParamsResolver;
     lmStudioModelParamsResolver: LMStudioModelParamsResolver;
+    deepSeekModelParamsResolver: DeepSeekModelParamsResolver;
 }
 
 export function createParamsResolvers(): LLMServicesParamsResolvers {
@@ -68,6 +78,7 @@ export function createParamsResolvers(): LLMServicesParamsResolvers {
         openAiModelParamsResolver: new OpenAiModelParamsResolver(),
         grazieModelParamsResolver: new GrazieModelParamsResolver(),
         lmStudioModelParamsResolver: new LMStudioModelParamsResolver(),
+        deepSeekModelParamsResolver: new DeepSeekModelParamsResolver(),
     };
 }
 
@@ -84,5 +95,7 @@ export function getParamsResolver(
             return paramsResolvers.grazieModelParamsResolver;
         case LLMServiceIdentifier.LMSTUDIO:
             return paramsResolvers.lmStudioModelParamsResolver;
+        case LLMServiceIdentifier.DEEPSEEK:
+            return paramsResolvers.deepSeekModelParamsResolver;
     }
 }

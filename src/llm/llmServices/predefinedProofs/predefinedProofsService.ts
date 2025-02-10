@@ -1,12 +1,15 @@
-import { EventLogger } from "../../../logging/eventLogger";
 import { Time, timeZero } from "../../../utils/time";
 import { ConfigurationError } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { PredefinedProofsUserModelParams } from "../../userModelParams";
 import { AnalyzedChatHistory } from "../commonStructures/chat";
-import { ErrorsHandlingMode } from "../commonStructures/errorsHandlingMode";
-import { GeneratedRawContent } from "../commonStructures/generatedRawContent";
+import {
+    GeneratedRawContent,
+    GeneratedRawContentItem,
+} from "../commonStructures/generatedRawContent";
 import { zeroTokens } from "../commonStructures/generationTokens";
+import { ProofGenerationMetadataHolder } from "../commonStructures/proofGenerationMetadata";
+import { ProofGenerationType } from "../commonStructures/proofGenerationType";
 import { ProofVersion } from "../commonStructures/proofVersion";
 import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
@@ -22,44 +25,32 @@ export class PredefinedProofsService extends LLMServiceImpl<
     PredefinedProof,
     PredefinedProofsServiceInternal
 > {
-    protected readonly internal: PredefinedProofsServiceInternal;
+    readonly serviceName = "PredefinedProofsService";
+    protected readonly internal = new PredefinedProofsServiceInternal(
+        this,
+        this.eventLogger,
+        this.generationsLoggerBuilder
+    );
     protected readonly modelParamsResolver =
         new PredefinedProofsModelParamsResolver();
-
-    constructor(
-        eventLogger?: EventLogger,
-        debugLogs: boolean = false,
-        generationsLogsFilePath?: string
-    ) {
-        super(
-            "PredefinedProofsService",
-            eventLogger,
-            debugLogs,
-            generationsLogsFilePath
-        );
-        this.internal = new PredefinedProofsServiceInternal(
-            this,
-            this.eventLoggerGetter,
-            this.generationsLoggerBuilder
-        );
-    }
 
     async generateProof(
         proofGenerationContext: ProofGenerationContext,
         params: PredefinedProofsModelParams,
         choices: number = params.defaultChoices,
-        errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.LOG_EVENTS_AND_SWALLOW_ERRORS
+        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined
     ): Promise<PredefinedProof[]> {
         return this.internal.logGenerationAndHandleErrors(
+            ProofGenerationType.NO_CHAT,
             params,
             choices,
-            errorsHandlingMode,
+            metadataHolder,
             (_request) => {
                 LLMServiceInternal.validateChoices(choices);
                 const tactics = params.tactics;
                 if (choices > tactics.length) {
                     throw new ConfigurationError(
-                        `requested ${choices} choices, there are only ${tactics.length} predefined tactics available`
+                        `requested ${choices} choices, but there are only ${tactics.length} predefined tactics available`
                     );
                 }
             },
@@ -76,9 +67,9 @@ export class PredefinedProofsService extends LLMServiceImpl<
                     tokensSpentInTotal: zeroTokens(),
                 };
             },
-            (proof) =>
+            (rawProof) =>
                 this.internal.constructGeneratedProof(
-                    proof,
+                    rawProof,
                     proofGenerationContext,
                     params
                 )
@@ -107,25 +98,29 @@ export class PredefinedProof extends GeneratedProofImpl<
     PredefinedProofsServiceInternal
 > {
     constructor(
-        proof: string,
+        rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
         modelParams: PredefinedProofsModelParams,
         llmServiceInternal: PredefinedProofsServiceInternal
     ) {
-        super(proof, proofGenerationContext, modelParams, llmServiceInternal);
+        super(
+            rawProof,
+            proofGenerationContext,
+            modelParams,
+            llmServiceInternal
+        );
     }
 
     async fixProof(
         _diagnostic: string,
         choices: number = this.modelParams.multiroundProfile
-            .defaultProofFixChoices,
-        errorsHandlingMode: ErrorsHandlingMode
+            .defaultProofFixChoices
     ): Promise<PredefinedProof[]> {
         this.llmServiceInternal.unsupportedMethod(
             "`PredefinedProof` cannot be fixed",
+            ProofGenerationType.NO_CHAT,
             this.modelParams,
-            choices,
-            errorsHandlingMode
+            choices
         );
         return [];
     }
@@ -142,26 +137,33 @@ class PredefinedProofsServiceInternal extends LLMServiceInternal<
     PredefinedProofsServiceInternal
 > {
     constructGeneratedProof(
-        proof: string,
+        rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
         modelParams: PredefinedProofsModelParams,
         _previousProofVersions?: ProofVersion[]
     ): PredefinedProof {
         return new PredefinedProof(
-            proof,
+            rawProof,
             proofGenerationContext,
-            modelParams as PredefinedProofsModelParams,
+            modelParams,
             this
         );
     }
 
-    generateFromChatImpl(
+    async generateFromChatImpl(
         _analyzedChat: AnalyzedChatHistory,
         _params: PredefinedProofsModelParams,
         _choices: number
     ): Promise<GeneratedRawContent> {
-        throw new ConfigurationError(
-            "`PredefinedProofsService` does not support generation from chat"
+        this.unsupportedMethod(
+            "`PredefinedProofsService` does not support generation from chat",
+            ProofGenerationType.NO_CHAT,
+            _params,
+            _choices
         );
+        return {
+            items: [],
+            tokensSpentInTotal: zeroTokens(),
+        };
     }
 }

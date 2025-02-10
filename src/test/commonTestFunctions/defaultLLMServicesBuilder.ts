@@ -1,4 +1,5 @@
 import { LLMServices } from "../../llm/llmServices";
+import { DeepSeekService } from "../../llm/llmServices/deepSeek/deepSeekService";
 import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
 import { LMStudioService } from "../../llm/llmServices/lmStudio/lmStudioService";
 import {
@@ -16,11 +17,13 @@ export function createDefaultServices(): LLMServices {
     const openAiService = new OpenAiService();
     const grazieService = new GrazieService();
     const lmStudioService = new LMStudioService();
+    const deepSeekService = new DeepSeekService();
     return {
         predefinedProofsService,
         openAiService,
         grazieService,
         lmStudioService,
+        deepSeekService,
     };
 }
 
@@ -32,6 +35,7 @@ export function createTrivialModelsParams(
         openAiParams: [],
         grazieParams: [],
         lmStudioParams: [],
+        deepSeekParams: [],
     };
 }
 

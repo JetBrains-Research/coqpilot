@@ -1,6 +1,8 @@
 import { appendFileSync, writeFileSync } from "fs";
 import { OutputChannel, ViewColumn } from "vscode";
 
+import { unsupported } from "../utils/throwErrors";
+
 export class OutputChannelEmulator implements OutputChannel {
     name: string;
 
@@ -36,11 +38,11 @@ export class OutputChannelEmulator implements OutputChannel {
     ): void;
 
     show(_column?: unknown, _preserveFocus?: unknown): void {
-        throw new Error("Method not implemented.");
+        unsupported("method not implemented");
     }
 
     hide(): void {
-        throw new Error("Method not implemented.");
+        unsupported("method not implemented");
     }
 
     dispose(): void {}
