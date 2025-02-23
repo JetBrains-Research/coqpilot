@@ -172,8 +172,8 @@ experiment.updateRunOptions({
     // If set to `true`, any error that occurs during the benchmarking process will cause
     // the entire pipeline to fail, halting the execution of all subsequent tasks.
     failFast: false,
-    // Additional logging to watch the task being aborted due to the fail-fast strategy.
-    logFailFastTasksAborting: false,
+    // Additional logging to watch the task being aborted due to the fail-fast strategy or a critical error.
+    logAbortingTasks: false,
 
     // Max number of proof-generation retries for each benchmarking task.
     // Can be left `undefined` to make the retries unlimited.

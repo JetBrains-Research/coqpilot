@@ -8,7 +8,7 @@ export interface BenchmarkingOptions {
      * - all tasks execution will be stopped as soon as any task `Promise` rejects.
      */
     failFast: boolean;
-    logFailFastTasksAborting: boolean;
+    logAbortingTasks: boolean;
 
     /**
      * If `undefined`, the retries number will not be limited.

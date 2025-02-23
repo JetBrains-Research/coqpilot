@@ -327,8 +327,8 @@ export abstract class AbstractExperiment {
                 false,
 
             failFast: optionsAfterStartupResolution.failFast ?? false,
-            logFailFastTasksAborting:
-                optionsAfterStartupResolution.logFailFastTasksAborting ?? false,
+            logAbortingTasks:
+                optionsAfterStartupResolution.logAbortingTasks ?? false,
             proofGenerationRetries:
                 optionsAfterStartupResolution.proofGenerationRetries,
             openDocumentTimeoutMillis:

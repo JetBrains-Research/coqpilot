@@ -17,7 +17,7 @@ import {
     TheoremData,
     serializeTheoremData,
 } from "../../../structures/parsedCoqFile/theoremData";
-import { FailFastAbortError } from "../../../utils/asyncUtils/abortUtils";
+import { AbortError } from "../../../utils/asyncUtils/abortUtils";
 import {
     mappedObjectValues,
     packIntoMappedObject,
@@ -264,7 +264,7 @@ export namespace ParseCoqProjectImpl {
                     `Failed to retrieve target goal at point: "${err.message}" at ${startPosition}, "${serializedParsedFile.filePath}"${stack}`
                 );
                 throw err;
-            } else if (err instanceof FailFastAbortError) {
+            } else if (err instanceof AbortError) {
                 throw err;
             }
             unexpectedError(err);

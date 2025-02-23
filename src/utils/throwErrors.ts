@@ -1,4 +1,4 @@
-import { buildErrorCompleteLog } from "./errorsUtils";
+import { wrapAsIllegalState } from "./errorsUtils";
 
 export function throwError(...message: string[]): never {
     throw Error(message.join(""));
@@ -9,9 +9,7 @@ export function illegalState(...message: string[]): never {
 }
 
 export function unexpectedError(err: any): never {
-    throw new IllegalStateError(
-        `unexpected error occurred:\n${buildErrorCompleteLog(err)}`
-    );
+    rethrowAsIllegalState("unexpected error occurred:", err);
 }
 
 export function invariantFailed(
@@ -31,6 +29,10 @@ export function unreachable(...message: string[]): never {
 
 export function unsupported(...message: string[]): never {
     throw new UnsupportedError(message.join(""));
+}
+
+export function rethrowAsIllegalState(err: any, description: string): never {
+    throw wrapAsIllegalState(err, description);
 }
 
 export class IllegalStateError extends Error {
