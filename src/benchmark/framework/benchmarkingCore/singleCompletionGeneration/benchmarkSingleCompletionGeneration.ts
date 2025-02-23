@@ -23,7 +23,11 @@ import { Theorem } from "../../../../coqParser/parsedTypes";
 import { delay } from "../../../../utils/delay";
 import { buildErrorCompleteLog } from "../../../../utils/errorsUtils";
 import { stringifyAnyValue } from "../../../../utils/printers";
-import { illegalState, invariantFailed } from "../../../../utils/throwErrors";
+import {
+    illegalState,
+    invariantFailed,
+    rethrowAsIllegalState,
+} from "../../../../utils/throwErrors";
 import {
     millisToString,
     timeToMillis,
@@ -47,7 +51,7 @@ import {
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { ParsedCoqFileData } from "../../structures/parsedCoqFile/parsedCoqFileData";
 import { TheoremData } from "../../structures/parsedCoqFile/theoremData";
-import { throwOnAbort } from "../../utils/asyncUtils/abortUtils";
+import { AbortError, throwOnAbort } from "../../utils/asyncUtils/abortUtils";
 import { AsyncScheduler } from "../../utils/asyncUtils/asyncScheduler";
 import { groupByAndMap } from "../../utils/collectionUtils/mapUtils";
 import {
@@ -196,13 +200,13 @@ export async function benchmarkSingleCompletionGeneration<
                 abortSignal: abortSignal,
             }
         );
-    } catch (error) {
-        if (error instanceof ProofsCheckFailedError) {
-            const failureType = translateToFailureType(error.failureType);
+    } catch (err) {
+        if (err instanceof ProofsCheckFailedError) {
+            const failureType = translateToFailureType(err.failureType);
             logger
                 .asOneRecord()
                 .info(`Failed to validate proofs: ${failureType}`)
-                .debug(`Cause: ${error.causeMessage}`);
+                .debug(`Cause: ${err.causeMessage}`);
             return new FailedCompletionGenerationBenchmarking(
                 allGeneratedProofs,
                 contextTheorems,
@@ -211,13 +215,16 @@ export async function benchmarkSingleCompletionGeneration<
                 roundNumber,
                 {
                     failureType: failureType,
-                    causeMessage: error.causeMessage,
+                    causeMessage: err.causeMessage,
                 }
             );
+        } else if (err instanceof AbortError) {
+            throw err;
         } else {
-            // Potential bug (!): all unexpected errors should be wrapped into
-            // IllegalsStateError - it should be checked here and performed
-            throw error;
+            rethrowAsIllegalState(
+                err,
+                "unexpected error during checking proofs"
+            );
         }
     }
     const validatedProofs = proofsCheckResult.checkedProofs.flatMap(

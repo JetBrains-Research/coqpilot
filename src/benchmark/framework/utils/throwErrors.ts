@@ -17,11 +17,18 @@ export class BenchmarkingError extends Error {
     }
 }
 
+export function buildFailedBenchmarkingInvariant(
+    logger: BenchmarkingLogger,
+    ...errorMessage: string[]
+): InvariantFailedError {
+    const joinedMessage = `Benchmarking invariant failed: ${errorMessage.join("")}`;
+    logger.error(joinedMessage);
+    return new InvariantFailedError(joinedMessage);
+}
+
 export function benchmarkingInvariantFailed(
     logger: BenchmarkingLogger,
     ...errorMessage: string[]
 ): never {
-    const joinedMessage = `Benchmarking invariant failed: ${errorMessage.join("")}`;
-    logger.error(joinedMessage);
-    throw new InvariantFailedError(joinedMessage);
+    throw buildFailedBenchmarkingInvariant(logger, ...errorMessage);
 }

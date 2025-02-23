@@ -1,39 +1,70 @@
 import { stringifyAnyValue } from "./printers";
+import { IllegalStateError } from "./throwErrors";
 
 export function asErrorOrRethrow(e: any): Error {
-    if (!(e instanceof Error)) {
-        throw e;
-    }
-    return e;
+    return ifErrorInstanceOrElse(
+        e,
+        () => e,
+        () => {
+            throw e;
+        }
+    );
 }
 
 export function asErrorOrRethrowWrapped(e: any, description: string): Error {
-    if (!(e instanceof Error)) {
-        throw wrapNonError(e, description);
-    }
-    return e;
+    return ifErrorInstanceOrElse(
+        e,
+        () => e,
+        () => {
+            throw wrapNonError(e, description);
+        }
+    );
 }
 
 export function wrapNonError(e: any, description: string): Error {
     return Error(`${description}: ${stringifyAnyValue(e)}`);
 }
 
+export function wrapAsIllegalState(e: any, description: string): Error {
+    return new IllegalStateError(
+        `${description}:\n${buildErrorCompleteLog(e)}`
+    );
+}
+
 export function asErrorOrUndefined(e: any): Error | undefined {
     return e instanceof Error ? e : undefined;
 }
 
-export function buildErrorCompleteLog(e: any): string {
-    if (!(e instanceof Error)) {
-        return stringifyAnyValue(e);
-    }
-    return e.stack ?? `${e.name}: ${e.message}`;
+export function getErrorMessage(e: any): string {
+    return ifErrorInstanceOrElse(e, stringifyAnyValue, e.message);
 }
 
-export function getErrorMessage(e: any): string {
-    if (!(e instanceof Error)) {
-        return stringifyAnyValue(e);
+export function buildErrorCompleteLog(e: any): string {
+    return ifErrorInstanceOrElse(
+        e,
+        stringifyAnyValue,
+        (e) => e.stack ?? errorToShortLog(e)
+    );
+}
+
+export function buildErrorShortLog(e: any): string {
+    return ifErrorInstanceOrElse(e, stringifyAnyValue, errorToShortLog);
+}
+
+function errorToShortLog(error: Error): string {
+    return `${error.name}: ${error.message}`;
+}
+
+function ifErrorInstanceOrElse<T>(
+    e: any,
+    onError: (error: Error) => T,
+    onElse: (e: any) => T
+): T {
+    if (e instanceof Error) {
+        return onError(e);
+    } else {
+        return onElse(e);
     }
-    return e.message;
 }
 
 export abstract class ErrorWithCause extends Error {

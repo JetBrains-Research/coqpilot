@@ -11,7 +11,7 @@ import {
     getErrorMessage,
 } from "../../../../../../utils/errorsUtils";
 import { deserializeUri } from "../../../../structures/common/serializedUri";
-import { FailFastAbortError } from "../../../../utils/asyncUtils/abortUtils";
+import { AbortError } from "../../../../utils/asyncUtils/abortUtils";
 import { LogsIPCSender } from "../../../../utils/subprocessUtils/ipc/onParentProcessCallExecutor/logsIpcSender";
 import { TimeMark } from "../../measureTimeUtils";
 
@@ -79,7 +79,7 @@ export namespace CheckProofsImpl {
                 "got unexpected error from `CoqProofChecker`"
             );
             // TODO: just rethrow error here, packing-unpacking should be carefully removed
-            if (error instanceof FailFastAbortError) {
+            if (error instanceof AbortError) {
                 throw error;
             } else if (error instanceof CoqLspTimeoutError) {
                 providedLogger?.error(
