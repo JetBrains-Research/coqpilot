@@ -7,11 +7,6 @@ import {
 } from "../../../../utils/ajvErrorsHandling";
 import { deserializeCodeElementRange } from "../../../../utils/codeElementPositions";
 import { buildErrorCompleteLog } from "../../../../utils/errorsUtils";
-import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
-import { deserializeTheoremData } from "../../structures/parsedCoqFile/theoremData";
-import { packIntoMap } from "../../utils/collectionUtils/mapUtils";
-import { deserializeGoal } from "../../utils/coqUtils/goalParser";
 import {
     exists,
     getDatasetDir,
@@ -20,7 +15,12 @@ import {
     readFile,
     relativizeAbsolutePaths,
     resolveAsAbsolutePath,
-} from "../../utils/fileUtils/fs";
+} from "../../../../utils/fs";
+import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
+import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
+import { deserializeTheoremData } from "../../structures/parsedCoqFile/theoremData";
+import { packIntoMap } from "../../utils/collectionUtils/mapUtils";
+import { deserializeGoal } from "../../utils/coqUtils/goalParser";
 import {
     CacheHolderData,
     WorkspaceCacheHolder,

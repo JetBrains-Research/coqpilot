@@ -2,6 +2,7 @@ import { ProofGoal } from "../../../../coqLsp/coqLspTypes";
 
 import { ProofStep } from "../../../../coqParser/parsedTypes";
 import { fromRange } from "../../../../utils/codeElementPositions";
+import { joinPaths, relativizeAbsolutePaths } from "../../../../utils/fs";
 import { toFormattedJsonString } from "../../../../utils/printers";
 import { invariantFailed } from "../../../../utils/throwErrors";
 import {
@@ -12,7 +13,6 @@ import { TargetType } from "../../structures/benchmarkingCore/completionGenerati
 import { TheoremData } from "../../structures/parsedCoqFile/theoremData";
 import { groupBy, mapValues } from "../../utils/collectionUtils/mapUtils";
 import { extractTheoremFisrtProofStep } from "../../utils/coqUtils/proofTargetExtractor";
-import { joinPaths, relativizeAbsolutePaths } from "../../utils/fileUtils/fs";
 import {
     CacheHolderData,
     WorkspaceCacheHolder,

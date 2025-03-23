@@ -6,8 +6,8 @@ import { TargetsBuilder } from "../../benchmark/framework/experiment/setupDSL/ta
 import { SingleWorkspaceExperiment } from "../../benchmark/framework/experiment/singleWorkspaceExperiment";
 import { SeverityLevel } from "../../benchmark/framework/logging/benchmarkingLogger";
 import { DatasetCacheUsageMode } from "../../benchmark/framework/structures/inputParameters/datasetCaching";
-import { relativizeAbsolutePaths } from "../../benchmark/framework/utils/fileUtils/fs";
 import { colorize } from "../../utils/colorLogging";
+import { relativizeAbsolutePaths } from "../../utils/fs";
 import { time, timeToMillis } from "../../utils/time";
 import { getRootDir } from "../commonTestFunctions/pathsResolver";
 

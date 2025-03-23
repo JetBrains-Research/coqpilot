@@ -1,3 +1,8 @@
+import {
+    clearDirectory,
+    isDirectory,
+    listCoqSourceFiles,
+} from "../../../../utils/fs";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { rewriteDatasetCache } from "../../parseDataset/cacheHandlers/cacheWriter";
 import { DatasetCacheHolder } from "../../parseDataset/cacheStructures/cacheHolders";
@@ -15,11 +20,6 @@ import {
     standaloneFilesRoot,
 } from "../../structures/common/workspaceRoot";
 import { ExperimentRunOptions } from "../../structures/inputParameters/experimentRunOptions";
-import {
-    clearDirectory,
-    isDirectory,
-    listCoqSourceFiles,
-} from "../../utils/fileUtils/fs";
 import { throwBenchmarkingError } from "../../utils/throwErrors";
 
 import { EnvironmentStringType, TargetsBuilderUtils } from "./targetsBuilder";
