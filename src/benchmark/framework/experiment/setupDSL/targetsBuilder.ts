@@ -1,4 +1,12 @@
 import {
+    getDatasetDir,
+    isCoqSourceFile,
+    isDirectory,
+    joinPaths,
+    listCoqSourceFiles,
+    resolveAsAbsolutePath,
+} from "../../../../utils/fs";
+import {
     DatasetInputTargets,
     TargetRequestType,
     WorkspaceInputTargets,
@@ -7,14 +15,6 @@ import {
     WorkspaceRoot,
     standaloneFilesRoot,
 } from "../../structures/common/workspaceRoot";
-import {
-    getDatasetDir,
-    isCoqSourceFile,
-    isDirectory,
-    joinPaths,
-    listCoqSourceFiles,
-    resolveAsAbsolutePath,
-} from "../../utils/fileUtils/fs";
 import { throwBenchmarkingError } from "../../utils/throwErrors";
 
 export type EnvironmentStringType = "nix" | "no-special-environment";

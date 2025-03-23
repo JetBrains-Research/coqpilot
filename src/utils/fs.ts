@@ -1,8 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
 
-import { wrapNonError } from "../../../../utils/errorsUtils";
-import { illegalState } from "../../../../utils/throwErrors";
+import { wrapNonError } from "./errorsUtils";
+import { illegalState } from "./throwErrors";
 
 export function getRootDir(): string {
     const relativeRoot = path.join(__dirname, "/../../../../../");
@@ -55,7 +55,6 @@ export function appendToFile<T>(
         return handleThrownObject(e, onError);
     }
 }
-
 function handleThrownObject<T>(e: any, onError: (e: any) => T): T {
     if (e instanceof Error) {
         return onError(e);
@@ -96,10 +95,10 @@ export function getLastName(inputPath: string): string {
 export function getDirectoryPath(inputPath: string): string {
     return path.dirname(inputPath);
 }
-
 /**
  * Both input paths are expected to be resolved and absolute paths.
  */
+
 export function checkIsInsideDirectory(
     inputPath: string,
     dirPath: string
@@ -194,31 +193,30 @@ export function isCoqSourceFile(inputPath: string): boolean {
 export function isJsonFile(inputPath: string): boolean {
     return isFile(inputPath) && path.extname(inputPath) === ".json";
 }
-
 /**
  * @param dirPath resolved absolute directory path.
  * @param depth determines the recursion depth of subdirectories traverse. `undefined` (the default value) corresponds to the unlimited depth; `0` correpsonds to listing the files located in the `dirPath` only.
  * @returns resolved absolute paths for the files inside `dirPath`.
  */
+
 export function listCoqSourceFiles(
     dirPath: string,
     depth: number | undefined = undefined
 ): string[] {
     return listFiles(dirPath, depth, (filePath) => isCoqSourceFile(filePath));
 }
-
 /**
  * @param dirPath resolved absolute directory path.
  * @param depth determines the recursion depth of subdirectories traverse. `undefined` (the default value) corresponds to the unlimited depth; `0` correpsonds to listing the files located in the `dirPath` only.
  * @returns resolved absolute paths for the files inside `dirPath`.
  */
+
 export function listJsonFiles(
     dirPath: string,
     depth: number | undefined = undefined
 ): string[] {
     return listFiles(dirPath, depth, (filePath) => isJsonFile(filePath));
 }
-
 /**
  * @param dirPath resolved absolute directory path.
  * @param depth determines the recursion depth of subdirectories traverse. `undefined` corresponds to the unlimited depth; `0` correpsonds to listing the files located in the `dirPath` only.

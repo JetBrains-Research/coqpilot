@@ -1,3 +1,4 @@
+import { checkIsInsideDirectory } from "../../../../utils/fs";
 import { illegalState } from "../../../../utils/throwErrors";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { CoqProjectParserUtils } from "../../parseDataset/coqProjectParser/implementation/coqProjectParserUtils";
@@ -5,7 +6,6 @@ import { ParseCoqProjectInternalSignature } from "../../parseDataset/coqProjectP
 import { ParsedWorkspaceHolder } from "../../parseDataset/coqProjectParser/implementation/parsedWorkspaceHolder";
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { AsyncScheduler } from "../../utils/asyncUtils/asyncScheduler";
-import { checkIsInsideDirectory } from "../../utils/fileUtils/fs";
 import {
     ChildProcessOptions,
     executeProcessAsFunction,

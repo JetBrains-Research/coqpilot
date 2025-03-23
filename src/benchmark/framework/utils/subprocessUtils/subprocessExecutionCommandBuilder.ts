@@ -1,8 +1,8 @@
+import { getRootDir } from "../../../../utils/fs";
 import {
     WorkspaceRoot,
     isStandaloneFilesRoot,
 } from "../../structures/common/workspaceRoot";
-import { getRootDir } from "../fileUtils/fs";
 
 import { CommandToExecute } from "./ipc/childProcessExecutor/executeChildProcess";
 import { getSubprocessExecutableSuiteName } from "./ipc/onParentProcessCallExecutor/subprocessExecutableTestWrapper";

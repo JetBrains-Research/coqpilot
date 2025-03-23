@@ -1,5 +1,12 @@
 import { serializeCodeElementRange } from "../../../../utils/codeElementPositions";
 import {
+    clearDirectory,
+    getDatasetDir,
+    joinPaths,
+    relativizeAbsolutePaths,
+    writeToFile,
+} from "../../../../utils/fs";
+import {
     stringifyAnyValue,
     toFormattedJsonString,
 } from "../../../../utils/printers";
@@ -10,13 +17,6 @@ import { serializeTheoremData } from "../../structures/parsedCoqFile/theoremData
 import { packIntoMappedObject } from "../../utils/collectionUtils/mapUtils";
 import { serializeGoal } from "../../utils/coqUtils/goalParser";
 import { extractTheoremFisrtProofStep } from "../../utils/coqUtils/proofTargetExtractor";
-import {
-    clearDirectory,
-    getDatasetDir,
-    joinPaths,
-    relativizeAbsolutePaths,
-    writeToFile,
-} from "../../utils/fileUtils/fs";
 import {
     CacheHolderData,
     DatasetCacheHolder,

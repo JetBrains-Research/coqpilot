@@ -1,3 +1,8 @@
+import {
+    getRootDir,
+    joinPaths,
+    resolveAsAbsolutePath,
+} from "../../../utils/fs";
 import { benchmark } from "../benchmarkingCore/benchmark";
 import { TimeMark } from "../benchmarkingCore/singleCompletionGeneration/measureTimeUtils";
 import { AbstractProofsChecker } from "../benchmarkingCore/singleCompletionGeneration/proofsCheckers/abstractProofsChecker";
@@ -18,11 +23,6 @@ import { DatasetCacheUsageMode } from "../structures/inputParameters/datasetCach
 import { ExperimentRunOptions } from "../structures/inputParameters/experimentRunOptions";
 import { InputBenchmarkingBundle } from "../structures/inputParameters/inputBenchmarkingBundle";
 import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
-import {
-    getRootDir,
-    joinPaths,
-    resolveAsAbsolutePath,
-} from "../utils/fileUtils/fs";
 import { throwBenchmarkingError } from "../utils/throwErrors";
 
 import {
