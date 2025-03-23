@@ -1,6 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
 
+import { AUX_FILE_SUBSTRING } from "../llm/llmServices/utils/auxFileManager";
+
 import { wrapNonError } from "./errorsUtils";
 import { illegalState } from "./throwErrors";
 
@@ -68,6 +70,10 @@ export function clearFile(filePath: string) {
     fs.writeFileSync(filePath, "");
 }
 
+export function deleteFile(filePath: string) {
+    fs.rmSync(filePath, { force: true });
+}
+
 export function exists(inputPath: string): boolean {
     return fs.existsSync(inputPath);
 }
@@ -88,8 +94,16 @@ export function relativizeAbsolutePaths(parentPath: string, childPath: string) {
     return path.relative(parentPath, childPath);
 }
 
+export function parsePath(inputPath: string): path.ParsedPath {
+    return path.parse(inputPath);
+}
+
 export function getLastName(inputPath: string): string {
     return path.parse(inputPath).name;
+}
+
+export function getExtensionName(inputPath: string): string {
+    return path.extname(inputPath);
 }
 
 export function getDirectoryPath(inputPath: string): string {
@@ -185,13 +199,13 @@ export function isFile(inputPath: string): boolean {
 export function isCoqSourceFile(inputPath: string): boolean {
     return (
         isFile(inputPath) &&
-        path.extname(inputPath) === ".v" &&
-        !inputPath.endsWith("_cp_aux.v")
+        getExtensionName(inputPath) === ".v" &&
+        !inputPath.includes(AUX_FILE_SUBSTRING)
     );
 }
 
 export function isJsonFile(inputPath: string): boolean {
-    return isFile(inputPath) && path.extname(inputPath) === ".json";
+    return isFile(inputPath) && getExtensionName(inputPath) === ".json";
 }
 /**
  * @param dirPath resolved absolute directory path.
