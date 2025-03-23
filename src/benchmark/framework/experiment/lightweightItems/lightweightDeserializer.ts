@@ -1,5 +1,6 @@
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 
+import { deserializeCodeElementRange } from "../../../../utils/codeElementPositions";
 import { throwError } from "../../../../utils/throwErrors";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { readRequestedFilesCache } from "../../parseDataset/cacheHandlers/cacheReader";
@@ -8,7 +9,6 @@ import { logBenchmarkingItems } from "../../parseDataset/utils/logBenchmarkingIt
 import { BenchmarkingItem } from "../../structures/benchmarkingCore/benchmarkingItem";
 import { BenchmarkingModelParams } from "../../structures/benchmarkingCore/benchmarkingModelParams";
 import { CompletionGenerationTask } from "../../structures/benchmarkingCore/completionGenerationTask";
-import { deserializeCodeElementRange } from "../../structures/common/codeElementPositions";
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { LightweightBenchmarkingItem } from "../../structures/inputParameters/lightweight/lightweightBenchmarkingItem";
 import { LightweightInputModelParams } from "../../structures/inputParameters/lightweight/lightweightInputModelParams";

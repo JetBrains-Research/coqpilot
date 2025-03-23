@@ -1,6 +1,7 @@
 import { ProofGoal } from "../../../../coqLsp/coqLspTypes";
 
 import { ProofStep } from "../../../../coqParser/parsedTypes";
+import { fromRange } from "../../../../utils/codeElementPositions";
 import { toFormattedJsonString } from "../../../../utils/printers";
 import { invariantFailed } from "../../../../utils/throwErrors";
 import {
@@ -8,7 +9,6 @@ import {
     BenchmarkingLogger,
 } from "../../logging/benchmarkingLogger";
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
-import { fromRange } from "../../structures/common/codeElementPositions";
 import { TheoremData } from "../../structures/parsedCoqFile/theoremData";
 import { groupBy, mapValues } from "../../utils/collectionUtils/mapUtils";
 import { extractTheoremFisrtProofStep } from "../../utils/coqUtils/proofTargetExtractor";
