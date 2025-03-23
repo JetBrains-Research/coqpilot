@@ -1,7 +1,7 @@
 import { ProofGoal } from "../../../../coqLsp/coqLspTypes";
 
+import { CodeElementRange } from "../../../../utils/codeElementPositions";
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
-import { CodeElementRange } from "../../structures/common/codeElementPositions";
 import { TargetRequestType } from "../../structures/common/inputTargets";
 import { ParsedCoqFileData } from "../../structures/parsedCoqFile/parsedCoqFileData";
 import { TheoremData } from "../../structures/parsedCoqFile/theoremData";

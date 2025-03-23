@@ -4,11 +4,11 @@ import { CoqLspError } from "../../../../../coqLsp/coqLspTypes";
 
 import { createSourceFileEnvironment } from "../../../../../core/inspectSourceFile";
 
+import { deserializeCodeElementPosition } from "../../../../../utils/codeElementPositions";
 import { unexpectedError } from "../../../../../utils/throwErrors";
 import { Uri } from "../../../../../utils/uri";
 import { BenchmarkingLogger } from "../../../logging/benchmarkingLogger";
 import { TargetType } from "../../../structures/benchmarkingCore/completionGenerationTask";
-import { deserializeCodeElementPosition } from "../../../structures/common/codeElementPositions";
 import { TargetRequestType } from "../../../structures/common/inputTargets";
 import { SerializedParsedCoqFile } from "../../../structures/parsedCoqFile/parsedCoqFileData";
 import {

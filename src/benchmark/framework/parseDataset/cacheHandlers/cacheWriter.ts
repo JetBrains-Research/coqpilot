@@ -1,3 +1,4 @@
+import { serializeCodeElementRange } from "../../../../utils/codeElementPositions";
 import {
     stringifyAnyValue,
     toFormattedJsonString,
@@ -5,7 +6,6 @@ import {
 import { invariantFailed } from "../../../../utils/throwErrors";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
-import { serializeCodeElementRange } from "../../structures/common/codeElementPositions";
 import { serializeTheoremData } from "../../structures/parsedCoqFile/theoremData";
 import { packIntoMappedObject } from "../../utils/collectionUtils/mapUtils";
 import { serializeGoal } from "../../utils/coqUtils/goalParser";

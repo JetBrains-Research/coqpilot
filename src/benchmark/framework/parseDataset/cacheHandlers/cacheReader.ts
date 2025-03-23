@@ -5,10 +5,10 @@ import {
     buildAjv,
     failedAjvValidatorErrorsAsString,
 } from "../../../../utils/ajvErrorsHandling";
+import { deserializeCodeElementRange } from "../../../../utils/codeElementPositions";
 import { buildErrorCompleteLog } from "../../../../utils/errorsUtils";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
-import { deserializeCodeElementRange } from "../../structures/common/codeElementPositions";
 import { deserializeTheoremData } from "../../structures/parsedCoqFile/theoremData";
 import { packIntoMap } from "../../utils/collectionUtils/mapUtils";
 import { deserializeGoal } from "../../utils/coqUtils/goalParser";

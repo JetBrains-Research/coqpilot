@@ -5,9 +5,9 @@ import {
     SourceFileEnvironment,
 } from "../../../../core/completionGenerationContext";
 
+import { CodeElementRange } from "../../../../utils/codeElementPositions";
 import { EqualTo, HashUtils } from "../../utils/collectionUtils/equalityUtils";
 import { goalToProveAsString } from "../../utils/coqUtils/goalParser";
-import { CodeElementRange } from "../common/codeElementPositions";
 import { WorkspaceRoot } from "../common/workspaceRoot";
 import { ParsedCoqFileData } from "../parsedCoqFile/parsedCoqFileData";
 import { TheoremData } from "../parsedCoqFile/theoremData";

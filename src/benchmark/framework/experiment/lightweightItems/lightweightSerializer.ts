@@ -1,12 +1,12 @@
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 
+import { serializeCodeElementRange } from "../../../../utils/codeElementPositions";
 import { toFormattedJsonString } from "../../../../utils/printers";
 import { throwError } from "../../../../utils/throwErrors";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { BenchmarkingItem } from "../../structures/benchmarkingCore/benchmarkingItem";
 import { BenchmarkingModelParams } from "../../structures/benchmarkingCore/benchmarkingModelParams";
 import { CompletionGenerationTask } from "../../structures/benchmarkingCore/completionGenerationTask";
-import { serializeCodeElementRange } from "../../structures/common/codeElementPositions";
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { InputBenchmarkingBundle } from "../../structures/inputParameters/inputBenchmarkingBundle";
 import { InputBenchmarkingModelParams } from "../../structures/inputParameters/inputBenchmarkingModelParams";

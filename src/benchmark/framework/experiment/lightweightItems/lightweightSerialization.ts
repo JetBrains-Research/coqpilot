@@ -1,5 +1,5 @@
+import { deserializeCodeElementRange } from "../../../../utils/codeElementPositions";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import { deserializeCodeElementRange } from "../../structures/common/codeElementPositions";
 import { LightweightBenchmarkingItem } from "../../structures/inputParameters/lightweight/lightweightBenchmarkingItem";
 import { LightweightInputModelParams } from "../../structures/inputParameters/lightweight/lightweightInputModelParams";
 import { LightweightWorkspaceRoot } from "../../structures/inputParameters/lightweight/lightweightWorkspaceRoot";

@@ -1,10 +1,10 @@
 import { JSONSchemaType } from "ajv";
 
-import { TargetType } from "../../../structures/benchmarkingCore/completionGenerationTask";
 import {
     SerializedCodeElementRange,
     serializedCodeElementRangeSchema,
-} from "../../../structures/common/codeElementPositions";
+} from "../../../../../utils/codeElementPositions";
+import { TargetType } from "../../../structures/benchmarkingCore/completionGenerationTask";
 import { TargetRequestType } from "../../../structures/common/inputTargets";
 import {
     SerializedParsedCoqFile,

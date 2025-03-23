@@ -4,12 +4,12 @@ import { ModelParams } from "../../../../llm/llmServices/modelParams";
 
 import { RankerType } from "../../../../core/contextTheoremRanker/contextTheoremsRanker";
 
+import { SerializedCodeElementRange } from "../../../../utils/codeElementPositions";
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
 import {
     CompletionGenerationTime,
     FailureMetadata,
 } from "../../structures/benchmarkingResults/benchmarkedItem";
-import { SerializedCodeElementRange } from "../../structures/common/codeElementPositions";
 import { LLMServiceIdentifier } from "../../structures/common/llmServiceIdentifier";
 import { LengthMetrics } from "../../structures/common/measureStructures";
 import { LightweightWorkspaceRoot } from "../../structures/inputParameters/lightweight/lightweightWorkspaceRoot";
