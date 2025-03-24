@@ -1,8 +1,5 @@
-import {
-    getRootDir,
-    joinPaths,
-    resolveAsAbsolutePath,
-} from "../../../utils/fs";
+import { joinPaths, resolveAsAbsolutePath } from "../../../utils/fs/pathUtils";
+import { getRootDir } from "../../../utils/fs/rootResolvers";
 import { benchmark } from "../benchmarkingCore/benchmark";
 import { TimeMark } from "../benchmarkingCore/singleCompletionGeneration/measureTimeUtils";
 import { AbstractProofsChecker } from "../benchmarkingCore/singleCompletionGeneration/proofsCheckers/abstractProofsChecker";

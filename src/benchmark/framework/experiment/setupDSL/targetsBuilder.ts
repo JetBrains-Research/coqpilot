@@ -1,11 +1,13 @@
 import {
-    getDatasetDir,
     isCoqSourceFile,
     isDirectory,
+} from "../../../../utils/fs/fileTypeCheckers";
+import { listCoqSourceFiles } from "../../../../utils/fs/listFiles";
+import {
     joinPaths,
-    listCoqSourceFiles,
     resolveAsAbsolutePath,
-} from "../../../../utils/fs";
+} from "../../../../utils/fs/pathUtils";
+import { getDatasetDir } from "../../../../utils/fs/rootResolvers";
 import {
     DatasetInputTargets,
     TargetRequestType,

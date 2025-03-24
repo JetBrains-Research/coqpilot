@@ -7,15 +7,14 @@ import {
 } from "../../../../utils/ajvErrorsHandling";
 import { deserializeCodeElementRange } from "../../../../utils/codeElementPositions";
 import { buildErrorCompleteLog } from "../../../../utils/errorsUtils";
+import { isFile } from "../../../../utils/fs/fileTypeCheckers";
+import { exists, readFile } from "../../../../utils/fs/fileUtils";
 import {
-    exists,
-    getDatasetDir,
-    isFile,
     joinPaths,
-    readFile,
     relativizeAbsolutePaths,
     resolveAsAbsolutePath,
-} from "../../../../utils/fs";
+} from "../../../../utils/fs/pathUtils";
+import { getDatasetDir } from "../../../../utils/fs/rootResolvers";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
 import { deserializeTheoremData } from "../../structures/parsedCoqFile/theoremData";

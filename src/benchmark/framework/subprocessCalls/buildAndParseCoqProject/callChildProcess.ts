@@ -1,4 +1,4 @@
-import { checkIsInsideDirectory } from "../../../../utils/fs";
+import { checkIsInsideDirectory } from "../../../../utils/fs/directoryUtils";
 import { illegalState } from "../../../../utils/throwErrors";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { CoqProjectParserUtils } from "../../parseDataset/coqProjectParser/implementation/coqProjectParserUtils";

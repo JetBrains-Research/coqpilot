@@ -3,12 +3,15 @@ import { modelName } from "../../../llm/llmServices/utils/modelParamsAccessors";
 import { buildErrorCompleteLog } from "../../../utils/errorsUtils";
 import {
     createDirectory,
-    getDatasetDir,
-    joinPaths,
     provideEmptyDirectoryOrThrow,
+} from "../../../utils/fs/directoryUtils";
+import { translateToSafeFileName } from "../../../utils/fs/fileNameUtils";
+import { writeToFile } from "../../../utils/fs/fileUtils";
+import {
+    joinPaths,
     relativizeAbsolutePaths,
-    writeToFile,
-} from "../../../utils/fs";
+} from "../../../utils/fs/pathUtils";
+import { getDatasetDir } from "../../../utils/fs/rootResolvers";
 import { stringifyAnyValue } from "../../../utils/printers";
 import { IllegalStateError } from "../../../utils/throwErrors";
 import { millisToString } from "../../../utils/time";
@@ -26,7 +29,6 @@ import {
 import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
 import { groupBy, mapValues } from "../utils/collectionUtils/mapUtils";
 import { getShortName } from "../utils/commonStructuresUtils/llmServicesUtils";
-import { translateToSafeFileName } from "../utils/fileUtils/fileNameUtils";
 import { prependWithZeros } from "../utils/serializationUtils";
 import {
     benchmarkingInvariantFailed,

@@ -1,8 +1,6 @@
-import {
-    clearDirectory,
-    isDirectory,
-    listCoqSourceFiles,
-} from "../../../../utils/fs";
+import { clearDirectory } from "../../../../utils/fs/directoryUtils";
+import { isDirectory } from "../../../../utils/fs/fileTypeCheckers";
+import { listCoqSourceFiles } from "../../../../utils/fs/listFiles";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { rewriteDatasetCache } from "../../parseDataset/cacheHandlers/cacheWriter";
 import { DatasetCacheHolder } from "../../parseDataset/cacheStructures/cacheHolders";

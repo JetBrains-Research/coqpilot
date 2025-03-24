@@ -7,7 +7,7 @@ import { SingleWorkspaceExperiment } from "../../benchmark/framework/experiment/
 import { SeverityLevel } from "../../benchmark/framework/logging/benchmarkingLogger";
 import { DatasetCacheUsageMode } from "../../benchmark/framework/structures/inputParameters/datasetCaching";
 import { colorize } from "../../utils/colorLogging";
-import { relativizeAbsolutePaths } from "../../utils/fs";
+import { relativizeAbsolutePaths } from "../../utils/fs/pathUtils";
 import { time, timeToMillis } from "../../utils/time";
 import { getRootDir } from "../commonTestFunctions/pathsResolver";
 

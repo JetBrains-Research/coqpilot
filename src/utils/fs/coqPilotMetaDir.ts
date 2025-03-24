@@ -1,4 +1,5 @@
-import { createDirectory, joinPaths } from "../fs";
+import { createDirectory } from "./directoryUtils";
+import { joinPaths } from "./pathUtils";
 
 export const COQPILOT_META_DIR_NAME = ".coqpilot";
 export const COQPILOT_META_LOGS_SUBDIR_NAME = "logs";

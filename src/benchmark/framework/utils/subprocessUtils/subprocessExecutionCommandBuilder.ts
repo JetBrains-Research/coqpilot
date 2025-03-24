@@ -1,4 +1,4 @@
-import { getRootDir } from "../../../../utils/fs";
+import { getRootDir } from "../../../../utils/fs/rootResolvers";
 import {
     WorkspaceRoot,
     isStandaloneFilesRoot,
