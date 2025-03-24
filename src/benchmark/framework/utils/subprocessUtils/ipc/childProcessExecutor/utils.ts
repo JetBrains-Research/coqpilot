@@ -4,8 +4,8 @@ import ipc from "node-ipc";
 
 import { failedAjvValidatorErrorsAsString } from "../../../../../../utils/ajvErrorsHandling";
 import { stringifyAnyValue } from "../../../../../../utils/printers";
+import { PromiseExecutor } from "../../../../../../utils/promiseUtils";
 import { BenchmarkingLogger } from "../../../../logging/benchmarkingLogger";
-import { PromiseExecutor } from "../../../asyncUtils/promiseUtils";
 import { IPCError } from "../ipcError";
 import { IPCMessage, createStopIPCMessage } from "../ipcProtocol";
 

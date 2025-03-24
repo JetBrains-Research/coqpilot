@@ -1,6 +1,5 @@
+import { ResolveType } from "../../../../utils/promiseUtils";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-
-import { ResolveType } from "./promiseUtils";
 
 export class AsyncScheduler {
     private readonly schedulerLogsIdentifier: string;

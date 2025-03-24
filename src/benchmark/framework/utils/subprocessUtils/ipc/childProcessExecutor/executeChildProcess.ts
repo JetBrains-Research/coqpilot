@@ -4,6 +4,7 @@ import ipc from "node-ipc";
 
 import { getErrorMessage } from "../../../../../../utils/errorsUtils";
 import { stringifyAnyValue } from "../../../../../../utils/printers";
+import { PromiseExecutor } from "../../../../../../utils/promiseUtils";
 import {
     millisToString,
     time,
@@ -13,7 +14,6 @@ import {
     BenchmarkingLogger,
     SeverityLevel,
 } from "../../../../logging/benchmarkingLogger";
-import { PromiseExecutor } from "../../../asyncUtils/promiseUtils";
 import {
     ExecutionErrorIPCMessage,
     IPCErrorIPCMessage,
