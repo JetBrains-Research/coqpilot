@@ -6,7 +6,7 @@ import {
     getErrorMessage,
 } from "../../../../../../utils/errorsUtils";
 import { stringifyAnyValue } from "../../../../../../utils/printers";
-import { PromiseExecutor } from "../../../asyncUtils/promiseUtils";
+import { PromiseExecutor } from "../../../../../../utils/promiseUtils";
 import {
     ArgsIPCMessage,
     IPCMessage,
