@@ -2,7 +2,10 @@ import { ProofGoal } from "../../../../coqLsp/coqLspTypes";
 
 import { ProofStep } from "../../../../coqParser/parsedTypes";
 import { fromRange } from "../../../../utils/codeElementPositions";
-import { joinPaths, relativizeAbsolutePaths } from "../../../../utils/fs";
+import {
+    joinPaths,
+    relativizeAbsolutePaths,
+} from "../../../../utils/fs/pathUtils";
 import { toFormattedJsonString } from "../../../../utils/printers";
 import { invariantFailed } from "../../../../utils/throwErrors";
 import {

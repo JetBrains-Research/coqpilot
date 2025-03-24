@@ -1,4 +1,4 @@
-import { listCoqSourceFiles } from "../../../../utils/fs";
+import { listCoqSourceFiles } from "../../../../utils/fs/listFiles";
 import { stringifyAnyValue } from "../../../../utils/printers";
 import { illegalState } from "../../../../utils/throwErrors";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";

@@ -1,12 +1,10 @@
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 
 import { deserializeCodeElementRange } from "../../../../utils/codeElementPositions";
-import {
-    getDatasetDir,
-    joinPaths,
-    listJsonFiles,
-    readFile,
-} from "../../../../utils/fs";
+import { readFile } from "../../../../utils/fs/fileUtils";
+import { listJsonFiles } from "../../../../utils/fs/listFiles";
+import { joinPaths } from "../../../../utils/fs/pathUtils";
+import { getDatasetDir } from "../../../../utils/fs/rootResolvers";
 import { throwError } from "../../../../utils/throwErrors";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { readRequestedFilesCache } from "../../parseDataset/cacheHandlers/cacheReader";

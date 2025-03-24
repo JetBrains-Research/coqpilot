@@ -2,7 +2,8 @@ import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/er
 import { LLMService } from "../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
 
-import { joinPaths, provideEmptyDirectoryOrThrow } from "../../../utils/fs";
+import { provideEmptyDirectoryOrThrow } from "../../../utils/fs/directoryUtils";
+import { joinPaths } from "../../../utils/fs/pathUtils";
 import { IllegalStateError, unreachable } from "../../../utils/throwErrors";
 import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
 import { BenchmarkingItem } from "../structures/benchmarkingCore/benchmarkingItem";

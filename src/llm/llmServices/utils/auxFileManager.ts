@@ -12,11 +12,10 @@ import { getErrorMessage } from "../../../utils/errorsUtils";
 import {
     deleteFile,
     exists,
-    joinPaths,
-    parsePath,
     readFile,
     writeToFile,
-} from "../../../utils/fs";
+} from "../../../utils/fs/fileUtils";
+import { joinPaths, parsePath } from "../../../utils/fs/pathUtils";
 import { throwError } from "../../../utils/throwErrors";
 
 export const AUX_FILE_SUBSTRING = "coqpilot_aux";

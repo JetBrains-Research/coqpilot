@@ -1,11 +1,11 @@
 import { serializeCodeElementRange } from "../../../../utils/codeElementPositions";
+import { clearDirectory } from "../../../../utils/fs/directoryUtils";
+import { writeToFile } from "../../../../utils/fs/fileUtils";
 import {
-    clearDirectory,
-    getDatasetDir,
     joinPaths,
     relativizeAbsolutePaths,
-    writeToFile,
-} from "../../../../utils/fs";
+} from "../../../../utils/fs/pathUtils";
+import { getDatasetDir } from "../../../../utils/fs/rootResolvers";
 import {
     stringifyAnyValue,
     toFormattedJsonString,

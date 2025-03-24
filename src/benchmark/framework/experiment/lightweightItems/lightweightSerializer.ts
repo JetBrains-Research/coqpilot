@@ -4,12 +4,15 @@ import { serializeCodeElementRange } from "../../../../utils/codeElementPosition
 import {
     clearDirectory,
     createDirectory,
-    getDatasetDir,
+} from "../../../../utils/fs/directoryUtils";
+import { buildSafeJsonFileName } from "../../../../utils/fs/fileNameUtils";
+import { writeToFile } from "../../../../utils/fs/fileUtils";
+import {
     getLastName,
     joinPaths,
     relativizeAbsolutePaths,
-    writeToFile,
-} from "../../../../utils/fs";
+} from "../../../../utils/fs/pathUtils";
+import { getDatasetDir } from "../../../../utils/fs/rootResolvers";
 import { toFormattedJsonString } from "../../../../utils/printers";
 import { throwError } from "../../../../utils/throwErrors";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
@@ -31,7 +34,6 @@ import {
     reduceToMap,
 } from "../../utils/collectionUtils/mapUtils";
 import { serializeGoal } from "../../utils/coqUtils/goalParser";
-import { buildSafeJsonFileName } from "../../utils/fileUtils/fileNameUtils";
 import { prependWithZeros } from "../../utils/serializationUtils";
 
 import { LightweightSerialization } from "./lightweightSerialization";
