@@ -16,6 +16,7 @@ export async function inspectSourceFile(
     documentVersion: number,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileUri: Uri,
+    projectRootUri: Uri | undefined,
     client: CoqLspClient,
     abortSignal: AbortSignal,
     needsTheoremInitialGoals: boolean,
@@ -24,6 +25,7 @@ export async function inspectSourceFile(
     const sourceFileEnvironment = await createSourceFileEnvironment(
         documentVersion,
         fileUri,
+        projectRootUri,
         client,
         abortSignal,
         needsTheoremInitialGoals,
@@ -53,33 +55,33 @@ async function createCompletionContexts(
     fileUri: Uri,
     client: CoqLspClient
 ): Promise<CompletionContext[]> {
-    const holesToComplete = fileTheorems
-        .filter((thr) => thr.proof)
-        .map((thr) => thr.proof.holes)
-        .flat()
-        .filter(shouldCompleteHole);
-
     let completionContexts: CompletionContext[] = [];
-    for (const hole of holesToComplete) {
-        const goals = await client.getGoalsAtPoint(
-            hole.range.start,
-            fileUri,
-            documentVersion
-        );
-        if (goals.ok && goals.val.length !== 0) {
-            completionContexts.push({
-                proofGoal: goals.val[0],
-                admitRange: hole.range,
-            });
+    for (const thr of fileTheorems) {
+        for (const hole of thr.proof.holes) {
+            if (!shouldCompleteHole(hole)) {
+                continue;
+            }
+            const goals = await client.getGoalsAtPoint(
+                hole.range.start,
+                fileUri,
+                documentVersion
+            );
+            if (goals.ok && goals.val.length !== 0) {
+                completionContexts.push({
+                    proofGoal: goals.val[0],
+                    admitRange: hole.range,
+                    sourceTheorem: thr,
+                });
+            }
         }
     }
-
     return completionContexts;
 }
 
 export async function createSourceFileEnvironment(
     documentVersion: number,
     fileUri: Uri,
+    projectRootUri: Uri | undefined,
     client: CoqLspClient,
     abortSignal: AbortSignal,
     needsTheoremInitialGoals: boolean,
@@ -97,5 +99,6 @@ export async function createSourceFileEnvironment(
         fileTheorems: fileTheorems,
         documentVersion: documentVersion,
         fileUri: fileUri,
+        projectRootUri: projectRootUri,
     };
 }

@@ -33,11 +33,14 @@ export class CompletionGenerationTask
         return {
             proofGoal: this.targetGoalToProve,
             admitRange: this.targetPositionRange,
+            sourceTheorem: this.sourceTheorem.sourceTheorem,
         };
     }
 
     getSourceFileEnvironment(): SourceFileEnvironment {
-        return this.parsedSourceFileData.constructSourceFileEnvironment();
+        return this.parsedSourceFileData.constructSourceFileEnvironment(
+            this.workspaceRoot
+        );
     }
 
     equalTo(other: CompletionGenerationTask): boolean {

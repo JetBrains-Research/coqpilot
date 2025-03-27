@@ -108,6 +108,7 @@ export namespace ParseCoqProjectImpl {
         const sourceFileEnvironment = await createSourceFileEnvironment(
             mockDocumentVersion,
             Uri.fromPath(filePath),
+            undefined,
             coqLspClient,
             new AbortController().signal, // abort behaviour is not supported at the parsing stage
             true // TODO: pass `ContextTheoremsRanker.needsUnwrappedNotations` here to improve performance

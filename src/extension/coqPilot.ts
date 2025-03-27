@@ -51,6 +51,7 @@ import {
     toVSCodePosition,
     toVSCodeRange,
 } from "./utils/positionRangeUtils";
+import { getOpenedWorkspaceAsProjectRoot } from "./utils/projectRootGetter";
 
 export class CoqPilot {
     private constructor(
@@ -309,18 +310,7 @@ export class CoqPilot {
             this.sessionState.coqLspClient,
             this.pluginContext.eventLogger
         );
-        // Note: here and later the target file is expected to be opened by the user,
-        // so no explicit `coqLspClient.openTextDocument(...)` call is needed
-        const [completionContexts, sourceFileEnvironment] =
-            await inspectSourceFile(
-                documentVersion,
-                shouldCompleteHole,
-                fileUri,
-                this.sessionState.coqLspClient,
-                abortSignal,
-                contextTheoremsRanker.needsUnwrappedNotations,
-                this.pluginContext.eventLogger
-            );
+
         const processEnvironment: ProcessEnvironment = {
             coqProofChecker: coqProofChecker,
             modelsParams: readAndValidateUserModelsParams(
@@ -330,6 +320,27 @@ export class CoqPilot {
             services: this.pluginContext.llmServices,
             theoremRanker: contextTheoremsRanker,
         };
+
+        if (this.pluginContext.getProjectRoot() === undefined) {
+            const currentProjectRoot = getOpenedWorkspaceAsProjectRoot();
+            if (currentProjectRoot !== undefined) {
+                this.pluginContext.selectProjectRoot(currentProjectRoot);
+            }
+        }
+
+        // Note: here and later the target file is expected to be opened by the user,
+        // so no explicit `coqLspClient.openTextDocument(...)` call is needed
+        const [completionContexts, sourceFileEnvironment] =
+            await inspectSourceFile(
+                documentVersion,
+                shouldCompleteHole,
+                fileUri,
+                this.pluginContext.getProjectRoot(),
+                this.sessionState.coqLspClient,
+                abortSignal,
+                contextTheoremsRanker.needsUnwrappedNotations,
+                this.pluginContext.eventLogger
+            );
 
         return [completionContexts, sourceFileEnvironment, processEnvironment];
     }
