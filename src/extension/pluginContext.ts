@@ -12,9 +12,11 @@ import { PredefinedProofsService } from "../llm/llmServices/predefinedProofs/pre
 
 import { EventLogger, Severity } from "../logging/eventLogger";
 import { illegalState } from "../utils/throwErrors";
+import { Uri } from "../utils/uri";
 
 import VSCodeLogWriter from "./ui/vscodeLogWriter";
 import { pluginId } from "./utils/pluginId";
+import { getOpenedWorkspaceAsProjectRoot } from "./utils/projectRootGetter";
 
 export class PluginContext implements Disposable {
     readonly eventLogger: EventLogger = new EventLogger();
@@ -25,6 +27,18 @@ export class PluginContext implements Disposable {
     readonly logOutputChannel = window.createOutputChannel(
         "CoqPilot: coq-lsp events"
     );
+
+    // TODO: support a way in the UI to reconfigure it manually
+    private _projectRootUri: Uri | undefined =
+        getOpenedWorkspaceAsProjectRoot();
+
+    getProjectRoot(): Uri | undefined {
+        return this._projectRootUri;
+    }
+
+    selectProjectRoot(projectRoot: Uri) {
+        this._projectRootUri = projectRoot;
+    }
 
     readonly llmServicesLogsDir = path.join(
         tmp.dirSync().name,

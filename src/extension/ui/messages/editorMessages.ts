@@ -27,6 +27,11 @@ export namespace EditorMessages {
     export const coqLspStartupFailure = (pathToServer: string) =>
         `CoqPilot failed to start the Coq LSP server at path "${pathToServer}". Please make sure the path is correct and the server is properly installed. If your installation is not in a standard location, please set the path to the server in the settings.`;
 
+    export const noWorkspaceIsOpened =
+        "No workspace is open, so some features will be limited (e.g., external proof providers like Rango). Please open the target Coq project in VS Code to enter its workspace.";
+
+    export const multipleWorkspacesAreOpened = `Multiple workspaces detected. CoqPilot cannot determine which one to use, so some features will be limited (e.g., external proof providers like Rango). Please try again with only one workspace open.`;
+
     export const reportUnexpectedError = (errorDescription: string) =>
         `Coqpilot got an unexpected error: ${errorDescription}. Please report this crash by opening an issue in the Coqpilot GitHub repository.`;
 

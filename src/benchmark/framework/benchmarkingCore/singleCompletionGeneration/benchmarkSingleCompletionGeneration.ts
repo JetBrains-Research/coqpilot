@@ -16,10 +16,12 @@ import {
     SourceFileEnvironment,
 } from "../../../../core/completionGenerationContext";
 import { ContextTheoremsRanker } from "../../../../core/contextTheoremRanker/contextTheoremsRanker";
-import { prepareProofToCheck } from "../../../../core/exposedCompletionGeneratorUtils";
+import {
+    buildExternalPipelineProofGenerationContext,
+    prepareProofToCheck,
+} from "../../../../core/exposedCompletionGeneratorUtils";
 import { goalToTargetLemma } from "../../../../core/exposedCompletionGeneratorUtils";
 
-import { Theorem } from "../../../../coqParser/parsedTypes";
 import { delay } from "../../../../utils/delay";
 import { buildErrorCompleteLog } from "../../../../utils/errorsUtils";
 import { stringifyAnyValue } from "../../../../utils/printers";
@@ -325,9 +327,10 @@ async function generateProofWithRetriesExclusively<
             generateProof = async (metadataHolder) => {
                 const proofGenerationContext = buildProofGenerationContext(
                     generationArgs.completionContext,
-                    generationArgs.sourceFileEnvironment.fileTheorems,
+                    generationArgs.sourceFileEnvironment,
                     generationArgs.sourceTheorem.name,
-                    benchmarkingParams.theoremRanker
+                    benchmarkingParams.theoremRanker,
+                    logger
                 );
                 return generationArgs.llmService.generateProof(
                     proofGenerationContext,
@@ -496,10 +499,12 @@ async function generateProofWithRetriesMeasured(
  */
 function buildProofGenerationContext(
     completionContext: CompletionContext,
-    fileTheorems: Theorem[],
+    sourceFileEnvironment: SourceFileEnvironment,
     targetTheoremName: string,
-    theoremRanker?: ContextTheoremsRanker
+    theoremRanker: ContextTheoremsRanker | undefined,
+    logger: BenchmarkingLogger
 ): ProofGenerationContext {
+    const fileTheorems = sourceFileEnvironment.fileTheorems;
     const contextTheorems = fileTheorems.filter(
         (theorem) => theorem.name !== targetTheoremName
     );
@@ -511,5 +516,14 @@ function buildProofGenerationContext(
     return {
         contextTheorems: rankedTheorems,
         completionTarget: goalToTargetLemma(completionContext.proofGoal),
+        externalPipelineContext:
+            buildExternalPipelineProofGenerationContext(
+                completionContext,
+                sourceFileEnvironment
+            ) ??
+            benchmarkingInvariantFailed(
+                logger,
+                "not enough data to build `externalPipelineContext`"
+            ),
     };
 }

@@ -55,7 +55,7 @@ export async function generateCompletion(
 ): Promise<GenerationResult> {
     const context = buildProofGenerationContext(
         completionContext,
-        sourceFileEnvironment.fileTheorems,
+        sourceFileEnvironment,
         processEnvironment.theoremRanker,
         processEnvironment.premisesNumber
     );

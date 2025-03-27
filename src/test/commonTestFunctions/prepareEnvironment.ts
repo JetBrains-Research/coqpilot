@@ -30,13 +30,15 @@ export async function withPreparedEnvironment<T>(
     projectRootPath: string[] | undefined,
     block: (preparedEnvironment: PreparedEnvironment) => Promise<T>
 ) {
-    const [filePath, rootDir] = resolveResourcesDir(
+    const [filePath, projectRootDir] = resolveResourcesDir(
         resourcePath,
         projectRootPath
     );
     const fileUri = Uri.fromPath(filePath);
 
-    const client = await createTestCoqLspClient({ workspaceRootPath: rootDir });
+    const client = await createTestCoqLspClient({
+        workspaceRootPath: projectRootDir,
+    });
     const coqProofChecker = new CoqProofChecker(client);
     try {
         const [completionContexts, sourceFileEnvironment] =
@@ -45,6 +47,7 @@ export async function withPreparedEnvironment<T>(
                     1,
                     (_hole) => true,
                     fileUri,
+                    Uri.fromPath(projectRootDir),
                     client,
                     new AbortController().signal,
                     true // to support any ranker
@@ -80,7 +83,7 @@ export async function withPreparedEnvironmentAndItsFirstContext<T>(
                 environment.completionContexts[0],
                 buildProofGenerationContext(
                     environment.completionContexts[0],
-                    environment.sourceFileEnvironment.fileTheorems
+                    environment.sourceFileEnvironment
                 )
             )
     );

@@ -103,6 +103,9 @@ export async function runTestBenchmark(
                 resolvedOptions,
                 coqLspClient,
                 fileUri,
+                resolvedOptions.workspaceRootPath === undefined
+                    ? undefined
+                    : Uri.fromPath(resolvedOptions.workspaceRootPath),
                 isNewlyCreatedFile,
                 abortController
             )
@@ -129,6 +132,7 @@ export async function runTestBenchmarkOnPreparedFile(
     options: TestBenchmarkOptions,
     coqLspClient: CoqLspClient,
     fileUri: Uri,
+    workspaceRootUri: Uri | undefined,
     isNewlyCreatedFile: boolean,
     abortController: AbortController
 ): Promise<BenchmarkReport> {
@@ -142,6 +146,7 @@ export async function runTestBenchmarkOnPreparedFile(
             shouldCompleteHole,
             coqLspClient,
             fileUri,
+            workspaceRootUri,
             isNewlyCreatedFile,
             eventLogger
         );
@@ -149,13 +154,13 @@ export async function runTestBenchmarkOnPreparedFile(
         admitTargets: completionTargets.admitTargets.filter(
             (target) =>
                 options.specificTheoremsForBenchmark?.includes(
-                    target.parentTheorem.name
+                    target.sourceTheorem.name
                 ) ?? true
         ),
         theoremTargets: completionTargets.theoremTargets.filter(
             (target) =>
                 options.specificTheoremsForBenchmark?.includes(
-                    target.parentTheorem.name
+                    target.sourceTheorem.name
                 ) ?? true
         ),
     };
@@ -233,13 +238,9 @@ function getSingleModelId(inputModelsParams: InputModelsParams): string {
     return modelIds[0];
 }
 
-export interface BenchmarkingCompletionContext extends CompletionContext {
-    parentTheorem: Theorem;
-}
-
 export interface BenchmarkingCompletionTargets {
-    admitTargets: BenchmarkingCompletionContext[];
-    theoremTargets: BenchmarkingCompletionContext[];
+    admitTargets: CompletionContext[];
+    theoremTargets: CompletionContext[];
 }
 
 export class BenchmarkResult {
@@ -268,7 +269,7 @@ export interface BenchmarkReport {
 }
 
 export async function benchmarkTargets(
-    targets: BenchmarkingCompletionContext[],
+    targets: CompletionContext[],
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
     modelId: string,
@@ -307,7 +308,7 @@ export async function benchmarkTargets(
 }
 
 async function benchmarkCompletionGeneration(
-    completionContext: BenchmarkingCompletionContext,
+    completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment,
     processEnvironment: ProcessEnvironment,
     modelId: string,
@@ -323,13 +324,13 @@ async function benchmarkCompletionGeneration(
     consoleLog(
         `Completion position: ${completionPosition.line}:${completionPosition.character}`
     );
-    consoleLog(`Theorem name: \`${completionContext.parentTheorem.name}\``);
+    consoleLog(`Theorem name: \`${completionContext.sourceTheorem.name}\``);
     consoleLog(`Proof goal: \`${goalToString(completionContext.proofGoal)}\``);
 
     const sourceFileEnvironmentWithFilteredContext: SourceFileEnvironment = {
         ...sourceFileEnvironment,
         fileTheorems: sourceFileEnvironment.fileTheorems.filter(
-            (thr) => completionContext.parentTheorem.name !== thr.name
+            (thr) => completionContext.sourceTheorem.name !== thr.name
         ),
     };
 
@@ -363,7 +364,7 @@ async function benchmarkCompletionGeneration(
         success = true;
 
         const proofStats: TheoremProofResult = {
-            theoremName: completionContext.parentTheorem.name,
+            theoremName: completionContext.sourceTheorem.name,
             filePath: checkedFilePath,
             modelId: modelId,
             generatedProof: result.data,
@@ -441,6 +442,7 @@ async function prepareForBenchmarkCompletions(
     shouldCompleteHole: (hole: ProofStep) => boolean,
     coqLspClient: CoqLspClient,
     fileUri: Uri,
+    workspaceRootUri: Uri | undefined,
     isNewlyCreatedFile: boolean,
     eventLogger: EventLogger
 ): Promise<
@@ -453,6 +455,7 @@ async function prepareForBenchmarkCompletions(
             mockDocumentVersion,
             shouldCompleteHole,
             fileUri,
+            workspaceRootUri,
             coqLspClient,
             true // TODO: pass `ranker.needsUnwrappedNotations` here
         );
@@ -482,6 +485,7 @@ async function extractCompletionTargets(
     documentVersion: number,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileUri: Uri,
+    workspaceRootUri: Uri | undefined,
     client: CoqLspClient,
     rankerNeedsUnwrappedNotations: boolean
 ): Promise<[BenchmarkingCompletionTargets, SourceFileEnvironment]> {
@@ -489,6 +493,7 @@ async function extractCompletionTargets(
     const sourceFileEnvironment = await createSourceFileEnvironment(
         documentVersion,
         fileUri,
+        workspaceRootUri,
         client,
         abortController.signal,
         rankerNeedsUnwrappedNotations
@@ -564,8 +569,8 @@ async function resolveProofStepsToCompletionContexts(
     documentVersion: number,
     fileUri: Uri,
     client: CoqLspClient
-): Promise<BenchmarkingCompletionContext[]> {
-    let completionContexts: BenchmarkingCompletionContext[] = [];
+): Promise<CompletionContext[]> {
+    let completionContexts: CompletionContext[] = [];
     for (const parentedProofStep of parentedProofSteps) {
         const goals = await client.getGoalsAtPoint(
             parentedProofStep.proofStep.range.start,
@@ -576,7 +581,7 @@ async function resolveProofStepsToCompletionContexts(
             completionContexts.push({
                 proofGoal: goals.val[0],
                 admitRange: parentedProofStep.proofStep.range,
-                parentTheorem: parentedProofStep.parentTheorem,
+                sourceTheorem: parentedProofStep.parentTheorem,
             });
         }
     }

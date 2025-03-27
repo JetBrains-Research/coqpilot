@@ -9,6 +9,7 @@ import {
     mapValues,
     toMappedObject,
 } from "../../utils/collectionUtils/mapUtils";
+import { WorkspaceRoot } from "../common/workspaceRoot";
 
 import {
     SerializedTheorem,
@@ -39,13 +40,16 @@ export class ParsedCoqFileData {
             .map((theoremData) => theoremData.sourceTheorem);
     }
 
-    constructSourceFileEnvironment(): SourceFileEnvironment {
+    constructSourceFileEnvironment(
+        workspaceRoot: WorkspaceRoot
+    ): SourceFileEnvironment {
         return {
             fileTheorems: this.getOrderedFileTheorems().filter(
                 (theorem) => !theorem.proof.is_incomplete
             ),
             documentVersion: this.documentVersion,
             fileUri: Uri.fromPath(this.filePath),
+            projectRootUri: Uri.fromPath(workspaceRoot.directoryPath),
         };
     }
 }
