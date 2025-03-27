@@ -10,6 +10,7 @@ import { LMStudioService } from "../../llm/llmServices/lmStudio/lmStudioService"
 import { ModelsParams } from "../../llm/llmServices/modelParams";
 import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
 import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
+import { RangoService } from "../../llm/llmServices/rango/rangoService";
 import { resolveParametersOrThrow } from "../../llm/llmServices/utils/resolveOrThrow";
 
 import { withDocumentOpenedByTestCoqLsp } from "../../coqLsp/coqLspBuilders";
@@ -466,6 +467,7 @@ async function prepareForBenchmarkCompletions(
         predefinedProofsService: new PredefinedProofsService(eventLogger),
         lmStudioService: new LMStudioService(eventLogger),
         deepSeekService: new DeepSeekService(eventLogger),
+        rangoService: new RangoService(eventLogger),
     };
     const processEnvironment: ProcessEnvironment = {
         coqProofChecker: coqProofChecker,
@@ -613,6 +615,9 @@ function resolveInputModelsParametersOrThrow(
         ),
         deepSeekParams: inputModelsParams.deepSeekParams.map((inputParams) =>
             resolveParametersOrThrow(llmServices.deepSeekService, inputParams)
+        ),
+        rangoParams: inputModelsParams.rangoParams.map((inputParams) =>
+            resolveParametersOrThrow(llmServices.rangoService, inputParams)
         ),
     };
 }

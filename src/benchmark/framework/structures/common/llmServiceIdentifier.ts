@@ -4,4 +4,5 @@ export enum LLMServiceIdentifier {
     GRAZIE = "Grazie",
     LMSTUDIO = "LM Studio",
     DEEPSEEK = "DeepSeek",
+    RANGO = "Rango",
 }

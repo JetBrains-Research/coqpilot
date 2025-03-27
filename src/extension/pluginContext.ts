@@ -10,6 +10,7 @@ import { GrazieService } from "../llm/llmServices/grazie/grazieService";
 import { LMStudioService } from "../llm/llmServices/lmStudio/lmStudioService";
 import { OpenAiService } from "../llm/llmServices/openai/openAiService";
 import { PredefinedProofsService } from "../llm/llmServices/predefinedProofs/predefinedProofsService";
+import { RangoService } from "../llm/llmServices/rango/rangoService";
 
 import { EventLogger, Severity } from "../logging/eventLogger";
 import { illegalState } from "../utils/throwErrors";
@@ -87,6 +88,13 @@ export class PluginContext implements Disposable {
             this.llmServicesSetup.errorsHandlingMode,
             path.join(this.llmServicesLogsDir, "deepseek-logs.txt"),
             this.llmServicesSetup.debugLogs
+        ),
+        rangoService: new RangoService(
+            this.llmServicesSetup.eventLogger,
+            this.llmServicesSetup.errorsHandlingMode,
+            path.join(this.llmServicesLogsDir, "rango-logs.txt"),
+            this.llmServicesSetup.debugLogs,
+            undefined // use the default path to Rango
         ),
     };
 

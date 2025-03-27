@@ -11,6 +11,8 @@ import { OpenAiModelParamsResolver } from "../../../../llm/llmServices/openai/op
 import { OpenAiService } from "../../../../llm/llmServices/openai/openAiService";
 import { PredefinedProofsModelParamsResolver } from "../../../../llm/llmServices/predefinedProofs/predefinedProofsModelParamsResolver";
 import { PredefinedProofsService } from "../../../../llm/llmServices/predefinedProofs/predefinedProofsService";
+import { RangoModelParamsResolver } from "../../../../llm/llmServices/rango/rangoModelParamsResolver";
+import { RangoService } from "../../../../llm/llmServices/rango/rangoService";
 import { ParamsResolverImpl } from "../../../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";
 import { UserModelParams } from "../../../../llm/userModelParams";
 
@@ -33,6 +35,8 @@ export function getShortName(identifier: LLMServiceIdentifier): string {
             return "LM Studio";
         case LLMServiceIdentifier.DEEPSEEK:
             return "DeepSeek";
+        case LLMServiceIdentifier.RANGO:
+            return "Rango";
     }
 }
 
@@ -60,6 +64,9 @@ export function selectLLMServiceBuilder(
         case LLMServiceIdentifier.DEEPSEEK:
             return (eventLogger, errorsHandlingMode) =>
                 new DeepSeekService(eventLogger, errorsHandlingMode);
+        case LLMServiceIdentifier.RANGO:
+            return (eventLogger, errorsHandlingMode) =>
+                new RangoService(eventLogger, errorsHandlingMode);
     }
 }
 
@@ -69,6 +76,7 @@ export interface LLMServicesParamsResolvers {
     grazieModelParamsResolver: GrazieModelParamsResolver;
     lmStudioModelParamsResolver: LMStudioModelParamsResolver;
     deepSeekModelParamsResolver: DeepSeekModelParamsResolver;
+    rangoModelParamsResolver: RangoModelParamsResolver;
 }
 
 export function createParamsResolvers(): LLMServicesParamsResolvers {
@@ -79,6 +87,7 @@ export function createParamsResolvers(): LLMServicesParamsResolvers {
         grazieModelParamsResolver: new GrazieModelParamsResolver(),
         lmStudioModelParamsResolver: new LMStudioModelParamsResolver(),
         deepSeekModelParamsResolver: new DeepSeekModelParamsResolver(),
+        rangoModelParamsResolver: new RangoModelParamsResolver(),
     };
 }
 
@@ -97,5 +106,7 @@ export function getParamsResolver(
             return paramsResolvers.lmStudioModelParamsResolver;
         case LLMServiceIdentifier.DEEPSEEK:
             return paramsResolvers.deepSeekModelParamsResolver;
+        case LLMServiceIdentifier.RANGO:
+            return paramsResolvers.rangoModelParamsResolver;
     }
 }

@@ -463,6 +463,27 @@
             "markdownDescription": "List of configurations for DeepSeek models. Each configuration will be fetched for completions independently in the order they are listed.",
             "order": 4
           },
+          "coqpilot.rangoModelsParameters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "modelId": {
+                  "type": "string",
+                  "markdownDescription": "Unique identifier of this model to distinguish it from others. Could be any string.",
+                  "default": "rango-test"
+                },
+                "openAiApiKey": {
+                  "type": "string",
+                  "description": "Api key to communicate with the OpenAi api. You can get one [here](https://platform.openai.com/account/api-keys).",
+                  "default": "None"
+                } 
+              }
+            },
+            "default": [],
+            "markdownDescription": "List of configurations for Rango models. Each configuration will be fetched for completions independently in the order they are listed.",
+            "order": 5
+          },
           "coqpilot.contextTheoremsRankerType": {
             "type": "string",
             "enum": [
@@ -477,7 +498,7 @@
             ],
             "description": "Context of the LLM is limited. Usually not all theorems from the file may be used in the completion request. This parameter defines the way theorems are selected for the completion.",
             "default": "distance",
-            "order": 5
+            "order": 6
           },
           "coqpilot.loggingVerbosity": {
             "type": "string",
@@ -491,13 +512,13 @@
             ],
             "description": "The verbosity of the logs.",
             "default": "info",
-            "order": 6
+            "order": 7
           },
           "coqpilot.coqLspServerPath": {
             "type": "string",
             "description": "Path to the Coq LSP server. If not specified, CoqPilot will try to find the server automatically at the default location: coq-lsp at PATH.",
             "default": "coq-lsp",
-            "order": 7
+            "order": 8
           }
         }
       }
@@ -523,8 +544,6 @@
     "multi-workspaces-benchmark": "node ./out/benchmark/multiWorkspacesSetup.js",
     "presingle-workspace-benchmark": "npm run prebenchmark",
     "single-workspace-benchmark": "npm run test-executables-unsafe -- -g=\"[SourceExecutable] Single Workspace Benchmark\"",
-    "prerango": "npm run prebenchmark",
-    "rango": "npm run test-executables-unsafe -- -g=\"[SourceExecutable] Rango\"",
     "benchmark": "npm run single-workspace-benchmark",
     "prebenchmark-dev": "rm -rf benchmarksOutput",
     "benchmark-dev": "npm run benchmark",

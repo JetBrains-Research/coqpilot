@@ -35,7 +35,8 @@ export function toSettingName(llmService: LLMService<any, any>): string {
         () => "openAi",
         () => "grazie",
         () => "lmStudio",
-        () => "deepSeek"
+        () => "deepSeek",
+        () => "rango"
     );
     return `${pluginId}.${serviceNameInSettings}ModelsParameters`;
 }

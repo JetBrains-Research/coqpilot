@@ -77,6 +77,12 @@ export class LLMSequentialIterator
                 services.lmStudioService,
                 "lm-studio"
             ),
+            ...this.createLLMServiceHooks(
+                proofGenerationContext,
+                modelsParams.rangoParams,
+                services.rangoService,
+                "rango"
+            ),
         ];
     }
 

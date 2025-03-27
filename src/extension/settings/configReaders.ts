@@ -9,12 +9,14 @@ import {
     DeepSeekUserModelParams,
     GrazieUserModelParams,
     LMStudioUserModelParams,
+    MockRangoUserModelParams,
     OpenAiUserModelParams,
     PredefinedProofsUserModelParams,
     UserModelParams,
     deepSeekUserModelParamsSchema,
     grazieUserModelParamsSchema,
     lmStudioUserModelParamsSchema,
+    mockRangoUserModelParamsSchema,
     openAiUserModelParamsSchema,
     predefinedProofsUserModelParamsSchema,
 } from "../../llm/userModelParams";
@@ -118,6 +120,14 @@ export function readAndValidateUserModelsParams(
                 jsonSchemaValidator
             )
         );
+    const rangoUserParams: MockRangoUserModelParams[] =
+        config.rangoModelsParameters.map((params: any) =>
+            validateAndParseJson(
+                params,
+                mockRangoUserModelParamsSchema,
+                jsonSchemaValidator
+            )
+        );
 
     validateIdsAreUnique([
         ...predefinedProofsUserParams,
@@ -125,11 +135,13 @@ export function readAndValidateUserModelsParams(
         ...grazieUserParams,
         ...lmStudioUserParams,
         ...deepSeekUserParams,
+        ...rangoUserParams,
     ]);
     validateApiKeysAreProvided(
         openAiUserParams,
         grazieUserParams,
-        deepSeekUserParams
+        deepSeekUserParams,
+        rangoUserParams
     );
 
     const modelsParams: ModelsParams = {
@@ -153,6 +165,10 @@ export function readAndValidateUserModelsParams(
             llmServices.deepSeekService,
             deepSeekUserParams
         ),
+        rangoParams: resolveParamsAndShowResolutionLogs(
+            llmServices.rangoService,
+            rangoUserParams
+        ),
     };
 
     validateModelsArePresent([
@@ -161,6 +177,7 @@ export function readAndValidateUserModelsParams(
         ...modelsParams.grazieParams,
         ...modelsParams.lmStudioParams,
         ...modelsParams.deepSeekParams,
+        ...modelsParams.rangoParams,
     ]);
 
     return modelsParams;
@@ -219,7 +236,8 @@ function validateIdsAreUnique(allModels: UserModelParams[]) {
 function validateApiKeysAreProvided(
     openAiUserParams: OpenAiUserModelParams[],
     grazieUserParams: GrazieUserModelParams[],
-    deepSeekUserParams: DeepSeekUserModelParams[]
+    deepSeekUserParams: DeepSeekUserModelParams[],
+    rangoUserParams: MockRangoUserModelParams[]
 ) {
     const buildApiKeyError = (
         serviceName: string,
@@ -241,6 +259,9 @@ function validateApiKeysAreProvided(
     }
     if (deepSeekUserParams.some((params) => params.apiKey === "None")) {
         throw buildApiKeyError("Deep Seek", "deepSeek");
+    }
+    if (rangoUserParams.some((params) => params.openAiApiKey === "None")) {
+        throw buildApiKeyError("Rango", "rango");
     }
 }
 

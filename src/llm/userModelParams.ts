@@ -84,6 +84,11 @@ export interface DeepSeekUserModelParams extends UserModelParams {
     apiKey: string;
 }
 
+export interface MockRangoUserModelParams extends UserModelParams {
+    openAiApiKey: string;
+    timeoutSeconds?: number;
+}
+
 export const userMultiroundProfileSchema: JSONSchemaType<UserMultiroundProfile> =
     {
         type: "object",
@@ -186,5 +191,18 @@ export const deepSeekUserModelParamsSchema: JSONSchemaType<DeepSeekUserModelPara
             ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
         },
         required: ["modelId", "modelName", "temperature", "apiKey"],
+        additionalProperties: false,
+    };
+
+export const mockRangoUserModelParamsSchema: JSONSchemaType<MockRangoUserModelParams> =
+    {
+        title: "mockRangoModelsParameters",
+        type: "object",
+        properties: {
+            openAiApiKey: { type: "string" },
+            timeoutSeconds: { type: "number", nullable: true },
+            ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
+        },
+        required: ["openAiApiKey"],
         additionalProperties: false,
     };

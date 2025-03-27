@@ -7,6 +7,7 @@ import { LMStudioService } from "./llmServices/lmStudio/lmStudioService";
 import { ModelParams } from "./llmServices/modelParams";
 import { OpenAiService } from "./llmServices/openai/openAiService";
 import { PredefinedProofsService } from "./llmServices/predefinedProofs/predefinedProofsService";
+import { RangoService } from "./llmServices/rango/rangoService";
 import { UserModelParams } from "./userModelParams";
 
 export interface LLMServices {
@@ -15,6 +16,7 @@ export interface LLMServices {
     grazieService: GrazieService;
     lmStudioService: LMStudioService;
     deepSeekService: DeepSeekService;
+    rangoService: RangoService;
 }
 
 export function disposeServices(llmServices: LLMServices) {
@@ -30,6 +32,7 @@ export function asLLMServices(
         llmServices.grazieService,
         llmServices.lmStudioService,
         llmServices.deepSeekService,
+        llmServices.rangoService,
     ];
 }
 
@@ -39,7 +42,8 @@ export function switchByLLMServiceType<T>(
     onOpenAiService: () => T,
     onGrazieService: () => T,
     onLMStudioService: () => T,
-    onDeepSeekService: () => T
+    onDeepSeekService: () => T,
+    onRangoService: () => T
 ): T {
     if (llmService instanceof PredefinedProofsService) {
         return onPredefinedProofsService();
@@ -51,6 +55,8 @@ export function switchByLLMServiceType<T>(
         return onLMStudioService();
     } else if (llmService instanceof DeepSeekService) {
         return onDeepSeekService();
+    } else if (llmService instanceof RangoService) {
+        return onRangoService();
     } else {
         illegalState(
             `switch by unknown \`LLMService\`: "${llmService.serviceName}"`
