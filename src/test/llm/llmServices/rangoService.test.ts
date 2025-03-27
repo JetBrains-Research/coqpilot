@@ -10,6 +10,9 @@ import { resolveParametersOrThrow } from "../../../llm/llmServices/utils/resolve
 import { ExternalPipelineProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { MockRangoUserModelParams } from "../../../llm/userModelParams";
 
+import { getCoqPilotMetaDirPath } from "../../../utils/fs/coqPilotMetaDir";
+import { deleteDirectory } from "../../../utils/fs/directoryUtils";
+import { illegalState } from "../../../utils/throwErrors";
 import { testIf } from "../../commonTestFunctions/conditionalTest";
 import { withLLMService } from "../../commonTestFunctions/withLLMService";
 import { testModelId } from "../llmSpecificTestUtils/constants";
@@ -131,16 +134,29 @@ suite("[LLMService] Test `RangoService`", function () {
                  * while trying to find the target (after parsing the project)
                  */
                 await expect(async () => {
-                    await rangoService.generateProof(
-                        {
-                            ...proofGenerationContext,
-                            externalPipelineContext: {
-                                ...proofGenerationContext.externalPipelineContext,
-                                sourceTheoremStartLine: 100,
-                            } as ExternalPipelineProofGenerationContext,
-                        },
-                        resolvedParams
-                    );
+                    try {
+                        await rangoService.generateProof(
+                            {
+                                ...proofGenerationContext,
+                                externalPipelineContext: {
+                                    ...proofGenerationContext.externalPipelineContext,
+                                    sourceTheoremStartLine: 100,
+                                } as ExternalPipelineProofGenerationContext,
+                            },
+                            resolvedParams
+                        );
+                    } finally {
+                        const projectRootPath =
+                            proofGenerationContext.externalPipelineContext
+                                ?.projectRootPath ??
+                            illegalState(
+                                "`proofGenerationContext` created by `testLLMServiceInSetupEnvironment` ",
+                                "is expected to contain built `externalPipelineContext`"
+                            );
+                        const failedExecutionLogsDir =
+                            getCoqPilotMetaDirPath(projectRootPath);
+                        deleteDirectory(failedExecutionLogsDir);
+                    }
                 }).toBeRejectedWith(
                     GenerationFailedError,
                     "Rango process failed (exit code 1): logs are available at"
