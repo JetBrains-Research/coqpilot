@@ -124,7 +124,7 @@
                 },
                 "apiKey": {
                   "type": "string",
-                  "description": "Api key to communicate with the OpenAi api. You can get one [here](https://platform.openai.com/account/api-keys).",
+                  "description": "Api key to communicate with the OpenAI api. You can get one [here](https://platform.openai.com/account/api-keys).",
                   "default": "None"
                 },
                 "choices": {
@@ -388,9 +388,14 @@
                 },
                 "openAiApiKey": {
                   "type": "string",
-                  "description": "Api key to communicate with the OpenAi api. You can get one [here](https://platform.openai.com/account/api-keys).",
+                  "description": "Api key for Rango to communicate with the OpenAI api (currently, Rango operates only in mock mode, calling an OpenAI model under the hood). You can get one [here](https://platform.openai.com/account/api-keys).",
                   "default": "None"
-                } 
+                },
+                "timeoutSeconds": {
+                  "type": "number",
+                  "description": "Timeout for Rango to execute proof search. Currently, Rango operates only in mock mode, calling an OpenAI model under the hood. The timeout defines the number of attempts allowed before the first successful result.",
+                  "default": 5
+                }
               }
             },
             "default": [],

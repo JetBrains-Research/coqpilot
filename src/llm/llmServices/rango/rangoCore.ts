@@ -38,7 +38,6 @@ import { RangoInput } from "./rangoInput";
  *
  * @returns A promise that resolves to the proof or `undefined` if no valid proofs were found.
  */
-// TODO (!): suport `timeoutSeconds`
 export async function runRangoProof(
     context: ExternalPipelineProofGenerationContext,
     params: MockRangoModelParams,
@@ -183,6 +182,7 @@ function spawnRangoProcess(
         stdio: ["ignore", "pipe", "pipe"],
         env: {
             ...process.env,
+            COQPILOT_RANGO_TIMEOUT_PARAMETER: params.timeoutSeconds.toString(),
             OPENAI_API_KEY: params.openAiApiKey,
             OPENAI_ORG_KEY: "",
         },
