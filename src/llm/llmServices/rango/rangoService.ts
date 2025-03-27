@@ -104,6 +104,7 @@ export class RangoService extends LLMServiceImpl<
                     );
                 // TODO (!): support async scheduler & abort controller
                 // TODO (!): support event logger
+                // TODO: search for `openai.AuthenticationError` error in logs and report as configuration error
                 const proofOrUndefined = await runRangoProof(
                     externalPipelineContext,
                     params,

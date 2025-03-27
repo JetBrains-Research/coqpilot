@@ -20,7 +20,7 @@ import {
     subscribeToTrackEvents,
 } from "../llmSpecificTestUtils/eventsTracker";
 import { expectLogs } from "../llmSpecificTestUtils/expectLogs";
-import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testAdmitCompletion";
+import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testLLMServiceInEnvironment";
 import {
     testResolveParametersFailsWithSingleCause,
     testResolveValidCompleteParameters,
