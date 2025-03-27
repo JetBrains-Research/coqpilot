@@ -56,11 +56,17 @@ export interface LMStudioModelParams extends ModelParams {
     port: number;
 }
 
+export interface MockRangoModelParams extends ModelParams {
+    openAiApiKey: string;
+    timeoutSeconds: number;
+}
+
 export interface ModelsParams {
     predefinedProofsModelParams: PredefinedProofsModelParams[];
     openAiParams: OpenAiModelParams[];
     grazieParams: GrazieModelParams[];
     lmStudioParams: LMStudioModelParams[];
+    rangoParams: MockRangoModelParams[];
 }
 
 export const multiroundProfileSchema: JSONSchemaType<MultiroundProfile> = {
@@ -170,3 +176,20 @@ export const lmStudioModelParamsSchema: JSONSchemaType<LMStudioModelParams> = {
     required: ["temperature", "port", ...modelParamsSchema.required],
     additionalProperties: false,
 };
+
+export const mockRangoModelParamsSchema: JSONSchemaType<MockRangoModelParams> =
+    {
+        title: "mockRangoModelsParameters",
+        type: "object",
+        properties: {
+            openAiApiKey: { type: "string" },
+            timeoutSeconds: { type: "number" },
+            ...(modelParamsSchema.properties as PropertiesSchema<ModelParams>),
+        },
+        required: [
+            "openAiApiKey",
+            "timeoutSeconds",
+            ...modelParamsSchema.required,
+        ],
+        additionalProperties: false,
+    };

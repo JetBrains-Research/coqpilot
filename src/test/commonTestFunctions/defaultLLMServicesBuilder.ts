@@ -8,6 +8,7 @@ import {
 import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
 import { PredefinedProofsModelParamsResolver } from "../../llm/llmServices/predefinedProofs/predefinedProofsModelParamsResolver";
 import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
+import { RangoService } from "../../llm/llmServices/rango/rangoService";
 import { resolveOrThrow } from "../../llm/llmServices/utils/resolveOrThrow";
 import { PredefinedProofsUserModelParams } from "../../llm/userModelParams";
 
@@ -16,11 +17,13 @@ export function createDefaultServices(): LLMServices {
     const openAiService = new OpenAiService();
     const grazieService = new GrazieService();
     const lmStudioService = new LMStudioService();
+    const rangoService = new RangoService();
     return {
         predefinedProofsService,
         openAiService,
         grazieService,
         lmStudioService,
+        rangoService,
     };
 }
 
@@ -32,6 +35,7 @@ export function createTrivialModelsParams(
         openAiParams: [],
         grazieParams: [],
         lmStudioParams: [],
+        rangoParams: [],
     };
 }
 

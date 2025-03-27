@@ -78,6 +78,11 @@ export interface LMStudioUserModelParams extends UserModelParams {
     port: number;
 }
 
+export interface MockRangoUserModelParams extends UserModelParams {
+    openAiApiKey: string;
+    timeoutSeconds?: number;
+}
+
 export const userMultiroundProfileSchema: JSONSchemaType<UserMultiroundProfile> =
     {
         type: "object",
@@ -166,5 +171,18 @@ export const lmStudioUserModelParamsSchema: JSONSchemaType<LMStudioUserModelPara
             ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
         },
         required: ["modelId", "temperature", "port"],
+        additionalProperties: false,
+    };
+
+export const mockRangoUserModelParamsSchema: JSONSchemaType<MockRangoUserModelParams> =
+    {
+        title: "mockRangoModelsParameters",
+        type: "object",
+        properties: {
+            openAiApiKey: { type: "string" },
+            timeoutSeconds: { type: "number", nullable: true },
+            ...(userModelParamsSchema.properties as PropertiesSchema<UserModelParams>),
+        },
+        required: ["openAiApiKey"],
         additionalProperties: false,
     };

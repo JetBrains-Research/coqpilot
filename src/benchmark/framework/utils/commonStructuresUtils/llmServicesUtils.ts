@@ -9,6 +9,8 @@ import { OpenAiModelParamsResolver } from "../../../../llm/llmServices/openai/op
 import { OpenAiService } from "../../../../llm/llmServices/openai/openAiService";
 import { PredefinedProofsModelParamsResolver } from "../../../../llm/llmServices/predefinedProofs/predefinedProofsModelParamsResolver";
 import { PredefinedProofsService } from "../../../../llm/llmServices/predefinedProofs/predefinedProofsService";
+import { RangoModelParamsResolver } from "../../../../llm/llmServices/rango/rangoModelParamsResolver";
+import { RangoService } from "../../../../llm/llmServices/rango/rangoService";
 import { ParamsResolverImpl } from "../../../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";
 import { UserModelParams } from "../../../../llm/userModelParams";
 
@@ -29,6 +31,8 @@ export function getShortName(identifier: LLMServiceIdentifier): string {
             return "Grazie";
         case LLMServiceIdentifier.LMSTUDIO:
             return "LM Studio";
+        case LLMServiceIdentifier.RANGO:
+            return "Rango";
     }
 }
 
@@ -53,6 +57,9 @@ export function selectLLMServiceBuilder(
         case LLMServiceIdentifier.LMSTUDIO:
             return (eventLogger, errorsHandlingMode) =>
                 new LMStudioService(eventLogger, errorsHandlingMode);
+        case LLMServiceIdentifier.RANGO:
+            return (eventLogger, errorsHandlingMode) =>
+                new RangoService(eventLogger, errorsHandlingMode);
     }
 }
 
@@ -61,6 +68,7 @@ export interface LLMServicesParamsResolvers {
     openAiModelParamsResolver: OpenAiModelParamsResolver;
     grazieModelParamsResolver: GrazieModelParamsResolver;
     lmStudioModelParamsResolver: LMStudioModelParamsResolver;
+    rangoModelParamsResolver: RangoModelParamsResolver;
 }
 
 export function createParamsResolvers(): LLMServicesParamsResolvers {
@@ -70,6 +78,7 @@ export function createParamsResolvers(): LLMServicesParamsResolvers {
         openAiModelParamsResolver: new OpenAiModelParamsResolver(),
         grazieModelParamsResolver: new GrazieModelParamsResolver(),
         lmStudioModelParamsResolver: new LMStudioModelParamsResolver(),
+        rangoModelParamsResolver: new RangoModelParamsResolver(),
     };
 }
 
@@ -86,5 +95,7 @@ export function getParamsResolver(
             return paramsResolvers.grazieModelParamsResolver;
         case LLMServiceIdentifier.LMSTUDIO:
             return paramsResolvers.lmStudioModelParamsResolver;
+        case LLMServiceIdentifier.RANGO:
+            return paramsResolvers.rangoModelParamsResolver;
     }
 }

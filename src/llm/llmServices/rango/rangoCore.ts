@@ -1,111 +1,69 @@
 import { ChildProcess, spawn } from "child_process";
 import * as tmp from "tmp";
 
-import {
-    AuxLemma,
-    withAuxFile,
-} from "../../llm/llmServices/utils/auxFileManager";
-
-import { ProofGoal } from "../../coqLsp/coqLspTypes";
-
+import { CodeElementRange } from "../../../utils/codeElementPositions";
 import {
     buildErrorCompleteLog,
     getErrorMessage,
-} from "../../utils/errorsUtils";
-import { getOrCreateCoqPilotMetaLogsDir } from "../../utils/fs/coqPilotMetaDir";
-import { createDirectory } from "../../utils/fs/directoryUtils";
+} from "../../../utils/errorsUtils";
+import { getOrCreateCoqPilotMetaLogsDir } from "../../../utils/fs/coqPilotMetaDir";
+import { createDirectory } from "../../../utils/fs/directoryUtils";
 import {
     addExtension,
     translateToSafeFileName,
-} from "../../utils/fs/fileNameUtils";
+} from "../../../utils/fs/fileNameUtils";
 import {
+    appendToFile,
+    copyFile,
     createFileWithParentDirectories,
     readFile,
-} from "../../utils/fs/fileUtils";
-import { appendToFile, copyFile, writeToFile } from "../../utils/fs/fileUtils";
-import { joinPaths, relativizeAbsolutePaths } from "../../utils/fs/pathUtils";
-import { JsonSpacing, toJsonString } from "../../utils/printers";
-import { PromiseExecutor, RejectType } from "../../utils/promiseUtils";
-import { throwError } from "../../utils/throwErrors";
-import { nowTimestampMillis } from "../../utils/time";
-import { parseTheoremsFromCoqFile } from "../commonTestFunctions/coqFileParser";
-import { resolveResourcesDir } from "../commonTestFunctions/pathsResolver";
+    writeToFile,
+} from "../../../utils/fs/fileUtils";
+import {
+    joinPaths,
+    relativizeAbsolutePaths,
+} from "../../../utils/fs/pathUtils";
+import { JsonSpacing, toJsonString } from "../../../utils/printers";
+import { PromiseExecutor, RejectType } from "../../../utils/promiseUtils";
+import { throwError } from "../../../utils/throwErrors";
+import { nowTimestampMillis } from "../../../utils/time";
+import { ExternalPipelineProofGenerationContext } from "../../proofGenerationContext";
+import { MockRangoModelParams } from "../modelParams";
+import { AuxLemma, withAuxFile } from "../utils/auxFileManager";
 
-import { RangoInput } from "./structs";
-
-suite("[SourceExecutable] Rango", () => {
-    const rangoDirPath = "/Users/Gleb.Solovev/coqpilot-rango-fork";
-    const target: RangoInput = {
-        theoremName: "test_admitted",
-        theoremRange: {
-            start: {
-                line: 2,
-                character: 0,
-            },
-            end: {
-                line: 2,
-                character: 69,
-            },
-        },
-        proofRange: {
-            start: {
-                line: 3,
-                character: 0,
-            },
-            end: {
-                line: 5,
-                character: 9,
-            },
-        },
-        relativeSourceFilePath: "theories/C.v",
-        projectPath: resolveResourcesDir(["coqProj"])[0],
-    };
-
-    test("Run test rango", async () => {
-        const theorems = await parseTheoremsFromCoqFile(
-            ["coqProj", "theories", "C.v"],
-            ["coqProj"]
-        );
-        const proof = await runRangoProof(
-            "rango-model",
-            rangoDirPath,
-            theorems[0].initial_goal!,
-            target,
-            "4_0"
-        );
-        console.error(`\n\nRango result:\n${proof}\n\n`);
-    }).timeout(60_000);
-});
+import { RangoInput } from "./rangoInput";
 
 /**
  * Runs Rango proof generation.
  *
  * @returns A promise that resolves to the proof or `undefined` if no valid proofs were found.
  */
+// TODO (!): suport `timeoutSeconds`
 export async function runRangoProof(
-    modelId: string,
-    rangoDirPath: string,
-    targetGoal: ProofGoal,
-    inputData: RangoInput,
-    inFileRequestUniqueIdentifier: string // TODO: build from the target admit position
+    context: ExternalPipelineProofGenerationContext,
+    params: MockRangoModelParams,
+    rangoDirPath: string
 ): Promise<string | undefined> {
+    const inFileRequestUniqueIdentifier = buildInFileRequestUniqueIdentifier(
+        context.completionTargetRange
+    );
     return await withAuxFile(
         {
             sourceFilePath: joinPaths(
-                inputData.projectPath,
-                inputData.relativeSourceFilePath
+                context.projectRootPath,
+                context.relativeSourceFilePath
             ),
-            targetGoal: targetGoal,
-            lineToCopyFileToExclusive: inputData.theoremRange.start.line,
+            targetGoal: context.completionTargetGoal,
+            lineToCopyFileToExclusive: context.sourceTheoremStartLine,
             requestUniqueIdentifier: inFileRequestUniqueIdentifier,
         },
         async (auxLemma) => {
             return new Promise((resolve, reject) => {
                 try {
                     executeRangoProofGenerationOrThrow(
-                        modelId,
+                        context,
+                        params,
                         rangoDirPath,
-                        inputData,
                         inFileRequestUniqueIdentifier,
                         auxLemma,
                         { resolve: resolve, reject: reject }
@@ -119,14 +77,14 @@ export async function runRangoProof(
 }
 
 function executeRangoProofGenerationOrThrow(
-    modelId: string,
+    context: ExternalPipelineProofGenerationContext,
+    params: MockRangoModelParams,
     rangoDirPath: string,
-    inputData: RangoInput,
     inFileRequestUniqueIdentifier: string,
     auxLemma: AuxLemma,
     promiseExecutor: PromiseExecutor<string | undefined>
 ) {
-    const projectPath = inputData.projectPath;
+    const projectPath = context.projectRootPath;
     const rangoInput: RangoInput = {
         theoremName: auxLemma.name,
         theoremRange: auxLemma.statementRange,
@@ -141,9 +99,9 @@ function executeRangoProofGenerationOrThrow(
     const rangoFiles = prepareSharedFiles(
         rangoInput,
         buildRequestIdentifierFileName(
-            modelId,
-            inputData.relativeSourceFilePath,
-            inputData.theoremName,
+            params.modelId,
+            context.relativeSourceFilePath,
+            context.sourceTheoremName,
             inFileRequestUniqueIdentifier
         )
     );
@@ -151,6 +109,7 @@ function executeRangoProofGenerationOrThrow(
     const rangoProcess = spawnRangoProcess(
         rangoDirPath,
         rangoFiles,
+        params,
         promiseExecutor.reject
     );
 
@@ -207,6 +166,7 @@ function prepareSharedFiles(
 function spawnRangoProcess(
     rangoDirPath: string,
     rangoFiles: RangoSharedFiles,
+    params: MockRangoModelParams,
     reject: RejectType
 ): ChildProcess {
     const pythonExecutable = getPythonVenvExecutablePath(rangoDirPath);
@@ -217,13 +177,13 @@ function spawnRangoProcess(
         `--output_dir=${rangoFiles.outputDirPath}`,
     ];
 
-    // TODO: support nix
+    // TODO (!): support nix
     const childProccess = spawn(pythonExecutable, pythonArgs, {
         cwd: rangoDirPath,
         stdio: ["ignore", "pipe", "pipe"],
         env: {
             ...process.env,
-            // OPENAI_API_KEY, // TODO: pass through the model params
+            OPENAI_API_KEY: params.openAiApiKey,
             OPENAI_ORG_KEY: "",
         },
     });
@@ -302,6 +262,13 @@ function onRangoProcessFinish(
     }
 }
 
+function buildInFileRequestUniqueIdentifier(
+    completionTargetRange: CodeElementRange
+): string {
+    const startPosition = completionTargetRange.start;
+    return `${startPosition.line}_${startPosition.character}`;
+}
+
 function buildRequestIdentifierFileName(
     modelId: string,
     relativeSourceFilePath: string,
@@ -317,7 +284,7 @@ function buildRequestIdentifierFileName(
 
 function getPythonVenvExecutablePath(rangoDirPath: string): string {
     if (process.platform === "win32") {
-        // joinPaths(rangoDir, "venv", "Scripts", "python.exe")
+        // to support Windows here: joinPaths(rangoDir, "venv", "Scripts", "python.exe")
         throwError(
             "Windows platform is currently unsupported for proof-generation with Rango"
         );

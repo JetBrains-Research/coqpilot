@@ -8,11 +8,13 @@ import { SingleParamResolutionResult } from "../../llm/llmServices/utils/paramsR
 import {
     GrazieUserModelParams,
     LMStudioUserModelParams,
+    MockRangoUserModelParams,
     OpenAiUserModelParams,
     PredefinedProofsUserModelParams,
     UserModelParams,
     grazieUserModelParamsSchema,
     lmStudioUserModelParamsSchema,
+    mockRangoUserModelParamsSchema,
     openAiUserModelParamsSchema,
     predefinedProofsUserModelParamsSchema,
 } from "../../llm/userModelParams";
@@ -108,14 +110,27 @@ export function readAndValidateUserModelsParams(
                 jsonSchemaValidator
             )
         );
+    const rangoUserParams: MockRangoUserModelParams[] =
+        config.rangoModelsParameters.map((params: any) =>
+            validateAndParseJson(
+                params,
+                mockRangoUserModelParamsSchema,
+                jsonSchemaValidator
+            )
+        );
 
     validateIdsAreUnique([
         ...predefinedProofsUserParams,
         ...openAiUserParams,
         ...grazieUserParams,
         ...lmStudioUserParams,
+        ...rangoUserParams,
     ]);
-    validateApiKeysAreProvided(openAiUserParams, grazieUserParams);
+    validateApiKeysAreProvided(
+        openAiUserParams,
+        grazieUserParams,
+        rangoUserParams
+    );
 
     const modelsParams: ModelsParams = {
         predefinedProofsModelParams: resolveParamsAndShowResolutionLogs(
@@ -134,6 +149,10 @@ export function readAndValidateUserModelsParams(
             llmServices.lmStudioService,
             lmStudioUserParams
         ),
+        rangoParams: resolveParamsAndShowResolutionLogs(
+            llmServices.rangoService,
+            rangoUserParams
+        ),
     };
 
     validateModelsArePresent([
@@ -141,6 +160,7 @@ export function readAndValidateUserModelsParams(
         ...modelsParams.openAiParams,
         ...modelsParams.grazieParams,
         ...modelsParams.lmStudioParams,
+        ...modelsParams.rangoParams,
     ]);
 
     return modelsParams;
@@ -198,7 +218,8 @@ function validateIdsAreUnique(allModels: UserModelParams[]) {
 
 function validateApiKeysAreProvided(
     openAiUserParams: OpenAiUserModelParams[],
-    grazieUserParams: GrazieUserModelParams[]
+    grazieUserParams: GrazieUserModelParams[],
+    rangoUserParams: MockRangoUserModelParams[]
 ) {
     const buildApiKeyError = (
         serviceName: string,
@@ -217,6 +238,9 @@ function validateApiKeysAreProvided(
     }
     if (grazieUserParams.some((params) => params.apiKey === "None")) {
         throw buildApiKeyError("Grazie", "grazie");
+    }
+    if (rangoUserParams.some((params) => params.openAiApiKey === "None")) {
+        throw buildApiKeyError("Rango", "rango");
     }
 }
 

@@ -1,6 +1,7 @@
 import {
     GrazieUserModelParams,
     LMStudioUserModelParams,
+    MockRangoUserModelParams,
     OpenAiUserModelParams,
     PredefinedProofsUserModelParams,
 } from "../../llm/userModelParams";
@@ -10,6 +11,7 @@ export interface InputModelsParams {
     openAiParams: OpenAiUserModelParams[];
     grazieParams: GrazieUserModelParams[];
     lmStudioParams: LMStudioUserModelParams[];
+    rangoParams: MockRangoUserModelParams[];
 }
 
 export const onlyAutoModelsParams: InputModelsParams = {
@@ -22,6 +24,7 @@ export const onlyAutoModelsParams: InputModelsParams = {
         },
     ],
     lmStudioParams: [],
+    rangoParams: [],
 };
 
 export const tacticianModelsParams: InputModelsParams = {
@@ -34,4 +37,5 @@ export const tacticianModelsParams: InputModelsParams = {
         },
     ],
     lmStudioParams: [],
+    rangoParams: [],
 };

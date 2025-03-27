@@ -1,6 +1,7 @@
 import {
     GrazieUserModelParams,
     LMStudioUserModelParams,
+    MockRangoUserModelParams,
     OpenAiUserModelParams,
     PredefinedProofsUserModelParams,
     UserModelParams,
@@ -22,4 +23,6 @@ export namespace InputBenchmarkingModelParams {
     export interface GrazieParams extends GrazieUserModelParams, Params {}
 
     export interface LMStudioParams extends LMStudioUserModelParams, Params {}
+
+    export interface RangoParams extends MockRangoUserModelParams, Params {}
 }
