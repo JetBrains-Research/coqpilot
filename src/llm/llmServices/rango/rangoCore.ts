@@ -1,4 +1,10 @@
-import { ChildProcess, spawn } from "child_process";
+import {
+    ChildProcess,
+    SpawnOptionsWithStdioTuple,
+    StdioNull,
+    StdioPipe,
+    spawn,
+} from "child_process";
 import * as tmp from "tmp";
 
 import { throwOnAbort } from "../../../utils/async/abortUtils";
@@ -29,6 +35,7 @@ import { JsonSpacing, toJsonString } from "../../../utils/printers";
 import { CodeElementRange } from "../../../utils/structures/codeElementPositions";
 import { nowTimestampMillis } from "../../../utils/time";
 import { ExternalPipelineProofGenerationContext } from "../../proofGenerationContext";
+import { DebugLogsWrappers } from "../llmServiceInternal";
 import { MockRangoModelParams } from "../modelParams";
 import { AuxLemma, withAuxFile } from "../utils/auxFileManager";
 
@@ -43,6 +50,7 @@ export async function runRangoProof(
     context: ExternalPipelineProofGenerationContext,
     params: MockRangoModelParams,
     rangoDirPath: string,
+    logDebug?: DebugLogsWrappers,
     abortSignal?: AbortSignal
 ): Promise<string | undefined> {
     const inFileRequestUniqueIdentifier = buildInFileRequestUniqueIdentifier(
@@ -59,6 +67,7 @@ export async function runRangoProof(
             requestUniqueIdentifier: inFileRequestUniqueIdentifier,
         },
         async (auxLemma) => {
+            logDebug?.event("Created aux lemma", auxLemma);
             return new Promise((resolve, reject) => {
                 try {
                     executeRangoProofGenerationOrThrow(
@@ -67,6 +76,7 @@ export async function runRangoProof(
                         rangoDirPath,
                         inFileRequestUniqueIdentifier,
                         auxLemma,
+                        logDebug,
                         abortSignal,
                         { resolve: resolve, reject: reject }
                     );
@@ -84,6 +94,7 @@ function executeRangoProofGenerationOrThrow(
     rangoDirPath: string,
     inFileRequestUniqueIdentifier: string,
     auxLemma: AuxLemma,
+    logDebug: DebugLogsWrappers | undefined,
     abortSignal: AbortSignal | undefined,
     promiseExecutor: PromiseExecutor<string | undefined>
 ) {
@@ -109,12 +120,14 @@ function executeRangoProofGenerationOrThrow(
             inFileRequestUniqueIdentifier
         )
     );
+    logDebug?.event("Prepared shared files", rangoFiles);
 
     throwOnAbort(abortSignal);
     const rangoProcess = spawnRangoProcess(
         rangoDirPath,
         rangoFiles,
         params,
+        logDebug,
         abortSignal,
         promiseExecutor.reject
     );
@@ -125,7 +138,8 @@ function executeRangoProofGenerationOrThrow(
                 exitCode,
                 projectPath,
                 rangoInput,
-                rangoFiles
+                rangoFiles,
+                logDebug
             );
             promiseExecutor.resolve(proof);
         } catch (err) {
@@ -173,6 +187,7 @@ function spawnRangoProcess(
     rangoDirPath: string,
     rangoFiles: RangoSharedFiles,
     params: MockRangoModelParams,
+    logDebug: DebugLogsWrappers | undefined,
     abortSignal: AbortSignal | undefined,
     reject: RejectType
 ): ChildProcess {
@@ -185,7 +200,11 @@ function spawnRangoProcess(
     ];
 
     // TODO (!): support nix
-    const childProccess = spawn(pythonExecutable, pythonArgs, {
+    const spawnOptions: SpawnOptionsWithStdioTuple<
+        StdioNull,
+        StdioPipe,
+        StdioPipe
+    > = {
         cwd: rangoDirPath,
         stdio: ["ignore", "pipe", "pipe"],
         env: {
@@ -196,7 +215,8 @@ function spawnRangoProcess(
         },
         shell: true,
         signal: abortSignal,
-    });
+    };
+    const childProccess = spawn(pythonExecutable, pythonArgs, spawnOptions);
 
     // Set up logs
     function appendRangoLogs(data: any) {
@@ -218,6 +238,12 @@ function spawnRangoProcess(
         );
     });
 
+    logDebug?.event("Spawned Rango subprocess", {
+        executable: pythonExecutable,
+        args: pythonArgs,
+        options: spawnOptions,
+    });
+
     return childProccess;
 }
 
@@ -225,8 +251,10 @@ function onRangoProcessFinish(
     exitCode: number | null,
     projectPath: string,
     rangoInput: RangoInput,
-    rangoFiles: RangoSharedFiles
+    rangoFiles: RangoSharedFiles,
+    logDebug: DebugLogsWrappers | undefined
 ): string | undefined {
+    logDebug?.event(`Subprocess finished with exit code ${exitCode}`);
     if (exitCode !== 0) {
         // TODO: support option to save logs even in case of success (?)
         const userLogsFilePath = copyFile(
