@@ -1,11 +1,12 @@
 import { ChildProcess, spawn } from "child_process";
 import * as tmp from "tmp";
 
-import { CodeElementRange } from "../../../utils/codeElementPositions";
+import { PromiseExecutor, RejectType } from "../../../utils/async/promiseUtils";
 import {
     buildErrorCompleteLog,
     getErrorMessage,
-} from "../../../utils/errorsUtils";
+} from "../../../utils/errors/errorsUtils";
+import { throwError } from "../../../utils/errors/throwErrors";
 import { getOrCreateCoqPilotMetaLogsDir } from "../../../utils/fs/coqPilotMetaDir";
 import { createDirectory } from "../../../utils/fs/directoryUtils";
 import {
@@ -24,8 +25,7 @@ import {
     relativizeAbsolutePaths,
 } from "../../../utils/fs/pathUtils";
 import { JsonSpacing, toJsonString } from "../../../utils/printers";
-import { PromiseExecutor, RejectType } from "../../../utils/promiseUtils";
-import { throwError } from "../../../utils/throwErrors";
+import { CodeElementRange } from "../../../utils/structures/codeElementPositions";
 import { nowTimestampMillis } from "../../../utils/time";
 import { ExternalPipelineProofGenerationContext } from "../../proofGenerationContext";
 import { MockRangoModelParams } from "../modelParams";

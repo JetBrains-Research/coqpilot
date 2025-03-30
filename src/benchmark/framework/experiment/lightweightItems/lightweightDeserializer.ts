@@ -1,11 +1,11 @@
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 
-import { deserializeCodeElementRange } from "../../../../utils/codeElementPositions";
+import { throwError } from "../../../../utils/errors/throwErrors";
 import { readFile } from "../../../../utils/fs/fileUtils";
 import { listJsonFiles } from "../../../../utils/fs/listFiles";
 import { joinPaths } from "../../../../utils/fs/pathUtils";
 import { getDatasetDir } from "../../../../utils/fs/rootResolvers";
-import { throwError } from "../../../../utils/throwErrors";
+import { deserializeCodeElementRange } from "../../../../utils/structures/codeElementPositions";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { readRequestedFilesCache } from "../../parseDataset/cacheHandlers/cacheReader";
 import { resolveInputBenchmarkingModelParams } from "../../parseDataset/core/itemsBuilder/buildBenchmarkingItems";

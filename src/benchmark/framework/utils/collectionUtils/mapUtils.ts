@@ -1,5 +1,5 @@
+import { illegalState } from "../../../../utils/errors/throwErrors";
 import { stringifyAnyValue } from "../../../../utils/printers";
-import { illegalState } from "../../../../utils/throwErrors";
 
 import { EqualityMap } from "./equalityMap";
 import { EqualTo } from "./equalityUtils";

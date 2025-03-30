@@ -1,4 +1,4 @@
-import { asErrorOrRethrow } from "../../../utils/errorsUtils";
+import { asErrorOrRethrow } from "../../../utils/errors/errorsUtils";
 import { toUnformattedJsonString } from "../../../utils/printers";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { LMStudioUserModelParams } from "../../userModelParams";

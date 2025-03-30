@@ -1,13 +1,13 @@
 import { ProofGoal } from "../../../../coqLsp/coqLspTypes";
 
 import { ProofStep } from "../../../../coqParser/parsedTypes";
-import { fromRange } from "../../../../utils/codeElementPositions";
+import { invariantFailed } from "../../../../utils/errors/throwErrors";
 import {
     joinPaths,
     relativizeAbsolutePaths,
 } from "../../../../utils/fs/pathUtils";
 import { toFormattedJsonString } from "../../../../utils/printers";
-import { invariantFailed } from "../../../../utils/throwErrors";
+import { fromRange } from "../../../../utils/structures/codeElementPositions";
 import {
     AsOneRecordLogsBuilder,
     BenchmarkingLogger,

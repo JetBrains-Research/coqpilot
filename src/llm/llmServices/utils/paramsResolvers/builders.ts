@@ -1,8 +1,11 @@
 import {
+    illegalState,
+    unreachable,
+} from "../../../../utils/errors/throwErrors";
+import {
     stringifyAnyValue,
     stringifyDefinedValue,
 } from "../../../../utils/printers";
-import { illegalState, unreachable } from "../../../../utils/throwErrors";
 
 import { AbstractSingleParamResolver, PropertyKey } from "./abstractResolvers";
 import { SingleParamResolutionResult } from "./abstractResolvers";

@@ -1,6 +1,6 @@
-import { throwError } from "../../../../../utils/throwErrors";
+import { AsyncScheduler } from "../../../../../utils/async/asyncScheduler";
+import { throwError } from "../../../../../utils/errors/throwErrors";
 import { checkGeneratedProofsInSubprocess } from "../../../subprocessCalls/checkGeneratedProofs/callChildProcess";
-import { AsyncScheduler } from "../../../utils/asyncUtils/asyncScheduler";
 
 import {
     AbstractProofsChecker,

@@ -1,9 +1,9 @@
 import axios from "axios";
 import { ResponseType } from "axios";
 
-import { buildErrorCompleteLog } from "../../../utils/errorsUtils";
+import { buildErrorCompleteLog } from "../../../utils/errors/errorsUtils";
+import { illegalState, throwError } from "../../../utils/errors/throwErrors";
 import { toUnformattedJsonString } from "../../../utils/printers";
-import { illegalState, throwError } from "../../../utils/throwErrors";
 import { DebugLogsWrappers } from "../llmServiceInternal";
 import { GrazieModelParams } from "../modelParams";
 

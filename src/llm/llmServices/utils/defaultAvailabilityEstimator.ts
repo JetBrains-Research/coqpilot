@@ -1,4 +1,4 @@
-import { illegalState } from "../../../utils/throwErrors";
+import { illegalState } from "../../../utils/errors/throwErrors";
 import {
     Time,
     millisToTime,

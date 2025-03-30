@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 
-import { asErrorOrUndefined } from "../../../utils/errorsUtils";
-import { illegalState } from "../../../utils/throwErrors";
+import { asErrorOrUndefined } from "../../../utils/errors/errorsUtils";
+import { illegalState } from "../../../utils/errors/throwErrors";
 import {
     ConfigurationError,
     RemoteConnectionError,

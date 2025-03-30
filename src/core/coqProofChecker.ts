@@ -5,8 +5,8 @@ import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { CoqLspTimeoutError } from "../coqLsp/coqLspTypes";
 
 import { EventLogger } from "../logging/eventLogger";
+import { Uri } from "../utils/structures/uri";
 import { millisToString } from "../utils/time";
-import { Uri } from "../utils/uri";
 
 export interface ProofCheckResult {
     proof: string;

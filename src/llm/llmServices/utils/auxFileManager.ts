@@ -4,11 +4,8 @@ import { ProofGoal } from "../../../coqLsp/coqLspTypes";
 
 import { goalToTargetLemma } from "../../../core/exposedCompletionGeneratorUtils";
 
-import {
-    CodeElementRange,
-    fromRange,
-} from "../../../utils/codeElementPositions";
-import { getErrorMessage } from "../../../utils/errorsUtils";
+import { getErrorMessage } from "../../../utils/errors/errorsUtils";
+import { throwError } from "../../../utils/errors/throwErrors";
 import {
     deleteFile,
     exists,
@@ -16,7 +13,10 @@ import {
     writeToFile,
 } from "../../../utils/fs/fileUtils";
 import { joinPaths, parsePath } from "../../../utils/fs/pathUtils";
-import { throwError } from "../../../utils/throwErrors";
+import {
+    CodeElementRange,
+    fromRange,
+} from "../../../utils/structures/codeElementPositions";
 
 export const AUX_FILE_SUBSTRING = "coqpilot_aux";
 

@@ -1,7 +1,7 @@
 import { ProofGoal } from "../coqLsp/coqLspTypes";
 
 import { Theorem } from "../coqParser/parsedTypes";
-import { CodeElementRange } from "../utils/codeElementPositions";
+import { CodeElementRange } from "../utils/structures/codeElementPositions";
 
 export interface ProofGenerationContext {
     completionTarget: string;

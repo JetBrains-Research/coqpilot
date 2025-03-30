@@ -1,8 +1,8 @@
 import { PLUGIN_VERSION } from "../../../extension/utils/pluginId";
 import { EventLogger } from "../../../logging/eventLogger";
+import { invariantFailed } from "../../../utils/errors/throwErrors";
 import { getCoqPilotInstallationsDirPath } from "../../../utils/fs/coqPilotInstallationsDir";
 import { joinPaths } from "../../../utils/fs/pathUtils";
-import { invariantFailed } from "../../../utils/throwErrors";
 import { Time, time } from "../../../utils/time";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { MockRangoUserModelParams } from "../../userModelParams";

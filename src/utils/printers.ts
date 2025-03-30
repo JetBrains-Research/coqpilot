@@ -1,4 +1,4 @@
-import { illegalState } from "./throwErrors";
+import { illegalState } from "./errors/throwErrors";
 
 export function stringifyAnyValue(
     value: any,

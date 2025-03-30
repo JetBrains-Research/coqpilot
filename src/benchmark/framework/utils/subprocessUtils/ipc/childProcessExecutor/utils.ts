@@ -3,8 +3,8 @@ import * as child from "child_process";
 import ipc from "node-ipc";
 
 import { failedAjvValidatorErrorsAsString } from "../../../../../../utils/ajvErrorsHandling";
+import { PromiseExecutor } from "../../../../../../utils/async/promiseUtils";
 import { stringifyAnyValue } from "../../../../../../utils/printers";
-import { PromiseExecutor } from "../../../../../../utils/promiseUtils";
 import { BenchmarkingLogger } from "../../../../logging/benchmarkingLogger";
 import { IPCError } from "../ipcError";
 import { IPCMessage, createStopIPCMessage } from "../ipcProtocol";

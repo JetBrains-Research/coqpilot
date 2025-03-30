@@ -3,7 +3,7 @@ import { JSONSchemaType } from "ajv";
 import {
     SerializedCodeElementRange,
     serializedCodeElementRangeSchema,
-} from "../../../../../utils/codeElementPositions";
+} from "../../../../../utils/structures/codeElementPositions";
 import { TargetType } from "../../../structures/benchmarkingCore/completionGenerationTask";
 import { TargetRequestType } from "../../../structures/common/inputTargets";
 import {

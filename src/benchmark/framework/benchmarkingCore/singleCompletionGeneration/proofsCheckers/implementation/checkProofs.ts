@@ -9,7 +9,7 @@ import {
 import {
     asErrorOrRethrowWrapped,
     getErrorMessage,
-} from "../../../../../../utils/errorsUtils";
+} from "../../../../../../utils/errors/errorsUtils";
 import { deserializeUri } from "../../../../structures/common/serializedUri";
 import { AbortError } from "../../../../utils/asyncUtils/abortUtils";
 import { LogsIPCSender } from "../../../../utils/subprocessUtils/ipc/onParentProcessCallExecutor/logsIpcSender";

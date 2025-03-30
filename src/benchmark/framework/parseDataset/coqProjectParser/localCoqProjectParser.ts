@@ -1,4 +1,4 @@
-import { asErrorOrRethrow } from "../../../../utils/errorsUtils";
+import { asErrorOrRethrow } from "../../../../utils/errors/errorsUtils";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { WorkspaceInputTargets } from "../../structures/common/inputTargets";
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";

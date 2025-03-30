@@ -3,7 +3,7 @@ import { ProofGoal } from "../../../../../coqLsp/coqLspTypes";
 import {
     CodeElementRange,
     deserializeCodeElementRange,
-} from "../../../../../utils/codeElementPositions";
+} from "../../../../../utils/structures/codeElementPositions";
 import { TargetType } from "../../../structures/benchmarkingCore/completionGenerationTask";
 import {
     ParsedCoqFileData,

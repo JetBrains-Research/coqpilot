@@ -5,8 +5,7 @@ import {
     buildAjv,
     failedAjvValidatorErrorsAsString,
 } from "../../../../utils/ajvErrorsHandling";
-import { deserializeCodeElementRange } from "../../../../utils/codeElementPositions";
-import { buildErrorCompleteLog } from "../../../../utils/errorsUtils";
+import { buildErrorCompleteLog } from "../../../../utils/errors/errorsUtils";
 import { isFile } from "../../../../utils/fs/fileTypeCheckers";
 import { exists, readFile } from "../../../../utils/fs/fileUtils";
 import {
@@ -15,6 +14,7 @@ import {
     resolveAsAbsolutePath,
 } from "../../../../utils/fs/pathUtils";
 import { getDatasetDir } from "../../../../utils/fs/rootResolvers";
+import { deserializeCodeElementRange } from "../../../../utils/structures/codeElementPositions";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
 import { deserializeTheoremData } from "../../structures/parsedCoqFile/theoremData";

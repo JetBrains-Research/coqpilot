@@ -2,7 +2,7 @@ import { withDocumentOpenedByTestCoqLsp } from "../../coqLsp/coqLspBuilders";
 
 import { parseCoqFile } from "../../coqParser/parseCoqFile";
 import { Theorem } from "../../coqParser/parsedTypes";
-import { Uri } from "../../utils/uri";
+import { Uri } from "../../utils/structures/uri";
 
 import { resolveResourcesDir } from "./pathsResolver";
 

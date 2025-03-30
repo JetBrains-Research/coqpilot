@@ -11,7 +11,7 @@ import { CoqProofChecker } from "../../core/coqProofChecker";
 import { buildProofGenerationContext } from "../../core/exposedCompletionGeneratorUtils";
 import { inspectSourceFile } from "../../core/inspectSourceFile";
 
-import { Uri } from "../../utils/uri";
+import { Uri } from "../../utils/structures/uri";
 
 import { resolveResourcesDir } from "./pathsResolver";
 

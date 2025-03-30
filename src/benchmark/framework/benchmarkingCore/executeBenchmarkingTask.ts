@@ -2,9 +2,13 @@ import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/er
 import { LLMService } from "../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
 
+import { AsyncScheduler } from "../../../utils/async/asyncScheduler";
+import {
+    IllegalStateError,
+    unreachable,
+} from "../../../utils/errors/throwErrors";
 import { provideEmptyDirectoryOrThrow } from "../../../utils/fs/directoryUtils";
 import { joinPaths } from "../../../utils/fs/pathUtils";
-import { IllegalStateError, unreachable } from "../../../utils/throwErrors";
 import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
 import { BenchmarkingItem } from "../structures/benchmarkingCore/benchmarkingItem";
 import { BenchmarkingOptions } from "../structures/benchmarkingCore/benchmarkingOptions";
@@ -13,7 +17,6 @@ import {
     BenchmarkingResult,
 } from "../structures/benchmarkingResults/benchmarkedItem";
 import { throwOnAbort } from "../utils/asyncUtils/abortUtils";
-import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
 import { selectLLMServiceBuilder } from "../utils/commonStructuresUtils/llmServicesUtils";
 import { benchmarkingInvariantFailed } from "../utils/throwErrors";
 

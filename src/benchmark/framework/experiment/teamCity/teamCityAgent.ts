@@ -1,4 +1,4 @@
-import { unsupported } from "../../../../utils/throwErrors";
+import { unsupported } from "../../../../utils/errors/throwErrors";
 import { TimeMark } from "../../benchmarkingCore/singleCompletionGeneration/measureTimeUtils";
 import { ExperimentResults } from "../../structures/benchmarkingResults/experimentResults";
 import { ExperimentRunOptions } from "../../structures/inputParameters/experimentRunOptions";

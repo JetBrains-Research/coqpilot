@@ -1,6 +1,8 @@
 import { modelName } from "../../../llm/llmServices/utils/modelParamsAccessors";
 
-import { buildErrorCompleteLog } from "../../../utils/errorsUtils";
+import { AsyncScheduler } from "../../../utils/async/asyncScheduler";
+import { buildErrorCompleteLog } from "../../../utils/errors/errorsUtils";
+import { IllegalStateError } from "../../../utils/errors/throwErrors";
 import {
     createDirectory,
     provideEmptyDirectoryOrThrow,
@@ -13,7 +15,6 @@ import {
 } from "../../../utils/fs/pathUtils";
 import { getDatasetDir } from "../../../utils/fs/rootResolvers";
 import { stringifyAnyValue } from "../../../utils/printers";
-import { IllegalStateError } from "../../../utils/throwErrors";
 import { millisToString } from "../../../utils/time";
 import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
 import { BenchmarkingItem } from "../structures/benchmarkingCore/benchmarkingItem";
@@ -26,7 +27,6 @@ import {
     abortAsCriticalError,
     abortAsFailFast,
 } from "../utils/asyncUtils/abortUtils";
-import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
 import { groupBy, mapValues } from "../utils/collectionUtils/mapUtils";
 import { getShortName } from "../utils/commonStructuresUtils/llmServicesUtils";
 import { prependWithZeros } from "../utils/serializationUtils";

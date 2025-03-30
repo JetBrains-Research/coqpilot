@@ -3,7 +3,7 @@ import { ProgressLocation, window } from "vscode";
 
 import { RangoService } from "../../llm/llmServices/rango/rangoService";
 
-import { buildErrorCompleteLog } from "../../utils/errorsUtils";
+import { buildErrorCompleteLog } from "../../utils/errors/errorsUtils";
 import {
     getCoqPilotInstallationsDirPath,
     getOrCreateCoqPilotInstallationsDir,

@@ -1,7 +1,7 @@
 import { appendFileSync, writeFileSync } from "fs";
 import { OutputChannel, ViewColumn } from "vscode";
 
-import { unsupported } from "../utils/throwErrors";
+import { unsupported } from "../utils/errors/throwErrors";
 
 export class OutputChannelEmulator implements OutputChannel {
     name: string;

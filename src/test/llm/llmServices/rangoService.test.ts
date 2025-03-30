@@ -10,9 +10,9 @@ import { resolveParametersOrThrow } from "../../../llm/llmServices/utils/resolve
 import { ExternalPipelineProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { MockRangoUserModelParams } from "../../../llm/userModelParams";
 
+import { illegalState } from "../../../utils/errors/throwErrors";
 import { getCoqPilotMetaDirPath } from "../../../utils/fs/coqPilotMetaDir";
 import { deleteDirectory } from "../../../utils/fs/directoryUtils";
-import { illegalState } from "../../../utils/throwErrors";
 import { testIf } from "../../commonTestFunctions/conditionalTest";
 import { withLLMService } from "../../commonTestFunctions/withLLMService";
 import { testModelId } from "../llmSpecificTestUtils/constants";

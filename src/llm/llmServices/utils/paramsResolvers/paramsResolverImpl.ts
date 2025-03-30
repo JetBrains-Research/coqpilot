@@ -5,7 +5,7 @@ import {
     buildAjv,
     failedAjvValidatorErrorsAsString,
 } from "../../../../utils/ajvErrorsHandling";
-import { throwError } from "../../../../utils/throwErrors";
+import { throwError } from "../../../../utils/errors/throwErrors";
 
 import {
     ParamsResolutionResult,

@@ -1,4 +1,4 @@
-import { illegalState } from "../../../../utils/throwErrors";
+import { illegalState } from "../../../../utils/errors/throwErrors";
 import { millisToString } from "../../../../utils/time";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { heavyCheckMark, heavyCrossMark } from "../../logging/specialSymbols";

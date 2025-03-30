@@ -2,9 +2,9 @@ import { JSONSchemaType } from "ajv";
 import * as child from "child_process";
 import ipc from "node-ipc";
 
-import { getErrorMessage } from "../../../../../../utils/errorsUtils";
+import { PromiseExecutor } from "../../../../../../utils/async/promiseUtils";
+import { getErrorMessage } from "../../../../../../utils/errors/errorsUtils";
 import { stringifyAnyValue } from "../../../../../../utils/printers";
-import { PromiseExecutor } from "../../../../../../utils/promiseUtils";
 import {
     millisToString,
     time,

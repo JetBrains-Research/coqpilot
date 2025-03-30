@@ -1,4 +1,4 @@
-import { InvariantFailedError } from "../../../utils/throwErrors";
+import { InvariantFailedError } from "../../../utils/errors/throwErrors";
 import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
 
 export function throwBenchmarkingError(...errorMessage: string[]): never {

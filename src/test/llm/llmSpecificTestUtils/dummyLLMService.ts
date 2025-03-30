@@ -18,7 +18,7 @@ import { BasicModelParamsResolver } from "../../../llm/llmServices/utils/paramsR
 import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { UserModelParams } from "../../../llm/userModelParams";
 
-import { unsupported } from "../../../utils/throwErrors";
+import { unsupported } from "../../../utils/errors/throwErrors";
 
 /**
  * Mock implementation that always throws on any proof-generation call.

@@ -1,4 +1,5 @@
-import { stringifyAnyValue } from "./printers";
+import { stringifyAnyValue } from "../printers";
+
 import { IllegalStateError } from "./throwErrors";
 
 export function asErrorOrRethrow(e: any): Error {
