@@ -1,19 +1,14 @@
-import * as fs from "fs";
-
 import { AUX_FILE_SUBSTRING } from "../../llm/llmServices/utils/auxFileManager";
 
 import { getExtensionName } from "./pathUtils";
-
-export function getPathStats(inputPath: string): fs.Stats {
-    return fs.lstatSync(inputPath);
-}
+import { getThisPathStats } from "./stats";
 
 export function isDirectory(inputPath: string): boolean {
-    return getPathStats(inputPath).isDirectory();
+    return getThisPathStats(inputPath).isDirectory();
 }
 
 export function isFile(inputPath: string): boolean {
-    return getPathStats(inputPath).isFile();
+    return getThisPathStats(inputPath).isFile();
 }
 
 export function isCoqSourceFile(inputPath: string): boolean {

@@ -17,14 +17,14 @@ import { illegalState } from "../utils/throwErrors";
 import { Uri } from "../utils/uri";
 
 import VSCodeLogWriter from "./ui/vscodeLogWriter";
-import { pluginId } from "./utils/pluginId";
+import { PLUGIN_ID } from "./utils/pluginId";
 import { getOpenedWorkspaceAsProjectRoot } from "./utils/projectRootGetter";
 
 export class PluginContext implements Disposable {
     readonly eventLogger: EventLogger = new EventLogger();
     readonly logWriter: VSCodeLogWriter = new VSCodeLogWriter(
         this.eventLogger,
-        this.parseLoggingVerbosity(workspace.getConfiguration(pluginId))
+        this.parseLoggingVerbosity(workspace.getConfiguration(PLUGIN_ID))
     );
     readonly logOutputChannel = window.createOutputChannel(
         "CoqPilot: coq-lsp events"

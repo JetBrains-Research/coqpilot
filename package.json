@@ -46,6 +46,14 @@
       {
         "command": "coqpilot.perform_completion_in_selection",
         "title": "CoqPilot: Try to prove holes (admitted goals) in the selection"
+      },
+      {
+        "command": "coqpilot.install_rango",
+        "title": "CoqPilot: Install and build Rango project"
+      },
+      {
+        "command": "coqpilot.uninstall_rango",
+        "title": "CoqPilot: Uninstall Rango project"
       }
     ],
     "keybindings": [

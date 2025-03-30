@@ -1,6 +1,6 @@
-import { homedir } from "os";
-
+import { PLUGIN_VERSION } from "../../../extension/utils/pluginId";
 import { EventLogger } from "../../../logging/eventLogger";
+import { getCoqPilotInstallationsDirPath } from "../../../utils/fs/coqPilotInstallationsDir";
 import { joinPaths } from "../../../utils/fs/pathUtils";
 import { invariantFailed } from "../../../utils/throwErrors";
 import { Time, time } from "../../../utils/time";
@@ -43,18 +43,17 @@ export class RangoService extends LLMServiceImpl<
     );
     protected readonly modelParamsResolver = new RangoModelParamsResolver();
 
-    // TODO (!): installation & deinstallation
-    static readonly DEFAULT_RANGO_REPO_DIR_PATH = joinPaths(
-        homedir(),
-        "coqpilot-rango-fork"
-    );
+    static readonly DEFAULT_RANGO_REPO_DIR_NAME = `coqpilot-rango-v${PLUGIN_VERSION}`;
 
     constructor(
         eventLogger: EventLogger | undefined = undefined,
         errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.RETHROW_ERRORS,
         generationLogsFilePath: string | undefined = undefined,
         debugLogs: boolean = false,
-        readonly rangoDirPath: string = RangoService.DEFAULT_RANGO_REPO_DIR_PATH
+        readonly rangoDirPath: string = joinPaths(
+            getCoqPilotInstallationsDirPath(),
+            RangoService.DEFAULT_RANGO_REPO_DIR_NAME
+        )
     ) {
         super(
             eventLogger,

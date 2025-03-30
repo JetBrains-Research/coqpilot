@@ -33,7 +33,7 @@ import {
     EditorMessages,
     showMessageToUserWithSettingsHint,
 } from "../ui/messages/editorMessages";
-import { pluginId } from "../utils/pluginId";
+import { PLUGIN_ID } from "../utils/pluginId";
 
 import {
     SettingsValidationError,
@@ -41,7 +41,7 @@ import {
 } from "./settingsValidationError";
 
 export function parseCoqLspServerPath(): string {
-    const workspaceConfig = workspace.getConfiguration(pluginId);
+    const workspaceConfig = workspace.getConfiguration(PLUGIN_ID);
     const coqLspServerPath = workspaceConfig.get("coqLspServerPath");
     if (typeof coqLspServerPath !== "string") {
         throwError("`coqLspServerPath` is not properly configured");
@@ -50,7 +50,7 @@ export function parseCoqLspServerPath(): string {
 }
 
 export function buildTheoremsRankerFromConfig(): ContextTheoremsRanker {
-    const workspaceConfig = workspace.getConfiguration(pluginId);
+    const workspaceConfig = workspace.getConfiguration(PLUGIN_ID);
     const rankerType = workspaceConfig.contextTheoremsRankerType;
     switch (rankerType) {
         case "distance":
@@ -246,7 +246,7 @@ function validateApiKeysAreProvided(
         return new SettingsValidationError(
             `at least one of the ${serviceName} models has \`apiKey: "None"\``,
             EditorMessages.apiKeyIsNotSet(serviceName),
-            `${pluginId}.${serviceSettingsName}ModelsParameters`,
+            `${PLUGIN_ID}.${serviceSettingsName}ModelsParameters`,
             "info"
         );
     };
@@ -270,7 +270,7 @@ function validateModelsArePresent<T>(allModels: T[]) {
         throw new SettingsValidationError(
             "no models specified for proof generation",
             EditorMessages.noValidModelsAreChosen,
-            pluginId,
+            PLUGIN_ID,
             "warning"
         );
     }
