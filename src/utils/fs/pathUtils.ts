@@ -21,7 +21,11 @@ export function parsePath(inputPath: string): path.ParsedPath {
 }
 
 export function getLastName(inputPath: string): string {
-    return path.parse(inputPath).name;
+    return parsePath(inputPath).base;
+}
+
+export function getLastNameWithoutExtension(inputPath: string): string {
+    return parsePath(inputPath).name;
 }
 
 export function getExtensionName(inputPath: string): string {

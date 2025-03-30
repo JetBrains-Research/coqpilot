@@ -86,16 +86,16 @@ export class CoqPilot {
             "install_rango",
             executeRangoInstallationCommand.bind(
                 null,
-                vscodeContext,
-                pluginContext
+                vscodeContext.extensionPath,
+                pluginContext.llmServices.rangoService.rangoDirPath
             )
         );
         this.registerCommand(
             "uninstall_rango",
             executeRangoUninstallationCommand.bind(
                 null,
-                vscodeContext,
-                pluginContext
+                vscodeContext.extensionPath,
+                pluginContext.llmServices.rangoService.rangoDirPath
             )
         );
 
@@ -334,9 +334,10 @@ export class CoqPilot {
 
         const processEnvironment: ProcessEnvironment = {
             coqProofChecker: coqProofChecker,
-            modelsParams: readAndValidateUserModelsParams(
+            modelsParams: await readAndValidateUserModelsParams(
                 workspace.getConfiguration(PLUGIN_ID),
-                this.pluginContext.llmServices
+                this.pluginContext.llmServices,
+                this.vscodeContext
             ),
             services: this.pluginContext.llmServices,
             theoremRanker: contextTheoremsRanker,

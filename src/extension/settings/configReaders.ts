@@ -1,9 +1,15 @@
 import Ajv, { DefinedError, JSONSchemaType } from "ajv";
-import { WorkspaceConfiguration, workspace } from "vscode";
+import {
+    ExtensionContext as VSCodeContext,
+    WorkspaceConfiguration,
+    commands,
+    workspace,
+} from "vscode";
 
 import { LLMServices } from "../../llm/llmServices";
 import { LLMService } from "../../llm/llmServices/llmService";
 import { ModelParams, ModelsParams } from "../../llm/llmServices/modelParams";
+import { RangoService } from "../../llm/llmServices/rango/rangoService";
 import { SingleParamResolutionResult } from "../../llm/llmServices/utils/paramsResolvers/abstractResolvers";
 import {
     GrazieUserModelParams,
@@ -25,10 +31,17 @@ import { RandomContextTheoremsRanker } from "../../core/contextTheoremRanker/act
 import { ContextTheoremsRanker } from "../../core/contextTheoremRanker/contextTheoremsRanker";
 
 import { AjvMode, buildAjv } from "../../utils/ajvErrorsHandling";
+import { exists } from "../../utils/fs/fileUtils";
 import { stringifyAnyValue, stringifyDefinedValue } from "../../utils/printers";
 import { illegalState, throwError } from "../../utils/throwErrors";
 import {
+    detectOutdatedRangoInstallations,
+    executeRangoUninstallationCommand,
+} from "../installers/rangoInstaller";
+import {
     EditorMessages,
+    showMessageToUser,
+    showMessageToUserWithActions,
     showMessageToUserWithSettingsHint,
 } from "../ui/messages/editorMessages";
 import { PLUGIN_ID } from "../utils/pluginId";
@@ -66,10 +79,11 @@ export function buildTheoremsRankerFromConfig(): ContextTheoremsRanker {
     }
 }
 
-export function readAndValidateUserModelsParams(
+export async function readAndValidateUserModelsParams(
     config: WorkspaceConfiguration,
-    llmServices: LLMServices
-): ModelsParams {
+    llmServices: LLMServices,
+    vscodeContext: VSCodeContext
+): Promise<ModelsParams> {
     /*
      * Although the messages might become too verbose because of reporting all errors at once
      * (unfortuantely, vscode notifications do not currently support formatting);
@@ -118,6 +132,11 @@ export function readAndValidateUserModelsParams(
                 jsonSchemaValidator
             )
         );
+    await checkRangoIsAvailableOnRequest(
+        rangoUserParams,
+        llmServices.rangoService,
+        vscodeContext.extensionPath
+    );
 
     validateIdsAreUnique([
         ...predefinedProofsUserParams,
@@ -199,6 +218,88 @@ function validateAndParseJson<T>(
         );
     }
     return instance;
+}
+
+// TODO: skip Rango models if the user declines Rango installation, don't throw
+async function checkRangoIsAvailableOnRequest(
+    rangoUserParams: MockRangoUserModelParams[],
+    rangoService: RangoService,
+    coqPilotPath: string
+) {
+    if (rangoUserParams.length === 0) {
+        return;
+    }
+    await detectAndSuggestRemovingOutdatedRangoInstallations(
+        rangoService,
+        coqPilotPath
+    );
+    if (exists(rangoService.rangoDirPath)) {
+        return;
+    }
+
+    await showMessageToUserWithActions(
+        EditorMessages.rangoModelsRequireRangoInstalledSuggestion,
+        "info",
+        {
+            choiceItem: "Install",
+            callback: async () =>
+                commands.executeCommand(`${PLUGIN_ID}.install_rango`),
+        },
+        {
+            choiceItem: "Cancel",
+            callback: () => {
+                throw new SettingsValidationError(
+                    "Rango models requested, but Rango is not installed and the user declined its installation",
+                    EditorMessages.rangoProjectIsMissingForModelsRequested,
+                    `${PLUGIN_ID}.rangoModelsParameters`,
+                    "error",
+                    {
+                        choiceItem: "Install Rango now",
+                        callback: async () =>
+                            commands.executeCommand(
+                                `${PLUGIN_ID}.install_rango`
+                            ),
+                    }
+                );
+            },
+        }
+    );
+}
+
+async function detectAndSuggestRemovingOutdatedRangoInstallations(
+    rangoService: RangoService,
+    coqPilotPath: string
+) {
+    const outdatedInstallations = detectOutdatedRangoInstallations(
+        rangoService.rangoDirPath
+    );
+    if (outdatedInstallations.length === 0) {
+        return;
+    }
+    await showMessageToUserWithActions(
+        EditorMessages.outdatedRangoInstallationsDetected(
+            outdatedInstallations
+        ),
+        "warning",
+        {
+            choiceItem: "Free up space",
+            callback: async () => {
+                for (const rangoPath of outdatedInstallations) {
+                    await executeRangoUninstallationCommand(
+                        coqPilotPath,
+                        rangoPath
+                    );
+                }
+                showMessageToUser(
+                    "Outdated Rango projects have been successfully uninstalled."
+                );
+            },
+        },
+        {
+            choiceItem: "Skip for now",
+            callback: async () => {},
+        }
+    );
 }
 
 function validateIdsAreUnique(allModels: UserModelParams[]) {

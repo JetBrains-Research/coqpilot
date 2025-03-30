@@ -1,20 +1,21 @@
 import { exec } from "child_process";
-import {
-    ProgressLocation,
-    ExtensionContext as VSCodeContext,
-    window,
-} from "vscode";
+import { ProgressLocation, window } from "vscode";
 
-import { getOrCreateCoqPilotInstallationsDir } from "../../utils/fs/coqPilotInstallationsDir";
-import { makeFileExecutable } from "../../utils/fs/fileUtils";
-import { joinPaths } from "../../utils/fs/pathUtils";
-import { PluginContext } from "../pluginContext";
+import { RangoService } from "../../llm/llmServices/rango/rangoService";
+
+import {
+    getCoqPilotInstallationsDirPath,
+    getOrCreateCoqPilotInstallationsDir,
+} from "../../utils/fs/coqPilotInstallationsDir";
+import { exists, makeFileExecutable } from "../../utils/fs/fileUtils";
+import { listFiles } from "../../utils/fs/listFiles";
+import { getLastName, joinPaths } from "../../utils/fs/pathUtils";
 import { showMessageToUser } from "../ui/messages/editorMessages";
 
 namespace RangoScripts {
-    export const RANGO_SCRIPTS_DIR = "scripts/rango";
-    export const RANGO_INSTALLATION_SCRIPT_NAME = "setup-rango.sh";
-    export const RANGO_UNINSTALLATION_SCRIPT_NAME = "uninstall-rango.sh";
+    export const SCRIPTS_DIR = "scripts/rango";
+    export const INSTALLATION_SCRIPT_NAME = "setup-rango.sh";
+    export const UNINSTALLATION_SCRIPT_NAME = "uninstall-rango.sh";
 
     export function getScriptPath(
         action: "install" | "uninstall",
@@ -22,9 +23,9 @@ namespace RangoScripts {
     ): string {
         const scriptName =
             action === "install"
-                ? RANGO_INSTALLATION_SCRIPT_NAME
-                : RANGO_UNINSTALLATION_SCRIPT_NAME;
-        return joinPaths(coqPilotPath, RANGO_SCRIPTS_DIR, scriptName);
+                ? INSTALLATION_SCRIPT_NAME
+                : UNINSTALLATION_SCRIPT_NAME;
+        return joinPaths(coqPilotPath, SCRIPTS_DIR, scriptName);
     }
 
     export function buildScriptExecutionCommand(
@@ -49,22 +50,12 @@ namespace RangoScripts {
 }
 
 export async function executeRangoInstallationCommand(
-    vscodeContext: VSCodeContext,
-    pluginContext: PluginContext
+    coqPilotPath: string,
+    rangoInstallationPath: string
 ) {
-    window.withProgress(
-        {
-            location: ProgressLocation.Notification,
-            title: "Installing the Rango project. Building dependencies may take a while...",
-            cancellable: false,
-        },
-        async () => {
-            getOrCreateCoqPilotInstallationsDir();
-            return await installRango(
-                vscodeContext.extensionPath,
-                pluginContext.llmServices.rangoService.rangoDirPath
-            );
-        }
+    return executeWithProgress(
+        "Installing the Rango project. Building dependencies may take a while...",
+        async () => await installRango(coqPilotPath, rangoInstallationPath)
     );
 }
 
@@ -73,15 +64,17 @@ async function installRango(
     rangoInstallationPath: string
 ) {
     return new Promise<void>((resolve, reject) => {
+        getOrCreateCoqPilotInstallationsDir();
         const command = RangoScripts.prepareScriptExecutable(
             "install",
             coqPilotPath,
             rangoInstallationPath
         );
-        exec(command, (error, stdout, stderr) => {
+        // TODO: save stdout and stderr into logs (coqpilot meta dir)
+        exec(command, (error, _, stderr) => {
             if (error) {
                 showMessageToUser(
-                    `Rango installation failed: ${stderr || error.message} /// ${stdout}`,
+                    `Rango installation failed: ${stderr || error.message}`,
                     "error"
                 );
                 reject(error);
@@ -96,20 +89,12 @@ async function installRango(
 }
 
 export async function executeRangoUninstallationCommand(
-    vscodeContext: VSCodeContext,
-    pluginContext: PluginContext
+    coqPilotPath: string,
+    rangoPath: string
 ) {
-    window.withProgress(
-        {
-            location: ProgressLocation.Notification,
-            title: "Uninstalling Rango project...",
-            cancellable: false,
-        },
-        async () =>
-            await uninstallRango(
-                vscodeContext.extensionPath,
-                pluginContext.llmServices.rangoService.rangoDirPath
-            )
+    return executeWithProgress(
+        "Uninstalling Rango project...",
+        async () => await uninstallRango(coqPilotPath, rangoPath)
     );
 }
 
@@ -134,5 +119,35 @@ async function uninstallRango(coqPilotPath: string, rangoPath: string) {
                 resolve();
             }
         });
+    });
+}
+
+async function executeWithProgress(title: string, block: () => Promise<void>) {
+    window.withProgress(
+        {
+            location: ProgressLocation.Notification,
+            title: title,
+            cancellable: false,
+        },
+        async () => {
+            return await block();
+        }
+    );
+}
+
+export function detectOutdatedRangoInstallations(
+    relevantRangoDirPath: string
+): string[] {
+    const installationDirPath = getCoqPilotInstallationsDirPath();
+    if (!exists(installationDirPath)) {
+        return [];
+    }
+    return listFiles(installationDirPath, 0, (filePath) => {
+        const fileName = getLastName(filePath);
+        return (
+            true &&
+            fileName.startsWith(RangoService.DEFAULT_RANGO_DIR_PREFIX) &&
+            filePath !== relevantRangoDirPath
+        );
     });
 }
