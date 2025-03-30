@@ -1,5 +1,8 @@
+import { availableParallelism } from "os";
+
 import { PLUGIN_VERSION } from "../../../extension/utils/pluginId";
 import { EventLogger } from "../../../logging/eventLogger";
+import { AsyncScheduler } from "../../../utils/async/asyncScheduler";
 import { invariantFailed } from "../../../utils/errors/throwErrors";
 import { getCoqPilotInstallationsDirPath } from "../../../utils/fs/coqPilotInstallationsDir";
 import { joinPaths } from "../../../utils/fs/pathUtils";
@@ -46,6 +49,8 @@ export class RangoService extends LLMServiceImpl<
     static readonly DEFAULT_RANGO_DIR_PREFIX = "coqpilot-rango";
     static readonly DEFAULT_RANGO_REPO_DIR_NAME = `${this.DEFAULT_RANGO_DIR_PREFIX}-v${PLUGIN_VERSION}`;
 
+    private static readonly MAX_HEURISTIC_SUBPROCESSES_PARALLELISM = 3;
+
     constructor(
         eventLogger: EventLogger | undefined = undefined,
         errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.RETHROW_ERRORS,
@@ -54,6 +59,10 @@ export class RangoService extends LLMServiceImpl<
         readonly rangoDirPath: string = joinPaths(
             getCoqPilotInstallationsDirPath(),
             RangoService.DEFAULT_RANGO_REPO_DIR_NAME
+        ),
+        readonly maxSubprocessesSpawnedInParallel: number = Math.min(
+            availableParallelism(),
+            RangoService.MAX_HEURISTIC_SUBPROCESSES_PARALLELISM
         )
     ) {
         super(
@@ -63,6 +72,12 @@ export class RangoService extends LLMServiceImpl<
             debugLogs
         );
     }
+
+    private readonly subprocessesScheduler = new AsyncScheduler(
+        this.maxSubprocessesSpawnedInParallel,
+        true,
+        `Rango Subprocesses Scheduler <max ${this.maxSubprocessesSpawnedInParallel} sub-s>`
+    );
 
     async generateProof(
         proofGenerationContext: ProofGenerationContext,
@@ -94,34 +109,41 @@ export class RangoService extends LLMServiceImpl<
                     );
                 }
             },
-            async (_request) => {
-                const externalPipelineContext =
-                    proofGenerationContext.externalPipelineContext ??
-                    invariantFailed(
-                        "Rango",
-                        "`proofGenerationContext` has no built `externalPipelineContext`, ",
-                        "required to execute Rango proof generation"
-                    );
-                // TODO (!): support async scheduler & abort controller
-                // TODO (!): support event logger
-                // TODO: search for `openai.AuthenticationError` error in logs and report as configuration error
-                const proofOrUndefined = await runRangoProof(
-                    externalPipelineContext,
-                    params,
-                    this.rangoDirPath
-                );
-                const rawProofsContent: string[] =
-                    proofOrUndefined === undefined ? [] : [proofOrUndefined];
-                return {
-                    items: rawProofsContent.map((content) => {
+            async (_request) =>
+                this.subprocessesScheduler.scheduleTask(
+                    async () => {
+                        const externalPipelineContext =
+                            proofGenerationContext.externalPipelineContext ??
+                            invariantFailed(
+                                "Rango",
+                                "`proofGenerationContext` has no built `externalPipelineContext`, ",
+                                "required to execute Rango proof generation"
+                            );
+                        // TODO (!): support abort controller
+                        // TODO (!): support event logger
+                        // TODO: search for `openai.AuthenticationError` error in logs and report as configuration error
+                        const proofOrUndefined = await runRangoProof(
+                            externalPipelineContext,
+                            params,
+                            this.rangoDirPath
+                        );
+                        const rawProofsContent: string[] =
+                            proofOrUndefined === undefined
+                                ? []
+                                : [proofOrUndefined];
                         return {
-                            content: content,
-                            tokensSpent: zeroTokens(),
+                            items: rawProofsContent.map((content) => {
+                                return {
+                                    content: content,
+                                    tokensSpent: zeroTokens(),
+                                };
+                            }),
+                            tokensSpentInTotal: zeroTokens(), // TODO: extract tokens info from Rango
                         };
-                    }),
-                    tokensSpentInTotal: zeroTokens(), // TODO: extract tokens info from Rango
-                };
-            },
+                    },
+                    (schedulerMessage: string) =>
+                        this.internal.logDebug.event(schedulerMessage)
+                ),
             (rawProof) =>
                 this.internal.constructGeneratedProof(
                     rawProof,
