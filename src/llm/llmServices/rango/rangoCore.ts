@@ -168,7 +168,7 @@ function spawnRangoProcess(
     params: MockRangoModelParams,
     reject: RejectType
 ): ChildProcess {
-    const pythonExecutable = getPythonVenvExecutablePath(rangoDirPath);
+    const pythonExecutable = getPythonExecutableCommand(rangoDirPath);
     const pythonArgs = [
         getRangoAdapterScriptPath(rangoDirPath),
         `--rango_dir=${rangoDirPath}`,
@@ -186,6 +186,7 @@ function spawnRangoProcess(
             OPENAI_API_KEY: params.openAiApiKey,
             OPENAI_ORG_KEY: "",
         },
+        shell: true,
     });
 
     // Set up logs
@@ -280,6 +281,19 @@ function buildRequestIdentifierFileName(
         `${theoremName}-${inFileRequestUniqueIdentifier}-${nowTimestampMillis()}`,
     ].join("");
     return addExtension(translateToSafeFileName(unsafeFileName), ".txt");
+}
+
+const RANGO_PYTHON_VERSION = "3.11";
+
+function getPythonExecutableCommand(rangoDirPath: string): string {
+    const pyenvShellSetupCommands = [
+        'export PYENV_ROOT="$HOME/.pyenv"',
+        'export PATH="$PYENV_ROOT/bin:$PATH"',
+        'eval "$(pyenv init -)"',
+    ].join(" && ");
+    const pyenvEnterShellCommand = `pyenv shell ${RANGO_PYTHON_VERSION}`;
+    const pythonVenvExecutable = getPythonVenvExecutablePath(rangoDirPath);
+    return `${pyenvShellSetupCommands} && ${pyenvEnterShellCommand} && ${pythonVenvExecutable}`;
 }
 
 function getPythonVenvExecutablePath(rangoDirPath: string): string {
