@@ -3,6 +3,7 @@ import { ProgressLocation, window } from "vscode";
 
 import { RangoService } from "../../llm/llmServices/rango/rangoService";
 
+import { buildErrorCompleteLog } from "../../utils/errorsUtils";
 import {
     getCoqPilotInstallationsDirPath,
     getOrCreateCoqPilotInstallationsDir,
@@ -12,10 +13,21 @@ import { listFiles } from "../../utils/fs/listFiles";
 import { getLastName, joinPaths } from "../../utils/fs/pathUtils";
 import { showMessageToUser } from "../ui/messages/editorMessages";
 
+import { InstallationFailedError } from "./installationFailedError";
+import {
+    InstallationPrerequisite,
+    checkPrerequisitesOrThrow,
+} from "./prerequisitesChecker";
+
 namespace RangoScripts {
     export const SCRIPTS_DIR = "scripts/rango";
     export const INSTALLATION_SCRIPT_NAME = "setup-rango.sh";
     export const UNINSTALLATION_SCRIPT_NAME = "uninstall-rango.sh";
+
+    export const prerequisites: InstallationPrerequisite[] = [
+        { name: "git", checkCommand: "git --version" },
+        { name: "pyenv", checkCommand: "pyenv --version" },
+    ];
 
     export function getScriptPath(
         action: "install" | "uninstall",
@@ -53,9 +65,10 @@ export async function executeRangoInstallationCommand(
     coqPilotPath: string,
     rangoInstallationPath: string
 ) {
+    await checkPrerequisitesOrThrow("Rango", RangoScripts.prerequisites);
     return executeWithProgress(
         "Installing the Rango project. Building dependencies may take a while...",
-        async () => await installRango(coqPilotPath, rangoInstallationPath)
+        async () => installRango(coqPilotPath, rangoInstallationPath)
     );
 }
 
@@ -73,11 +86,12 @@ async function installRango(
         // TODO: save stdout and stderr into logs (coqpilot meta dir)
         exec(command, (error, _, stderr) => {
             if (error) {
-                showMessageToUser(
-                    `Rango installation failed: ${stderr || error.message}`,
-                    "error"
+                reject(
+                    new InstallationFailedError(
+                        `Rango installation failed: ${buildErrorCompleteLog(error)}.\nStderr:\n${stderr}`,
+                        `Rango installation failed: ${stderr || error.message}`
+                    )
                 );
-                reject(error);
             } else {
                 showMessageToUser(
                     `Rango project has been succesfully installed at ${rangoInstallationPath}`
@@ -92,9 +106,8 @@ export async function executeRangoUninstallationCommand(
     coqPilotPath: string,
     rangoPath: string
 ) {
-    return executeWithProgress(
-        "Uninstalling Rango project...",
-        async () => await uninstallRango(coqPilotPath, rangoPath)
+    return executeWithProgress("Uninstalling Rango project...", async () =>
+        uninstallRango(coqPilotPath, rangoPath)
     );
 }
 
@@ -123,15 +136,13 @@ async function uninstallRango(coqPilotPath: string, rangoPath: string) {
 }
 
 async function executeWithProgress(title: string, block: () => Promise<void>) {
-    window.withProgress(
+    return window.withProgress(
         {
             location: ProgressLocation.Notification,
             title: title,
             cancellable: false,
         },
-        async () => {
-            return await block();
-        }
+        async () => block()
     );
 }
 

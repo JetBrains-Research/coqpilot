@@ -26,6 +26,7 @@ import { ProofStep } from "../coqParser/parsedTypes";
 import { buildErrorCompleteLog } from "../utils/errorsUtils";
 import { Uri } from "../utils/uri";
 
+import { InstallationFailedError } from "./installers/installationFailedError";
 import {
     executeRangoInstallationCommand,
     executeRangoUninstallationCommand,
@@ -82,6 +83,7 @@ export class CoqPilot {
             this.sessionState.toggleCurrentSession.bind(this.sessionState)
         );
 
+        // TODO: wrap into try-catch to show missing prerequisites error gracefully
         this.registerCommand(
             "install_rango",
             executeRangoInstallationCommand.bind(
@@ -162,7 +164,10 @@ export class CoqPilot {
                 this.sessionState.abortController.signal
             );
         } catch (e) {
-            if (e instanceof SettingsValidationError) {
+            if (
+                e instanceof SettingsValidationError ||
+                e instanceof InstallationFailedError
+            ) {
                 e.showAsMessageToUser();
             } else if (e instanceof CoqLspStartupError) {
                 showMessageToUserWithSettingsHint(
