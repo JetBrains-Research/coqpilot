@@ -1,6 +1,7 @@
 import { ChildProcess, spawn } from "child_process";
 import * as tmp from "tmp";
 
+import { throwOnAbort } from "../../../utils/async/abortUtils";
 import { PromiseExecutor, RejectType } from "../../../utils/async/promiseUtils";
 import {
     buildErrorCompleteLog,
@@ -41,7 +42,8 @@ import { RangoInput } from "./rangoInput";
 export async function runRangoProof(
     context: ExternalPipelineProofGenerationContext,
     params: MockRangoModelParams,
-    rangoDirPath: string
+    rangoDirPath: string,
+    abortSignal?: AbortSignal
 ): Promise<string | undefined> {
     const inFileRequestUniqueIdentifier = buildInFileRequestUniqueIdentifier(
         context.completionTargetRange
@@ -65,6 +67,7 @@ export async function runRangoProof(
                         rangoDirPath,
                         inFileRequestUniqueIdentifier,
                         auxLemma,
+                        abortSignal,
                         { resolve: resolve, reject: reject }
                     );
                 } catch (err) {
@@ -81,6 +84,7 @@ function executeRangoProofGenerationOrThrow(
     rangoDirPath: string,
     inFileRequestUniqueIdentifier: string,
     auxLemma: AuxLemma,
+    abortSignal: AbortSignal | undefined,
     promiseExecutor: PromiseExecutor<string | undefined>
 ) {
     const projectPath = context.projectRootPath;
@@ -95,6 +99,7 @@ function executeRangoProofGenerationOrThrow(
         projectPath: projectPath,
     };
 
+    throwOnAbort(abortSignal);
     const rangoFiles = prepareSharedFiles(
         rangoInput,
         buildRequestIdentifierFileName(
@@ -105,10 +110,12 @@ function executeRangoProofGenerationOrThrow(
         )
     );
 
+    throwOnAbort(abortSignal);
     const rangoProcess = spawnRangoProcess(
         rangoDirPath,
         rangoFiles,
         params,
+        abortSignal,
         promiseExecutor.reject
     );
 
@@ -166,6 +173,7 @@ function spawnRangoProcess(
     rangoDirPath: string,
     rangoFiles: RangoSharedFiles,
     params: MockRangoModelParams,
+    abortSignal: AbortSignal | undefined,
     reject: RejectType
 ): ChildProcess {
     const pythonExecutable = getPythonExecutableCommand(rangoDirPath);
@@ -187,6 +195,7 @@ function spawnRangoProcess(
             OPENAI_ORG_KEY: "",
         },
         shell: true,
+        signal: abortSignal,
     });
 
     // Set up logs

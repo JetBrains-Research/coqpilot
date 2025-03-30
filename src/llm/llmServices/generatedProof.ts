@@ -182,12 +182,14 @@ export abstract class GeneratedProofImpl<
         diagnostic: string,
         choices: number = this.modelParams.multiroundProfile
             .defaultProofFixChoices,
-        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined
+        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined,
+        abortSignal?: AbortSignal
     ): Promise<GeneratedProofType[]> {
         return this.llmServiceInternal.generateFromChatWrapped(
             this.modelParams,
             choices,
             metadataHolder,
+            abortSignal,
             () => {
                 if (!this.canBeFixed()) {
                     throw new ConfigurationError(

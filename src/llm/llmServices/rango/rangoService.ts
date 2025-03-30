@@ -83,7 +83,8 @@ export class RangoService extends LLMServiceImpl<
         proofGenerationContext: ProofGenerationContext,
         params: MockRangoModelParams,
         choices: number = params.defaultChoices,
-        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined
+        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined,
+        abortSignal?: AbortSignal
     ): Promise<RangoGeneratedProof[]> {
         return this.internal.logGenerationAndHandleErrors(
             ProofGenerationType.NO_CHAT,
@@ -125,7 +126,8 @@ export class RangoService extends LLMServiceImpl<
                         const proofOrUndefined = await runRangoProof(
                             externalPipelineContext,
                             params,
-                            this.rangoDirPath
+                            this.rangoDirPath,
+                            abortSignal
                         );
                         const rawProofsContent: string[] =
                             proofOrUndefined === undefined

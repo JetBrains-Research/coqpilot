@@ -20,9 +20,8 @@ import {
     VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
 
-import { throwOnAbort } from "../core/abortUtils";
-
 import { EventLogger } from "../logging/eventLogger";
+import { throwOnAbort } from "../utils/async/abortUtils";
 import { getErrorMessage } from "../utils/errors/errorsUtils";
 import { Uri } from "../utils/structures/uri";
 import { millisToString } from "../utils/time";

@@ -22,7 +22,8 @@ export class LLMSequentialIterator
         proofGenerationContext: ProofGenerationContext,
         modelsParams: ModelsParams,
         services: LLMServices,
-        private eventLogger?: EventLogger
+        private readonly eventLogger?: EventLogger,
+        private readonly abortSignal?: AbortSignal
     ) {
         this.hooksIndex = 0;
         this.insideBatchIndex = 0;
@@ -91,7 +92,10 @@ export class LLMSequentialIterator
                 );
                 return llmService.generateProof(
                     proofGenerationContext,
-                    modelParams
+                    modelParams,
+                    undefined,
+                    undefined,
+                    this.abortSignal
                 );
             });
         }
