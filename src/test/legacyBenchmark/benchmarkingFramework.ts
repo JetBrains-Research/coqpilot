@@ -33,9 +33,9 @@ import { createSourceFileEnvironment } from "../../core/inspectSourceFile";
 
 import { ProofStep, Theorem } from "../../coqParser/parsedTypes";
 import { EventLogger } from "../../logging/eventLogger";
+import { illegalState, throwError } from "../../utils/errors/throwErrors";
 import { stringifyAnyValue } from "../../utils/printers";
-import { illegalState, throwError } from "../../utils/throwErrors";
-import { Uri } from "../../utils/uri";
+import { Uri } from "../../utils/structures/uri";
 
 import { AdditionalFileImport } from "./additionalImports";
 import { InputModelsParams } from "./inputModelsParams";

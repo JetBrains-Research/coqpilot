@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 
-import { illegalState } from "../throwErrors";
+import { illegalState } from "../errors/throwErrors";
 
 import { isCoqSourceFile, isDirectory, isJsonFile } from "./fileTypeCheckers";
 

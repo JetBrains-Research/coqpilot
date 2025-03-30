@@ -33,9 +33,9 @@ import { RandomContextTheoremsRanker } from "../../core/contextTheoremRanker/act
 import { ContextTheoremsRanker } from "../../core/contextTheoremRanker/contextTheoremsRanker";
 
 import { AjvMode, buildAjv } from "../../utils/ajvErrorsHandling";
+import { illegalState, throwError } from "../../utils/errors/throwErrors";
 import { exists } from "../../utils/fs/fileUtils";
 import { stringifyAnyValue, stringifyDefinedValue } from "../../utils/printers";
-import { illegalState, throwError } from "../../utils/throwErrors";
 import {
     detectOutdatedRangoInstallations,
     executeRangoUninstallationCommand,

@@ -3,7 +3,7 @@ import { GeneratedProof } from "../../../../llm/llmServices/generatedProof";
 
 import { ProofCheckResult } from "../../../../core/coqProofChecker";
 
-import { invariantFailed } from "../../../../utils/throwErrors";
+import { invariantFailed } from "../../../../utils/errors/throwErrors";
 import { LengthMetrics } from "../common/measureStructures";
 
 import { BenchmarkingResult } from "./benchmarkedItem";

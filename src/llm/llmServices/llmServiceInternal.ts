@@ -1,5 +1,5 @@
 import { EventLogger, Severity } from "../../logging/eventLogger";
-import { asErrorOrRethrow } from "../../utils/errorsUtils";
+import { asErrorOrRethrow } from "../../utils/errors/errorsUtils";
 import {
     ConfigurationError,
     GenerationFailedError,

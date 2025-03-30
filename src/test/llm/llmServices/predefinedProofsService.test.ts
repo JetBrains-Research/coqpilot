@@ -10,8 +10,8 @@ import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { PredefinedProofsUserModelParams } from "../../../llm/userModelParams";
 
 import { EventLogger } from "../../../logging/eventLogger";
-import { delay } from "../../../utils/delay";
-import { throwError } from "../../../utils/throwErrors";
+import { delay } from "../../../utils/async/delay";
+import { throwError } from "../../../utils/errors/throwErrors";
 import { timeZero } from "../../../utils/time";
 import { withLLMService } from "../../commonTestFunctions/withLLMService";
 import { testModelId } from "../llmSpecificTestUtils/constants";

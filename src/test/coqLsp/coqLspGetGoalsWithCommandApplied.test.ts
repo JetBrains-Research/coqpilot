@@ -4,7 +4,7 @@ import { Result } from "ts-results";
 import { withDocumentOpenedByTestCoqLsp } from "../../coqLsp/coqLspBuilders";
 import { ProofGoal } from "../../coqLsp/coqLspTypes";
 
-import { Uri } from "../../utils/uri";
+import { Uri } from "../../utils/structures/uri";
 import { resolveResourcesDir } from "../commonTestFunctions/pathsResolver";
 
 suite("Request goals with `command/pretac` argument", () => {

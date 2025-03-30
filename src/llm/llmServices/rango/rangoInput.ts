@@ -1,4 +1,4 @@
-import { SerializedCodeElementRange } from "../../../utils/codeElementPositions";
+import { SerializedCodeElementRange } from "../../../utils/structures/codeElementPositions";
 
 export interface RangoInput {
     theoremName: string;

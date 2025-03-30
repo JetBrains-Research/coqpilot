@@ -1,8 +1,8 @@
-import { buildErrorCompleteLog } from "../../utils/errorsUtils";
+import { buildErrorCompleteLog } from "../../utils/errors/errorsUtils";
+import { illegalState } from "../../utils/errors/throwErrors";
 import { readFile } from "../../utils/fs/fileUtils";
 import { joinPaths } from "../../utils/fs/pathUtils";
 import { getRootDir } from "../../utils/fs/rootResolvers";
-import { illegalState } from "../../utils/throwErrors";
 
 export const PLUGIN_ID = "coqpilot";
 export const PLUGIN_NAME = "CoqPilot";

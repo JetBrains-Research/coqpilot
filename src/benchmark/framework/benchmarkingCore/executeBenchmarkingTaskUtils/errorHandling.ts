@@ -4,8 +4,11 @@ import { ModelParams } from "../../../../llm/llmServices/modelParams";
 import {
     buildErrorCompleteLog,
     wrapAsIllegalState,
-} from "../../../../utils/errorsUtils";
-import { IllegalStateError, unreachable } from "../../../../utils/throwErrors";
+} from "../../../../utils/errors/errorsUtils";
+import {
+    IllegalStateError,
+    unreachable,
+} from "../../../../utils/errors/throwErrors";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { BenchmarkingModelParams } from "../../structures/benchmarkingCore/benchmarkingModelParams";
 import { BenchmarkingOptions } from "../../structures/benchmarkingCore/benchmarkingOptions";

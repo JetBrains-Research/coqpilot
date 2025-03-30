@@ -1,4 +1,4 @@
-import { invariantFailed } from "../../utils/throwErrors";
+import { invariantFailed } from "../../utils/errors/throwErrors";
 import { ConfigurationError } from "../llmServiceErrors";
 import { ProofGenerationContext } from "../proofGenerationContext";
 import { UserModelParams } from "../userModelParams";

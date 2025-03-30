@@ -1,7 +1,7 @@
 import {
     illegalState,
     invariantFailed,
-} from "../../../../../utils/throwErrors";
+} from "../../../../../utils/errors/throwErrors";
 import { CompletionGenerationTask } from "../../../structures/benchmarkingCore/completionGenerationTask";
 import {
     AllTheoremsTarget,

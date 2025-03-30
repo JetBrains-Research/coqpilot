@@ -1,4 +1,4 @@
-import { illegalState } from "../utils/throwErrors";
+import { illegalState } from "../utils/errors/throwErrors";
 
 import { DeepSeekService } from "./llmServices/deepSeek/deepSeekService";
 import { GrazieService } from "./llmServices/grazie/grazieService";

@@ -23,8 +23,8 @@ import { CoqProofChecker } from "../core/coqProofChecker";
 import { inspectSourceFile } from "../core/inspectSourceFile";
 
 import { ProofStep } from "../coqParser/parsedTypes";
-import { buildErrorCompleteLog } from "../utils/errorsUtils";
-import { Uri } from "../utils/uri";
+import { buildErrorCompleteLog } from "../utils/errors/errorsUtils";
+import { Uri } from "../utils/structures/uri";
 
 import { InstallationFailedError } from "./installers/installationFailedError";
 import {

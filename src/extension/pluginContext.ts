@@ -13,8 +13,8 @@ import { PredefinedProofsService } from "../llm/llmServices/predefinedProofs/pre
 import { RangoService } from "../llm/llmServices/rango/rangoService";
 
 import { EventLogger, Severity } from "../logging/eventLogger";
-import { illegalState } from "../utils/throwErrors";
-import { Uri } from "../utils/uri";
+import { illegalState } from "../utils/errors/throwErrors";
+import { Uri } from "../utils/structures/uri";
 
 import VSCodeLogWriter from "./ui/vscodeLogWriter";
 import { PLUGIN_ID } from "./utils/pluginId";

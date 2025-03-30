@@ -1,12 +1,12 @@
 import { JSONSchemaType } from "ajv";
 import ipc from "node-ipc";
 
+import { PromiseExecutor } from "../../../../../../utils/async/promiseUtils";
 import {
     asErrorOrUndefined,
     getErrorMessage,
-} from "../../../../../../utils/errorsUtils";
+} from "../../../../../../utils/errors/errorsUtils";
 import { stringifyAnyValue } from "../../../../../../utils/printers";
-import { PromiseExecutor } from "../../../../../../utils/promiseUtils";
 import {
     ArgsIPCMessage,
     IPCMessage,

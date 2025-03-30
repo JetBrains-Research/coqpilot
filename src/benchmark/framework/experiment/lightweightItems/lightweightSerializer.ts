@@ -1,6 +1,6 @@
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 
-import { serializeCodeElementRange } from "../../../../utils/codeElementPositions";
+import { throwError } from "../../../../utils/errors/throwErrors";
 import {
     clearDirectory,
     createDirectory,
@@ -14,7 +14,7 @@ import {
 } from "../../../../utils/fs/pathUtils";
 import { getDatasetDir } from "../../../../utils/fs/rootResolvers";
 import { toFormattedJsonString } from "../../../../utils/printers";
-import { throwError } from "../../../../utils/throwErrors";
+import { serializeCodeElementRange } from "../../../../utils/structures/codeElementPositions";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { BenchmarkingItem } from "../../structures/benchmarkingCore/benchmarkingItem";
 import { BenchmarkingModelParams } from "../../structures/benchmarkingCore/benchmarkingModelParams";

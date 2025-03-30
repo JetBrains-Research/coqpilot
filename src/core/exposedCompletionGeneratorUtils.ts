@@ -7,8 +7,8 @@ import {
 
 import { Hyp, PpString, ProofGoal } from "../coqLsp/coqLspTypes";
 
-import { fromRange } from "../utils/codeElementPositions";
 import { relativizeAbsolutePaths } from "../utils/fs/pathUtils";
+import { fromRange } from "../utils/structures/codeElementPositions";
 
 import {
     CompletionContext,

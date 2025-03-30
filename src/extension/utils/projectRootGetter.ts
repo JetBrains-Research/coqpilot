@@ -1,6 +1,6 @@
 import { workspace } from "vscode";
 
-import { Uri } from "../../utils/uri";
+import { Uri } from "../../utils/structures/uri";
 import {
     EditorMessages,
     showMessageToUser,

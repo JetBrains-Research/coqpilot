@@ -4,7 +4,10 @@ import { GeneratedProof } from "../llm/llmServices/generatedProof";
 import { CoqLspTimeoutError } from "../coqLsp/coqLspTypes";
 
 import { EventLogger } from "../logging/eventLogger";
-import { asErrorOrRethrow, buildErrorCompleteLog } from "../utils/errorsUtils";
+import {
+    asErrorOrRethrow,
+    buildErrorCompleteLog,
+} from "../utils/errors/errorsUtils";
 import { stringifyAnyValue } from "../utils/printers";
 
 import { CompletionAbortError, throwOnAbort } from "./abortUtils";

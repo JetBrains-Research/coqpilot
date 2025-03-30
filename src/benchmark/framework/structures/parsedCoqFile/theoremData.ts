@@ -12,7 +12,7 @@ import {
     deserializeCodeElementRange,
     serializeCodeElementRange,
     serializedCodeElementRangeSchema,
-} from "../../../../utils/codeElementPositions";
+} from "../../../../utils/structures/codeElementPositions";
 import {
     SerializedGoal,
     deserializeGoal,

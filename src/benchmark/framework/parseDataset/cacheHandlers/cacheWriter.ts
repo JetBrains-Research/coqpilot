@@ -1,4 +1,4 @@
-import { serializeCodeElementRange } from "../../../../utils/codeElementPositions";
+import { invariantFailed } from "../../../../utils/errors/throwErrors";
 import { clearDirectory } from "../../../../utils/fs/directoryUtils";
 import { writeToFile } from "../../../../utils/fs/fileUtils";
 import {
@@ -10,7 +10,7 @@ import {
     stringifyAnyValue,
     toFormattedJsonString,
 } from "../../../../utils/printers";
-import { invariantFailed } from "../../../../utils/throwErrors";
+import { serializeCodeElementRange } from "../../../../utils/structures/codeElementPositions";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
 import { serializeTheoremData } from "../../structures/parsedCoqFile/theoremData";

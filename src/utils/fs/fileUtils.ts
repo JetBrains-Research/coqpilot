@@ -1,8 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
 
-import { wrapNonError } from "../errorsUtils";
-import { illegalState } from "../throwErrors";
+import { wrapNonError } from "../errors/errorsUtils";
+import { illegalState } from "../errors/throwErrors";
 
 import { createDirectory } from "./directoryUtils";
 import { isDirectory } from "./fileTypeCheckers";

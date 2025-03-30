@@ -1,4 +1,4 @@
-import { getErrorMessage } from "../../../../utils/errorsUtils";
+import { getErrorMessage } from "../../../../utils/errors/errorsUtils";
 import { buildSafeJsonFileName } from "../../../../utils/fs/fileNameUtils";
 import { writeToFile } from "../../../../utils/fs/fileUtils";
 import { toFormattedJsonString } from "../../../../utils/printers";

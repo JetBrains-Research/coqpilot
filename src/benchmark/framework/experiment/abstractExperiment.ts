@@ -1,3 +1,4 @@
+import { AsyncScheduler } from "../../../utils/async/asyncScheduler";
 import { joinPaths, resolveAsAbsolutePath } from "../../../utils/fs/pathUtils";
 import { getRootDir } from "../../../utils/fs/rootResolvers";
 import { benchmark } from "../benchmarkingCore/benchmark";
@@ -19,7 +20,6 @@ import {
 import { DatasetCacheUsageMode } from "../structures/inputParameters/datasetCaching";
 import { ExperimentRunOptions } from "../structures/inputParameters/experimentRunOptions";
 import { InputBenchmarkingBundle } from "../structures/inputParameters/inputBenchmarkingBundle";
-import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
 import { throwBenchmarkingError } from "../utils/throwErrors";
 
 import {

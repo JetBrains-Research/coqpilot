@@ -1,7 +1,7 @@
 import { ProofGoal } from "../../../../coqLsp/coqLspTypes";
 
-import { CodeElementRange } from "../../../../utils/codeElementPositions";
 import { joinPaths } from "../../../../utils/fs/pathUtils";
+import { CodeElementRange } from "../../../../utils/structures/codeElementPositions";
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
 import { TargetRequestType } from "../../structures/common/inputTargets";
 import { ParsedCoqFileData } from "../../structures/parsedCoqFile/parsedCoqFileData";

@@ -4,7 +4,7 @@ import { ModelParams } from "../../../../llm/llmServices/modelParams";
 
 import { RankerType } from "../../../../core/contextTheoremRanker/contextTheoremsRanker";
 
-import { SerializedCodeElementRange } from "../../../../utils/codeElementPositions";
+import { SerializedCodeElementRange } from "../../../../utils/structures/codeElementPositions";
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
 import {
     CompletionGenerationTime,

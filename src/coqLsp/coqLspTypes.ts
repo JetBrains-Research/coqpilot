@@ -6,7 +6,7 @@ import {
     VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
 
-import { buildErrorCompleteLog } from "../utils/errorsUtils";
+import { buildErrorCompleteLog } from "../utils/errors/errorsUtils";
 
 export type ProofGoal = Goal<PpString>;
 

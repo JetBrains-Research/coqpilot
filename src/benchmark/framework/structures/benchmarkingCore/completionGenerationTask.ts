@@ -5,7 +5,7 @@ import {
     SourceFileEnvironment,
 } from "../../../../core/completionGenerationContext";
 
-import { CodeElementRange } from "../../../../utils/codeElementPositions";
+import { CodeElementRange } from "../../../../utils/structures/codeElementPositions";
 import { EqualTo, HashUtils } from "../../utils/collectionUtils/equalityUtils";
 import { goalToProveAsString } from "../../utils/coqUtils/goalParser";
 import { WorkspaceRoot } from "../common/workspaceRoot";

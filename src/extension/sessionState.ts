@@ -7,7 +7,7 @@ import { CoqLspConnector } from "../coqLsp/coqLspConnector";
 import { CompletionAbortError } from "../core/abortUtils";
 
 import { EventLogger, Severity } from "../logging/eventLogger";
-import { illegalState } from "../utils/throwErrors";
+import { illegalState } from "../utils/errors/throwErrors";
 
 import { parseCoqLspServerPath } from "./settings/configReaders";
 import {

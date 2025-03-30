@@ -1,5 +1,4 @@
-import { ResolveType } from "../../../../utils/promiseUtils";
-import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
+import { ResolveType } from "./promiseUtils";
 
 export class AsyncScheduler {
     private readonly schedulerLogsIdentifier: string;
@@ -17,20 +16,27 @@ export class AsyncScheduler {
 
     scheduleTask<T>(
         executeTask: () => Promise<T>,
-        logger: BenchmarkingLogger
+        onDebugLog: (message: string) => void
     ): Promise<T> {
+        const debugLog: (...messages: string[]) => void = (
+            ...messages: string[]
+        ) => {
+            if (this.enableSchedulingDebugLogs) {
+                onDebugLog(
+                    `${this.schedulerLogsIdentifier}${messages.join("\n")}`
+                );
+            }
+        };
         let startLock: Promise<void> = new Promise((resolve, reject) => {
             if (this.runningTasksNumber < this.maxRunningTasksNumber) {
-                this.debugLog(
-                    logger,
+                debugLog(
                     "Starting task execution immediately",
                     `Increased number of running tasks: ${this.runningTasksNumber} --> ${this.runningTasksNumber + 1}`
                 );
                 this.runningTasksNumber += 1;
                 reject(); // reject is called here to differentiate immediate and pending lock resolutions
             } else {
-                this.debugLog(
-                    logger,
+                debugLog(
                     `Maximum number of running tasks (${this.maxRunningTasksNumber}) is already reached (${this.runningTasksNumber}), waiting for some of them to finish`
                 );
                 this.pendingTasksLocks.push(resolve);
@@ -40,15 +46,13 @@ export class AsyncScheduler {
             executeTask().finally(() => {
                 const resolveNextTaskLock = this.pendingTasksLocks.shift();
                 if (resolveNextTaskLock === undefined) {
-                    this.debugLog(
-                        logger,
+                    debugLog(
                         "Task execution finished, there are no pending tasks",
                         `Decreased number of running tasks: ${this.runningTasksNumber} --> ${this.runningTasksNumber - 1}`
                     );
                     this.runningTasksNumber -= 1;
                 } else {
-                    this.debugLog(
-                        logger,
+                    debugLog(
                         "Task execution finished, starting the next pending one"
                     );
                     resolveNextTaskLock();
@@ -56,24 +60,10 @@ export class AsyncScheduler {
             });
         return startLock
             .then(() =>
-                this.debugLog(
-                    logger,
+                debugLog(
                     "Finished waiting in the pending-tasks queue, starting the execution"
                 )
             )
             .then(executeTaskAndScheduleNext, executeTaskAndScheduleNext);
-    }
-
-    private debugLog(logger: BenchmarkingLogger, ...messages: string[]) {
-        const enabledLogger = this.ifEnabled(logger)?.asOneRecord();
-        for (const message of messages) {
-            enabledLogger?.debug(`${this.schedulerLogsIdentifier}${message}`);
-        }
-    }
-
-    private ifEnabled(
-        logger: BenchmarkingLogger
-    ): BenchmarkingLogger | undefined {
-        return this.enableSchedulingDebugLogs ? logger : undefined;
     }
 }

@@ -1,7 +1,7 @@
+import { AsyncScheduler } from "../../../../utils/async/asyncScheduler";
 import { ProofsCheckArgs } from "../../benchmarkingCore/singleCompletionGeneration/proofsCheckers/abstractProofsChecker";
 import { CheckProofsInternalSignature } from "../../benchmarkingCore/singleCompletionGeneration/proofsCheckers/implementation/internalSignature";
 import { ProofsCheckerUtils } from "../../benchmarkingCore/singleCompletionGeneration/proofsCheckers/implementation/proofsCheckerUtils";
-import { AsyncScheduler } from "../../utils/asyncUtils/asyncScheduler";
 import {
     ChildProcessOptions,
     executeProcessAsFunction,
@@ -41,6 +41,6 @@ export async function checkGeneratedProofsInSubprocess(
                 inputArgs.logger,
                 enableProcessLifetimeDebugLogs
             ),
-        inputArgs.logger
+        (message) => inputArgs.logger.debug(message)
     );
 }

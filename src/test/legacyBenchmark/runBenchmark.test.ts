@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { colorize } from "../../utils/colorLogging";
-import { illegalState } from "../../utils/throwErrors";
+import { illegalState } from "../../utils/errors/throwErrors";
 
 import { AdditionalFileImport } from "./additionalImports";
 import { BenchmarkResult, runTestBenchmark } from "./benchmarkingFramework";

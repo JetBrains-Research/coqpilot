@@ -1,4 +1,7 @@
-import { illegalState, invariantFailed } from "../../../utils/throwErrors";
+import {
+    illegalState,
+    invariantFailed,
+} from "../../../utils/errors/throwErrors";
 import { LLMServiceError } from "../../llmServiceErrors";
 
 import { AnalyzedChatHistory } from "./chat";

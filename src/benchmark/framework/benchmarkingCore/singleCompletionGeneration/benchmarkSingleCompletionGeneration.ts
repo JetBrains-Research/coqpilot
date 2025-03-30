@@ -22,14 +22,15 @@ import {
 } from "../../../../core/exposedCompletionGeneratorUtils";
 import { goalToTargetLemma } from "../../../../core/exposedCompletionGeneratorUtils";
 
-import { delay } from "../../../../utils/delay";
-import { buildErrorCompleteLog } from "../../../../utils/errorsUtils";
-import { stringifyAnyValue } from "../../../../utils/printers";
+import { AsyncScheduler } from "../../../../utils/async/asyncScheduler";
+import { delay } from "../../../../utils/async/delay";
+import { buildErrorCompleteLog } from "../../../../utils/errors/errorsUtils";
 import {
     illegalState,
     invariantFailed,
     rethrowAsIllegalState,
-} from "../../../../utils/throwErrors";
+} from "../../../../utils/errors/throwErrors";
+import { stringifyAnyValue } from "../../../../utils/printers";
 import {
     millisToString,
     timeToMillis,
@@ -54,7 +55,6 @@ import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { ParsedCoqFileData } from "../../structures/parsedCoqFile/parsedCoqFileData";
 import { TheoremData } from "../../structures/parsedCoqFile/theoremData";
 import { AbortError, throwOnAbort } from "../../utils/asyncUtils/abortUtils";
-import { AsyncScheduler } from "../../utils/asyncUtils/asyncScheduler";
 import { groupByAndMap } from "../../utils/collectionUtils/mapUtils";
 import {
     benchmarkingInvariantFailed,
@@ -317,53 +317,56 @@ async function generateProofWithRetriesExclusively<
     abortSignal: AbortSignal
 ): Promise<ProofGenerationResult> {
     const benchmarkingParams = generationArgs.benchmarkingModelParams;
-    return modelsScheduler.scheduleTask(async () => {
-        let generateProof:
-            | ((
-                  metadataHolder: ProofGenerationMetadataHolder
-              ) => Promise<GeneratedProof[]>)
-            | undefined = undefined;
-        if (generationArgs.roundNumber === 1) {
-            generateProof = async (metadataHolder) => {
-                const proofGenerationContext = buildProofGenerationContext(
-                    generationArgs.completionContext,
-                    generationArgs.sourceFileEnvironment,
-                    generationArgs.sourceTheorem.name,
-                    benchmarkingParams.theoremRanker,
-                    logger
-                );
-                return generationArgs.llmService.generateProof(
-                    proofGenerationContext,
-                    benchmarkingParams.modelParams,
-                    benchmarkingParams.modelParams.defaultChoices,
-                    metadataHolder
-                );
-            };
-        } else {
-            generateProof = async (metadataHolder) => {
-                const parentProof =
-                    generationArgs.parentProofToFix ??
-                    illegalState(
-                        `Proof-fix round should be performed (round number ${generationArgs.roundNumber} is > 1), `,
-                        "but `parentProofToFix` is not provided"
+    return modelsScheduler.scheduleTask(
+        async () => {
+            let generateProof:
+                | ((
+                      metadataHolder: ProofGenerationMetadataHolder
+                  ) => Promise<GeneratedProof[]>)
+                | undefined = undefined;
+            if (generationArgs.roundNumber === 1) {
+                generateProof = async (metadataHolder) => {
+                    const proofGenerationContext = buildProofGenerationContext(
+                        generationArgs.completionContext,
+                        generationArgs.sourceFileEnvironment,
+                        generationArgs.sourceTheorem.name,
+                        benchmarkingParams.theoremRanker,
+                        logger
                     );
-                return await parentProof.benchmarkedProof.proofObject.fixProof(
-                    parentProof.diagnostic,
-                    benchmarkingParams.modelParams.multiroundProfile
-                        .defaultProofFixChoices,
-                    metadataHolder
-                );
-            };
-        }
-        return generateProofWithRetriesMeasured(
-            generateProof,
-            generationArgs.llmService,
-            options,
-            generationArgs.roundNumber,
-            logger,
-            abortSignal
-        );
-    }, logger);
+                    return generationArgs.llmService.generateProof(
+                        proofGenerationContext,
+                        benchmarkingParams.modelParams,
+                        benchmarkingParams.modelParams.defaultChoices,
+                        metadataHolder
+                    );
+                };
+            } else {
+                generateProof = async (metadataHolder) => {
+                    const parentProof =
+                        generationArgs.parentProofToFix ??
+                        illegalState(
+                            `Proof-fix round should be performed (round number ${generationArgs.roundNumber} is > 1), `,
+                            "but `parentProofToFix` is not provided"
+                        );
+                    return await parentProof.benchmarkedProof.proofObject.fixProof(
+                        parentProof.diagnostic,
+                        benchmarkingParams.modelParams.multiroundProfile
+                            .defaultProofFixChoices,
+                        metadataHolder
+                    );
+                };
+            }
+            return generateProofWithRetriesMeasured(
+                generateProof,
+                generationArgs.llmService,
+                options,
+                generationArgs.roundNumber,
+                logger,
+                abortSignal
+            );
+        },
+        (message) => logger.debug(message)
+    );
 }
 
 async function generateProofWithRetriesMeasured(

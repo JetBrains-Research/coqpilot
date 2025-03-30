@@ -1,4 +1,4 @@
-import { SerializedCodeElementRange } from "../../../../../utils/codeElementPositions";
+import { SerializedCodeElementRange } from "../../../../../utils/structures/codeElementPositions";
 import { SerializedGoal } from "../../../utils/coqUtils/goalParser";
 import { TargetType } from "../../benchmarkingCore/completionGenerationTask";
 

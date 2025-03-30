@@ -1,5 +1,5 @@
-import { buildErrorCompleteLog } from "../../../../utils/errorsUtils";
-import { illegalState } from "../../../../utils/throwErrors";
+import { buildErrorCompleteLog } from "../../../../utils/errors/errorsUtils";
+import { illegalState } from "../../../../utils/errors/throwErrors";
 import { nowTimestampMillis } from "../../../../utils/time";
 import {
     GenerationFailedError,

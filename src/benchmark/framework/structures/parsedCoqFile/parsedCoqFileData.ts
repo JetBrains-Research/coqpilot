@@ -3,7 +3,7 @@ import { JSONSchemaType } from "ajv";
 import { SourceFileEnvironment } from "../../../../core/completionGenerationContext";
 
 import { Theorem } from "../../../../coqParser/parsedTypes";
-import { Uri } from "../../../../utils/uri";
+import { Uri } from "../../../../utils/structures/uri";
 import {
     fromMappedObject,
     mapValues,

@@ -23,9 +23,9 @@ import {
 import { throwOnAbort } from "../core/abortUtils";
 
 import { EventLogger } from "../logging/eventLogger";
-import { getErrorMessage } from "../utils/errorsUtils";
+import { getErrorMessage } from "../utils/errors/errorsUtils";
+import { Uri } from "../utils/structures/uri";
 import { millisToString } from "../utils/time";
-import { Uri } from "../utils/uri";
 
 import { CoqLspClientConfig, CoqLspServerConfig } from "./coqLspConfig";
 import { CoqLspConnector } from "./coqLspConnector";

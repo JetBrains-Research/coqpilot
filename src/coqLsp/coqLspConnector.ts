@@ -7,7 +7,7 @@ import {
 import { LanguageClient, ServerOptions } from "vscode-languageclient/node";
 
 import { EventLogger } from "../logging/eventLogger";
-import { getErrorMessage } from "../utils/errorsUtils";
+import { getErrorMessage } from "../utils/errors/errorsUtils";
 
 import { CoqLspClientConfig, CoqLspServerConfig } from "./coqLspConfig";
 

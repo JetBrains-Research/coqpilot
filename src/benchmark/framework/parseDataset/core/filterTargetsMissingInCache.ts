@@ -1,6 +1,6 @@
+import { illegalState } from "../../../../utils/errors/throwErrors";
 import { listCoqSourceFiles } from "../../../../utils/fs/listFiles";
 import { stringifyAnyValue } from "../../../../utils/printers";
-import { illegalState } from "../../../../utils/throwErrors";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import {
     AllTheoremsTarget,

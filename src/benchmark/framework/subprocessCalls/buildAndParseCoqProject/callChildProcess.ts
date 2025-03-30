@@ -1,11 +1,11 @@
+import { AsyncScheduler } from "../../../../utils/async/asyncScheduler";
+import { illegalState } from "../../../../utils/errors/throwErrors";
 import { checkIsInsideDirectory } from "../../../../utils/fs/directoryUtils";
-import { illegalState } from "../../../../utils/throwErrors";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { CoqProjectParserUtils } from "../../parseDataset/coqProjectParser/implementation/coqProjectParserUtils";
 import { ParseCoqProjectInternalSignature } from "../../parseDataset/coqProjectParser/implementation/internalSignature";
 import { ParsedWorkspaceHolder } from "../../parseDataset/coqProjectParser/implementation/parsedWorkspaceHolder";
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
-import { AsyncScheduler } from "../../utils/asyncUtils/asyncScheduler";
 import {
     ChildProcessOptions,
     executeProcessAsFunction,
@@ -62,7 +62,7 @@ export async function buildAndParseCoqProjectInSubprocess(
                 benchmarkingLogger,
                 enableProcessLifetimeDebugLogs
             ),
-        benchmarkingLogger
+        (message) => benchmarkingLogger.debug(message)
     );
 }
 

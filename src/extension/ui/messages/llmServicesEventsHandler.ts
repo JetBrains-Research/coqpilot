@@ -15,10 +15,10 @@ import { LLMServiceImpl } from "../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
 
 import { EventLogger } from "../../../logging/eventLogger";
-import { buildErrorCompleteLog } from "../../../utils/errorsUtils";
+import { buildErrorCompleteLog } from "../../../utils/errors/errorsUtils";
+import { illegalState } from "../../../utils/errors/throwErrors";
 import { stringifyAnyValue } from "../../../utils/printers";
-import { SimpleSet } from "../../../utils/simpleSet";
-import { illegalState } from "../../../utils/throwErrors";
+import { SimpleSet } from "../../../utils/structures/simpleSet";
 import { toSettingName } from "../../settings/settingsValidationError";
 
 import {

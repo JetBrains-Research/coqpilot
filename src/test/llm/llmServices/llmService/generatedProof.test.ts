@@ -5,7 +5,7 @@ import { ErrorsHandlingMode } from "../../../../llm/llmServices/commonStructures
 import { GeneratedRawContentItem } from "../../../../llm/llmServices/commonStructures/generatedRawContent";
 import { ProofGenerationMetadataHolder } from "../../../../llm/llmServices/commonStructures/proofGenerationMetadata";
 
-import { illegalState } from "../../../../utils/throwErrors";
+import { illegalState } from "../../../../utils/errors/throwErrors";
 import {
     mockChat,
     mockProofGenerationContext,
