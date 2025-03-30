@@ -4,7 +4,7 @@ import { commands, window } from "vscode";
 import { ajvErrorsAsString } from "../../../utils/ajvErrorsHandling";
 import { stringifyAnyValue } from "../../../utils/printers";
 import { Time } from "../../../utils/time";
-import { pluginId } from "../../utils/pluginId";
+import { PLUGIN_ID } from "../../utils/pluginId";
 
 export const openSettingsItem = "Open settings";
 
@@ -162,7 +162,7 @@ function formatTimeItem(value: number, name: string): string {
 export function showMessageToUserWithSettingsHint(
     message: string,
     severity: UIMessageSeverity,
-    settingToOpenName: string = pluginId
+    settingToOpenName: string = PLUGIN_ID
 ) {
     showMessageToUser(message, severity, openSettingsItem).then((value) => {
         if (value === openSettingsItem) {

@@ -5,13 +5,13 @@ import {
     UIMessageSeverity,
     showMessageToUserWithSettingsHint,
 } from "../ui/messages/editorMessages";
-import { pluginId } from "../utils/pluginId";
+import { PLUGIN_ID } from "../utils/pluginId";
 
 export class SettingsValidationError extends Error {
     constructor(
         errorMessage: string,
         private readonly messageToShowToUser: string,
-        private readonly settingToOpenName: string = pluginId,
+        private readonly settingToOpenName: string = PLUGIN_ID,
         private readonly severity: UIMessageSeverity = "error"
     ) {
         super(errorMessage);
@@ -37,5 +37,5 @@ export function toSettingName(llmService: LLMService<any, any>): string {
         () => "lmStudio",
         () => "rango"
     );
-    return `${pluginId}.${serviceNameInSettings}ModelsParameters`;
+    return `${PLUGIN_ID}.${serviceNameInSettings}ModelsParameters`;
 }

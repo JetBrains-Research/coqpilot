@@ -26,6 +26,10 @@ import { ProofStep } from "../coqParser/parsedTypes";
 import { buildErrorCompleteLog } from "../utils/errorsUtils";
 import { Uri } from "../utils/uri";
 
+import {
+    executeRangoInstallationCommand,
+    executeRangoUninstallationCommand,
+} from "./installers/rangoInstaller";
 import { PluginContext } from "./pluginContext";
 import { SessionState } from "./sessionState";
 import {
@@ -45,7 +49,7 @@ import {
 } from "./ui/messages/editorMessages";
 import { subscribeToHandleLLMServicesEvents } from "./ui/messages/llmServicesEventsHandler";
 import { PluginStatusIndicator } from "./ui/pluginStatusIndicator";
-import { pluginId } from "./utils/pluginId";
+import { PLUGIN_ID } from "./utils/pluginId";
 import {
     positionInRange,
     toVSCodePosition,
@@ -78,6 +82,23 @@ export class CoqPilot {
             this.sessionState.toggleCurrentSession.bind(this.sessionState)
         );
 
+        this.registerCommand(
+            "install_rango",
+            executeRangoInstallationCommand.bind(
+                null,
+                vscodeContext,
+                pluginContext
+            )
+        );
+        this.registerCommand(
+            "uninstall_rango",
+            executeRangoUninstallationCommand.bind(
+                null,
+                vscodeContext,
+                pluginContext
+            )
+        );
+
         this.vscodeContext.subscriptions.push(this);
     }
 
@@ -86,7 +107,7 @@ export class CoqPilot {
 
         const toggleCommand = `toggle_current_session`;
         const pluginStatusIndicator = new PluginStatusIndicator(
-            `${pluginId}.${toggleCommand}`,
+            `${PLUGIN_ID}.${toggleCommand}`,
             vscodeContext
         );
 
@@ -147,7 +168,7 @@ export class CoqPilot {
                 showMessageToUserWithSettingsHint(
                     EditorMessages.coqLspStartupFailure(e.path),
                     "error",
-                    `${pluginId}.coqLspServerPath`
+                    `${PLUGIN_ID}.coqLspServerPath`
                 );
             } else if (e instanceof CompletionAbortError) {
                 if (!this.sessionState.userNotifiedAboutAbort) {
@@ -314,7 +335,7 @@ export class CoqPilot {
         const processEnvironment: ProcessEnvironment = {
             coqProofChecker: coqProofChecker,
             modelsParams: readAndValidateUserModelsParams(
-                workspace.getConfiguration(pluginId),
+                workspace.getConfiguration(PLUGIN_ID),
                 this.pluginContext.llmServices
             ),
             services: this.pluginContext.llmServices,
@@ -346,7 +367,10 @@ export class CoqPilot {
     }
 
     private registerCommand(command: string, fn: () => void) {
-        let disposable = commands.registerCommand(`${pluginId}.` + command, fn);
+        let disposable = commands.registerCommand(
+            `${PLUGIN_ID}.` + command,
+            fn
+        );
         this.vscodeContext.subscriptions.push(disposable);
     }
 
@@ -355,7 +379,7 @@ export class CoqPilot {
         fn: (editor: TextEditor) => void
     ) {
         let disposable = commands.registerTextEditorCommand(
-            `${pluginId}.` + command,
+            `${PLUGIN_ID}.` + command,
             fn
         );
         this.vscodeContext.subscriptions.push(disposable);

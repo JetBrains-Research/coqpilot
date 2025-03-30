@@ -7,6 +7,7 @@ import { illegalState } from "../throwErrors";
 import { createDirectory } from "./directoryUtils";
 import { isDirectory } from "./fileTypeCheckers";
 import { getDirectoryPath, joinPaths, parsePath } from "./pathUtils";
+import { getPathStats } from "./stats";
 
 export const defaultEncoding = "utf-8";
 
@@ -86,6 +87,16 @@ export function copyFile(
         throwOnExisting ? fs.constants.COPYFILE_EXCL : undefined
     );
     return destFilePath;
+}
+
+export function chmodFile(filePath: string, mode: fs.Mode) {
+    fs.chmodSync(filePath, mode);
+}
+
+export function makeFileExecutable(filePath: string) {
+    const currentMode = getPathStats(filePath).mode;
+    const newMode = currentMode | 0o111;
+    chmodFile(filePath, newMode);
 }
 
 export type FileCreationModeOnExisting = "throw" | "clear" | "return";
