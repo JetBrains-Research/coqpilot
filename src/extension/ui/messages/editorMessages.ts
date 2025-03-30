@@ -5,6 +5,7 @@ import { ajvErrorsAsString } from "../../../utils/ajvErrorsHandling";
 import { getLastName } from "../../../utils/fs/pathUtils";
 import { stringifyAnyValue } from "../../../utils/printers";
 import { Time } from "../../../utils/time";
+import { InstallationPrerequisite } from "../../installers/prerequisitesChecker";
 import { PLUGIN_ID } from "../../utils/pluginId";
 
 export const openSettingsItem = "Open settings";
@@ -112,6 +113,12 @@ export namespace EditorMessages {
             explanationMessage === undefined ? "" : `: ${explanationMessage}`;
         return `The \`${paramName}\` parameter of the "${modelId}" model was overriden with the value ${stringifyAnyValue(withValue)}${explanation}. Please configure it the same way in the settings.`;
     };
+
+    export const installationPrerequisiteIsMissing = (
+        installationTargetName: string,
+        prerequisite: InstallationPrerequisite
+    ) =>
+        `${installationTargetName} requires "${prerequisite.name}", but it wasn't found (check command failed: \`${prerequisite.checkCommand}\`). Please ensure "${prerequisite.name}" is installed and try again.`;
 
     export const rangoModelsRequireRangoInstalledSuggestion =
         "Rango models require the Rango project, which takes about 5-10 minutes to install (one-time setup). Proceed with installation?";
