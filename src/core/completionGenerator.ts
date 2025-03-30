@@ -4,13 +4,14 @@ import { GeneratedProof } from "../llm/llmServices/generatedProof";
 import { CoqLspTimeoutError } from "../coqLsp/coqLspTypes";
 
 import { EventLogger } from "../logging/eventLogger";
+import { throwOnAbort } from "../utils/async/abortUtils";
 import {
     asErrorOrRethrow,
     buildErrorCompleteLog,
 } from "../utils/errors/errorsUtils";
 import { stringifyAnyValue } from "../utils/printers";
 
-import { CompletionAbortError, throwOnAbort } from "./abortUtils";
+import { CompletionAbortError } from "./completionAbortError";
 import {
     CompletionContext,
     ProcessEnvironment,
@@ -72,7 +73,8 @@ export async function generateCompletion(
         context,
         processEnvironment.modelsParams,
         processEnvironment.services,
-        eventLogger
+        eventLogger,
+        abortSignal
     );
 
     try {
@@ -239,7 +241,12 @@ async function fixProofs(
         }
         const diagnostic = proofWithFeedback.diagnostic;
 
-        const newProofVersions = generatedProof.fixProof(diagnostic);
+        const newProofVersions = generatedProof.fixProof(
+            diagnostic,
+            undefined,
+            undefined,
+            abortSignal
+        );
         fixProofsPromises.push(newProofVersions);
     }
 

@@ -337,7 +337,8 @@ async function generateProofWithRetriesExclusively<
                         proofGenerationContext,
                         benchmarkingParams.modelParams,
                         benchmarkingParams.modelParams.defaultChoices,
-                        metadataHolder
+                        metadataHolder,
+                        abortSignal
                     );
                 };
             } else {
@@ -352,7 +353,8 @@ async function generateProofWithRetriesExclusively<
                         parentProof.diagnostic,
                         benchmarkingParams.modelParams.multiroundProfile
                             .defaultProofFixChoices,
-                        metadataHolder
+                        metadataHolder,
+                        abortSignal
                     );
                 };
             }
@@ -454,6 +456,9 @@ async function generateProofWithRetriesMeasured(
                 throw llmServiceError;
             }
             if (llmServiceError instanceof GenerationFailedError) {
+                if (llmServiceError.cause instanceof AbortError) {
+                    throwOnAbort(abortSignal);
+                }
                 const estimatedTime =
                     llmService.estimateTimeToBecomeAvailable();
                 delayMillis = Math.max(

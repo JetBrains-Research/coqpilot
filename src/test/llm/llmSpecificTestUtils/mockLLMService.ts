@@ -210,12 +210,14 @@ export class MockLLMGeneratedProof extends GeneratedProofImpl<
     async generateNextVersion(
         analyzedChat: AnalyzedChatHistory,
         choices: number,
-        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined
+        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined,
+        abortSignal?: AbortSignal
     ): Promise<MockLLMGeneratedProof[]> {
         return this.llmServiceInternal.generateFromChatWrapped(
             this.modelParams,
             choices,
             metadataHolder,
+            abortSignal,
             () => {
                 if (!this.nextVersionCanBeGenerated()) {
                     throw new ConfigurationError(

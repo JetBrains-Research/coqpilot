@@ -169,12 +169,14 @@ export abstract class LLMServiceImpl<
         analyzedChat: AnalyzedChatHistory,
         params: ResolvedModelParams,
         choices: number = params.defaultChoices,
-        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined
+        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined,
+        abortSignal?: AbortSignal
     ): Promise<string[]> {
         return this.internal.generateFromChatWrapped(
             params,
             choices,
             metadataHolder,
+            abortSignal,
             () => analyzedChat,
             (rawProof) => rawProof.content
         );
@@ -200,12 +202,14 @@ export abstract class LLMServiceImpl<
         proofGenerationContext: ProofGenerationContext,
         params: ResolvedModelParams,
         choices: number = params.defaultChoices,
-        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined
+        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined,
+        abortSignal?: AbortSignal
     ): Promise<GeneratedProofType[]> {
         return this.internal.generateFromChatWrapped(
             params,
             choices,
             metadataHolder,
+            abortSignal,
             () => buildProofGenerationChat(proofGenerationContext, params),
             (rawProof) =>
                 this.internal.constructGeneratedProof(

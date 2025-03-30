@@ -7,7 +7,7 @@ import {
 
 import { CoqLspStartupError } from "../coqLsp/coqLspTypes";
 
-import { CompletionAbortError } from "../core/abortUtils";
+import { CompletionAbortError } from "../core/completionAbortError";
 import {
     CompletionContext,
     ProcessEnvironment,
