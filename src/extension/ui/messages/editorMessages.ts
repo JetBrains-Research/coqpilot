@@ -2,6 +2,7 @@ import { DefinedError } from "ajv";
 import { commands, window } from "vscode";
 
 import { ajvErrorsAsString } from "../../../utils/ajvErrorsHandling";
+import { getLastName } from "../../../utils/fs/pathUtils";
 import { stringifyAnyValue } from "../../../utils/printers";
 import { Time } from "../../../utils/time";
 import { PLUGIN_ID } from "../../utils/pluginId";
@@ -111,6 +112,26 @@ export namespace EditorMessages {
             explanationMessage === undefined ? "" : `: ${explanationMessage}`;
         return `The \`${paramName}\` parameter of the "${modelId}" model was overriden with the value ${stringifyAnyValue(withValue)}${explanation}. Please configure it the same way in the settings.`;
     };
+
+    export const rangoModelsRequireRangoInstalledSuggestion =
+        "Rango models require the Rango project, which takes about 5-10 minutes to install (one-time setup). Proceed with installation?";
+
+    export const rangoProjectIsMissingForModelsRequested =
+        "Rango models require the Rango project. Please run `CoqPilot: Install and build Rango project` or remove Rango models from the config, then try again.";
+
+    export const outdatedRangoInstallationsDetected = (
+        outdatedRangoPaths: string[]
+    ) => {
+        const outdatedRangoNames = outdatedRangoPaths
+            .map((dirPath) => getLastName(dirPath))
+            .join(", ");
+        return `Outdated Rango installations detected: ${outdatedRangoNames}. They can't be used anymore. Would you like to uninstall them to free up space?`;
+    };
+}
+
+export interface UIChoiceItemWithCallback {
+    choiceItem: string;
+    callback: () => Promise<void>;
 }
 
 export type UIMessageSeverity = "error" | "info" | "warning";
@@ -128,6 +149,46 @@ export function showMessageToUser<T extends string>(
         case "warning":
             return window.showWarningMessage(message, ...items);
     }
+}
+
+export async function showMessageToUserWithActions(
+    message: string,
+    severity: UIMessageSeverity,
+    ...choiceItemsWithCallbacks: UIChoiceItemWithCallback[]
+) {
+    const userChoice = await showMessageToUser(
+        message,
+        severity,
+        ...choiceItemsWithCallbacks.map(
+            (itemWithCallback) => itemWithCallback.choiceItem
+        )
+    );
+    for (const itemWithCallback of choiceItemsWithCallbacks) {
+        if (userChoice === itemWithCallback.choiceItem) {
+            return await itemWithCallback.callback();
+        }
+    }
+}
+
+export async function showMessageToUserWithSettingsHint(
+    message: string,
+    severity: UIMessageSeverity,
+    settingToOpenName: string = PLUGIN_ID,
+    ...otherChoiceItemsWithCallbacks: UIChoiceItemWithCallback[]
+) {
+    return showMessageToUserWithActions(
+        message,
+        severity,
+        {
+            choiceItem: openSettingsItem,
+            callback: async () =>
+                commands.executeCommand(
+                    "workbench.action.openSettings",
+                    settingToOpenName
+                ),
+        },
+        ...otherChoiceItemsWithCallbacks
+    );
 }
 
 function formatTimeToUIString(time: Time): string {
@@ -157,19 +218,4 @@ function formatTimeToUIString(time: Time): string {
 function formatTimeItem(value: number, name: string): string {
     const suffix = value === 1 ? "" : "s";
     return `${value} ${name}${suffix}`;
-}
-
-export function showMessageToUserWithSettingsHint(
-    message: string,
-    severity: UIMessageSeverity,
-    settingToOpenName: string = PLUGIN_ID
-) {
-    showMessageToUser(message, severity, openSettingsItem).then((value) => {
-        if (value === openSettingsItem) {
-            commands.executeCommand(
-                "workbench.action.openSettings",
-                settingToOpenName
-            );
-        }
-    });
 }

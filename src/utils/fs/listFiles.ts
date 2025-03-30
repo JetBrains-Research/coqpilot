@@ -32,13 +32,13 @@ export function listJsonFiles(
 /**
  * @param dirPath resolved absolute directory path.
  * @param depth determines the recursion depth of subdirectories traverse. `undefined` corresponds to the unlimited depth; `0` correpsonds to listing the files located in the `dirPath` only.
- * @param predicate filters the listed files (only ones with `true` value are returned).
- * @returns resolved absolute paths for the files inside `dirPath`.
+ * @param predicate filters the listed items (only ones with `true` value are returned).
+ * @returns resolved absolute paths for the items inside `dirPath`.
  */
-function listFiles(
+export function listFiles(
     dirPath: string,
     depth: number | undefined,
-    predicate: (filePath: string) => boolean
+    predicate: (itemPath: string) => boolean
 ): string[] {
     if (depth !== undefined && depth < 0) {
         illegalState(`Files listing depth should be non-negative: ${depth}`);
@@ -51,14 +51,16 @@ function listFiles(
     ) {
         fs.readdirSync(curDirPath).forEach((child) => {
             const childPath = path.join(curDirPath, child);
-            if (isDirectory(childPath)) {
-                if (depthLeft === undefined || depthLeft > 0) {
-                    traverseDirectory(
-                        childPath,
-                        depthLeft === undefined ? undefined : depthLeft - 1
-                    );
-                }
-            } else if (predicate(childPath)) {
+            if (
+                isDirectory(childPath) &&
+                (depthLeft === undefined || depthLeft > 0)
+            ) {
+                traverseDirectory(
+                    childPath,
+                    depthLeft === undefined ? undefined : depthLeft - 1
+                );
+            }
+            if (predicate(childPath)) {
                 resultFilePaths.push(childPath);
             }
         });

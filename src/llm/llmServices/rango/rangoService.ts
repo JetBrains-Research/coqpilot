@@ -43,7 +43,8 @@ export class RangoService extends LLMServiceImpl<
     );
     protected readonly modelParamsResolver = new RangoModelParamsResolver();
 
-    static readonly DEFAULT_RANGO_REPO_DIR_NAME = `coqpilot-rango-v${PLUGIN_VERSION}`;
+    static readonly DEFAULT_RANGO_DIR_PREFIX = "coqpilot-rango";
+    static readonly DEFAULT_RANGO_REPO_DIR_NAME = `${this.DEFAULT_RANGO_DIR_PREFIX}-v${PLUGIN_VERSION}`;
 
     constructor(
         eventLogger: EventLogger | undefined = undefined,

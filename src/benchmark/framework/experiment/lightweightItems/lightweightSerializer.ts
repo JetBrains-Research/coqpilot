@@ -8,7 +8,7 @@ import {
 import { buildSafeJsonFileName } from "../../../../utils/fs/fileNameUtils";
 import { writeToFile } from "../../../../utils/fs/fileUtils";
 import {
-    getLastName,
+    getLastNameWithoutExtension,
     joinPaths,
     relativizeAbsolutePaths,
 } from "../../../../utils/fs/pathUtils";
@@ -141,7 +141,7 @@ export namespace LightweightSerializer {
             "projects",
             (project, _) =>
                 buildSafeJsonFileName(
-                    getLastName(project.relativeDirectoryPath)
+                    getLastNameWithoutExtension(project.relativeDirectoryPath)
                 )
         );
         saveAsJsonFiles(
