@@ -127,6 +127,7 @@ export class RangoService extends LLMServiceImpl<
                             externalPipelineContext,
                             params,
                             this.rangoDirPath,
+                            this.internal.logDebug,
                             abortSignal
                         );
                         const rawProofsContent: string[] =
