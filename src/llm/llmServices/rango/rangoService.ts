@@ -63,7 +63,8 @@ export class RangoService extends LLMServiceImpl<
         readonly maxSubprocessesSpawnedInParallel: number = Math.min(
             availableParallelism(),
             RangoService.MAX_HEURISTIC_SUBPROCESSES_PARALLELISM
-        )
+        ),
+        readonly clearProofGenerationLogsOnSuccess: boolean = true
     ) {
         super(
             eventLogger,
@@ -120,13 +121,12 @@ export class RangoService extends LLMServiceImpl<
                                 "`proofGenerationContext` has no built `externalPipelineContext`, ",
                                 "required to execute Rango proof generation"
                             );
-                        // TODO (!): support abort controller
-                        // TODO (!): support event logger
                         // TODO: search for `openai.AuthenticationError` error in logs and report as configuration error
                         const proofOrUndefined = await runRangoProof(
                             externalPipelineContext,
                             params,
                             this.rangoDirPath,
+                            this.clearProofGenerationLogsOnSuccess,
                             this.internal.logDebug,
                             abortSignal
                         );
