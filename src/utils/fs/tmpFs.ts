@@ -7,6 +7,8 @@ import * as tmp from "tmp";
  */
 const DEFAULT_TMP_DIR = "/tmp";
 
+// TODO: implement and use context functions instead to free resources faster
+
 export function createTmpDirectory(options?: tmp.DirOptions) {
     return tmp.dirSync({ tmpdir: DEFAULT_TMP_DIR, ...options }).name;
 }
