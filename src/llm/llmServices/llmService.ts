@@ -1,6 +1,5 @@
-import * as tmp from "tmp";
-
 import { EventLogger } from "../../logging/eventLogger";
+import { createTmpFile } from "../../utils/fs/tmpFs";
 import { Time } from "../../utils/time";
 import { ProofGenerationContext } from "../proofGenerationContext";
 import { UserModelParams } from "../userModelParams";
@@ -135,8 +134,7 @@ export abstract class LLMServiceImpl<
     ) {
         this.eventLogger = eventLogger;
         this.errorsHandlingMode = errorsHandlingMode;
-        this.generationLogsFilePath =
-            generationLogsFilePath ?? tmp.fileSync().name;
+        this.generationLogsFilePath = generationLogsFilePath ?? createTmpFile();
         this.generationsLoggerBuilder = () =>
             new GenerationsLogger(this.generationLogsFilePath, {
                 debug: debugLogs,

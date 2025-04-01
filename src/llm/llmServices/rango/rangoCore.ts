@@ -31,6 +31,7 @@ import {
     joinPaths,
     relativizeAbsolutePaths,
 } from "../../../utils/fs/pathUtils";
+import { createTmpDirectory } from "../../../utils/fs/tmpFs";
 import { JsonSpacing, toJsonString } from "../../../utils/printers";
 import { CodeElementRange } from "../../../utils/structures/codeElementPositions";
 import { nowTimestampMillis } from "../../../utils/time";
@@ -160,7 +161,7 @@ function prepareSharedFiles(
 ): RangoSharedFiles {
     const sharedDirPath = createDirectory(
         true,
-        tmp.dirSync({ unsafeCleanup: true }).name,
+        createTmpDirectory({ unsafeCleanup: true }),
         "coqpilot-rango-run"
     );
     const inputFilePath = joinPaths(sharedDirPath, "input.json");
