@@ -5,7 +5,6 @@ import {
     StdioPipe,
     spawn,
 } from "child_process";
-import * as tmp from "tmp";
 
 import { throwOnAbort } from "../../../utils/async/abortUtils";
 import { PromiseExecutor, RejectType } from "../../../utils/async/promiseUtils";
@@ -22,8 +21,8 @@ import {
 } from "../../../utils/fs/fileNameUtils";
 import {
     appendToFile,
-    copyFile,
     createFileWithParentDirectories,
+    deleteFile,
     readFile,
     writeToFile,
 } from "../../../utils/fs/fileUtils";
@@ -40,6 +39,12 @@ import { DebugLogsWrappers } from "../llmServiceInternal";
 import { MockRangoModelParams } from "../modelParams";
 import { AuxLemma, withAuxFile } from "../utils/auxFileManager";
 
+import {
+    RangoError,
+    asRangoErrorOrIllegalState,
+    throwRangoError,
+    throwRangoErrorWithLogs,
+} from "./rangoError";
 import { RangoInput } from "./rangoInput";
 
 /**
@@ -51,6 +56,7 @@ export async function runRangoProof(
     context: ExternalPipelineProofGenerationContext,
     params: MockRangoModelParams,
     rangoDirPath: string,
+    clearLogsOnSuccess: boolean,
     logDebug?: DebugLogsWrappers,
     abortSignal?: AbortSignal
 ): Promise<string | undefined> {
@@ -77,12 +83,13 @@ export async function runRangoProof(
                         rangoDirPath,
                         inFileRequestUniqueIdentifier,
                         auxLemma,
+                        clearLogsOnSuccess,
                         logDebug,
                         abortSignal,
                         { resolve: resolve, reject: reject }
                     );
                 } catch (err) {
-                    reject(err);
+                    reject(asRangoErrorOrIllegalState(err));
                 }
             });
         }
@@ -95,6 +102,7 @@ function executeRangoProofGenerationOrThrow(
     rangoDirPath: string,
     inFileRequestUniqueIdentifier: string,
     auxLemma: AuxLemma,
+    cleanLogsOnSuccess: boolean,
     logDebug: DebugLogsWrappers | undefined,
     abortSignal: AbortSignal | undefined,
     promiseExecutor: PromiseExecutor<string | undefined>
@@ -119,7 +127,8 @@ function executeRangoProofGenerationOrThrow(
             context.relativeSourceFilePath,
             context.sourceTheoremName,
             inFileRequestUniqueIdentifier
-        )
+        ),
+        projectPath
     );
     logDebug?.event("Prepared shared files", rangoFiles);
 
@@ -137,14 +146,18 @@ function executeRangoProofGenerationOrThrow(
         try {
             const proof = onRangoProcessFinish(
                 exitCode,
-                projectPath,
                 rangoInput,
                 rangoFiles,
                 logDebug
             );
+            if (cleanLogsOnSuccess) {
+                try {
+                    deleteFile(rangoFiles.logsFilePath);
+                } catch (err) {}
+            }
             promiseExecutor.resolve(proof);
         } catch (err) {
-            promiseExecutor.reject(err);
+            promiseExecutor.reject(asRangoErrorOrIllegalState(err));
         }
     });
 }
@@ -157,7 +170,8 @@ interface RangoSharedFiles {
 
 function prepareSharedFiles(
     rangoInput: RangoInput,
-    rangoLogsFileName: string
+    rangoLogsFileName: string,
+    projectPath: string
 ): RangoSharedFiles {
     const sharedDirPath = createDirectory(
         true,
@@ -175,7 +189,10 @@ function prepareSharedFiles(
     const outputDirPath = createDirectory(true, sharedDirPath, "output");
     const logsFilePath = createFileWithParentDirectories(
         "throw",
-        joinPaths(sharedDirPath, rangoLogsFileName)
+        joinPaths(
+            getOrCreateCoqPilotMetaLogsDir(projectPath),
+            rangoLogsFileName
+        )
     );
     return {
         inputFilePath: inputFilePath,
@@ -230,13 +247,14 @@ function spawnRangoProcess(
     childProccess.stdout.on("data", appendRangoLogs);
     childProccess.stderr.on("data", appendRangoLogs);
 
-    // Catch spawn errors (like "file not found")
+    // Catch spawn (like "file not found") and abort errors
     childProccess.on("error", (err) => {
-        reject(
-            new Error(
-                `Failed to launch Rango subprocess: ${getErrorMessage(err)}`
-            )
-        );
+        // TODO: throw proper `AbortError` here and handle it at the top-level
+        const errorMessage =
+            err.name === "AbortError"
+                ? "Rango subprocess has been aborted"
+                : `Failed to launch Rango subprocess: ${getErrorMessage(err)}`;
+        reject(new RangoError(rangoFiles.logsFilePath, errorMessage));
     });
 
     logDebug?.event("Spawned Rango subprocess", {
@@ -250,22 +268,16 @@ function spawnRangoProcess(
 
 function onRangoProcessFinish(
     exitCode: number | null,
-    projectPath: string,
     rangoInput: RangoInput,
     rangoFiles: RangoSharedFiles,
     logDebug: DebugLogsWrappers | undefined
 ): string | undefined {
     logDebug?.event(`Subprocess finished with exit code ${exitCode}`);
+
     if (exitCode !== 0) {
-        // TODO: support option to save logs even in case of success (?)
-        const userLogsFilePath = copyFile(
+        throwRangoErrorWithLogs(
             rangoFiles.logsFilePath,
-            getOrCreateCoqPilotMetaLogsDir(projectPath),
-            true
-        );
-        throwError(
-            `Rango process failed (exit code ${exitCode}): `,
-            `logs are available at ${userLogsFilePath}`
+            `Rango process failed: exit code ${exitCode}`
         );
     }
 
@@ -279,7 +291,8 @@ function onRangoProcessFinish(
             outputFileName
         ),
         (err) =>
-            throwError(
+            throwRangoErrorWithLogs(
+                rangoFiles.logsFilePath,
                 "Rango process has successfully finished, ",
                 `but its output file could not be read: ${getErrorMessage(err)}`
             )
@@ -295,7 +308,8 @@ function onRangoProcessFinish(
             return proof as string;
         }
     } catch (err) {
-        throwError(
+        throwRangoErrorWithLogs(
+            rangoFiles.logsFilePath,
             `Failed to parse Rango's output file: ${getErrorMessage(err)}`
         );
     }
@@ -337,7 +351,7 @@ function getPythonExecutableCommand(rangoDirPath: string): string {
 function getPythonVenvExecutablePath(rangoDirPath: string): string {
     if (process.platform === "win32") {
         // to support Windows here: joinPaths(rangoDir, "venv", "Scripts", "python.exe")
-        throwError(
+        throwRangoError(
             "Windows platform is currently unsupported for proof-generation with Rango"
         );
     }
