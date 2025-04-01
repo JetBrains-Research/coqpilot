@@ -1,6 +1,5 @@
 import * as fs from "fs";
 import * as path from "path";
-import * as tmp from "tmp";
 import { Disposable, WorkspaceConfiguration, window, workspace } from "vscode";
 
 import { LLMServices, disposeServices } from "../llm/llmServices";
@@ -13,6 +12,7 @@ import { RangoService } from "../llm/llmServices/rango/rangoService";
 
 import { EventLogger, Severity } from "../logging/eventLogger";
 import { illegalState } from "../utils/errors/throwErrors";
+import { createTmpDirectory } from "../utils/fs/tmpFs";
 import { Uri } from "../utils/structures/uri";
 
 import VSCodeLogWriter from "./ui/vscodeLogWriter";
@@ -42,7 +42,7 @@ export class PluginContext implements Disposable {
     }
 
     readonly llmServicesLogsDir = path.join(
-        tmp.dirSync().name,
+        createTmpDirectory(),
         "llm-services-logs"
     );
 

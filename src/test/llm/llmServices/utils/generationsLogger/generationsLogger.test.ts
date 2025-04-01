@@ -1,5 +1,4 @@
 import { expect } from "earl";
-import * as tmp from "tmp";
 
 import {
     ConfigurationError,
@@ -37,6 +36,7 @@ import {
 } from "../../../../../llm/llmServices/utils/generationsLogger/loggerRecord";
 import { SyncFile } from "../../../../../llm/llmServices/utils/generationsLogger/syncFile";
 
+import { createTmpFile } from "../../../../../utils/fs/tmpFs";
 import { nowTimestampMillis } from "../../../../../utils/time";
 import {
     gptModelName,
@@ -126,7 +126,7 @@ suite("[LLMService-s utils] GenerationsLogger test", () => {
         block: (generationsLogger: GenerationsLogger) => Promise<void>
     ): Promise<void> {
         const generationsLogger = new GenerationsLogger(
-            tmp.fileSync().name,
+            createTmpFile(),
             settings
         );
         try {
