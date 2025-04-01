@@ -23,6 +23,7 @@ import {
     appendToFile,
     createFileWithParentDirectories,
     deleteFile,
+    makeFileExecutable,
     readFile,
     writeToFile,
 } from "../../../utils/fs/fileUtils";
@@ -163,6 +164,7 @@ function executeRangoProofGenerationOrThrow(
 }
 
 interface RangoSharedFiles {
+    sharedDirPath: string;
     inputFilePath: string;
     outputDirPath: string;
     logsFilePath: string;
@@ -195,6 +197,7 @@ function prepareSharedFiles(
         )
     );
     return {
+        sharedDirPath: sharedDirPath,
         inputFilePath: inputFilePath,
         outputDirPath: outputDirPath,
         logsFilePath: logsFilePath,
@@ -209,13 +212,7 @@ function spawnRangoProcess(
     abortSignal: AbortSignal | undefined,
     reject: RejectType
 ): ChildProcess {
-    const pythonExecutable = getPythonExecutableCommand(rangoDirPath);
-    const pythonArgs = [
-        getRangoAdapterScriptPath(rangoDirPath),
-        `--rango_dir=${rangoDirPath}`,
-        `--target=${rangoFiles.inputFilePath}`,
-        `--output_dir=${rangoFiles.outputDirPath}`,
-    ];
+    const executionScriptPath = createExecutionScript(rangoDirPath, rangoFiles);
 
     // TODO (!): support nix
     const spawnOptions: SpawnOptionsWithStdioTuple<
@@ -234,7 +231,7 @@ function spawnRangoProcess(
         shell: true,
         signal: abortSignal,
     };
-    const childProccess = spawn(pythonExecutable, pythonArgs, spawnOptions);
+    const childProccess = spawn(executionScriptPath, [], spawnOptions);
 
     // Set up logs
     function appendRangoLogs(data: any) {
@@ -258,8 +255,7 @@ function spawnRangoProcess(
     });
 
     logDebug?.event("Spawned Rango subprocess", {
-        executable: pythonExecutable,
-        args: pythonArgs,
+        executionScriptPath: executionScriptPath,
         options: spawnOptions,
     });
 
@@ -337,25 +333,63 @@ function buildRequestIdentifierFileName(
 
 const RANGO_PYTHON_VERSION = "3.11";
 
-function getPythonExecutableCommand(rangoDirPath: string): string {
-    const pyenvShellSetupCommands = [
+function createExecutionScript(
+    rangoDirPath: string,
+    rangoFiles: RangoSharedFiles
+): string {
+    const pythonArgs = [
+        getRangoAdapterScriptPath(rangoDirPath),
+        `--rango_dir=${rangoDirPath}`,
+        `--target=${rangoFiles.inputFilePath}`,
+        `--output_dir=${rangoFiles.outputDirPath}`,
+    ];
+    const executionScriptCode = [
+        "#!/usr/bin/env bash",
+        "set -e",
+        "",
+        'echo "[Execution script] Starting subprocess execution..."',
+        "",
+        `cd "${rangoDirPath}"`,
+        "",
         'export PYENV_ROOT="$HOME/.pyenv"',
         'export PATH="$PYENV_ROOT/bin:$PATH"',
         'eval "$(pyenv init -)"',
-    ].join(" && ");
-    const pyenvEnterShellCommand = `pyenv shell ${RANGO_PYTHON_VERSION}`;
-    const pythonVenvExecutable = getPythonVenvExecutablePath(rangoDirPath);
-    return `${pyenvShellSetupCommands} && ${pyenvEnterShellCommand} && ${pythonVenvExecutable}`;
+        `pyenv shell ${RANGO_PYTHON_VERSION}`,
+        "",
+        'echo "[Execution script] Set up pyenv, Python version: $(python --version)"',
+        "",
+        'echo "[Execution script] Entering Python virutal environment..."',
+        `${getPythonVenvEnterShellCommand()}`,
+        "",
+        'echo "[Execution script] Executing Python script..."',
+        `python3 ${pythonArgs.join(" ")}`,
+    ].join("\n");
+
+    try {
+        const executionScriptPath = createFileWithParentDirectories(
+            "throw",
+            joinPaths(rangoFiles.sharedDirPath, "execution-script.sh")
+        );
+        writeToFile(executionScriptCode, executionScriptPath, (err) => {
+            throw err;
+        });
+        makeFileExecutable(executionScriptPath);
+        return executionScriptPath;
+    } catch (err) {
+        throwRangoError(
+            `Failed to create execution script: ${getErrorMessage(err)}`
+        );
+    }
 }
 
-function getPythonVenvExecutablePath(rangoDirPath: string): string {
+function getPythonVenvEnterShellCommand(): string {
     if (process.platform === "win32") {
-        // to support Windows here: joinPaths(rangoDir, "venv", "Scripts", "python.exe")
         throwRangoError(
             "Windows platform is currently unsupported for proof-generation with Rango"
         );
     }
-    return joinPaths(rangoDirPath, "venv", "bin", "python");
+    const activationScript = "./venv/bin/activate";
+    return `source ${activationScript}`;
 }
 
 function getRangoAdapterScriptPath(rangoDirPath: string): string {
