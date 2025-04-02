@@ -37,19 +37,19 @@ export function asErrorOrUndefined(e: any): Error | undefined {
 }
 
 export function getErrorMessage(e: any): string {
-    return ifErrorInstanceOrElse(e, stringifyAnyValue, e.message);
+    return ifErrorInstanceOrElse(e, (err) => err.message, stringifyAnyValue);
 }
 
 export function buildErrorCompleteLog(e: any): string {
     return ifErrorInstanceOrElse(
         e,
-        stringifyAnyValue,
-        (e) => e.stack ?? errorToShortLog(e)
+        (err) => err.stack ?? errorToShortLog(err),
+        stringifyAnyValue
     );
 }
 
 export function buildErrorShortLog(e: any): string {
-    return ifErrorInstanceOrElse(e, stringifyAnyValue, errorToShortLog);
+    return ifErrorInstanceOrElse(e, errorToShortLog, stringifyAnyValue);
 }
 
 function errorToShortLog(error: Error): string {
