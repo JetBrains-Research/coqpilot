@@ -12,22 +12,19 @@ suite("[SourceExecutable] Single Workspace Benchmark", () => {
         const experiment = new SingleWorkspaceExperiment();
 
         new BenchmarkingBundle()
-            .withLLMService("predefined")
+            .withLLMService("rango")
             .withBenchmarkingModelsParamsCommons({
                 ranker: "random",
             })
-            .withBenchmarkingModelsParams(
-                { modelId: "invalid-proof", tactics: ["a."] },
-                { modelId: "prove-with-auto", tactics: ["auto."] }
-            )
+            .withBenchmarkingModelsParams({
+                modelId: "rango",
+                openAiApiKey: "",
+                timeoutSeconds: 10,
+            })
             .withTargets(
                 new TargetsBuilder()
                     .withStandaloneFilesRoot()
-                    .withAdmitTargetsFromFile(
-                        "auto_benchmark.v",
-                        "test",
-                        "test_thr"
-                    )
+                    .withAdmitTargetsFromFile("mixed_benchmark.v", "test_thr")
                     .buildInputTargets()
             )
             .addTo(experiment);
@@ -48,6 +45,7 @@ suite("[SourceExecutable] Single Workspace Benchmark", () => {
             await experiment.run("benchmarksOutput", {
                 datasetCacheDirectoryPath: "benchmarkLogs/.cache/",
                 datasetCacheUsage: DatasetCacheUsageMode.READ_CACHE_ONLY,
+                proofGenerationRetries: 1,
             });
             console.error(
                 colorize(

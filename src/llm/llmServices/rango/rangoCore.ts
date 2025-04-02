@@ -331,7 +331,7 @@ function buildRequestIdentifierFileName(
     return addExtension(translateToSafeFileName(unsafeFileName), ".txt");
 }
 
-const RANGO_PYTHON_VERSION = "3.11";
+// const RANGO_PYTHON_VERSION = "3.11";
 
 function createExecutionScript(
     rangoDirPath: string,
@@ -351,15 +351,15 @@ function createExecutionScript(
         "",
         `cd "${rangoDirPath}"`,
         "",
-        'export PYENV_ROOT="$HOME/.pyenv"',
-        'export PATH="$PYENV_ROOT/bin:$PATH"',
-        'eval "$(pyenv init -)"',
-        `pyenv shell ${RANGO_PYTHON_VERSION}`,
+        // 'export PYENV_ROOT="$HOME/.pyenv"',
+        // 'export PATH="$PYENV_ROOT/bin:$PATH"',
+        // 'eval "$(pyenv init -)"',
+        // `pyenv shell ${RANGO_PYTHON_VERSION}`,
         "",
         'echo "[Execution script] Set up pyenv, Python version: $(python --version)"',
         "",
         'echo "[Execution script] Entering Python virutal environment..."',
-        `${getPythonVenvEnterShellCommand()}`,
+        // `${getPythonVenvEnterShellCommand()}`,
         "",
         'echo "[Execution script] Executing Python script..."',
         `python3 ${pythonArgs.join(" ")}`,
@@ -382,15 +382,15 @@ function createExecutionScript(
     }
 }
 
-function getPythonVenvEnterShellCommand(): string {
-    if (process.platform === "win32") {
-        throwRangoError(
-            "Windows platform is currently unsupported for proof-generation with Rango"
-        );
-    }
-    const activationScript = "./venv/bin/activate";
-    return `source ${activationScript}`;
-}
+// function getPythonVenvEnterShellCommand(): string {
+//     if (process.platform === "win32") {
+//         throwRangoError(
+//             "Windows platform is currently unsupported for proof-generation with Rango"
+//         );
+//     }
+//     const activationScript = "./venv/bin/activate";
+//     return `source ${activationScript}`;
+// }
 
 function getRangoAdapterScriptPath(rangoDirPath: string): string {
     return joinPaths(rangoDirPath, "scripts", "generate_proof.py");
