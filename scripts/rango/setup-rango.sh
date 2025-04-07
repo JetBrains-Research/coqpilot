@@ -4,7 +4,7 @@ set -e
 # Note: this script requires `git` and `pyenv` to be installed as prerequisites
 
 REPO_URL="git@github.com:GlebSolovev/rango.git" # TODO: replace with the original repo once changes are accepted
-BRANCH_NAME="coqpilot-adapter"
+BRANCH_NAME="coqpilot-adapter-gpu"
 PYTHON_VERSION="3.11"
 
 if [[ "$1" == "--rango_dir" && -n "$2" ]]; then

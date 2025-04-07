@@ -4,8 +4,8 @@ import { PLUGIN_VERSION } from "../../../extension/utils/pluginId";
 import { EventLogger } from "../../../logging/eventLogger";
 import { AsyncScheduler } from "../../../utils/async/asyncScheduler";
 import { invariantFailed } from "../../../utils/errors/throwErrors";
-// import { getCoqPilotInstallationsDirPath } from "../../../utils/fs/coqPilotInstallationsDir";
-// import { joinPaths } from "../../../utils/fs/pathUtils";
+import { getCoqPilotInstallationsDirPath } from "../../../utils/fs/coqPilotInstallationsDir";
+import { joinPaths } from "../../../utils/fs/pathUtils";
 import { Time, time } from "../../../utils/time";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { MockRangoUserModelParams } from "../../userModelParams";
@@ -56,7 +56,10 @@ export class RangoService extends LLMServiceImpl<
         errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.RETHROW_ERRORS,
         generationLogsFilePath: string | undefined = undefined,
         debugLogs: boolean = false,
-        readonly rangoDirPath: string = "/content/rango",
+        readonly rangoDirPath: string = joinPaths(
+            getCoqPilotInstallationsDirPath(),
+            RangoService.DEFAULT_RANGO_REPO_DIR_NAME
+        ),
         readonly maxSubprocessesSpawnedInParallel: number = Math.min(
             availableParallelism(),
             RangoService.MAX_HEURISTIC_SUBPROCESSES_PARALLELISM
