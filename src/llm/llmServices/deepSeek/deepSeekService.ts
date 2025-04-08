@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 
-import { asErrorOrRethrow } from "../../../utils/errorsUtils";
-import { illegalState } from "../../../utils/throwErrors";
+import { asErrorOrRethrow } from "../../../utils/errors/errorsUtils";
+import { illegalState } from "../../../utils/errors/throwErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { DeepSeekUserModelParams } from "../../userModelParams";
 import { AnalyzedChatHistory, ChatHistory } from "../commonStructures/chat";

@@ -481,15 +481,40 @@
                   "markdownDescription": "Unique identifier of this model to distinguish it from others. Could be any string.",
                   "default": "rango-test"
                 },
-                "openAiApiKey": {
+                "mode": {
                   "type": "string",
-                  "description": "Api key for Rango to communicate with the OpenAI api (currently, Rango operates only in mock mode, calling an OpenAI model under the hood). You can get one [here](https://platform.openai.com/account/api-keys).",
-                  "default": "None"
+                  "enum": ["local", "remote", "mockOpenAI"],
+                  "markdownDescription": "Defines how proof generation is performed.\n* `local` runs the internal model locally, requiring CUDA support.\n* `remote` runs the internal model by sending requests to a server on the specified port, where the model is actually executed.\n* `mockOpenAI` is a mock mode that accesses the OpenAI API via Rango, which can be useful for testing the Rango setup.",
+                  "default": "local"
                 },
                 "timeoutSeconds": {
                   "type": "number",
-                  "description": "Timeout for Rango to execute proof search. Currently, Rango operates only in mock mode, calling an OpenAI model under the hood. The timeout defines the number of attempts allowed before the first successful result.",
+                  "markdownDescription": "Sets the timeout in seconds for Rango's proof search. This timeout also determines how many attempts are allowed before the first successful result.",
                   "default": 5
+                },
+                "localCheckpointPath": {
+                  "type": "string",
+                  "markdownDescription": "Available only in the `local` mode.\nSpecifies the path to Rango's model checkpoint for local execution. If a relative path is provided, it is resolved from the installed Rango repository root.",
+                  "default": "models/deepseek-bm25-proof-tfidf-proj-thm-prem-final/checkpoint-54500"
+                },
+                "mappedToRemotePort": {
+                  "type": "number",
+                  "markdownDescription": "Available only in the `remote` mode.\nSpecifies the SSH-mapped port of the remote server where the model is running.",
+                  "default": 5000
+                },
+                "mockOpenAIApiKey": {
+                  "type": "string",
+                  "markdownDescription": "Available only in the `mockOpenAI` mode.\nSpecifies the API key used by Rango to communicate with the OpenAI API. You can get one [here](https://platform.openai.com/account/api-keys).",
+                  "default": "None"
+                },
+                "enableWholeProjectDataPoints": {
+                  "type": "boolean",
+                  "markdownDescription": "If true, Rango will parse all Coq source files in the project directory into data points, providing a more complete context. Otherwise, only the file containing the proof target is parsed.",
+                  "default": false
+                },
+                "dataLocDirectoryPath": {
+                  "type": "string",
+                  "markdownDescription": "Specifies the absolute path to the directory used by Rango for proof generation data.\n\nIf the required directory structure (`repos/target_project` as a symlink to the target project, a `data_points/` folder, and `sentences.db`) is missing, it will be initialized.\n\nEssentially, this parameter allows you to cache built data points and the sentences database for future executions."
                 }
               }
             },

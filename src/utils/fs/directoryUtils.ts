@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 
-import { exists } from "./fileUtils";
+import { exists } from "./pathUtils";
 
 /**
  * Both input paths are expected to be resolved and absolute paths.

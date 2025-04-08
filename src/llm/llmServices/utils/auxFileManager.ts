@@ -6,12 +6,8 @@ import { goalToTargetLemma } from "../../../core/exposedCompletionGeneratorUtils
 
 import { getErrorMessage } from "../../../utils/errors/errorsUtils";
 import { throwError } from "../../../utils/errors/throwErrors";
-import {
-    deleteFile,
-    exists,
-    readFile,
-    writeToFile,
-} from "../../../utils/fs/fileUtils";
+import { deleteFile, readFile, writeToFile } from "../../../utils/fs/fileUtils";
+import { exists } from "../../../utils/fs/pathUtils";
 import { joinPaths, parsePath } from "../../../utils/fs/pathUtils";
 import {
     CodeElementRange,

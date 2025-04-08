@@ -191,6 +191,11 @@ export namespace ValidationRules {
         (value: number) => value >= 0,
         "be non-negative",
     ];
+
+    export const beValidPortNumber: ValidationRule<any, number> = [
+        (value) => value >= 0 && value <= 65535,
+        "be a valid port value, i.e. in range between 0 and 65535",
+    ];
 }
 
 /**

@@ -1,3 +1,4 @@
+import * as fs from "fs";
 import * as path from "path";
 
 export function joinPaths(parentDirPath: string, ...paths: string[]): string {
@@ -10,6 +11,16 @@ export function isAbsolutePath(inputPath: string): boolean {
 
 export function resolveAsAbsolutePath(inputPath: string): string {
     return path.resolve(inputPath);
+}
+
+export function resolvePossiblyRelativeAsAbsolutePath(
+    inputPath: string,
+    parentDirPath: string
+): string {
+    if (isAbsolutePath(inputPath)) {
+        return resolveAsAbsolutePath(inputPath);
+    }
+    return resolveAsAbsolutePath(joinPaths(parentDirPath, inputPath));
 }
 
 export function relativizeAbsolutePaths(parentPath: string, childPath: string) {
@@ -34,4 +45,8 @@ export function getExtensionName(inputPath: string): string {
 
 export function getDirectoryPath(inputPath: string): string {
     return path.dirname(inputPath);
+}
+
+export function exists(inputPath: string): boolean {
+    return fs.existsSync(inputPath);
 }

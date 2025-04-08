@@ -8,8 +8,9 @@ import {
     getCoqPilotInstallationsDirPath,
     getOrCreateCoqPilotInstallationsDir,
 } from "../../utils/fs/coqPilotInstallationsDir";
-import { exists, makeFileExecutable } from "../../utils/fs/fileUtils";
+import { makeFileExecutable } from "../../utils/fs/fileUtils";
 import { listFiles } from "../../utils/fs/listFiles";
+import { exists } from "../../utils/fs/pathUtils";
 import { getLastName, joinPaths } from "../../utils/fs/pathUtils";
 import { showMessageToUser } from "../ui/messages/editorMessages";
 

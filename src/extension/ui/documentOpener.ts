@@ -1,7 +1,7 @@
 import { Uri, window, workspace } from "vscode";
 
 import { getErrorMessage } from "../../utils/errors/errorsUtils";
-import { exists } from "../../utils/fs/fileUtils";
+import { exists } from "../../utils/fs/pathUtils";
 
 import { showMessageToUser } from "./messages/editorMessages";
 

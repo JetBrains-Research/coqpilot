@@ -30,6 +30,7 @@ import {
 import {
     joinPaths,
     relativizeAbsolutePaths,
+    resolvePossiblyRelativeAsAbsolutePath,
 } from "../../../utils/fs/pathUtils";
 import { createTmpDirectory } from "../../../utils/fs/tmpFs";
 import { JsonSpacing, toJsonString } from "../../../utils/printers";
@@ -37,7 +38,7 @@ import { CodeElementRange } from "../../../utils/structures/codeElementPositions
 import { nowTimestampMillis } from "../../../utils/time";
 import { ExternalPipelineProofGenerationContext } from "../../proofGenerationContext";
 import { DebugLogsWrappers } from "../llmServiceInternal";
-import { MockRangoModelParams } from "../modelParams";
+import { RangoModelParams } from "../modelParams";
 import { AuxLemma, withAuxFile } from "../utils/auxFileManager";
 
 import {
@@ -55,7 +56,7 @@ import { RangoInput } from "./rangoInput";
  */
 export async function runRangoProof(
     context: ExternalPipelineProofGenerationContext,
-    params: MockRangoModelParams,
+    params: RangoModelParams,
     rangoDirPath: string,
     clearLogsOnSuccess: boolean,
     logDebug?: DebugLogsWrappers,
@@ -99,7 +100,7 @@ export async function runRangoProof(
 
 function executeRangoProofGenerationOrThrow(
     context: ExternalPipelineProofGenerationContext,
-    params: MockRangoModelParams,
+    params: RangoModelParams,
     rangoDirPath: string,
     inFileRequestUniqueIdentifier: string,
     auxLemma: AuxLemma,
@@ -207,12 +208,16 @@ function prepareSharedFiles(
 function spawnRangoProcess(
     rangoDirPath: string,
     rangoFiles: RangoSharedFiles,
-    params: MockRangoModelParams,
+    params: RangoModelParams,
     logDebug: DebugLogsWrappers | undefined,
     abortSignal: AbortSignal | undefined,
     reject: RejectType
 ): ChildProcess {
     const executionScriptPath = createExecutionScript(rangoDirPath, rangoFiles);
+    const rangoRequestParams = buildRangoRequestParamsAsEnvVariables(
+        params,
+        rangoDirPath
+    );
 
     // TODO (!): support nix
     const spawnOptions: SpawnOptionsWithStdioTuple<
@@ -224,8 +229,8 @@ function spawnRangoProcess(
         stdio: ["ignore", "pipe", "pipe"],
         env: {
             ...process.env,
-            COQPILOT_RANGO_TIMEOUT_PARAMETER: params.timeoutSeconds.toString(),
-            OPENAI_API_KEY: params.openAiApiKey,
+            ...rangoRequestParams,
+            OPENAI_API_KEY: params.mockOpenAIApiKey,
             OPENAI_ORG_KEY: "",
         },
         shell: true,
@@ -394,4 +399,46 @@ function getPythonVenvEnterShellCommand(): string {
 
 function getRangoAdapterScriptPath(rangoDirPath: string): string {
     return joinPaths(rangoDirPath, "scripts", "generate_proof.py");
+}
+
+// TODO: better to pass as a separate settings JSON
+function buildRangoRequestParamsAsEnvVariables(
+    params: RangoModelParams,
+    rangoDirPath: string
+) {
+    const commonParams = {
+        COQPILOT_RANGO_MODE_PARAMETER: params.mode,
+        COQPILOT_RANGO_TIMEOUT_PARAMETER: params.timeoutSeconds.toString(),
+        COQPILOT_RANGO_ENABLE_WHOLE_PROJECT_DATA_POINTS_PARAMETER:
+            params.enableWholeProjectDataPoints.toString(),
+        COQPILOT_RANGO_DATALOC_DIRECTORY_PATH_PARAMETER:
+            params.dataLocDirectoryPath,
+    };
+    return {
+        ...commonParams,
+        ...buildRangoModeSpecificRequestParams(params, rangoDirPath),
+    };
+}
+
+function buildRangoModeSpecificRequestParams(
+    params: RangoModelParams,
+    rangoDirPath: string
+) {
+    switch (params.mode) {
+        case "local":
+            return {
+                COQPILOT_RANGO_LOCAL_CHECKPOINT_PATH_PARAMETER:
+                    resolvePossiblyRelativeAsAbsolutePath(
+                        params.localCheckpointPath,
+                        rangoDirPath
+                    ),
+            };
+        case "remote":
+            return {
+                COQPILOT_RANGO_MAPPED_TO_REMOTE_PORT_PARAMETER:
+                    params.mappedToRemotePort.toString(),
+            };
+        case "mockOpenAI":
+            return {};
+    }
 }

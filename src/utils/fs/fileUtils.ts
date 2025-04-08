@@ -11,10 +11,6 @@ import { getPathStats } from "./stats";
 
 export const defaultEncoding = "utf-8";
 
-export function exists(inputPath: string): boolean {
-    return fs.existsSync(inputPath);
-}
-
 export function readFile<T>(
     filePath: string,
     onError: (error: Error) => T

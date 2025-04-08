@@ -8,7 +8,7 @@ import { getCoqPilotInstallationsDirPath } from "../../../utils/fs/coqPilotInsta
 import { joinPaths } from "../../../utils/fs/pathUtils";
 import { Time, time } from "../../../utils/time";
 import { ProofGenerationContext } from "../../proofGenerationContext";
-import { MockRangoUserModelParams } from "../../userModelParams";
+import { RangoUserModelParams } from "../../userModelParams";
 import { AnalyzedChatHistory } from "../commonStructures/chat";
 import { ErrorsHandlingMode } from "../commonStructures/errorsHandlingMode";
 import {
@@ -22,7 +22,7 @@ import { ProofVersion } from "../commonStructures/proofVersion";
 import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
 import { LLMServiceInternal } from "../llmServiceInternal";
-import { MockRangoModelParams } from "../modelParams";
+import { RangoModelParams } from "../modelParams";
 import { throwConfigurationError } from "../utils/errorUtils";
 
 import { runRangoProof } from "./rangoCore";
@@ -32,8 +32,8 @@ import { RangoModelParamsResolver } from "./rangoModelParamsResolver";
 // by providing default classes to extend
 
 export class RangoService extends LLMServiceImpl<
-    MockRangoUserModelParams,
-    MockRangoModelParams,
+    RangoUserModelParams,
+    RangoModelParams,
     RangoService,
     RangoGeneratedProof,
     RangoServiceInternal
@@ -82,7 +82,7 @@ export class RangoService extends LLMServiceImpl<
 
     async generateProof(
         proofGenerationContext: ProofGenerationContext,
-        params: MockRangoModelParams,
+        params: RangoModelParams,
         choices: number = params.defaultChoices,
         metadataHolder: ProofGenerationMetadataHolder | undefined = undefined,
         abortSignal?: AbortSignal
@@ -162,7 +162,7 @@ export class RangoService extends LLMServiceImpl<
 }
 
 export class RangoGeneratedProof extends GeneratedProofImpl<
-    MockRangoModelParams,
+    RangoModelParams,
     RangoService,
     RangoGeneratedProof,
     RangoServiceInternal
@@ -170,7 +170,7 @@ export class RangoGeneratedProof extends GeneratedProofImpl<
     constructor(
         rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
-        modelParams: MockRangoModelParams,
+        modelParams: RangoModelParams,
         llmServiceInternal: RangoServiceInternal,
         previousProofVersions?: ProofVersion[]
     ) {
@@ -203,7 +203,7 @@ export class RangoGeneratedProof extends GeneratedProofImpl<
 }
 
 class RangoServiceInternal extends LLMServiceInternal<
-    MockRangoModelParams,
+    RangoModelParams,
     RangoService,
     RangoGeneratedProof,
     RangoServiceInternal
@@ -211,7 +211,7 @@ class RangoServiceInternal extends LLMServiceInternal<
     constructGeneratedProof(
         rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
-        modelParams: MockRangoModelParams,
+        modelParams: RangoModelParams,
         previousProofVersions?: ProofVersion[] | undefined
     ): RangoGeneratedProof {
         return new RangoGeneratedProof(
@@ -225,7 +225,7 @@ class RangoServiceInternal extends LLMServiceInternal<
 
     async generateFromChatImpl(
         _analyzedChat: AnalyzedChatHistory,
-        _params: MockRangoModelParams,
+        _params: RangoModelParams,
         _choices: number
     ): Promise<GeneratedRawContent> {
         this.unsupportedMethod(

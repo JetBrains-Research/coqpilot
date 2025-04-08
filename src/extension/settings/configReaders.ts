@@ -15,16 +15,16 @@ import {
     DeepSeekUserModelParams,
     GrazieUserModelParams,
     LMStudioUserModelParams,
-    MockRangoUserModelParams,
     OpenAiUserModelParams,
     PredefinedProofsUserModelParams,
+    RangoUserModelParams,
     UserModelParams,
     deepSeekUserModelParamsSchema,
     grazieUserModelParamsSchema,
     lmStudioUserModelParamsSchema,
-    mockRangoUserModelParamsSchema,
     openAiUserModelParamsSchema,
     predefinedProofsUserModelParamsSchema,
+    rangoUserModelParamsSchema,
 } from "../../llm/userModelParams";
 
 import { DistanceContextTheoremsRanker } from "../../core/contextTheoremRanker/actualRankers/distanceContextTheoremsRanker";
@@ -34,7 +34,7 @@ import { ContextTheoremsRanker } from "../../core/contextTheoremRanker/contextTh
 
 import { AjvMode, buildAjv } from "../../utils/ajvErrorsHandling";
 import { illegalState, throwError } from "../../utils/errors/throwErrors";
-import { exists } from "../../utils/fs/fileUtils";
+import { exists } from "../../utils/fs/pathUtils";
 import { stringifyAnyValue, stringifyDefinedValue } from "../../utils/printers";
 import {
     detectOutdatedRangoInstallations,
@@ -134,11 +134,11 @@ export async function readAndValidateUserModelsParams(
                 jsonSchemaValidator
             )
         );
-    const rangoUserParams: MockRangoUserModelParams[] =
+    const rangoUserParams: RangoUserModelParams[] =
         config.rangoModelsParameters.map((params: any) =>
             validateAndParseJson(
                 params,
-                mockRangoUserModelParamsSchema,
+                rangoUserModelParamsSchema,
                 jsonSchemaValidator
             )
         );
@@ -239,7 +239,7 @@ function validateAndParseJson<T>(
 
 // TODO: skip Rango models if the user declines Rango installation, don't throw
 async function checkRangoIsAvailableOnRequest(
-    rangoUserParams: MockRangoUserModelParams[],
+    rangoUserParams: RangoUserModelParams[],
     rangoService: RangoService,
     coqPilotPath: string
 ) {
@@ -338,7 +338,7 @@ function validateApiKeysAreProvided(
     openAiUserParams: OpenAiUserModelParams[],
     grazieUserParams: GrazieUserModelParams[],
     deepSeekUserParams: DeepSeekUserModelParams[],
-    rangoUserParams: MockRangoUserModelParams[]
+    rangoUserParams: RangoUserModelParams[]
 ) {
     const buildApiKeyError = (
         serviceName: string,
@@ -361,7 +361,13 @@ function validateApiKeysAreProvided(
     if (deepSeekUserParams.some((params) => params.apiKey === "None")) {
         throw buildApiKeyError("Deep Seek", "deepSeek");
     }
-    if (rangoUserParams.some((params) => params.openAiApiKey === "None")) {
+    if (
+        rangoUserParams.some(
+            (params) =>
+                params.mode === "mockOpenAI" &&
+                params.mockOpenAIApiKey === "None"
+        )
+    ) {
         throw buildApiKeyError("Rango", "rango");
     }
 }

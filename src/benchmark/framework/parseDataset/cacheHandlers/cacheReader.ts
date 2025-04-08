@@ -7,7 +7,8 @@ import {
 } from "../../../../utils/ajvErrorsHandling";
 import { buildErrorCompleteLog } from "../../../../utils/errors/errorsUtils";
 import { isFile } from "../../../../utils/fs/fileTypeCheckers";
-import { exists, readFile } from "../../../../utils/fs/fileUtils";
+import { readFile } from "../../../../utils/fs/fileUtils";
+import { exists } from "../../../../utils/fs/pathUtils";
 import {
     joinPaths,
     relativizeAbsolutePaths,
