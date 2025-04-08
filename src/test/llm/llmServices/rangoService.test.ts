@@ -5,14 +5,21 @@ import {
     GenerationFailedError,
 } from "../../../llm/llmServiceErrors";
 import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
+import {
+    RangoModelMode,
+    RangoModelParams,
+} from "../../../llm/llmServices/modelParams";
 import { RangoService } from "../../../llm/llmServices/rango/rangoService";
 import { resolveParametersOrThrow } from "../../../llm/llmServices/utils/resolveOrThrow";
 import { ExternalPipelineProofGenerationContext } from "../../../llm/proofGenerationContext";
-import { MockRangoUserModelParams } from "../../../llm/userModelParams";
+import { RangoUserModelParams } from "../../../llm/userModelParams";
 
 import { illegalState } from "../../../utils/errors/throwErrors";
 import { getCoqPilotMetaDirPath } from "../../../utils/fs/coqPilotMetaDir";
 import { deleteDirectory } from "../../../utils/fs/directoryUtils";
+import { appendToFile } from "../../../utils/fs/fileUtils";
+import { createTmpDirectory } from "../../../utils/fs/tmpFs";
+import { JsonSpacing, toJsonString } from "../../../utils/printers";
 import { testIf } from "../../commonTestFunctions/conditionalTest";
 import { withLLMService } from "../../commonTestFunctions/withLLMService";
 import { testModelId } from "../llmSpecificTestUtils/constants";
@@ -25,9 +32,14 @@ import {
     testResolveValidCompleteParameters,
 } from "../llmSpecificTestUtils/testResolveParameters";
 
-suite("[LLMService] Test `RangoService`", function () {
-    const apiKey = process.env.OPENAI_API_KEY;
-    const timeoutSeconds = 5;
+suite("rango", function () {
+    const localCheckpointPath =
+        process.env.TESTING_RANGO_IN_LOCAL_MODE_CHECKPOINT;
+    const mappedToRemotePort = process.env.TESTING_RANGO_IN_REMOTE_MODE_PORT;
+    const modelInferenceTimeoutSeconds = 600;
+
+    const openAIApiKey = process.env.OPENAI_API_KEY;
+    const mockTimeoutSeconds = 5;
     const inputFile = ["small_document.v"];
 
     const requiredInputParamsTemplate = {
@@ -35,41 +47,88 @@ suite("[LLMService] Test `RangoService`", function () {
     };
     const expectedChoices = 1;
 
-    testIf(
-        apiKey !== undefined,
+    function testGeneration(
+        customInputParams: Partial<RangoUserModelParams>,
+        timeoutSeconds: number,
+        enableTest: boolean,
+        testWillBeSkippedCause: string,
+        suiteName: string
+    ) {
+        testIf(
+            enableTest,
+            testWillBeSkippedCause,
+            suiteName,
+            `Simple generation in "${customInputParams.mode!}" mode: 1 request, ${timeoutSeconds} seconds timeout`,
+            async () => {
+                const inputParams: RangoUserModelParams = {
+                    ...requiredInputParamsTemplate,
+                    timeoutSeconds: timeoutSeconds,
+                    ...customInputParams,
+                } as RangoUserModelParams;
+                const rangoService = new RangoService();
+                await testLLMServiceCompletesAdmitFromFile(
+                    rangoService,
+                    inputParams,
+                    inputFile,
+                    expectedChoices
+                );
+            }
+        )?.timeout(100_000);
+    }
+    testGeneration(
+        {
+            mode: "mockOpenAI",
+            mockOpenAIApiKey: openAIApiKey!,
+        },
+        mockTimeoutSeconds,
+        openAIApiKey !== undefined,
         "`OPENAI_API_KEY` is not specified",
-        this.title,
-        `Simple generation: 1 request, ${timeoutSeconds} seconds timeout`,
-        async () => {
-            const inputParams: MockRangoUserModelParams = {
-                ...requiredInputParamsTemplate,
-                openAiApiKey: apiKey!,
-                timeoutSeconds: timeoutSeconds,
-            };
-            const rangoService = new RangoService();
-            await testLLMServiceCompletesAdmitFromFile(
-                rangoService,
-                inputParams,
-                inputFile,
-                expectedChoices
-            );
-        }
-    )?.timeout(15_000);
+        this.title
+    );
+    testGeneration(
+        {
+            mode: "local",
+            localCheckpointPath: localCheckpointPath!,
+        },
+        modelInferenceTimeoutSeconds,
+        localCheckpointPath !== undefined,
+        "`TESTING_RANGO_IN_LOCAL_MODE_CHECKPOINT` is not specified",
+        this.title
+    );
+    testGeneration(
+        {
+            mode: "remote",
+            mappedToRemotePort: parseInt(mappedToRemotePort!),
+        },
+        modelInferenceTimeoutSeconds,
+        mappedToRemotePort !== undefined,
+        "`TESTING_RANGO_IN_REMOTE_MODE_PORT` is not specified",
+        this.title
+    );
 
     test("Test `resolveParameters` reads & accepts valid params", async () => {
-        const inputParams: MockRangoUserModelParams = {
-            ...requiredInputParamsTemplate,
-            openAiApiKey: "undefined",
-        };
         await withLLMService(new RangoService(), async (rangoService) => {
-            testResolveValidCompleteParameters(rangoService, inputParams);
+            testResolveValidCompleteParameters(rangoService, {
+                ...requiredInputParamsTemplate,
+                mode: "local",
+            });
+            testResolveValidCompleteParameters(rangoService, {
+                ...requiredInputParamsTemplate,
+                mode: "remote",
+            });
+            testResolveValidCompleteParameters(rangoService, {
+                ...requiredInputParamsTemplate,
+                mode: "mockOpenAI",
+                mockOpenAIApiKey: "non-defined",
+            });
         });
     });
 
     test("Test `resolveParameters` validates Rango-extended params (`timeoutSeconds`)", async () => {
-        const inputParams: MockRangoUserModelParams = {
+        const inputParams: RangoUserModelParams = {
             ...requiredInputParamsTemplate,
-            openAiApiKey: "undefined",
+            mode: "mockOpenAI",
+            mockOpenAIApiKey: "non-defined",
         };
         await withLLMService(new RangoService(), async (rangoService) => {
             // `timeoutSeconds` should be positive
@@ -81,13 +140,54 @@ suite("[LLMService] Test `RangoService`", function () {
                 },
                 "timeoutSeconds"
             );
+            // `timeoutSeconds` should be less than the maximum allowed value in the `mockOpenAI` mode
+            testResolveParametersFailsWithSingleCause(
+                rangoService,
+                {
+                    ...inputParams,
+                    timeoutSeconds: 99999,
+                },
+                "timeoutSeconds"
+            );
+
+            // port !in [0, 65535]
+            testResolveParametersFailsWithSingleCause(
+                rangoService,
+                {
+                    ...inputParams,
+                    mode: "remote",
+                    mappedToRemotePort: 100000,
+                },
+                "port"
+            );
+
+            // `dataLocDirectoryPath` should be absolute
+            testResolveParametersFailsWithSingleCause(
+                rangoService,
+                {
+                    ...inputParams,
+                    dataLocDirectoryPath: "./",
+                },
+                "dataLocDirectoryPath"
+            );
+            // `dataLocDirectoryPath` should exist
+            testResolveParametersFailsWithSingleCause(
+                rangoService,
+                {
+                    ...inputParams,
+                    dataLocDirectoryPath:
+                        "/non-existing-directory-for-coqpilot-test",
+                },
+                "dataLocDirectoryPath"
+            );
         });
     });
 
     test("Test `generateProof` throws on invalid configurations", async () => {
-        const inputParams: MockRangoUserModelParams = {
+        const inputParams: RangoUserModelParams = {
             ...requiredInputParamsTemplate,
-            openAiApiKey: "undefined",
+            mode: "mockOpenAI",
+            mockOpenAIApiKey: "non-defined",
         };
         await testLLMServiceInSetupEnvironment(
             new RangoService(),
@@ -112,113 +212,187 @@ suite("[LLMService] Test `RangoService`", function () {
         );
     });
 
-    test("Test `generateProof` throws gracefully if Rango unexpectedly fails", async () => {
-        const inputParams: MockRangoUserModelParams = {
-            ...requiredInputParamsTemplate,
-            openAiApiKey: "undefined",
-        };
-        await testLLMServiceInSetupEnvironment(
-            new RangoService(),
-            inputParams,
-            inputFile,
-            async (
-                rangoService,
-                resolvedParams,
-                _environment,
-                _completionContext,
-                proofGenerationContext
-            ) => {
-                /*
-                 * `proofGenerationContext.externalPipelineContext` contains an invalid `sourceTheoremStartLine`:
-                 * there is no such theorem; therefore Rango is expected to fail
-                 * while trying to find the target (after parsing the project)
-                 */
-                await expect(async () => {
-                    try {
-                        await rangoService.generateProof(
-                            {
-                                ...proofGenerationContext,
-                                externalPipelineContext: {
-                                    ...proofGenerationContext.externalPipelineContext,
-                                    sourceTheoremStartLine: 100,
-                                } as ExternalPipelineProofGenerationContext,
-                            },
-                            resolvedParams
+    function testThrowsGracefullyOnFail(
+        customInputParams: Partial<RangoUserModelParams>,
+        enableTest: boolean,
+        testWillBeSkippedCause: string,
+        suiteName: string
+    ) {
+        testIf(
+            enableTest,
+            testWillBeSkippedCause,
+            suiteName,
+            `Test \`generateProof\` throws gracefully if Rango unexpectedly fails: "${customInputParams.mode!}" mode`,
+            async () => {
+                const inputParams: RangoUserModelParams = {
+                    ...requiredInputParamsTemplate,
+                    ...customInputParams,
+                } as RangoUserModelParams;
+                await testLLMServiceInSetupEnvironment(
+                    new RangoService(),
+                    inputParams,
+                    inputFile,
+                    async (
+                        rangoService,
+                        resolvedParams,
+                        _environment,
+                        _completionContext,
+                        proofGenerationContext
+                    ) => {
+                        /*
+                         * `proofGenerationContext.externalPipelineContext` contains an invalid `sourceTheoremStartLine`:
+                         * there is no such theorem; therefore Rango is expected to fail
+                         * while trying to find the target (after parsing the project)
+                         */
+                        await expect(async () => {
+                            try {
+                                await rangoService.generateProof(
+                                    {
+                                        ...proofGenerationContext,
+                                        externalPipelineContext: {
+                                            ...proofGenerationContext.externalPipelineContext,
+                                            sourceTheoremStartLine: 100,
+                                        } as ExternalPipelineProofGenerationContext,
+                                    },
+                                    resolvedParams
+                                );
+                            } finally {
+                                const projectRootPath =
+                                    proofGenerationContext
+                                        .externalPipelineContext
+                                        ?.projectRootPath ??
+                                    illegalState(
+                                        "`proofGenerationContext` created by `testLLMServiceInSetupEnvironment` ",
+                                        "is expected to contain built `externalPipelineContext`"
+                                    );
+                                const failedExecutionLogsDir =
+                                    getCoqPilotMetaDirPath(projectRootPath);
+                                deleteDirectory(failedExecutionLogsDir);
+                            }
+                        }).toBeRejectedWith(
+                            GenerationFailedError,
+                            "Rango process failed: exit code 1. Logs are available at"
                         );
-                    } finally {
-                        const projectRootPath =
-                            proofGenerationContext.externalPipelineContext
-                                ?.projectRootPath ??
-                            illegalState(
-                                "`proofGenerationContext` created by `testLLMServiceInSetupEnvironment` ",
-                                "is expected to contain built `externalPipelineContext`"
-                            );
-                        const failedExecutionLogsDir =
-                            getCoqPilotMetaDirPath(projectRootPath);
-                        deleteDirectory(failedExecutionLogsDir);
                     }
-                }).toBeRejectedWith(
-                    GenerationFailedError,
-                    "Rango process failed (exit code 1): logs are available at"
                 );
             }
-        );
-    }).timeout(10_000);
+        )?.timeout(100_000);
+    }
+    testThrowsGracefullyOnFail(
+        {
+            mode: "mockOpenAI",
+            mockOpenAIApiKey: "a-key",
+        },
+        true,
+        "always executes",
+        this.title
+    );
+    testThrowsGracefullyOnFail(
+        {
+            mode: "local",
+            localCheckpointPath: localCheckpointPath!,
+        },
+        localCheckpointPath !== undefined,
+        "`TESTING_RANGO_IN_LOCAL_MODE_CHECKPOINT` is not specified",
+        this.title
+    );
+    testThrowsGracefullyOnFail(
+        {
+            mode: "remote",
+            mappedToRemotePort: parseInt(mappedToRemotePort!),
+        },
+        mappedToRemotePort !== undefined,
+        "`TESTING_RANGO_IN_REMOTE_MODE_PORT` is not specified",
+        this.title
+    );
 
-    test("Test `resolveParameters` overrides params correctly", async () => {
-        const apiKey = "undefined";
-        const inputParams: MockRangoUserModelParams = {
-            ...requiredInputParamsTemplate,
-            openAiApiKey: apiKey,
-        };
-        await withLLMService(new RangoService(), async (rangoService) => {
-            const resolutionResult = rangoService.resolveParameters({
-                ...inputParams,
-                timeoutSeconds: timeoutSeconds,
-                choices: 15,
-                systemPrompt: "asking for something",
-                maxTokensToGenerate: 2000,
-                tokensLimit: 4000,
-                maxContextTheoremsNumber: 20,
-                multiroundProfile: {
-                    maxRoundsNumber: 10,
-                    proofFixChoices: 5,
-                    proofFixPrompt: "asking for more of something",
-                    maxPreviousProofVersionsNumber: 2,
-                },
-            });
+    function testParametersResolutionOverrides(
+        mode: RangoModelMode,
+        expectedParamsToBeOverriden: Partial<RangoUserModelParams>
+    ) {
+        test(`Test \`resolveParameters\` overrides params correctly: "${mode}" mode`, async () => {
+            const inputParams: RangoUserModelParams = {
+                ...requiredInputParamsTemplate,
+                mode: mode,
+                timeoutSeconds: mockTimeoutSeconds,
+                localCheckpointPath: "./model-checkpoint",
+                mappedToRemotePort: 5065,
+                mockOpenAIApiKey: "a-key",
+                enableWholeProjectDataPoints: true,
+                dataLocDirectoryPath: createTmpDirectory(),
+            } as RangoUserModelParams;
+            await withLLMService(new RangoService(), async (rangoService) => {
+                const resolutionResult = rangoService.resolveParameters({
+                    ...inputParams,
+                    timeoutSeconds: mockTimeoutSeconds,
+                    choices: 15,
+                    systemPrompt: "asking for something",
+                    maxTokensToGenerate: 2000,
+                    tokensLimit: 4000,
+                    maxContextTheoremsNumber: 20,
+                    multiroundProfile: {
+                        maxRoundsNumber: 10,
+                        proofFixChoices: 5,
+                        proofFixPrompt: "asking for more of something",
+                        maxPreviousProofVersionsNumber: 2,
+                    },
+                });
 
-            // first, verify all params were read correctly
-            for (const paramLog of resolutionResult.resolutionLogs) {
-                expect(paramLog.isInvalidCause).toBeNullish();
-                expect(paramLog.inputReadCorrectly.wasPerformed).toBeTruthy();
-                // expect(paramLog.overriden).toBeTruthy(); // is not true for mock overrides
-                expect(paramLog.resolvedWithDefault.wasPerformed).toBeFalsy();
-            }
+                // first, verify all params were read correctly
+                for (const paramLog of resolutionResult.resolutionLogs) {
+                    expect(paramLog.isInvalidCause).toBeNullish();
+                    if (!paramLog.inputReadCorrectly.wasPerformed) {
+                        appendToFile(
+                            `${toJsonString(paramLog, JsonSpacing.DEFAULT_FORMATTED)}`,
+                            "/Users/Gleb.Solovev/tabs/coqpilot/debug.txt",
+                            () => {}
+                        );
+                    }
+                    expect(
+                        paramLog.inputReadCorrectly.wasPerformed
+                    ).toBeTruthy();
+                    // expect(paramLog.overriden).toBeTruthy(); // is not true for mock overrides
+                    expect(
+                        paramLog.resolvedWithDefault.wasPerformed
+                    ).toBeFalsy();
+                }
 
-            expect(resolutionResult.resolved).toEqual({
-                modelId: testModelId,
-                openAiApiKey: apiKey,
-                timeoutSeconds: timeoutSeconds,
-                systemPrompt: "",
-                maxTokensToGenerate: Number.MAX_SAFE_INTEGER,
-                tokensLimit: Number.MAX_SAFE_INTEGER,
-                maxContextTheoremsNumber: Number.MAX_SAFE_INTEGER,
-                multiroundProfile: {
-                    maxRoundsNumber: 1,
-                    defaultProofFixChoices: 0,
-                    proofFixPrompt: "",
-                    maxPreviousProofVersionsNumber: 0,
-                },
-                defaultChoices: 1,
+                expect(resolutionResult.resolved).toEqual({
+                    ...inputParams,
+                    systemPrompt: "",
+                    maxTokensToGenerate: Number.MAX_SAFE_INTEGER,
+                    tokensLimit: Number.MAX_SAFE_INTEGER,
+                    maxContextTheoremsNumber: Number.MAX_SAFE_INTEGER,
+                    multiroundProfile: {
+                        maxRoundsNumber: 1,
+                        defaultProofFixChoices: 0,
+                        proofFixPrompt: "",
+                        maxPreviousProofVersionsNumber: 0,
+                    },
+                    defaultChoices: 1,
+                    ...expectedParamsToBeOverriden,
+                } as RangoModelParams);
             });
         });
+    }
+    testParametersResolutionOverrides("mockOpenAI", {
+        localCheckpointPath: "",
+        mappedToRemotePort: 0,
+    });
+    testParametersResolutionOverrides("local", {
+        mappedToRemotePort: 0,
+        mockOpenAIApiKey: "",
+    });
+    testParametersResolutionOverrides("remote", {
+        localCheckpointPath: "",
+        mockOpenAIApiKey: "",
     });
 
     test("Test chat-related features throw", async () => {
-        const inputParams: MockRangoUserModelParams = {
+        const inputParams: RangoUserModelParams = {
             ...requiredInputParamsTemplate,
-            openAiApiKey: "undefined",
+            mode: "mockOpenAI",
+            mockOpenAIApiKey: "non-defined",
         };
         await withLLMService(
             new RangoService(undefined, ErrorsHandlingMode.RETHROW_ERRORS),

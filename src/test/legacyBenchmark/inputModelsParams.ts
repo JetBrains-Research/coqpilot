@@ -2,9 +2,9 @@ import {
     DeepSeekUserModelParams,
     GrazieUserModelParams,
     LMStudioUserModelParams,
-    MockRangoUserModelParams,
     OpenAiUserModelParams,
     PredefinedProofsUserModelParams,
+    RangoUserModelParams,
 } from "../../llm/userModelParams";
 
 export interface InputModelsParams {
@@ -13,7 +13,7 @@ export interface InputModelsParams {
     grazieParams: GrazieUserModelParams[];
     lmStudioParams: LMStudioUserModelParams[];
     deepSeekParams: DeepSeekUserModelParams[];
-    rangoParams: MockRangoUserModelParams[];
+    rangoParams: RangoUserModelParams[];
 }
 
 export const onlyAutoModelsParams: InputModelsParams = {
