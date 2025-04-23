@@ -256,7 +256,7 @@ function spawnRangoProcess(
             err.name === "AbortError"
                 ? "Rango subprocess has been aborted"
                 : `Failed to launch Rango subprocess: ${getErrorMessage(err)}`;
-        reject(new RangoError(rangoFiles.logsFilePath, errorMessage));
+        reject(new RangoError(errorMessage, rangoFiles.logsFilePath));
     });
 
     logDebug?.event("Spawned Rango subprocess", {
@@ -367,7 +367,7 @@ function createExecutionScript(
         `${getPythonVenvEnterShellCommand()}`,
         "",
         'echo "[Execution script] Executing Python script..."',
-        `python3 ${pythonArgs.join(" ")}`,
+        `exec python3 ${pythonArgs.join(" ")}`,
     ].join("\n");
 
     try {
