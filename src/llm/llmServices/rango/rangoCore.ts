@@ -30,7 +30,6 @@ import {
 import {
     joinPaths,
     relativizeAbsolutePaths,
-    resolvePossiblyRelativeAsAbsolutePath,
 } from "../../../utils/fs/pathUtils";
 import { createTmpDirectory } from "../../../utils/fs/tmpFs";
 import { JsonSpacing, toJsonString } from "../../../utils/printers";
@@ -48,6 +47,10 @@ import {
     throwRangoErrorWithLogs,
 } from "./rangoError";
 import { RangoInput } from "./rangoInput";
+import {
+    RangoModelSettings,
+    buildRangoModelSettingsFromParams,
+} from "./rangoModelSettings";
 
 /**
  * Runs Rango proof generation.
@@ -120,10 +123,15 @@ function executeRangoProofGenerationOrThrow(
         ),
         projectPath: projectPath,
     };
+    const modelSettings = buildRangoModelSettingsFromParams(
+        params,
+        rangoDirPath
+    );
 
     throwOnAbort(abortSignal);
     const rangoFiles = prepareSharedFiles(
         rangoInput,
+        modelSettings,
         buildRequestIdentifierFileName(
             params.modelId,
             context.relativeSourceFilePath,
@@ -167,12 +175,14 @@ function executeRangoProofGenerationOrThrow(
 interface RangoSharedFiles {
     sharedDirPath: string;
     inputFilePath: string;
+    modelSettingsFilePath: string;
     outputDirPath: string;
     logsFilePath: string;
 }
 
 function prepareSharedFiles(
     rangoInput: RangoInput,
+    modelSettings: RangoModelSettings,
     rangoLogsFileName: string,
     projectPath: string
 ): RangoSharedFiles {
@@ -181,6 +191,7 @@ function prepareSharedFiles(
         createTmpDirectory({ unsafeCleanup: true }),
         "coqpilot-rango-run"
     );
+
     const inputFilePath = joinPaths(sharedDirPath, "input.json");
     writeToFile(
         toJsonString(rangoInput, JsonSpacing.DEFAULT_FORMATTED),
@@ -189,7 +200,17 @@ function prepareSharedFiles(
             throw err;
         }
     );
+    const modelSettingsFilePath = joinPaths(sharedDirPath, "settings.json");
+    writeToFile(
+        toJsonString(modelSettings, JsonSpacing.DEFAULT_FORMATTED),
+        modelSettingsFilePath,
+        (err) => {
+            throw err;
+        }
+    );
+
     const outputDirPath = createDirectory(true, sharedDirPath, "output");
+
     const logsFilePath = createFileWithParentDirectories(
         "throw",
         joinPaths(
@@ -197,9 +218,11 @@ function prepareSharedFiles(
             rangoLogsFileName
         )
     );
+
     return {
         sharedDirPath: sharedDirPath,
         inputFilePath: inputFilePath,
+        modelSettingsFilePath: modelSettingsFilePath,
         outputDirPath: outputDirPath,
         logsFilePath: logsFilePath,
     };
@@ -214,10 +237,6 @@ function spawnRangoProcess(
     reject: RejectType
 ): ChildProcess {
     const executionScriptPath = createExecutionScript(rangoDirPath, rangoFiles);
-    const rangoRequestParams = buildRangoRequestParamsAsEnvVariables(
-        params,
-        rangoDirPath
-    );
 
     // TODO (!): support nix
     const spawnOptions: SpawnOptionsWithStdioTuple<
@@ -229,7 +248,6 @@ function spawnRangoProcess(
         stdio: ["ignore", "pipe", "pipe"],
         env: {
             ...process.env,
-            ...rangoRequestParams,
             OPENAI_API_KEY: params.mockOpenAIApiKey,
             OPENAI_ORG_KEY: "",
         },
@@ -346,6 +364,7 @@ function createExecutionScript(
         getRangoAdapterScriptPath(rangoDirPath),
         `--rango_dir=${rangoDirPath}`,
         `--target=${rangoFiles.inputFilePath}`,
+        `--settings=${rangoFiles.modelSettingsFilePath}`,
         `--output_dir=${rangoFiles.outputDirPath}`,
     ];
     const executionScriptCode = [
@@ -399,46 +418,4 @@ function getPythonVenvEnterShellCommand(): string {
 
 function getRangoAdapterScriptPath(rangoDirPath: string): string {
     return joinPaths(rangoDirPath, "scripts", "generate_proof.py");
-}
-
-// TODO: better to pass as a separate settings JSON
-function buildRangoRequestParamsAsEnvVariables(
-    params: RangoModelParams,
-    rangoDirPath: string
-) {
-    const commonParams = {
-        COQPILOT_RANGO_MODE_PARAMETER: params.mode,
-        COQPILOT_RANGO_TIMEOUT_PARAMETER: params.timeoutSeconds.toString(),
-        COQPILOT_RANGO_ENABLE_WHOLE_PROJECT_DATA_POINTS_PARAMETER:
-            params.enableWholeProjectDataPoints.toString(),
-        COQPILOT_RANGO_DATALOC_DIRECTORY_PATH_PARAMETER:
-            params.dataLocDirectoryPath,
-    };
-    return {
-        ...commonParams,
-        ...buildRangoModeSpecificRequestParams(params, rangoDirPath),
-    };
-}
-
-function buildRangoModeSpecificRequestParams(
-    params: RangoModelParams,
-    rangoDirPath: string
-) {
-    switch (params.mode) {
-        case "local":
-            return {
-                COQPILOT_RANGO_LOCAL_CHECKPOINT_PATH_PARAMETER:
-                    resolvePossiblyRelativeAsAbsolutePath(
-                        params.localCheckpointPath,
-                        rangoDirPath
-                    ),
-            };
-        case "remote":
-            return {
-                COQPILOT_RANGO_MAPPED_TO_REMOTE_PORT_PARAMETER:
-                    params.mappedToRemotePort.toString(),
-            };
-        case "mockOpenAI":
-            return {};
-    }
 }
