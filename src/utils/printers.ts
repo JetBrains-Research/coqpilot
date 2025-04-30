@@ -5,7 +5,7 @@ export function stringifyAnyValue(
     space: JsonSpacing = JsonSpacing.UNFORMATTED
 ): string {
     const valueAsString = toJsonString(value, space);
-    if (typeof value === "number") {
+    if (typeof value === "number" || typeof value === "string") {
         return valueAsString;
     }
     return `"${valueAsString}"`;
