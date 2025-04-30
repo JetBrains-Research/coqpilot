@@ -24,9 +24,9 @@ import { inspectSourceFile } from "../core/inspectSourceFile";
 
 import { ProofStep } from "../coqParser/parsedTypes";
 import { buildErrorCompleteLog } from "../utils/errors/errorsUtils";
+import { SimpleShowableError } from "../utils/errors/simpleShowableError";
 import { Uri } from "../utils/structures/uri";
 
-import { InstallationFailedError } from "./installers/installationFailedError";
 import {
     executeRangoInstallationCommand,
     executeRangoUninstallationCommand,
@@ -164,10 +164,7 @@ export class CoqPilot {
                 this.sessionState.abortController.signal
             );
         } catch (e) {
-            if (
-                e instanceof SettingsValidationError ||
-                e instanceof InstallationFailedError
-            ) {
+            if (e instanceof SettingsValidationError) {
                 e.showAsMessageToUser();
             } else if (e instanceof CoqLspStartupError) {
                 showMessageToUserWithSettingsHint(
@@ -181,6 +178,8 @@ export class CoqPilot {
                     this.sessionState.markAbortNotificationAsShown();
                     showMessageToUser(EditorMessages.completionAborted, "info");
                 }
+            } else if (e instanceof SimpleShowableError) {
+                showMessageToUser(e.messageToShow, "error");
             } else {
                 showMessageToUser(
                     e instanceof Error
