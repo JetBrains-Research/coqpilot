@@ -5,7 +5,7 @@ export interface InteractorChoiceItemWithCallback {
     callback: () => Promise<void>;
 }
 
-export interface InstallationInteractor<ExtraInstallationOptions> {
+export interface InstallationInteractor<InstallationOptions> {
     showMessage(
         message: string,
         severity: InteractorMessageSeverity
@@ -32,12 +32,12 @@ export interface InstallationInteractor<ExtraInstallationOptions> {
     performInstallation(
         coqPilotPath: string,
         installationPath: string,
-        extraOptions: ExtraInstallationOptions | undefined
+        options: InstallationOptions
     ): Promise<void>;
 
     performUninstallation(
         coqPilotPath: string,
         installationPath: string,
-        extraOptions: ExtraInstallationOptions | undefined
+        options: InstallationOptions
     ): Promise<void>;
 }

@@ -1,9 +1,7 @@
 import { makeFileExecutable } from "../../../../utils/fs/fileUtils";
 import { joinPaths } from "../../../../utils/fs/pathUtils";
 
-export abstract class AbstractLLMServiceInstallationScriptsManager<
-    ExtraInstallationOptions,
-> {
+export abstract class AbstractInstallationScriptsManager<InstallationOptions> {
     abstract readonly SCRIPTS_DIR: string;
     abstract readonly INSTALLATION_SCRIPT_NAME: string;
     abstract readonly UNINSTALLATION_SCRIPT_NAME: string;
@@ -12,14 +10,14 @@ export abstract class AbstractLLMServiceInstallationScriptsManager<
         scriptAction: "install" | "uninstall",
         coqPilotPath: string,
         installationPath: string,
-        extraOptions: ExtraInstallationOptions
+        options: InstallationOptions
     ): string {
         const scriptPath = this.getScriptPath(scriptAction, coqPilotPath);
         makeFileExecutable(scriptPath);
         return this.buildScriptExecutionCommand(
             scriptPath,
             installationPath,
-            extraOptions
+            options
         );
     }
 
@@ -37,6 +35,6 @@ export abstract class AbstractLLMServiceInstallationScriptsManager<
     protected abstract buildScriptExecutionCommand(
         scriptPath: string,
         installationPath: string,
-        extraOptions: ExtraInstallationOptions
+        options: InstallationOptions
     ): string;
 }

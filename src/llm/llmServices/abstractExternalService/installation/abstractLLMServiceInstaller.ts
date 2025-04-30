@@ -10,10 +10,10 @@ import { translateToSafeFileName } from "../../../../utils/fs/fileNameUtils";
 import { listFiles } from "../../../../utils/fs/listFiles";
 import { exists, getLastName, joinPaths } from "../../../../utils/fs/pathUtils";
 import { UserModelParams } from "../../../userModelParams";
-import { LLMService } from "../../llmService";
 import { ModelParams } from "../../modelParams";
+import { AbstractExternalService } from "../abstractExternalService";
 
-import { AbstractLLMServiceInstallationScriptsManager } from "./abstractLLMServiceInstallationScriptsManager";
+import { AbstractInstallationScriptsManager } from "./AbstractInstallationScriptsManager";
 import { InstallationFailedError } from "./installationFailedError";
 import { InstallationInteractor } from "./installationInteractor";
 import {
@@ -21,40 +21,47 @@ import {
     checkAbstractPrerequisitesOrThrow,
 } from "./prerequisitesChecker";
 
-export abstract class AbstractLLMServiceInstaller<
-    ExtraInstallationOptions,
+export abstract class AbstractExternalServiceInstaller<
+    InstallationOptions,
     InputModelParams extends UserModelParams,
-    LLMServiceType extends LLMService<InputModelParams, ModelParams>,
+    ExternalServiceType extends AbstractExternalService<
+        InputModelParams,
+        ModelParams,
+        InstallationOptions,
+        any,
+        any,
+        any
+    >,
 > {
-    abstract readonly llmService: LLMServiceType;
+    abstract readonly externalService: ExternalServiceType;
     abstract readonly installationTargetName: string;
 
     abstract readonly installationPrerequisites: InstallationPrerequisite[];
 
-    abstract scriptsManager: AbstractLLMServiceInstallationScriptsManager<ExtraInstallationOptions>;
+    abstract scriptsManager: AbstractInstallationScriptsManager<InstallationOptions>;
 
     /**
      * Returns `undefined` if installation (available by `installationPath`)
      * is sufficient to execute `inputParams` models.
-     * Otherwise returns `ExtraInstallationOptions` to perform installation with.
+     * Otherwise returns `InstallationOptions` to perform installation with.
      */
     abstract checkInstallationIsAvailableForRequest(
         inputParams: InputModelParams[],
         installationPath: string,
-        inputExtraOptions: ExtraInstallationOptions
-    ): ExtraInstallationOptions | undefined;
+        inputOptions: InstallationOptions
+    ): InstallationOptions | undefined;
 
     abstract estimateInstallationTime(): string;
 
-    readonly getDefaultInstallationDirPrefix = (): string => {
+    protected readonly getDefaultInstallationDirPrefix = (): string => {
         return `coqpilot-${translateToSafeFileName(this.installationTargetName)}`;
     };
 
-    readonly getDefaultInstallationRepoDirName = (): string => {
+    protected readonly getDefaultInstallationRepoDirName = (): string => {
         return `${this.getDefaultInstallationDirPrefix()}-v${PLUGIN_VERSION}`;
     };
 
-    readonly getInstallationPath = (): string => {
+    readonly getDefaultInstallationPath = (): string => {
         return joinPaths(
             getCoqPilotInstallationsDirPath(),
             this.getDefaultInstallationRepoDirName()
@@ -64,31 +71,30 @@ export abstract class AbstractLLMServiceInstaller<
     async provideInstallationForRequest(
         inputParams: InputModelParams[],
         coqPilotPath: string,
-        inputExtraOptions: ExtraInstallationOptions,
-        interactor: InstallationInteractor<ExtraInstallationOptions>
+        inputOptions: InstallationOptions,
+        interactor: InstallationInteractor<InstallationOptions>
     ) {
         if (inputParams.length === 0) {
             return;
         }
         await this.detectAndSuggestRemovingOutdatedInstallations(
             coqPilotPath,
-            inputExtraOptions,
+            inputOptions,
             interactor
         );
 
-        // TODO: support getting path from the external proof provider service
-        const installationPath = this.getInstallationPath();
-        const extraOptions = this.checkInstallationIsAvailableForRequest(
+        const installationPath = this.externalService.installationPath;
+        const installationOptions = this.checkInstallationIsAvailableForRequest(
             inputParams,
             installationPath,
-            inputExtraOptions
+            inputOptions
         );
-        if (extraOptions === undefined) {
+        if (installationOptions === undefined) {
             return;
         }
 
         await interactor.selectAndPerformInstallationAction(
-            `${this.llmService.serviceName} models require the ${this.installationTargetName} project, which takes about ${this.estimateInstallationTime()} to install (one-time setup). Proceed with installation?`,
+            `${this.externalService.externalProjectName} models require the ${this.installationTargetName} project, which takes about ${this.estimateInstallationTime()} to install (one-time setup). Proceed with installation?`,
             "info",
             {
                 choiceItem: "Install",
@@ -96,22 +102,22 @@ export abstract class AbstractLLMServiceInstaller<
                     await interactor.performInstallation(
                         coqPilotPath,
                         installationPath,
-                        extraOptions
+                        installationOptions
                     ),
             },
             {
                 choiceItem: "Cancel",
                 callback: async () => {
                     await interactor.onCancelledInstallation(
-                        `${this.llmService.serviceName} models requested, but ${this.installationTargetName} is not installed and the user declined its installation`,
-                        `${this.llmService.serviceName} models require the ${this.installationTargetName} project. Please run \`CoqPilot: Install and build ${this.installationTargetName} project\` or remove ${this.llmService.serviceName} models from the config, then try again.`,
+                        `${this.externalService.externalProjectName} models requested, but ${this.installationTargetName} is not installed and the user declined its installation`,
+                        `${this.externalService.externalProjectName} models require the ${this.installationTargetName} project. Please run \`CoqPilot: Install and build ${this.installationTargetName} project\` or remove ${this.externalService.externalProjectName} models from the config, then try again.`,
                         {
                             choiceItem: `Install ${this.installationTargetName} now`,
                             callback: async () =>
                                 interactor.performInstallation(
                                     coqPilotPath,
                                     installationPath,
-                                    extraOptions
+                                    installationOptions
                                 ),
                         }
                     );
@@ -130,8 +136,8 @@ export abstract class AbstractLLMServiceInstaller<
     async install(
         coqPilotPath: string,
         installationPath: string,
-        extraOptions: ExtraInstallationOptions,
-        interactor: InstallationInteractor<ExtraInstallationOptions>
+        options: InstallationOptions,
+        interactor: InstallationInteractor<InstallationOptions>
     ) {
         return new Promise<void>((resolve, reject) => {
             getOrCreateCoqPilotInstallationsDir();
@@ -139,7 +145,7 @@ export abstract class AbstractLLMServiceInstaller<
                 "install",
                 coqPilotPath,
                 installationPath,
-                extraOptions
+                options
             );
             // TODO: save stdout and stderr into logs (coqpilot meta dir)
             exec(command, (error, _, stderr) => {
@@ -164,26 +170,26 @@ export abstract class AbstractLLMServiceInstaller<
     async uninstall(
         coqPilotPath: string,
         installationPath: string,
-        extraOptions: ExtraInstallationOptions,
-        interactor: InstallationInteractor<ExtraInstallationOptions>
+        options: InstallationOptions,
+        interactor: InstallationInteractor<InstallationOptions>
     ) {
         return new Promise<void>((resolve, reject) => {
             const command = this.scriptsManager.prepareScriptExecutable(
                 "uninstall",
                 coqPilotPath,
                 installationPath,
-                extraOptions
+                options
             );
             exec(command, (error, _, stderr) => {
                 if (error) {
                     interactor.showMessage(
-                        `Rango uninstallation failed: ${stderr || error.message}`,
+                        `${this.installationTargetName} uninstallation failed: ${stderr || error.message}`,
                         "error"
                     );
                     reject(error);
                 } else {
                     interactor.showMessage(
-                        `Rango project has been succesfully uninstalled from ${installationPath}`,
+                        `${this.installationTargetName} project has been succesfully uninstalled from ${installationPath}`,
                         "info"
                     );
                     resolve();
@@ -209,12 +215,11 @@ export abstract class AbstractLLMServiceInstaller<
 
     async detectAndSuggestRemovingOutdatedInstallations(
         coqPilotPath: string,
-        extraOptions: ExtraInstallationOptions | undefined,
-        interactor: InstallationInteractor<ExtraInstallationOptions>
+        extraOptions: InstallationOptions,
+        interactor: InstallationInteractor<InstallationOptions>
     ) {
-        // TODO: support getting path from the external proof provider service
         const outdatedInstallations = this.detectOutdatedInstallations(
-            this.getInstallationPath()
+            this.externalService.installationPath
         );
         if (outdatedInstallations.length === 0) {
             return;
@@ -245,18 +250,18 @@ export abstract class AbstractLLMServiceInstaller<
     private async uninstallOutdatedInstallations(
         outdatedInstallationPaths: string[],
         coqPilotPath: string,
-        extraOptions: ExtraInstallationOptions | undefined,
-        interactor: InstallationInteractor<ExtraInstallationOptions>
+        options: InstallationOptions,
+        interactor: InstallationInteractor<InstallationOptions>
     ) {
         for (const installationPath of outdatedInstallationPaths) {
             await interactor.performUninstallation(
                 coqPilotPath,
                 installationPath,
-                extraOptions
+                options
             );
         }
         interactor.showMessage(
-            "Outdated Rango projects have been successfully uninstalled.",
+            `Outdated ${this.installationTargetName} projects have been successfully uninstalled.`,
             "info"
         );
     }
