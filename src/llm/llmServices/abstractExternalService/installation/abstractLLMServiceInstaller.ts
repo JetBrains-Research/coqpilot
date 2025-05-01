@@ -13,7 +13,7 @@ import { UserModelParams } from "../../../userModelParams";
 import { ModelParams } from "../../modelParams";
 import { AbstractExternalService } from "../abstractExternalService";
 
-import { AbstractInstallationScriptsManager } from "./AbstractInstallationScriptsManager";
+import { AbstractInstallationScriptsManager } from "./abstractInstallationScriptsManager";
 import { InstallationFailedError } from "./installationFailedError";
 import { InstallationInteractor } from "./installationInteractor";
 import {
@@ -33,12 +33,14 @@ export abstract class AbstractExternalServiceInstaller<
         any
     >,
 > {
-    abstract readonly externalService: ExternalServiceType;
-    abstract readonly installationTargetName: string;
+    constructor(protected readonly externalService: ExternalServiceType) {}
+
+    readonly installationTargetName: string =
+        this.externalService.externalProjectName;
 
     abstract readonly installationPrerequisites: InstallationPrerequisite[];
 
-    abstract scriptsManager: AbstractInstallationScriptsManager<InstallationOptions>;
+    protected abstract readonly scriptsManager: AbstractInstallationScriptsManager<InstallationOptions>;
 
     /**
      * Returns `undefined` if installation (available by `installationPath`)

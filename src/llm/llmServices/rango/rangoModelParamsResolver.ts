@@ -3,17 +3,19 @@ import { exists, isAbsolutePath } from "../../../utils/fs/pathUtils";
 import { createTmpDirectory } from "../../../utils/fs/tmpFs";
 import { RangoUserModelParams } from "../../userModelParams";
 import {
-    MultiroundProfile,
     RangoModelMode,
     RangoModelParams,
     rangoModelParamsSchema,
 } from "../modelParams";
-import { BasicModelParamsResolver } from "../utils/paramsResolvers/basicModelParamsResolvers";
 import { ValidationRules } from "../utils/paramsResolvers/builders";
+import { DefaultNonChatBasedModelParamsResolver } from "../utils/paramsResolvers/nonChatBasedModelParamsResolver";
 import { ValidParamsResolverImpl } from "../utils/paramsResolvers/paramsResolverImpl";
 
 export class RangoModelParamsResolver
-    extends BasicModelParamsResolver<RangoUserModelParams, RangoModelParams>
+    extends DefaultNonChatBasedModelParamsResolver<
+        RangoUserModelParams,
+        RangoModelParams
+    >
     implements ValidParamsResolverImpl<RangoUserModelParams, RangoModelParams>
 {
     constructor() {
@@ -103,33 +105,6 @@ export class RangoModelParamsResolver
             [(value) => isAbsolutePath(value), "be an absolute path"],
             [(value) => exists(value), "exist"]
         );
-
-    readonly systemPrompt = this.resolveParam<string>(
-        "systemPrompt"
-    ).overrideWithMock(() => "");
-
-    readonly maxTokensToGenerate = this.resolveParam<number>(
-        "maxTokensToGenerate"
-    ).overrideWithMock(() => Number.MAX_SAFE_INTEGER);
-
-    readonly tokensLimit = this.resolveParam<number>(
-        "tokensLimit"
-    ).overrideWithMock(() => Number.MAX_SAFE_INTEGER);
-
-    readonly maxContextTheoremsNumber = this.resolveParam<number>(
-        "maxContextTheoremsNumber"
-    ).overrideWithMock(() => Number.MAX_SAFE_INTEGER);
-
-    readonly multiroundProfile = this.resolveParam<MultiroundProfile>(
-        "multiroundProfile"
-    ).overrideWithMock(() => {
-        return {
-            maxRoundsNumber: 1,
-            defaultProofFixChoices: 0,
-            proofFixPrompt: "",
-            maxPreviousProofVersionsNumber: 0,
-        };
-    });
 
     readonly defaultChoices = this.resolveParam<number>("choices")
         .override(

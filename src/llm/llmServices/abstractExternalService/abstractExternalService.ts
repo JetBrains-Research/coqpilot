@@ -70,6 +70,7 @@ export abstract class AbstractExternalService<
     >;
 
     readonly installationPath: string;
+
     readonly maxSubprocessesSpawnedInParallel: number;
     protected readonly subprocessesScheduler: AsyncScheduler;
 
