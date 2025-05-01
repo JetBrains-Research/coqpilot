@@ -39,9 +39,9 @@ export class RangoService extends AbstractExternalService<
         errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.RETHROW_ERRORS,
         generationLogsFilePath: string | undefined = undefined,
         debugLogs: boolean = false,
-        customInstallationPath: string | undefined = undefined,
+        installationPath: string | undefined = undefined,
         maxSubprocessesSpawnedInParallel: number | undefined = undefined,
-        clearProofGenerationLogsOnSuccess: boolean = false
+        clearProofGenerationLogsOnSuccess: boolean = true
     ) {
         super(
             "Rango",
@@ -50,7 +50,7 @@ export class RangoService extends AbstractExternalService<
             errorsHandlingMode,
             generationLogsFilePath,
             debugLogs,
-            customInstallationPath,
+            installationPath,
             maxSubprocessesSpawnedInParallel,
             clearProofGenerationLogsOnSuccess
         );
@@ -63,7 +63,7 @@ export class RangoService extends AbstractExternalService<
     );
     protected readonly modelParamsResolver = new RangoModelParamsResolver();
 
-    readonly installer = new RangoInstaller(this.customInstallationPath);
+    readonly installer = new RangoInstaller();
 }
 
 export class RangoGeneratedProof extends AbstractExternalGeneratedProof<
@@ -123,7 +123,7 @@ class RangoServiceInternal extends AbstractExternalServiceInternal<
         const proofOrUndefined = await runRangoProof(
             externalPipelineContext,
             params,
-            this.llmService.getInstallationPath(),
+            this.llmService.installationPath,
             this.llmService.clearProofGenerationLogsOnSuccess,
             this.logDebug,
             abortSignal

@@ -245,10 +245,9 @@ async function provideExternalServicesInstallations(
             await llmService.installer.provideInstallationForRequest(
                 userParams,
                 coqPilotPath,
+                llmService.installationPath,
                 {},
-                new UserInstallationInteractor(
-                    llmService.installer.constructInstaller
-                )
+                new UserInstallationInteractor(llmService.installer)
             );
         }
     }

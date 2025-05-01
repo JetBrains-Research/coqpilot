@@ -18,21 +18,19 @@ export async function executeInstallationCommand<InstallationOptions>(
     coqPilotPath: string,
     installationPath: string,
     installationOptions: InstallationOptions,
-    getInstaller: (
-        installationPath: string
-    ) => AbstractExternalServiceInstaller<InstallationOptions, any>
+    installer: AbstractExternalServiceInstaller<InstallationOptions, any>
 ) {
     try {
-        const installer = getInstaller(installationPath);
         await installer.checkPrerequisitesOrThrow();
         return executeWithProgress(
             `Installing the ${installer.externalProjectName} project. Building dependencies may take a while...`,
             async () =>
                 installer.install(
                     coqPilotPath,
+                    installationPath,
                     installationOptions,
                     new UserInstallationInteractor<InstallationOptions>(
-                        getInstaller
+                        installer
                     )
                 )
         );
@@ -45,20 +43,18 @@ export async function executeUninstallationCommand<InstallationOptions>(
     coqPilotPath: string,
     installationPath: string,
     installationOptions: InstallationOptions,
-    getInstaller: (
-        installationPath: string
-    ) => AbstractExternalServiceInstaller<InstallationOptions, any>
+    installer: AbstractExternalServiceInstaller<InstallationOptions, any>
 ) {
     try {
-        const installer = getInstaller(installationPath);
         return executeWithProgress(
             `Uninstalling the ${installer.externalProjectName} project...`,
             async () =>
                 installer.uninstall(
                     coqPilotPath,
+                    installationPath,
                     installationOptions,
                     new UserInstallationInteractor<InstallationOptions>(
-                        getInstaller
+                        installer
                     )
                 )
         );
@@ -71,9 +67,10 @@ export class UserInstallationInteractor<InstallationOptions>
     implements InstallationInteractor<InstallationOptions>
 {
     constructor(
-        private readonly getInstaller: (
-            installationPath: string
-        ) => AbstractExternalServiceInstaller<InstallationOptions, any>
+        private readonly installer: AbstractExternalServiceInstaller<
+            InstallationOptions,
+            any
+        >
     ) {}
 
     async showMessage(message: string, severity: InteractorMessageSeverity) {
@@ -127,7 +124,7 @@ export class UserInstallationInteractor<InstallationOptions>
             coqPilotPath,
             installationPath,
             options,
-            this.getInstaller
+            this.installer
         );
     }
 
@@ -140,7 +137,7 @@ export class UserInstallationInteractor<InstallationOptions>
             coqPilotPath,
             installationPath,
             options,
-            this.getInstaller
+            this.installer
         );
     }
 }

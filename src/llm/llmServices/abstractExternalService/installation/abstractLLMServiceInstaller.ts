@@ -1,15 +1,14 @@
 import { exec } from "child_process";
 
-import { PLUGIN_VERSION } from "../../../../extension/utils/pluginId";
 import { buildErrorCompleteLog } from "../../../../utils/errors/errorsUtils";
 import {
     getCoqPilotInstallationsDirPath,
     getOrCreateCoqPilotInstallationsDir,
 } from "../../../../utils/fs/coqPilotInstallationsDir";
-import { translateToSafeFileName } from "../../../../utils/fs/fileNameUtils";
 import { listFiles } from "../../../../utils/fs/listFiles";
-import { exists, getLastName, joinPaths } from "../../../../utils/fs/pathUtils";
+import { exists, getLastName } from "../../../../utils/fs/pathUtils";
 import { UserModelParams } from "../../../userModelParams";
+import { AbstractExternalService } from "../abstractExternalService";
 
 import { AbstractInstallationScriptsManager } from "./abstractInstallationScriptsManager";
 import { InstallationFailedError } from "./installationFailedError";
@@ -23,19 +22,7 @@ export abstract class AbstractExternalServiceInstaller<
     InstallationOptions,
     InputModelParams extends UserModelParams,
 > {
-    readonly installationPath: string;
-
-    constructor(
-        readonly externalProjectName: string,
-        installationPath: string | undefined = undefined
-    ) {
-        this.installationPath =
-            installationPath ?? this.getDefaultInstallationPath();
-    }
-
-    abstract constructInstaller(
-        installationPath: string
-    ): AbstractExternalServiceInstaller<InstallationOptions, InputModelParams>;
+    constructor(readonly externalProjectName: string) {}
 
     abstract readonly installationPrerequisites: InstallationPrerequisite[];
 
@@ -54,24 +41,10 @@ export abstract class AbstractExternalServiceInstaller<
 
     abstract estimateInstallationTime(): string;
 
-    protected readonly getDefaultInstallationDirPrefix = (): string => {
-        return `coqpilot-${translateToSafeFileName(this.externalProjectName)}`;
-    };
-
-    protected readonly getDefaultInstallationRepoDirName = (): string => {
-        return `${this.getDefaultInstallationDirPrefix()}-v${PLUGIN_VERSION}`;
-    };
-
-    readonly getDefaultInstallationPath = (): string => {
-        return joinPaths(
-            getCoqPilotInstallationsDirPath(),
-            this.getDefaultInstallationRepoDirName()
-        );
-    };
-
     async provideInstallationForRequest(
         inputParams: InputModelParams[],
         coqPilotPath: string,
+        installationPath: string,
         inputOptions: InstallationOptions,
         interactor: InstallationInteractor<InstallationOptions>
     ) {
@@ -80,13 +53,14 @@ export abstract class AbstractExternalServiceInstaller<
         }
         await this.detectAndSuggestRemovingOutdatedInstallations(
             coqPilotPath,
+            installationPath,
             inputOptions,
             interactor
         );
 
         const installationOptions = this.checkInstallationIsAvailableForRequest(
             inputParams,
-            this.installationPath,
+            installationPath,
             inputOptions
         );
         if (installationOptions === undefined) {
@@ -101,7 +75,7 @@ export abstract class AbstractExternalServiceInstaller<
                 callback: async () =>
                     await interactor.performInstallation(
                         coqPilotPath,
-                        this.installationPath,
+                        installationPath,
                         installationOptions
                     ),
             },
@@ -116,7 +90,7 @@ export abstract class AbstractExternalServiceInstaller<
                             callback: async () =>
                                 interactor.performInstallation(
                                     coqPilotPath,
-                                    this.installationPath,
+                                    installationPath,
                                     installationOptions
                                 ),
                         }
@@ -135,6 +109,7 @@ export abstract class AbstractExternalServiceInstaller<
 
     async install(
         coqPilotPath: string,
+        installationPath: string,
         options: InstallationOptions,
         interactor: InstallationInteractor<InstallationOptions>
     ) {
@@ -143,7 +118,7 @@ export abstract class AbstractExternalServiceInstaller<
             const command = this.scriptsManager.prepareScriptExecutable(
                 "install",
                 coqPilotPath,
-                this.installationPath,
+                installationPath,
                 options
             );
             // TODO: save stdout and stderr into logs (coqpilot meta dir)
@@ -157,7 +132,7 @@ export abstract class AbstractExternalServiceInstaller<
                     );
                 } else {
                     interactor.showMessage(
-                        `${this.externalProjectName} project has been succesfully installed at ${this.installationPath}`,
+                        `${this.externalProjectName} project has been succesfully installed at ${installationPath}`,
                         "info"
                     );
                     resolve();
@@ -168,6 +143,7 @@ export abstract class AbstractExternalServiceInstaller<
 
     async uninstall(
         coqPilotPath: string,
+        installationPath: string,
         options: InstallationOptions,
         interactor: InstallationInteractor<InstallationOptions>
     ) {
@@ -175,7 +151,7 @@ export abstract class AbstractExternalServiceInstaller<
             const command = this.scriptsManager.prepareScriptExecutable(
                 "uninstall",
                 coqPilotPath,
-                this.installationPath,
+                installationPath,
                 options
             );
             exec(command, (error, _, stderr) => {
@@ -187,7 +163,7 @@ export abstract class AbstractExternalServiceInstaller<
                     reject(error);
                 } else {
                     interactor.showMessage(
-                        `${this.externalProjectName} project has been succesfully uninstalled from ${this.installationPath}`,
+                        `${this.externalProjectName} project has been succesfully uninstalled from ${installationPath}`,
                         "info"
                     );
                     resolve();
@@ -204,19 +180,23 @@ export abstract class AbstractExternalServiceInstaller<
         return listFiles(installationDirPath, 0, (filePath) => {
             const fileName = getLastName(filePath);
             return (
-                fileName.startsWith(this.getDefaultInstallationDirPrefix()) &&
-                filePath !== relevantInstallationDirPath
+                fileName.startsWith(
+                    AbstractExternalService.getDefaultInstallationDirPrefix(
+                        this.externalProjectName
+                    )
+                ) && filePath !== relevantInstallationDirPath
             );
         });
     }
 
     async detectAndSuggestRemovingOutdatedInstallations(
         coqPilotPath: string,
+        relevantInstallationPath: string,
         extraOptions: InstallationOptions,
         interactor: InstallationInteractor<InstallationOptions>
     ) {
         const outdatedInstallations = this.detectOutdatedInstallations(
-            this.installationPath
+            relevantInstallationPath
         );
         if (outdatedInstallations.length === 0) {
             return;

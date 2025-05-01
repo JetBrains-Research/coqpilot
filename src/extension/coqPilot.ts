@@ -5,8 +5,6 @@ import {
     workspace,
 } from "vscode";
 
-import { RangoInstaller } from "../llm/llmServices/rango/rangoInstaller";
-
 import { CoqLspStartupError } from "../coqLsp/coqLspTypes";
 
 import { CompletionAbortError } from "../core/completionAbortError";
@@ -88,9 +86,9 @@ export class CoqPilot {
             executeInstallationCommand.bind(
                 null,
                 vscodeContext.extensionPath,
-                pluginContext.llmServices.rangoService.getInstallationPath(),
+                pluginContext.llmServices.rangoService.installationPath,
                 {},
-                (installationPath) => new RangoInstaller(installationPath)
+                pluginContext.llmServices.rangoService.installer
             )
         );
         this.registerCommand(
@@ -98,9 +96,9 @@ export class CoqPilot {
             executeUninstallationCommand.bind(
                 null,
                 vscodeContext.extensionPath,
-                pluginContext.llmServices.rangoService.getInstallationPath(),
+                pluginContext.llmServices.rangoService.installationPath,
                 {},
-                (installationPath) => new RangoInstaller(installationPath)
+                pluginContext.llmServices.rangoService.installer
             )
         );
 

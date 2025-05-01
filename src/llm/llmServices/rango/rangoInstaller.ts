@@ -25,12 +25,8 @@ export class RangoInstaller extends AbstractExternalServiceInstaller<
     RangoInstallationOptions,
     RangoUserModelParams
 > {
-    constructor(installationPath: string | undefined) {
-        super("Rango", installationPath);
-    }
-
-    constructInstaller(installationPath: string): RangoInstaller {
-        return new RangoInstaller(installationPath);
+    constructor() {
+        super("Rango");
     }
 
     readonly installationPrerequisites: InstallationPrerequisite[] = [

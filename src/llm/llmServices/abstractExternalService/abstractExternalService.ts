@@ -1,8 +1,12 @@
 import { availableParallelism } from "os";
 
+import { PLUGIN_VERSION } from "../../../extension/utils/pluginId";
 import { EventLogger } from "../../../logging/eventLogger";
 import { AsyncScheduler } from "../../../utils/async/asyncScheduler";
 import { invariantFailed } from "../../../utils/errors/throwErrors";
+import { getCoqPilotInstallationsDirPath } from "../../../utils/fs/coqPilotInstallationsDir";
+import { translateToSafeFileName } from "../../../utils/fs/fileNameUtils";
+import { joinPaths } from "../../../utils/fs/pathUtils";
 import { Time, time } from "../../../utils/time";
 import {
     ExternalPipelineProofGenerationContext,
@@ -88,11 +92,11 @@ export abstract class AbstractExternalService<
         errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.RETHROW_ERRORS,
         generationLogsFilePath: string | undefined = undefined,
         debugLogs: boolean = false,
-        protected readonly customInstallationPath:
-            | string
-            | undefined = undefined,
+        readonly installationPath: string = AbstractExternalService.getDefaultInstallationPath(
+            externalProjectName
+        ),
         maxSubprocessesSpawnedInParallel: number | undefined = undefined,
-        readonly clearProofGenerationLogsOnSuccess: boolean = false
+        readonly clearProofGenerationLogsOnSuccess: boolean = true
     ) {
         super(
             eventLogger,
@@ -108,10 +112,6 @@ export abstract class AbstractExternalService<
             true,
             `${this.externalProjectName} Subprocesses Scheduler <max ${this.maxSubprocessesSpawnedInParallel} sub-s>`
         );
-    }
-
-    getInstallationPath(): string {
-        return this.installer.installationPath;
     }
 
     async generateProof(
@@ -169,6 +169,27 @@ export abstract class AbstractExternalService<
         return Math.min(
             availableParallelism(),
             this.defaultMaxSubprocessesParallelism
+        );
+    }
+
+    static getDefaultInstallationDirPrefix(
+        externalProjectName: string
+    ): string {
+        return `coqpilot-${translateToSafeFileName(externalProjectName)}`;
+    }
+
+    static getDefaultInstallationRepoDirName(
+        externalProjectName: string
+    ): string {
+        return `${AbstractExternalService.getDefaultInstallationDirPrefix(externalProjectName)}-v${PLUGIN_VERSION}`;
+    }
+
+    static getDefaultInstallationPath(externalProjectName: string): string {
+        return joinPaths(
+            getCoqPilotInstallationsDirPath(),
+            AbstractExternalService.getDefaultInstallationRepoDirName(
+                externalProjectName
+            )
         );
     }
 }
