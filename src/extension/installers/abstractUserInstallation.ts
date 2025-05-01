@@ -80,38 +80,42 @@ export class UserInstallationInteractor<InstallationOptions>
     async selectAndPerformInstallationAction(
         message: string,
         severity: InteractorMessageSeverity,
-        ...choiceItemsWithCallbacks: InteractorChoiceItemWithCallback[]
+        installItem: InteractorChoiceItemWithCallback,
+        cancelItem: InteractorChoiceItemWithCallback
     ) {
         await showMessageToUserWithActions(
             message,
             severity,
-            ...choiceItemsWithCallbacks
+            installItem,
+            cancelItem
         );
     }
 
     async selectAndPerformOutdatedInstallationsAction(
         message: string,
         severity: InteractorMessageSeverity,
-        ...choiceItemsWithCallbacks: InteractorChoiceItemWithCallback[]
+        freeUpSpaceItem: InteractorChoiceItemWithCallback,
+        skipForNowItem: InteractorChoiceItemWithCallback
     ) {
         await showMessageToUserWithActions(
             message,
             severity,
-            ...choiceItemsWithCallbacks
+            freeUpSpaceItem,
+            skipForNowItem
         );
     }
 
     async onCancelledInstallation(
         errorMessage: string,
         messageToShow: string,
-        ...furtherChoiceItemsWithCallbacks: InteractorChoiceItemWithCallback[]
+        installItem: InteractorChoiceItemWithCallback
     ) {
         throw new SettingsValidationError(
             errorMessage,
             messageToShow,
             `${PLUGIN_ID}.rangoModelsParameters`,
             "error",
-            ...furtherChoiceItemsWithCallbacks
+            installItem
         );
     }
 

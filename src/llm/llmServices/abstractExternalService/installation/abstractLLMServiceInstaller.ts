@@ -41,10 +41,16 @@ export abstract class AbstractExternalServiceInstaller<
 
     abstract estimateInstallationTime(): string;
 
+    getDefaultInstallationPath(): string {
+        return AbstractExternalService.getDefaultInstallationPath(
+            this.externalProjectName
+        );
+    }
+
     async provideInstallationForRequest(
         inputParams: InputModelParams[],
         coqPilotPath: string,
-        installationPath: string,
+        installationPath: string = this.getDefaultInstallationPath(),
         inputOptions: InstallationOptions,
         interactor: InstallationInteractor<InstallationOptions>
     ) {
@@ -109,7 +115,7 @@ export abstract class AbstractExternalServiceInstaller<
 
     async install(
         coqPilotPath: string,
-        installationPath: string,
+        installationPath: string = this.getDefaultInstallationPath(),
         options: InstallationOptions,
         interactor: InstallationInteractor<InstallationOptions>
     ) {
@@ -143,7 +149,7 @@ export abstract class AbstractExternalServiceInstaller<
 
     async uninstall(
         coqPilotPath: string,
-        installationPath: string,
+        installationPath: string = this.getDefaultInstallationPath(),
         options: InstallationOptions,
         interactor: InstallationInteractor<InstallationOptions>
     ) {
@@ -172,7 +178,19 @@ export abstract class AbstractExternalServiceInstaller<
         });
     }
 
-    detectOutdatedInstallations(relevantInstallationDirPath: string): string[] {
+    async checkPrerequisitesAndInstall(
+        coqPilotPath: string,
+        installationPath: string = this.getDefaultInstallationPath(),
+        options: InstallationOptions,
+        interactor: InstallationInteractor<InstallationOptions>
+    ) {
+        await this.checkPrerequisitesOrThrow();
+        await this.install(coqPilotPath, installationPath, options, interactor);
+    }
+
+    detectOutdatedInstallations(
+        relevantInstallationPath: string = this.getDefaultInstallationPath()
+    ): string[] {
         const installationDirPath = getCoqPilotInstallationsDirPath();
         if (!exists(installationDirPath)) {
             return [];
@@ -184,14 +202,14 @@ export abstract class AbstractExternalServiceInstaller<
                     AbstractExternalService.getDefaultInstallationDirPrefix(
                         this.externalProjectName
                     )
-                ) && filePath !== relevantInstallationDirPath
+                ) && filePath !== relevantInstallationPath
             );
         });
     }
 
     async detectAndSuggestRemovingOutdatedInstallations(
         coqPilotPath: string,
-        relevantInstallationPath: string,
+        relevantInstallationPath: string = this.getDefaultInstallationPath(),
         extraOptions: InstallationOptions,
         interactor: InstallationInteractor<InstallationOptions>
     ) {

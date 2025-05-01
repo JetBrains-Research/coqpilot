@@ -14,19 +14,21 @@ export interface InstallationInteractor<InstallationOptions> {
     selectAndPerformInstallationAction(
         message: string,
         severity: InteractorMessageSeverity,
-        ...choiceItemsWithCallbacks: InteractorChoiceItemWithCallback[]
+        installItem: InteractorChoiceItemWithCallback,
+        cancelItem: InteractorChoiceItemWithCallback
     ): Promise<void>;
 
     selectAndPerformOutdatedInstallationsAction(
         message: string,
         severity: InteractorMessageSeverity,
-        ...choiceItemsWithCallbacks: InteractorChoiceItemWithCallback[]
+        freeUpSpaceItem: InteractorChoiceItemWithCallback,
+        skipForNowItem: InteractorChoiceItemWithCallback
     ): Promise<void>;
 
     onCancelledInstallation(
         errorMessage: string,
         messageToShow: string,
-        ...furtherChoiceItemsWithCallbacks: InteractorChoiceItemWithCallback[]
+        installItem: InteractorChoiceItemWithCallback
     ): Promise<void>;
 
     performInstallation(
