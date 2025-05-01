@@ -4,11 +4,13 @@ import {
     ConfigurationError,
     GenerationFailedError,
 } from "../../../llm/llmServiceErrors";
+import { SimpleInstallationInteractor } from "../../../llm/llmServices/abstractExternalService/installation/simpleInstallationInteractor";
 import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
 import {
     RangoModelMode,
     RangoModelParams,
 } from "../../../llm/llmServices/modelParams";
+import { RangoInstaller } from "../../../llm/llmServices/rango/rangoInstaller";
 import { RangoService } from "../../../llm/llmServices/rango/rangoService";
 import { resolveParametersOrThrow } from "../../../llm/llmServices/utils/resolveOrThrow";
 import { ExternalPipelineProofGenerationContext } from "../../../llm/proofGenerationContext";
@@ -20,7 +22,9 @@ import { deleteDirectory } from "../../../utils/fs/directoryUtils";
 import { appendToFile } from "../../../utils/fs/fileUtils";
 import { createTmpDirectory } from "../../../utils/fs/tmpFs";
 import { JsonSpacing, toJsonString } from "../../../utils/printers";
+import { time, timeToMillis } from "../../../utils/time";
 import { testIf } from "../../commonTestFunctions/conditionalTest";
+import { getRootDir } from "../../commonTestFunctions/pathsResolver";
 import { withLLMService } from "../../commonTestFunctions/withLLMService";
 import { testModelId } from "../llmSpecificTestUtils/constants";
 import {
@@ -32,7 +36,7 @@ import {
     testResolveValidCompleteParameters,
 } from "../llmSpecificTestUtils/testResolveParameters";
 
-suite("rango", function () {
+suite("[LLMService] Test `RangoService`", function () {
     const localCheckpointPath =
         process.env.TESTING_RANGO_IN_LOCAL_MODE_CHECKPOINT;
     const mappedToRemotePort = process.env.TESTING_RANGO_IN_REMOTE_MODE_PORT;
@@ -46,6 +50,19 @@ suite("rango", function () {
         modelId: testModelId,
     };
     const expectedChoices = 1;
+
+    this.beforeAll(async () => {
+        const installer = new RangoInstaller();
+        await installer.checkPrerequisitesAndInstall(
+            getRootDir(),
+            undefined,
+            {},
+            new SimpleInstallationInteractor(
+                (message) => console.error(`Rango installer: ${message}`),
+                installer
+            )
+        );
+    }).timeout(timeToMillis(time(20, "minute")));
 
     function testGeneration(
         customInputParams: Partial<RangoUserModelParams>,

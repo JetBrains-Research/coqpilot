@@ -33,6 +33,7 @@ export class RangoService extends AbstractExternalService<
     RangoServiceInternal
 > {
     readonly serviceName = "RangoService";
+    static readonly externalProjectName = "Rango";
 
     constructor(
         eventLogger: EventLogger | undefined = undefined,
@@ -44,7 +45,7 @@ export class RangoService extends AbstractExternalService<
         clearProofGenerationLogsOnSuccess: boolean = true
     ) {
         super(
-            "Rango",
+            RangoService.externalProjectName,
             3,
             eventLogger,
             errorsHandlingMode,
