@@ -1,6 +1,7 @@
 import { ProofGoal } from "../../../../coqLsp/coqLspTypes";
 
 import { ProofStep } from "../../../../coqParser/parsedTypes";
+import { groupBy, mapValues } from "../../../../utils/collectionUtils/mapUtils";
 import { invariantFailed } from "../../../../utils/errors/throwErrors";
 import {
     joinPaths,
@@ -14,7 +15,6 @@ import {
 } from "../../logging/benchmarkingLogger";
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
 import { TheoremData } from "../../structures/parsedCoqFile/theoremData";
-import { groupBy, mapValues } from "../../utils/collectionUtils/mapUtils";
 import { extractTheoremFisrtProofStep } from "../../utils/coqUtils/proofTargetExtractor";
 import {
     CacheHolderData,

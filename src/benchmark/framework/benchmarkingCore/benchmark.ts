@@ -1,6 +1,7 @@
 import { modelName } from "../../../llm/llmServices/utils/modelParamsAccessors";
 
 import { AsyncScheduler } from "../../../utils/async/asyncScheduler";
+import { groupBy, mapValues } from "../../../utils/collectionUtils/mapUtils";
 import { buildErrorCompleteLog } from "../../../utils/errors/errorsUtils";
 import { IllegalStateError } from "../../../utils/errors/throwErrors";
 import {
@@ -27,7 +28,6 @@ import {
     abortAsCriticalError,
     abortAsFailFast,
 } from "../utils/asyncUtils/abortUtils";
-import { groupBy, mapValues } from "../utils/collectionUtils/mapUtils";
 import { getShortName } from "../utils/commonStructuresUtils/llmServicesUtils";
 import { prependWithZeros } from "../utils/serializationUtils";
 import {

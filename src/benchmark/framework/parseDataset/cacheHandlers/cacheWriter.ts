@@ -1,3 +1,4 @@
+import { packIntoMappedObject } from "../../../../utils/collectionUtils/mapUtils";
 import { invariantFailed } from "../../../../utils/errors/throwErrors";
 import { clearDirectory } from "../../../../utils/fs/directoryUtils";
 import { writeToFile } from "../../../../utils/fs/fileUtils";
@@ -14,7 +15,6 @@ import { serializeCodeElementRange } from "../../../../utils/structures/codeElem
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
 import { serializeTheoremData } from "../../structures/parsedCoqFile/theoremData";
-import { packIntoMappedObject } from "../../utils/collectionUtils/mapUtils";
 import { serializeGoal } from "../../utils/coqUtils/goalParser";
 import { extractTheoremFisrtProofStep } from "../../utils/coqUtils/proofTargetExtractor";
 import {

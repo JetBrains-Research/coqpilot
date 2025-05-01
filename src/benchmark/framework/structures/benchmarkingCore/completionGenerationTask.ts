@@ -5,8 +5,11 @@ import {
     SourceFileEnvironment,
 } from "../../../../core/completionGenerationContext";
 
+import {
+    EqualTo,
+    HashUtils,
+} from "../../../../utils/collectionUtils/equalityUtils";
 import { CodeElementRange } from "../../../../utils/structures/codeElementPositions";
-import { EqualTo, HashUtils } from "../../utils/collectionUtils/equalityUtils";
 import { goalToProveAsString } from "../../utils/coqUtils/goalParser";
 import { WorkspaceRoot } from "../common/workspaceRoot";
 import { ParsedCoqFileData } from "../parsedCoqFile/parsedCoqFileData";

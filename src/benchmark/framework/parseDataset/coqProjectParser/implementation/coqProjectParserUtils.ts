@@ -1,3 +1,4 @@
+import { entriesToMappedObject } from "../../../../../utils/collectionUtils/mapUtils";
 import { illegalState } from "../../../../../utils/errors/throwErrors";
 import {
     AllTheoremsTarget,
@@ -8,7 +9,6 @@ import {
     WorkspaceRoot,
     isStandaloneFilesRoot,
 } from "../../../structures/common/workspaceRoot";
-import { entriesToMappedObject } from "../../../utils/collectionUtils/mapUtils";
 
 import { ParseCoqProjectInternalSignature } from "./internalSignature";
 

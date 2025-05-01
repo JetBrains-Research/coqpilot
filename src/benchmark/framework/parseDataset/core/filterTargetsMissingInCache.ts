@@ -1,3 +1,4 @@
+import { all } from "../../../../utils/collectionUtils/listUtils";
 import { illegalState } from "../../../../utils/errors/throwErrors";
 import { listCoqSourceFiles } from "../../../../utils/fs/listFiles";
 import { stringifyAnyValue } from "../../../../utils/printers";
@@ -12,7 +13,6 @@ import {
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { DatasetCacheUsageMode } from "../../structures/inputParameters/datasetCaching";
 import { ExperimentRunOptions } from "../../structures/inputParameters/experimentRunOptions";
-import { all } from "../../utils/collectionUtils/listUtils";
 import { readRequestedFilesCache } from "../cacheHandlers/cacheReader";
 import { WorkspaceCacheHolder } from "../cacheStructures/cacheHolders";
 import { createEmptyCache } from "../utils/cacheHoldersUtils";

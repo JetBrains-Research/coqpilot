@@ -4,6 +4,10 @@ import { CoqLspError } from "../../../../../coqLsp/coqLspTypes";
 
 import { createSourceFileEnvironment } from "../../../../../core/inspectSourceFile";
 
+import {
+    mappedObjectValues,
+    packIntoMappedObject,
+} from "../../../../../utils/collectionUtils/mapUtils";
 import { unexpectedError } from "../../../../../utils/errors/throwErrors";
 import { deserializeCodeElementPosition } from "../../../../../utils/structures/codeElementPositions";
 import { Uri } from "../../../../../utils/structures/uri";
@@ -18,10 +22,6 @@ import {
     serializeTheoremData,
 } from "../../../structures/parsedCoqFile/theoremData";
 import { AbortError } from "../../../utils/asyncUtils/abortUtils";
-import {
-    mappedObjectValues,
-    packIntoMappedObject,
-} from "../../../utils/collectionUtils/mapUtils";
 import {
     SerializedGoal,
     serializeGoal,

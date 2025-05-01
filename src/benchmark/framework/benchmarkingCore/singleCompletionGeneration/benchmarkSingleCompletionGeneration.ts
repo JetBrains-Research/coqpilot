@@ -24,6 +24,7 @@ import { goalToTargetLemma } from "../../../../core/exposedCompletionGeneratorUt
 
 import { AsyncScheduler } from "../../../../utils/async/asyncScheduler";
 import { delay } from "../../../../utils/async/delay";
+import { groupByAndMap } from "../../../../utils/collectionUtils/mapUtils";
 import { buildErrorCompleteLog } from "../../../../utils/errors/errorsUtils";
 import {
     illegalState,
@@ -55,7 +56,6 @@ import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { ParsedCoqFileData } from "../../structures/parsedCoqFile/parsedCoqFileData";
 import { TheoremData } from "../../structures/parsedCoqFile/theoremData";
 import { AbortError, throwOnAbort } from "../../utils/asyncUtils/abortUtils";
-import { groupByAndMap } from "../../utils/collectionUtils/mapUtils";
 import {
     benchmarkingInvariantFailed,
     throwBenchmarkingError,

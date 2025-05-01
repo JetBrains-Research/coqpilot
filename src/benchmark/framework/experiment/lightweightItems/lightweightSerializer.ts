@@ -1,5 +1,12 @@
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 
+import { makeElementsUniqueByStringKeys } from "../../../../utils/collectionUtils/listUtils";
+import {
+    getOrThrow,
+    groupByToEqualityMap,
+    packIntoMap,
+    reduceToMap,
+} from "../../../../utils/collectionUtils/mapUtils";
 import { throwError } from "../../../../utils/errors/throwErrors";
 import {
     clearDirectory,
@@ -26,13 +33,6 @@ import { LightweightBenchmarkingItem } from "../../structures/inputParameters/li
 import { LightweightCompletionGenerationTask } from "../../structures/inputParameters/lightweight/lightweightCompletionGenerationTask";
 import { LightweightInputModelParams } from "../../structures/inputParameters/lightweight/lightweightInputModelParams";
 import { LightweightWorkspaceRoot } from "../../structures/inputParameters/lightweight/lightweightWorkspaceRoot";
-import { makeElementsUniqueByStringKeys } from "../../utils/collectionUtils/listUtils";
-import {
-    getOrThrow,
-    groupByToEqualityMap,
-    packIntoMap,
-    reduceToMap,
-} from "../../utils/collectionUtils/mapUtils";
 import { serializeGoal } from "../../utils/coqUtils/goalParser";
 import { prependWithZeros } from "../../utils/serializationUtils";
 

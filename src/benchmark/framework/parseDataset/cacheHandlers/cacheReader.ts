@@ -5,6 +5,7 @@ import {
     buildAjv,
     failedAjvValidatorErrorsAsString,
 } from "../../../../utils/ajvErrorsHandling";
+import { packIntoMap } from "../../../../utils/collectionUtils/mapUtils";
 import { buildErrorCompleteLog } from "../../../../utils/errors/errorsUtils";
 import { isFile } from "../../../../utils/fs/fileTypeCheckers";
 import { readFile } from "../../../../utils/fs/fileUtils";
@@ -19,7 +20,6 @@ import { deserializeCodeElementRange } from "../../../../utils/structures/codeEl
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
 import { deserializeTheoremData } from "../../structures/parsedCoqFile/theoremData";
-import { packIntoMap } from "../../utils/collectionUtils/mapUtils";
 import { deserializeGoal } from "../../utils/coqUtils/goalParser";
 import {
     CacheHolderData,

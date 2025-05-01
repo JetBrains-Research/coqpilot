@@ -1,5 +1,11 @@
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 
+import { makeStringsUnique } from "../../../../utils/collectionUtils/listUtils";
+import {
+    getOrThrow,
+    groupBy,
+    packIntoMap,
+} from "../../../../utils/collectionUtils/mapUtils";
 import { throwError } from "../../../../utils/errors/throwErrors";
 import { readFile } from "../../../../utils/fs/fileUtils";
 import { listJsonFiles } from "../../../../utils/fs/listFiles";
@@ -18,12 +24,6 @@ import { LightweightBenchmarkingItem } from "../../structures/inputParameters/li
 import { LightweightInputModelParams } from "../../structures/inputParameters/lightweight/lightweightInputModelParams";
 import { LightweightWorkspaceRoot } from "../../structures/inputParameters/lightweight/lightweightWorkspaceRoot";
 import { ParsedCoqFileData } from "../../structures/parsedCoqFile/parsedCoqFileData";
-import { makeStringsUnique } from "../../utils/collectionUtils/listUtils";
-import {
-    getOrThrow,
-    groupBy,
-    packIntoMap,
-} from "../../utils/collectionUtils/mapUtils";
 import { createParamsResolvers } from "../../utils/commonStructuresUtils/llmServicesUtils";
 import { deserializeGoal } from "../../utils/coqUtils/goalParser";
 
