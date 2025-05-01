@@ -1,4 +1,4 @@
-import { toUnformattedJsonString } from "../../../../utils/printers";
+import { toUnformattedJsonString } from "../printers";
 
 export interface EqualTo<T> {
     equalTo(other: T): boolean;

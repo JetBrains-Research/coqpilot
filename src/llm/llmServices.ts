@@ -1,5 +1,5 @@
+import { zip } from "../utils/collectionUtils/listUtils";
 import { illegalState } from "../utils/errors/throwErrors";
-import { zip } from "../utils/structures/zip";
 
 import { DeepSeekService } from "./llmServices/deepSeek/deepSeekService";
 import { GrazieService } from "./llmServices/grazie/grazieService";

@@ -16,10 +16,10 @@ import { ModelParams } from "../../../llm/llmServices/modelParams";
 import { RangoError } from "../../../llm/llmServices/rango/rangoError";
 
 import { EventLogger } from "../../../logging/eventLogger";
+import { SimpleSet } from "../../../utils/collectionUtils/simpleSet";
 import { buildErrorCompleteLog } from "../../../utils/errors/errorsUtils";
 import { illegalState } from "../../../utils/errors/throwErrors";
 import { stringifyAnyValue } from "../../../utils/printers";
-import { SimpleSet } from "../../../utils/structures/simpleSet";
 import { toSettingName } from "../../settings/settingsValidationError";
 import { openTextDocument } from "../documentOpener";
 
