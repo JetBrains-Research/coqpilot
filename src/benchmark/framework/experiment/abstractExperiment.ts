@@ -20,6 +20,7 @@ import {
 import { DatasetCacheUsageMode } from "../structures/inputParameters/datasetCaching";
 import { ExperimentRunOptions } from "../structures/inputParameters/experimentRunOptions";
 import { InputBenchmarkingBundle } from "../structures/inputParameters/inputBenchmarkingBundle";
+import { installDemandedExternalServices } from "../utils/installers/externalServicesInstaller";
 import { throwBenchmarkingError } from "../utils/throwErrors";
 
 import {
@@ -135,6 +136,11 @@ export abstract class AbstractExperiment {
         const benchmarkingItems = await this.buildBenchmarkingItems(
             requestedTargets,
             executionContext
+        );
+
+        await installDemandedExternalServices(
+            this.bundles,
+            executionContext.logger
         );
 
         // Since `AbstractExperiment.run(...)` is not always called with `await`,

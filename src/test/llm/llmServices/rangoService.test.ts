@@ -4,7 +4,7 @@ import {
     ConfigurationError,
     GenerationFailedError,
 } from "../../../llm/llmServiceErrors";
-import { SimpleInstallationInteractor } from "../../../llm/llmServices/abstractExternalService/installation/simpleInstallationInteractor";
+import { checkPrerequisitesAndInstallDefault } from "../../../llm/llmServices/abstractExternalService/installation/wrappers";
 import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
 import {
     RangoModelMode,
@@ -24,7 +24,6 @@ import { createTmpDirectory } from "../../../utils/fs/tmpFs";
 import { JsonSpacing, toJsonString } from "../../../utils/printers";
 import { time, timeToMillis } from "../../../utils/time";
 import { testIf } from "../../commonTestFunctions/conditionalTest";
-import { getRootDir } from "../../commonTestFunctions/pathsResolver";
 import { withLLMService } from "../../commonTestFunctions/withLLMService";
 import { testModelId } from "../llmSpecificTestUtils/constants";
 import {
@@ -52,15 +51,11 @@ suite("[LLMService] Test `RangoService`", function () {
     const expectedChoices = 1;
 
     this.beforeAll(async () => {
-        const installer = new RangoInstaller();
-        await installer.checkPrerequisitesAndInstall(
-            getRootDir(),
-            undefined,
+        console.error("Rango installation is required, installing...");
+        await checkPrerequisitesAndInstallDefault(
+            new RangoInstaller(),
             {},
-            new SimpleInstallationInteractor(
-                (message) => console.error(`Rango installer: ${message}`),
-                installer
-            )
+            (message) => console.error(`Rango installer: ${message}`)
         );
     }).timeout(timeToMillis(time(20, "minute")));
 
