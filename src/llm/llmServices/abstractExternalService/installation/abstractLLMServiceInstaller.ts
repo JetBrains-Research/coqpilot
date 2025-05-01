@@ -36,7 +36,7 @@ export abstract class AbstractExternalServiceInstaller<
     protected abstract checkInstallationIsAvailableForRequest(
         inputParams: InputModelParams[],
         installationPath: string,
-        inputOptions: InstallationOptions
+        inputOptions: InstallationOptions | undefined
     ): InstallationOptions | undefined;
 
     abstract estimateInstallationTime(): string;
@@ -51,18 +51,12 @@ export abstract class AbstractExternalServiceInstaller<
         inputParams: InputModelParams[],
         coqPilotPath: string,
         installationPath: string = this.getDefaultInstallationPath(),
-        inputOptions: InstallationOptions,
+        inputOptions: InstallationOptions | undefined,
         interactor: InstallationInteractor<InstallationOptions>
     ) {
         if (inputParams.length === 0) {
             return;
         }
-        await this.detectAndSuggestRemovingOutdatedInstallations(
-            coqPilotPath,
-            installationPath,
-            inputOptions,
-            interactor
-        );
 
         const installationOptions = this.checkInstallationIsAvailableForRequest(
             inputParams,
@@ -73,8 +67,15 @@ export abstract class AbstractExternalServiceInstaller<
             return;
         }
 
+        await this.detectAndSuggestRemovingOutdatedInstallations(
+            coqPilotPath,
+            installationPath,
+            installationOptions,
+            interactor
+        );
+
         await interactor.selectAndPerformInstallationAction(
-            `${this.externalProjectName} models require the ${this.externalProjectName} project, which takes about ${this.estimateInstallationTime()} to install (one-time setup). Proceed with installation?`,
+            `${this.externalProjectName} models require the properly configured ${this.externalProjectName} project, which takes about ${this.estimateInstallationTime()} to install / update (one-time setup). Proceed with installation?`,
             "info",
             {
                 choiceItem: "Install",
@@ -210,7 +211,7 @@ export abstract class AbstractExternalServiceInstaller<
     async detectAndSuggestRemovingOutdatedInstallations(
         coqPilotPath: string,
         relevantInstallationPath: string = this.getDefaultInstallationPath(),
-        extraOptions: InstallationOptions,
+        options: InstallationOptions,
         interactor: InstallationInteractor<InstallationOptions>
     ) {
         const outdatedInstallations = this.detectOutdatedInstallations(
@@ -230,7 +231,7 @@ export abstract class AbstractExternalServiceInstaller<
                     await this.uninstallOutdatedInstallations(
                         outdatedInstallations,
                         coqPilotPath,
-                        extraOptions,
+                        options,
                         interactor
                     );
                 },

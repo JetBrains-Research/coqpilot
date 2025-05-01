@@ -1,11 +1,13 @@
-import { exists } from "../../../utils/fs/pathUtils";
+import { any } from "../../../utils/collectionUtils/listUtils";
+import { exists, joinPaths } from "../../../utils/fs/pathUtils";
 import { RangoUserModelParams } from "../../userModelParams";
 import { AbstractInstallationScriptsManager } from "../abstractExternalService/installation/abstractInstallationScriptsManager";
 import { AbstractExternalServiceInstaller } from "../abstractExternalService/installation/abstractLLMServiceInstaller";
 import { InstallationPrerequisite } from "../abstractExternalService/installation/prerequisitesChecker";
 
-// TODO: support model checkpoint installation
-export interface RangoInstallationOptions {}
+export interface RangoInstallationOptions {
+    enableModelCheckpointInstallation?: boolean;
+}
 
 class RangoInstallationScriptsManager extends AbstractInstallationScriptsManager<RangoInstallationOptions> {
     readonly SCRIPTS_DIR = "scripts/rango";
@@ -15,9 +17,13 @@ class RangoInstallationScriptsManager extends AbstractInstallationScriptsManager
     protected buildScriptExecutionCommand(
         scriptPath: string,
         installationPath: string,
-        _options: RangoInstallationOptions
+        options: RangoInstallationOptions
     ): string {
-        return `${scriptPath} --rango_dir ${installationPath}`;
+        const localModelInstallationFlag =
+            options.enableModelCheckpointInstallation === true
+                ? " --install_local_model"
+                : "";
+        return `${scriptPath} --rango_dir ${installationPath} ${localModelInstallationFlag}`;
     }
 }
 
@@ -37,17 +43,45 @@ export class RangoInstaller extends AbstractExternalServiceInstaller<
     protected readonly scriptsManager = new RangoInstallationScriptsManager();
 
     checkInstallationIsAvailableForRequest(
-        _inputParams: RangoUserModelParams[],
+        inputParams: RangoUserModelParams[],
         installationPath: string,
-        _inputOptions: RangoInstallationOptions
+        inputOptions: RangoInstallationOptions | undefined
     ): RangoInstallationOptions | undefined {
+        const localModelInstallationRequired =
+            any(inputParams, (params) => params.mode === "local") ||
+            inputOptions?.enableModelCheckpointInstallation;
+        const localModelIsMissing =
+            localModelInstallationRequired &&
+            !RangoInstaller.checkLocalModelCheckpointIsInstalled(
+                installationPath
+            );
         if (exists(installationPath)) {
-            return undefined;
+            return localModelIsMissing
+                ? { enableModelCheckpointInstallation: true }
+                : undefined;
+        } else {
+            return {
+                enableModelCheckpointInstallation:
+                    localModelInstallationRequired,
+            };
         }
-        return {};
     }
 
     estimateInstallationTime(): string {
         return "5-10 minutes";
+    }
+
+    private static readonly expectedLocalModelCheckpointRelativePath =
+        "models/deepseek-bm25-proof-tfidf-proj-thm-prem-final";
+
+    private static checkLocalModelCheckpointIsInstalled(
+        installationPath: string
+    ): boolean {
+        return exists(
+            joinPaths(
+                installationPath,
+                this.expectedLocalModelCheckpointRelativePath
+            )
+        );
     }
 }

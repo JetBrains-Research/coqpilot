@@ -54,7 +54,7 @@ suite("[LLMService] Test `RangoService`", function () {
         console.error("Rango installation is required, installing...");
         await checkPrerequisitesAndInstallDefault(
             new RangoInstaller(),
-            {},
+            { enableModelCheckpointInstallation: true },
             (message) => console.error(`Rango installer: ${message}`)
         );
     }).timeout(timeToMillis(time(20, "minute")));

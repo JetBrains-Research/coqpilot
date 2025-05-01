@@ -11,7 +11,7 @@ export async function provideDefaultInstallationForRequest<
 >(
     installer: AbstractExternalServiceInstaller<InstallationOptions, any>,
     inputParams: InputModelParams[],
-    inputOptions: InstallationOptions,
+    inputOptions: InstallationOptions | undefined,
     showMessageImpl: (
         message: string,
         severity: InteractorMessageSeverity

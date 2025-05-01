@@ -3,15 +3,15 @@ import { provideDefaultInstallationForRequest } from "../../../../llm/llmService
 import { RangoInstaller } from "../../../../llm/llmServices/rango/rangoInstaller";
 import { UserModelParams } from "../../../../llm/userModelParams";
 
+import { groupBy } from "../../../../utils/collectionUtils/mapUtils";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { logBySeverityLevelName } from "../../logging/wrappers";
 import { LLMServiceIdentifier } from "../../structures/common/llmServiceIdentifier";
 import { InputBenchmarkingBundle } from "../../structures/inputParameters/inputBenchmarkingBundle";
-import { groupBy } from "../collectionUtils/mapUtils";
 
 interface InstallerWithOptions<InstallationOptions> {
     installer: AbstractExternalServiceInstaller<InstallationOptions, any>;
-    options: InstallationOptions;
+    options?: InstallationOptions;
 }
 
 const EXTERNAL_SERVICES_TO_INSTALLERS_WITH_OPTIONS: Map<
@@ -23,7 +23,7 @@ const EXTERNAL_SERVICES_TO_INSTALLERS_WITH_OPTIONS: Map<
         () => {
             return {
                 installer: new RangoInstaller(),
-                options: {},
+                options: undefined,
             };
         },
     ],

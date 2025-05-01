@@ -7,11 +7,30 @@ REPO_URL="git@github.com:GlebSolovev/rango.git" # TODO: replace with the origina
 BRANCH_NAME="coqpilot-adapter"
 PYTHON_VERSION="3.11"
 
-if [[ "$1" == "--rango_dir" && -n "$2" ]]; then
-  RANGO_DIR="$2"
-  shift 2
-else
-  echo "Error: \`--rango_dir RANGO_DIR\` should be specified."
+MODEL_NAME="deepseek-bm25-proof-tfidf-proj-thm-prem-final"
+MODEL_CHECKPOINT_URL="https://github.com/GlebSolovev/rango/releases/download/v2.4.2/$MODEL_NAME.tar.gz"
+
+INSTALL_MODEL=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --rango_dir)
+      RANGO_DIR="$2"
+      shift 2
+      ;;
+    --install_local_model)
+      INSTALL_MODEL=true
+      shift
+      ;;
+    *)
+      echo "Unknown argument: $1"
+      exit 1
+      ;;
+  esac
+done
+
+if [[ -z "$RANGO_DIR" ]]; then
+  echo "Error: \`--rango_dir RANGO_DIR\` must be specified."
   exit 1
 fi
 
@@ -25,6 +44,23 @@ if [ ! -d "$RANGO_DIR" ]; then
 else
   echo "Rango repository already exists at $RANGO_DIR..."
   cd "$RANGO_DIR"
+fi
+
+if $INSTALL_MODEL; then
+  MODEL_DIR="$RANGO_DIR/models/$MODEL_NAME"
+  if [ -d "$MODEL_DIR" ]; then
+    echo "Model already installed at $MODEL_DIR, skipping..."
+  else
+    echo "Downloading and installing model to $MODEL_DIR..."
+    mkdir -p "$RANGO_DIR/tmp_model_download"
+    curl -L "$MODEL_CHECKPOINT_URL" -o "$RANGO_DIR/tmp_model_download/model.tar.gz"
+
+    mkdir -p "$RANGO_DIR/models"
+    tar -xzf "$RANGO_DIR/tmp_model_download/model.tar.gz" -C "$RANGO_DIR/models"
+    rm -rf "$RANGO_DIR/tmp_model_download"
+
+    echo "Model installed successfully at $MODEL_DIR."
+  fi
 fi
 
 # Set up `pyenv` to use the desired Python version

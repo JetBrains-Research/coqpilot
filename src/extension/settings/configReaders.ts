@@ -246,7 +246,7 @@ async function provideExternalServicesInstallations(
                 userParams,
                 coqPilotPath,
                 llmService.installationPath,
-                {},
+                undefined,
                 new UserInstallationInteractor(llmService.installer)
             );
         }

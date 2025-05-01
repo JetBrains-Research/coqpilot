@@ -5,6 +5,8 @@ import {
     workspace,
 } from "vscode";
 
+import { RangoInstallationOptions } from "../llm/llmServices/rango/rangoInstaller";
+
 import { CoqLspStartupError } from "../coqLsp/coqLspTypes";
 
 import { CompletionAbortError } from "../core/completionAbortError";
@@ -87,7 +89,9 @@ export class CoqPilot {
                 null,
                 vscodeContext.extensionPath,
                 pluginContext.llmServices.rangoService.installationPath,
-                {},
+                {
+                    enableModelCheckpointInstallation: true,
+                } as RangoInstallationOptions,
                 pluginContext.llmServices.rangoService.installer
             )
         );
