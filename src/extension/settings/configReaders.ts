@@ -2,14 +2,16 @@ import Ajv, { DefinedError, JSONSchemaType } from "ajv";
 import {
     ExtensionContext as VSCodeContext,
     WorkspaceConfiguration,
-    commands,
     workspace,
 } from "vscode";
 
 import { LLMServices } from "../../llm/llmServices";
+import {
+    AbstractExternalService,
+    ExternalService,
+} from "../../llm/llmServices/abstractExternalService/abstractExternalService";
 import { LLMService } from "../../llm/llmServices/llmService";
 import { ModelParams, ModelsParams } from "../../llm/llmServices/modelParams";
-import { RangoService } from "../../llm/llmServices/rango/rangoService";
 import { SingleParamResolutionResult } from "../../llm/llmServices/utils/paramsResolvers/abstractResolvers";
 import {
     DeepSeekUserModelParams,
@@ -34,16 +36,10 @@ import { ContextTheoremsRanker } from "../../core/contextTheoremRanker/contextTh
 
 import { AjvMode, buildAjv } from "../../utils/ajvErrorsHandling";
 import { illegalState, throwError } from "../../utils/errors/throwErrors";
-import { exists } from "../../utils/fs/pathUtils";
 import { stringifyAnyValue, stringifyDefinedValue } from "../../utils/printers";
-import {
-    detectOutdatedRangoInstallations,
-    executeRangoUninstallationCommand,
-} from "../installers/rangoInstaller";
+import { UserInstallationInteractor } from "../installers/abstractUserInstallation";
 import {
     EditorMessages,
-    showMessageToUser,
-    showMessageToUserWithActions,
     showMessageToUserWithSettingsHint,
 } from "../ui/messages/editorMessages";
 import { PLUGIN_ID } from "../utils/pluginId";
@@ -142,11 +138,10 @@ export async function readAndValidateUserModelsParams(
                 jsonSchemaValidator
             )
         );
-    await checkRangoIsAvailableOnRequest(
-        rangoUserParams,
-        llmServices.rangoService,
-        vscodeContext.extensionPath
-    );
+
+    await provideExternalServicesInstallations(vscodeContext.extensionPath, [
+        [llmServices.rangoService, rangoUserParams],
+    ]);
 
     validateIdsAreUnique([
         ...predefinedProofsUserParams,
@@ -237,86 +232,26 @@ function validateAndParseJson<T>(
     return instance;
 }
 
-// TODO: skip Rango models if the user declines Rango installation, don't throw
-async function checkRangoIsAvailableOnRequest(
-    rangoUserParams: RangoUserModelParams[],
-    rangoService: RangoService,
-    coqPilotPath: string
+// TODO: skip service's models if the user declines its installation, don't throw
+async function provideExternalServicesInstallations(
+    coqPilotPath: string,
+    externalServicesWithUserParams: [
+        ExternalService<UserModelParams, any, any>,
+        UserModelParams[],
+    ][]
 ) {
-    if (rangoUserParams.length === 0) {
-        return;
-    }
-    await detectAndSuggestRemovingOutdatedRangoInstallations(
-        rangoService,
-        coqPilotPath
-    );
-    if (exists(rangoService.rangoDirPath)) {
-        return;
-    }
-
-    await showMessageToUserWithActions(
-        EditorMessages.rangoModelsRequireRangoInstalledSuggestion,
-        "info",
-        {
-            choiceItem: "Install",
-            callback: async () =>
-                commands.executeCommand(`${PLUGIN_ID}.install_rango`),
-        },
-        {
-            choiceItem: "Cancel",
-            callback: () => {
-                throw new SettingsValidationError(
-                    "Rango models requested, but Rango is not installed and the user declined its installation",
-                    EditorMessages.rangoProjectIsMissingForModelsRequested,
-                    `${PLUGIN_ID}.rangoModelsParameters`,
-                    "error",
-                    {
-                        choiceItem: "Install Rango now",
-                        callback: async () =>
-                            commands.executeCommand(
-                                `${PLUGIN_ID}.install_rango`
-                            ),
-                    }
-                );
-            },
+    for (const [llmService, userParams] of externalServicesWithUserParams) {
+        if (llmService instanceof AbstractExternalService) {
+            await llmService.installer.provideInstallationForRequest(
+                userParams,
+                coqPilotPath,
+                {},
+                new UserInstallationInteractor(
+                    llmService.installer.constructInstaller
+                )
+            );
         }
-    );
-}
-
-async function detectAndSuggestRemovingOutdatedRangoInstallations(
-    rangoService: RangoService,
-    coqPilotPath: string
-) {
-    const outdatedInstallations = detectOutdatedRangoInstallations(
-        rangoService.rangoDirPath
-    );
-    if (outdatedInstallations.length === 0) {
-        return;
     }
-    await showMessageToUserWithActions(
-        EditorMessages.outdatedRangoInstallationsDetected(
-            outdatedInstallations
-        ),
-        "warning",
-        {
-            choiceItem: "Free up space",
-            callback: async () => {
-                for (const rangoPath of outdatedInstallations) {
-                    await executeRangoUninstallationCommand(
-                        coqPilotPath,
-                        rangoPath
-                    );
-                }
-                showMessageToUser(
-                    "Outdated Rango projects have been successfully uninstalled."
-                );
-            },
-        },
-        {
-            choiceItem: "Skip for now",
-            callback: async () => {},
-        }
-    );
 }
 
 function validateIdsAreUnique(allModels: UserModelParams[]) {

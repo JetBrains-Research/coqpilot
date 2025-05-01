@@ -1,4 +1,5 @@
 import { illegalState } from "../utils/errors/throwErrors";
+import { zip } from "../utils/structures/zip";
 
 import { DeepSeekService } from "./llmServices/deepSeek/deepSeekService";
 import { GrazieService } from "./llmServices/grazie/grazieService";
@@ -34,6 +35,13 @@ export function asLLMServices(
         llmServices.deepSeekService,
         llmServices.rangoService,
     ];
+}
+
+export function asLLMServicesWithItems<T>(
+    llmServices: LLMServices,
+    ...items: T[]
+): [LLMService<UserModelParams, ModelParams>, T][] {
+    return zip(asLLMServices(llmServices), items);
 }
 
 export function switchByLLMServiceType<T>(

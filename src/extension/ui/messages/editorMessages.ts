@@ -2,10 +2,8 @@ import { DefinedError } from "ajv";
 import { commands, window } from "vscode";
 
 import { ajvErrorsAsString } from "../../../utils/ajvErrorsHandling";
-import { getLastName } from "../../../utils/fs/pathUtils";
 import { stringifyAnyValue } from "../../../utils/printers";
 import { Time } from "../../../utils/time";
-import { InstallationPrerequisite } from "../../installers/prerequisitesChecker";
 import { PLUGIN_ID } from "../../utils/pluginId";
 
 export const openSettingsItem = "Open settings";
@@ -112,27 +110,6 @@ export namespace EditorMessages {
         const explanation =
             explanationMessage === undefined ? "" : `: ${explanationMessage}`;
         return `The \`${paramName}\` parameter of the "${modelId}" model was overriden with the value ${stringifyAnyValue(withValue)}${explanation}. Please configure it the same way in the settings.`;
-    };
-
-    export const installationPrerequisiteIsMissing = (
-        installationTargetName: string,
-        prerequisite: InstallationPrerequisite
-    ) =>
-        `${installationTargetName} requires "${prerequisite.name}", but it wasn't found (check command failed: \`${prerequisite.checkCommand}\`). Please ensure "${prerequisite.name}" is installed and try again.`;
-
-    export const rangoModelsRequireRangoInstalledSuggestion =
-        "Rango models require the Rango project, which takes about 5-10 minutes to install (one-time setup). Proceed with installation?";
-
-    export const rangoProjectIsMissingForModelsRequested =
-        "Rango models require the Rango project. Please run `CoqPilot: Install and build Rango project` or remove Rango models from the config, then try again.";
-
-    export const outdatedRangoInstallationsDetected = (
-        outdatedRangoPaths: string[]
-    ) => {
-        const outdatedRangoNames = outdatedRangoPaths
-            .map((dirPath) => getLastName(dirPath))
-            .join(", ");
-        return `Outdated Rango installations detected: ${outdatedRangoNames}. They can't be used anymore. Would you like to uninstall them to free up space?`;
     };
 }
 

@@ -4,8 +4,6 @@ import { AbstractInstallationScriptsManager } from "../abstractExternalService/i
 import { AbstractExternalServiceInstaller } from "../abstractExternalService/installation/abstractLLMServiceInstaller";
 import { InstallationPrerequisite } from "../abstractExternalService/installation/prerequisitesChecker";
 
-import { RangoService } from "./rangoService";
-
 // TODO: support model checkpoint installation
 export interface RangoInstallationOptions {}
 
@@ -25,11 +23,14 @@ class RangoInstallationScriptsManager extends AbstractInstallationScriptsManager
 
 export class RangoInstaller extends AbstractExternalServiceInstaller<
     RangoInstallationOptions,
-    RangoUserModelParams,
-    RangoService
+    RangoUserModelParams
 > {
-    constructor(rangoService: RangoService) {
-        super(rangoService);
+    constructor(installationPath: string | undefined) {
+        super("Rango", installationPath);
+    }
+
+    constructInstaller(installationPath: string): RangoInstaller {
+        return new RangoInstaller(installationPath);
     }
 
     readonly installationPrerequisites: InstallationPrerequisite[] = [

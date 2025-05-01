@@ -1,3 +1,4 @@
+import { EventLogger } from "../../../logging/eventLogger";
 import {
     ExternalPipelineProofGenerationContext,
     ProofGenerationContext,
@@ -8,6 +9,7 @@ import {
     AbstractExternalService,
     AbstractExternalServiceInternal,
 } from "../abstractExternalService/abstractExternalService";
+import { ErrorsHandlingMode } from "../commonStructures/errorsHandlingMode";
 import {
     GeneratedRawContent,
     GeneratedRawContentItem,
@@ -31,9 +33,28 @@ export class RangoService extends AbstractExternalService<
     RangoServiceInternal
 > {
     readonly serviceName = "RangoService";
-    readonly externalProjectName = "Rango";
 
-    protected readonly DEFAULT_MAX_SUBPROCESSES_PARALLELISM: number = 3;
+    constructor(
+        eventLogger: EventLogger | undefined = undefined,
+        errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.RETHROW_ERRORS,
+        generationLogsFilePath: string | undefined = undefined,
+        debugLogs: boolean = false,
+        customInstallationPath: string | undefined = undefined,
+        maxSubprocessesSpawnedInParallel: number | undefined = undefined,
+        clearProofGenerationLogsOnSuccess: boolean = false
+    ) {
+        super(
+            "Rango",
+            3,
+            eventLogger,
+            errorsHandlingMode,
+            generationLogsFilePath,
+            debugLogs,
+            customInstallationPath,
+            maxSubprocessesSpawnedInParallel,
+            clearProofGenerationLogsOnSuccess
+        );
+    }
 
     protected readonly internal = new RangoServiceInternal(
         this,
@@ -41,7 +62,8 @@ export class RangoService extends AbstractExternalService<
         this.generationsLoggerBuilder
     );
     protected readonly modelParamsResolver = new RangoModelParamsResolver();
-    readonly installer = new RangoInstaller(this);
+
+    readonly installer = new RangoInstaller(this.customInstallationPath);
 }
 
 export class RangoGeneratedProof extends AbstractExternalGeneratedProof<
@@ -101,7 +123,7 @@ class RangoServiceInternal extends AbstractExternalServiceInternal<
         const proofOrUndefined = await runRangoProof(
             externalPipelineContext,
             params,
-            this.llmService.installationPath,
+            this.llmService.getInstallationPath(),
             this.llmService.clearProofGenerationLogsOnSuccess,
             this.logDebug,
             abortSignal

@@ -28,6 +28,19 @@ import { throwConfigurationError } from "../utils/errorUtils";
 
 import { AbstractExternalServiceInstaller } from "./installation/abstractLLMServiceInstaller";
 
+export type ExternalService<
+    InputModelParams extends UserModelParams,
+    ResolvedModelParams extends ModelParams,
+    InstallationOptions,
+> = AbstractExternalService<
+    InputModelParams,
+    ResolvedModelParams,
+    InstallationOptions,
+    any,
+    any,
+    any
+>;
+
 export abstract class AbstractExternalService<
     InputModelParams extends UserModelParams,
     ResolvedModelParams extends ModelParams,
@@ -59,27 +72,25 @@ export abstract class AbstractExternalService<
     GeneratedProofType,
     LLMServiceInternalType
 > {
-    abstract readonly externalProjectName: string;
-
-    protected abstract readonly DEFAULT_MAX_SUBPROCESSES_PARALLELISM: number;
-
     abstract readonly installer: AbstractExternalServiceInstaller<
         InstallationOptions,
-        InputModelParams,
-        LLMServiceType
+        InputModelParams
     >;
 
-    readonly installationPath: string;
-
-    readonly maxSubprocessesSpawnedInParallel: number;
+    protected readonly maxSubprocessesSpawnedInParallel: number;
     protected readonly subprocessesScheduler: AsyncScheduler;
 
+    // TODO: put most of the options to a separate object and pass it, resolving the defaults
     constructor(
+        readonly externalProjectName: string,
+        readonly defaultMaxSubprocessesParallelism: number,
         eventLogger: EventLogger | undefined = undefined,
         errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.RETHROW_ERRORS,
         generationLogsFilePath: string | undefined = undefined,
         debugLogs: boolean = false,
-        installationPath: string | undefined = undefined,
+        protected readonly customInstallationPath:
+            | string
+            | undefined = undefined,
         maxSubprocessesSpawnedInParallel: number | undefined = undefined,
         readonly clearProofGenerationLogsOnSuccess: boolean = false
     ) {
@@ -89,17 +100,18 @@ export abstract class AbstractExternalService<
             generationLogsFilePath,
             debugLogs
         );
-        this.installationPath =
-            installationPath ??
-            this.getInstaller().getDefaultInstallationPath();
         this.maxSubprocessesSpawnedInParallel =
             maxSubprocessesSpawnedInParallel ??
             this.getDefaultMaxSubprocessesSpawnedInParallel();
         this.subprocessesScheduler = new AsyncScheduler(
             this.maxSubprocessesSpawnedInParallel,
             true,
-            `${this.getExternalProjecName()} Subprocesses Scheduler <max ${this.maxSubprocessesSpawnedInParallel} sub-s>`
+            `${this.externalProjectName} Subprocesses Scheduler <max ${this.maxSubprocessesSpawnedInParallel} sub-s>`
         );
+    }
+
+    getInstallationPath(): string {
+        return this.installer.installationPath;
     }
 
     async generateProof(
@@ -153,22 +165,10 @@ export abstract class AbstractExternalService<
         return time(5, "second"); // some cool-down for the subprocess spawning
     }
 
-    private getInstaller(): AbstractExternalServiceInstaller<
-        InstallationOptions,
-        InputModelParams,
-        LLMServiceType
-    > {
-        return this.installer;
-    }
-
-    private getExternalProjecName(): string {
-        return this.externalProjectName;
-    }
-
     protected getDefaultMaxSubprocessesSpawnedInParallel(): number {
         return Math.min(
             availableParallelism(),
-            this.DEFAULT_MAX_SUBPROCESSES_PARALLELISM
+            this.defaultMaxSubprocessesParallelism
         );
     }
 }

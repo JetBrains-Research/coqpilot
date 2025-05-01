@@ -5,6 +5,8 @@ import {
     workspace,
 } from "vscode";
 
+import { RangoInstaller } from "../llm/llmServices/rango/rangoInstaller";
+
 import { CoqLspStartupError } from "../coqLsp/coqLspTypes";
 
 import { CompletionAbortError } from "../core/completionAbortError";
@@ -23,21 +25,18 @@ import { CoqProofChecker } from "../core/coqProofChecker";
 import { inspectSourceFile } from "../core/inspectSourceFile";
 
 import { ProofStep } from "../coqParser/parsedTypes";
-import { buildErrorCompleteLog } from "../utils/errors/errorsUtils";
-import { SimpleShowableError } from "../utils/errors/simpleShowableError";
 import { Uri } from "../utils/structures/uri";
 
 import {
-    executeRangoInstallationCommand,
-    executeRangoUninstallationCommand,
-} from "./installers/rangoInstaller";
+    executeInstallationCommand,
+    executeUninstallationCommand,
+} from "./installers/abstractUserInstallation";
 import { PluginContext } from "./pluginContext";
 import { SessionState } from "./sessionState";
 import {
     buildTheoremsRankerFromConfig,
     readAndValidateUserModelsParams,
 } from "./settings/configReaders";
-import { SettingsValidationError } from "./settings/settingsValidationError";
 import {
     deleteTextFromRange,
     highlightTextInEditor,
@@ -50,6 +49,7 @@ import {
 } from "./ui/messages/editorMessages";
 import { subscribeToHandleLLMServicesEvents } from "./ui/messages/llmServicesEventsHandler";
 import { PluginStatusIndicator } from "./ui/pluginStatusIndicator";
+import { reportErrorToUser } from "./utils/errorHandlers";
 import { PLUGIN_ID } from "./utils/pluginId";
 import {
     positionInRange,
@@ -83,21 +83,24 @@ export class CoqPilot {
             this.sessionState.toggleCurrentSession.bind(this.sessionState)
         );
 
-        // TODO: wrap into try-catch to show missing prerequisites error gracefully
         this.registerCommand(
             "install_rango",
-            executeRangoInstallationCommand.bind(
+            executeInstallationCommand.bind(
                 null,
                 vscodeContext.extensionPath,
-                pluginContext.llmServices.rangoService.rangoDirPath
+                pluginContext.llmServices.rangoService.getInstallationPath(),
+                {},
+                (installationPath) => new RangoInstaller(installationPath)
             )
         );
         this.registerCommand(
             "uninstall_rango",
-            executeRangoUninstallationCommand.bind(
+            executeUninstallationCommand.bind(
                 null,
                 vscodeContext.extensionPath,
-                pluginContext.llmServices.rangoService.rangoDirPath
+                pluginContext.llmServices.rangoService.getInstallationPath(),
+                {},
+                (installationPath) => new RangoInstaller(installationPath)
             )
         );
 
@@ -164,9 +167,7 @@ export class CoqPilot {
                 this.sessionState.abortController.signal
             );
         } catch (e) {
-            if (e instanceof SettingsValidationError) {
-                e.showAsMessageToUser();
-            } else if (e instanceof CoqLspStartupError) {
+            if (e instanceof CoqLspStartupError) {
                 showMessageToUserWithSettingsHint(
                     EditorMessages.coqLspStartupFailure(e.path),
                     "error",
@@ -178,16 +179,8 @@ export class CoqPilot {
                     this.sessionState.markAbortNotificationAsShown();
                     showMessageToUser(EditorMessages.completionAborted, "info");
                 }
-            } else if (e instanceof SimpleShowableError) {
-                showMessageToUser(e.messageToShow, "error");
             } else {
-                showMessageToUser(
-                    e instanceof Error
-                        ? EditorMessages.errorOccurred(e.message)
-                        : EditorMessages.objectWasThrownAsError(e),
-                    "error"
-                );
-                console.error(buildErrorCompleteLog(e));
+                reportErrorToUser(e);
             }
         } finally {
             this.sessionState.hideInProgressSpinner();
