@@ -1,8 +1,11 @@
+import { EqualitySet } from "../../../../utils/collectionUtils/equalitySet";
+import {
+    EqualTo,
+    HashUtils,
+} from "../../../../utils/collectionUtils/equalityUtils";
+import { getOrPut } from "../../../../utils/collectionUtils/mapUtils";
+import { illegalState } from "../../../../utils/errors/throwErrors";
 import { stringifyAnyValue } from "../../../../utils/printers";
-import { illegalState } from "../../../../utils/throwErrors";
-import { EqualitySet } from "../../utils/collectionUtils/equalitySet";
-import { EqualTo, HashUtils } from "../../utils/collectionUtils/equalityUtils";
-import { getOrPut } from "../../utils/collectionUtils/mapUtils";
 import { toTargetType } from "../../utils/commonStructuresUtils/targetTypeUtils";
 import { TargetType } from "../benchmarkingCore/completionGenerationTask";
 

@@ -5,7 +5,7 @@ import { withDocumentOpenedByTestCoqLsp } from "../../coqLsp/coqLspBuilders";
 import { CoqProofChecker } from "../../core/coqProofChecker";
 import { ProofCheckResult } from "../../core/coqProofChecker";
 
-import { Uri } from "../../utils/uri";
+import { Uri } from "../../utils/structures/uri";
 import { resolveResourcesDir } from "../commonTestFunctions/pathsResolver";
 
 suite("`CoqProofChecker` tests", () => {

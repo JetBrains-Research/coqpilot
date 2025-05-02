@@ -3,9 +3,9 @@ import * as child from "child_process";
 import ipc from "node-ipc";
 
 import { failedAjvValidatorErrorsAsString } from "../../../../../../utils/ajvErrorsHandling";
+import { PromiseExecutor } from "../../../../../../utils/async/promiseUtils";
 import { stringifyAnyValue } from "../../../../../../utils/printers";
 import { BenchmarkingLogger } from "../../../../logging/benchmarkingLogger";
-import { PromiseExecutor } from "../../../asyncUtils/promiseUtils";
 import { IPCError } from "../ipcError";
 import { IPCMessage, createStopIPCMessage } from "../ipcProtocol";
 

@@ -1,4 +1,4 @@
-import { ErrorWithCause } from "../utils/errorsUtils";
+import { ErrorWithCause } from "../utils/errors/errorsUtils";
 
 /**
  * Base class for the errors thrown by `LLMService`.

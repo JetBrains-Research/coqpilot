@@ -1,11 +1,11 @@
-import { illegalState } from "./throwErrors";
+import { illegalState } from "./errors/throwErrors";
 
 export function stringifyAnyValue(
     value: any,
     space: JsonSpacing = JsonSpacing.UNFORMATTED
 ): string {
     const valueAsString = toJsonString(value, space);
-    if (typeof value === "number") {
+    if (typeof value === "number" || typeof value === "string") {
         return valueAsString;
     }
     return `"${valueAsString}"`;

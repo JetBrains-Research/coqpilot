@@ -1,13 +1,13 @@
 import { expect } from "earl";
-import * as tmp from "tmp";
 
 import { BenchmarkingBundle } from "../../benchmark/framework/experiment/setupDSL/benchmarkingBundleBuilder";
 import { TargetsBuilder } from "../../benchmark/framework/experiment/setupDSL/targetsBuilder";
 import { SingleWorkspaceExperiment } from "../../benchmark/framework/experiment/singleWorkspaceExperiment";
 import { SeverityLevel } from "../../benchmark/framework/logging/benchmarkingLogger";
 import { DatasetCacheUsageMode } from "../../benchmark/framework/structures/inputParameters/datasetCaching";
-import { relativizeAbsolutePaths } from "../../benchmark/framework/utils/fileUtils/fs";
 import { colorize } from "../../utils/colorLogging";
+import { relativizeAbsolutePaths } from "../../utils/fs/pathUtils";
+import { createTmpDirectory } from "../../utils/fs/tmpFs";
 import { time, timeToMillis } from "../../utils/time";
 import { getRootDir } from "../commonTestFunctions/pathsResolver";
 
@@ -35,10 +35,9 @@ suite("Benchmarking framework: regression tests", () => {
             )
             .addTo(experiment);
 
-        const tmpDirectoryPath = tmp.dirSync().name;
         const relativeTmpDir = relativizeAbsolutePaths(
             getRootDir(),
-            tmpDirectoryPath
+            createTmpDirectory()
         );
 
         let hasSuccessfullyFinished = false;

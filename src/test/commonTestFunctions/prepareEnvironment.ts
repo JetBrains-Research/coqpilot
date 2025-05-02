@@ -11,7 +11,8 @@ import { CoqProofChecker } from "../../core/coqProofChecker";
 import { buildProofGenerationContext } from "../../core/exposedCompletionGeneratorUtils";
 import { inspectSourceFile } from "../../core/inspectSourceFile";
 
-import { Uri } from "../../utils/uri";
+import { ProjectRoot } from "../../utils/structures/projectRoot";
+import { Uri } from "../../utils/structures/uri";
 
 import { resolveResourcesDir } from "./pathsResolver";
 
@@ -22,21 +23,32 @@ export interface PreparedEnvironment {
     sourceFileEnvironment: SourceFileEnvironment;
 }
 
+export interface ProjectRootDir {
+    path: string[];
+    requiresNixEnvironment: boolean;
+}
+
 /**
  * Note: both paths should be relative to `src/test/resources/` folder.
  */
 export async function withPreparedEnvironment<T>(
     resourcePath: string[],
-    projectRootPath: string[] | undefined,
+    projectRootDir: ProjectRootDir | undefined,
     block: (preparedEnvironment: PreparedEnvironment) => Promise<T>
 ) {
-    const [filePath, rootDir] = resolveResourcesDir(
+    const [filePath, projectRootPath] = resolveResourcesDir(
         resourcePath,
-        projectRootPath
+        projectRootDir?.path
     );
     const fileUri = Uri.fromPath(filePath);
+    const projectRoot: ProjectRoot = {
+        uri: Uri.fromPath(projectRootPath),
+        requiresNixEnvironment: projectRootDir?.requiresNixEnvironment ?? false,
+    };
 
-    const client = await createTestCoqLspClient({ workspaceRootPath: rootDir });
+    const client = await createTestCoqLspClient({
+        workspaceRootPath: projectRootPath,
+    });
     const coqProofChecker = new CoqProofChecker(client);
     try {
         const [completionContexts, sourceFileEnvironment] =
@@ -45,6 +57,7 @@ export async function withPreparedEnvironment<T>(
                     1,
                     (_hole) => true,
                     fileUri,
+                    projectRoot,
                     client,
                     new AbortController().signal,
                     true // to support any ranker
@@ -64,7 +77,7 @@ export async function withPreparedEnvironment<T>(
 
 export async function withPreparedEnvironmentAndItsFirstContext<T>(
     resourcePath: string[],
-    projectRootPath: string[] | undefined,
+    projectRootDir: ProjectRootDir | undefined,
     block: (
         preparedEnvironment: PreparedEnvironment,
         completionContext: CompletionContext,
@@ -73,14 +86,14 @@ export async function withPreparedEnvironmentAndItsFirstContext<T>(
 ): Promise<T> {
     return withPreparedEnvironment(
         resourcePath,
-        projectRootPath,
+        projectRootDir,
         (environment) =>
             block(
                 environment,
                 environment.completionContexts[0],
                 buildProofGenerationContext(
                     environment.completionContexts[0],
-                    environment.sourceFileEnvironment.fileTheorems
+                    environment.sourceFileEnvironment
                 )
             )
     );

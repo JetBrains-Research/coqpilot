@@ -1,14 +1,7 @@
-import {
-    CompletionContext,
-    SourceFileEnvironment,
-} from "../../../../../../core/completionGenerationContext";
-
 import { serializeUri } from "../../../../structures/common/serializedUri";
+import { isStandaloneFilesRoot } from "../../../../structures/common/workspaceRoot";
 import {
-    WorkspaceRoot,
-    isStandaloneFilesRoot,
-} from "../../../../structures/common/workspaceRoot";
-import {
+    ProofsCheckArgs,
     ProofsCheckFailedError,
     ProofsCheckResult,
 } from "../abstractProofsChecker";
@@ -20,18 +13,20 @@ export namespace ProofsCheckerUtils {
 
     export function buildArgs(
         preparedProofs: string[],
-        completionContext: CompletionContext,
-        sourceFileEnvironment: SourceFileEnvironment,
-        workspaceRoot: WorkspaceRoot
+        inputArgs: ProofsCheckArgs
     ): Signature.Args {
         return {
-            workspaceRootPath: isStandaloneFilesRoot(workspaceRoot)
+            workspaceRootPath: isStandaloneFilesRoot(inputArgs.workspaceRoot)
                 ? undefined
-                : workspaceRoot.directoryPath,
-            serializedFileUri: serializeUri(sourceFileEnvironment.fileUri),
-            documentVersion: sourceFileEnvironment.documentVersion,
-            positionToCheckAt: completionContext.admitRange.start,
+                : inputArgs.workspaceRoot.directoryPath,
+            serializedFileUri: serializeUri(
+                inputArgs.sourceFileEnvironment.fileUri
+            ),
+            documentVersion: inputArgs.sourceFileEnvironment.documentVersion,
+            positionToCheckAt: inputArgs.completionContext.admitRange.start,
             preparedProofs: preparedProofs,
+            openDocumentTimeoutMillis: inputArgs.openDocumentTimeoutMillis,
+            proofCheckTimeoutMillis: inputArgs.proofCheckTimeoutMillis,
         };
     }
 

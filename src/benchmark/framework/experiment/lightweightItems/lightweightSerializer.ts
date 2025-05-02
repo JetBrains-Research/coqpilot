@@ -1,12 +1,31 @@
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 
+import { makeElementsUniqueByStringKeys } from "../../../../utils/collectionUtils/listUtils";
+import {
+    getOrThrow,
+    groupByToEqualityMap,
+    packIntoMap,
+    reduceToMap,
+} from "../../../../utils/collectionUtils/mapUtils";
+import { throwError } from "../../../../utils/errors/throwErrors";
+import {
+    clearDirectory,
+    createDirectory,
+} from "../../../../utils/fs/directoryUtils";
+import { buildSafeJsonFileName } from "../../../../utils/fs/fileNameUtils";
+import { writeToFile } from "../../../../utils/fs/fileUtils";
+import {
+    getLastNameWithoutExtension,
+    joinPaths,
+    relativizeAbsolutePaths,
+} from "../../../../utils/fs/pathUtils";
+import { getDatasetDir } from "../../../../utils/fs/rootResolvers";
 import { toFormattedJsonString } from "../../../../utils/printers";
-import { throwError } from "../../../../utils/throwErrors";
+import { serializeCodeElementRange } from "../../../../utils/structures/codeElementPositions";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { BenchmarkingItem } from "../../structures/benchmarkingCore/benchmarkingItem";
 import { BenchmarkingModelParams } from "../../structures/benchmarkingCore/benchmarkingModelParams";
 import { CompletionGenerationTask } from "../../structures/benchmarkingCore/completionGenerationTask";
-import { serializeCodeElementRange } from "../../structures/common/codeElementPositions";
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { InputBenchmarkingBundle } from "../../structures/inputParameters/inputBenchmarkingBundle";
 import { InputBenchmarkingModelParams } from "../../structures/inputParameters/inputBenchmarkingModelParams";
@@ -14,24 +33,7 @@ import { LightweightBenchmarkingItem } from "../../structures/inputParameters/li
 import { LightweightCompletionGenerationTask } from "../../structures/inputParameters/lightweight/lightweightCompletionGenerationTask";
 import { LightweightInputModelParams } from "../../structures/inputParameters/lightweight/lightweightInputModelParams";
 import { LightweightWorkspaceRoot } from "../../structures/inputParameters/lightweight/lightweightWorkspaceRoot";
-import { makeElementsUniqueByStringKeys } from "../../utils/collectionUtils/listUtils";
-import {
-    getOrThrow,
-    groupByToEqualityMap,
-    packIntoMap,
-    reduceToMap,
-} from "../../utils/collectionUtils/mapUtils";
 import { serializeGoal } from "../../utils/coqUtils/goalParser";
-import { buildSafeJsonFileName } from "../../utils/fileUtils/fileNameUtils";
-import {
-    clearDirectory,
-    createDirectory,
-    getDatasetDir,
-    getLastName,
-    joinPaths,
-    relativizeAbsolutePaths,
-    writeToFile,
-} from "../../utils/fileUtils/fs";
 import { prependWithZeros } from "../../utils/serializationUtils";
 
 import { LightweightSerialization } from "./lightweightSerialization";
@@ -139,7 +141,7 @@ export namespace LightweightSerializer {
             "projects",
             (project, _) =>
                 buildSafeJsonFileName(
-                    getLastName(project.relativeDirectoryPath)
+                    getLastNameWithoutExtension(project.relativeDirectoryPath)
                 )
         );
         saveAsJsonFiles(

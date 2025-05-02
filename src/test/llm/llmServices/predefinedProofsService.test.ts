@@ -10,8 +10,8 @@ import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { PredefinedProofsUserModelParams } from "../../../llm/userModelParams";
 
 import { EventLogger } from "../../../logging/eventLogger";
-import { delay } from "../../../utils/delay";
-import { throwError } from "../../../utils/throwErrors";
+import { delay } from "../../../utils/async/delay";
+import { throwError } from "../../../utils/errors/throwErrors";
 import { timeZero } from "../../../utils/time";
 import { withLLMService } from "../../commonTestFunctions/withLLMService";
 import { testModelId } from "../llmSpecificTestUtils/constants";
@@ -20,7 +20,7 @@ import {
     subscribeToTrackEvents,
 } from "../llmSpecificTestUtils/eventsTracker";
 import { expectLogs } from "../llmSpecificTestUtils/expectLogs";
-import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testAdmitCompletion";
+import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testLLMServiceInEnvironment";
 import {
     testResolveParametersFailsWithSingleCause,
     testResolveValidCompleteParameters,

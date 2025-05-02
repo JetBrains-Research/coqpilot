@@ -1,6 +1,17 @@
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 
-import { throwError } from "../../../../utils/throwErrors";
+import { makeStringsUnique } from "../../../../utils/collectionUtils/listUtils";
+import {
+    getOrThrow,
+    groupBy,
+    packIntoMap,
+} from "../../../../utils/collectionUtils/mapUtils";
+import { throwError } from "../../../../utils/errors/throwErrors";
+import { readFile } from "../../../../utils/fs/fileUtils";
+import { listJsonFiles } from "../../../../utils/fs/listFiles";
+import { joinPaths } from "../../../../utils/fs/pathUtils";
+import { getDatasetDir } from "../../../../utils/fs/rootResolvers";
+import { deserializeCodeElementRange } from "../../../../utils/structures/codeElementPositions";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { readRequestedFilesCache } from "../../parseDataset/cacheHandlers/cacheReader";
 import { resolveInputBenchmarkingModelParams } from "../../parseDataset/core/itemsBuilder/buildBenchmarkingItems";
@@ -8,26 +19,13 @@ import { logBenchmarkingItems } from "../../parseDataset/utils/logBenchmarkingIt
 import { BenchmarkingItem } from "../../structures/benchmarkingCore/benchmarkingItem";
 import { BenchmarkingModelParams } from "../../structures/benchmarkingCore/benchmarkingModelParams";
 import { CompletionGenerationTask } from "../../structures/benchmarkingCore/completionGenerationTask";
-import { deserializeCodeElementRange } from "../../structures/common/codeElementPositions";
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { LightweightBenchmarkingItem } from "../../structures/inputParameters/lightweight/lightweightBenchmarkingItem";
 import { LightweightInputModelParams } from "../../structures/inputParameters/lightweight/lightweightInputModelParams";
 import { LightweightWorkspaceRoot } from "../../structures/inputParameters/lightweight/lightweightWorkspaceRoot";
 import { ParsedCoqFileData } from "../../structures/parsedCoqFile/parsedCoqFileData";
-import { makeStringsUnique } from "../../utils/collectionUtils/listUtils";
-import {
-    getOrThrow,
-    groupBy,
-    packIntoMap,
-} from "../../utils/collectionUtils/mapUtils";
 import { createParamsResolvers } from "../../utils/commonStructuresUtils/llmServicesUtils";
 import { deserializeGoal } from "../../utils/coqUtils/goalParser";
-import {
-    getDatasetDir,
-    joinPaths,
-    listJsonFiles,
-    readFile,
-} from "../../utils/fileUtils/fs";
 
 import { LightweightSerialization } from "./lightweightSerialization";
 

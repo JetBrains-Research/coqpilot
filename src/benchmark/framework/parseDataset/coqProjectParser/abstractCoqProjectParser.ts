@@ -19,6 +19,7 @@ export abstract class AbstractCoqProjectParser {
     abstract parseCoqProject(
         targets: WorkspaceInputTargets,
         workspaceRoot: WorkspaceRoot,
+        openDocumentTimeoutMillis: number | undefined,
         logger: BenchmarkingLogger
     ): Promise<ParsedWorkspaceHolder>;
 }

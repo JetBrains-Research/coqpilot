@@ -1,11 +1,11 @@
-import { getErrorMessage } from "../../../../utils/errorsUtils";
+import { getErrorMessage } from "../../../../utils/errors/errorsUtils";
+import { buildSafeJsonFileName } from "../../../../utils/fs/fileNameUtils";
+import { writeToFile } from "../../../../utils/fs/fileUtils";
 import { toFormattedJsonString } from "../../../../utils/printers";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { BasicJsonSerialization } from "../../reportBuilders/basicJson/serialization";
 import { BenchmarkingItem } from "../../structures/benchmarkingCore/benchmarkingItem";
 import { BenchmarkingResult } from "../../structures/benchmarkingResults/benchmarkedItem";
-import { buildSafeJsonFileName } from "../../utils/fileUtils/fileNameUtils";
-import { writeToFile } from "../../utils/fileUtils/fs";
 import { throwBenchmarkingError } from "../../utils/throwErrors";
 
 export namespace ExecuteBenchmarkingTaskArtifactsUtils {

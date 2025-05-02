@@ -1,13 +1,7 @@
-import {
-    CompletionContext,
-    SourceFileEnvironment,
-} from "../../../../core/completionGenerationContext";
-
+import { AsyncScheduler } from "../../../../utils/async/asyncScheduler";
+import { ProofsCheckArgs } from "../../benchmarkingCore/singleCompletionGeneration/proofsCheckers/abstractProofsChecker";
 import { CheckProofsInternalSignature } from "../../benchmarkingCore/singleCompletionGeneration/proofsCheckers/implementation/internalSignature";
 import { ProofsCheckerUtils } from "../../benchmarkingCore/singleCompletionGeneration/proofsCheckers/implementation/proofsCheckerUtils";
-import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
-import { AsyncScheduler } from "../../utils/asyncUtils/asyncScheduler";
 import {
     ChildProcessOptions,
     executeProcessAsFunction,
@@ -19,29 +13,21 @@ import Signature = CheckProofsInternalSignature;
 
 export async function checkGeneratedProofsInSubprocess(
     preparedProofs: string[],
-    completionContext: CompletionContext,
-    sourceFileEnvironment: SourceFileEnvironment,
-    workspaceRoot: WorkspaceRoot,
-    timeoutMillis: number | undefined,
+    inputArgs: ProofsCheckArgs,
+    subprocessTimeoutMillis: number | undefined,
     subprocessesScheduler: AsyncScheduler,
-    benchmarkingLogger: BenchmarkingLogger,
     enableProcessLifetimeDebugLogs: boolean = false
 ): Promise<ExecutionResult<Signature.Result>> {
     const enterWorkspaceAndExecuteSubprocessCommand =
         buildCommandToExecuteSubprocessInWorkspace(
-            workspaceRoot,
+            inputArgs.workspaceRoot,
             Signature.subprocessName
         );
-    const args = ProofsCheckerUtils.buildArgs(
-        preparedProofs,
-        completionContext,
-        sourceFileEnvironment,
-        workspaceRoot
-    );
+    const args = ProofsCheckerUtils.buildArgs(preparedProofs, inputArgs);
     const options: ChildProcessOptions = {
         workingDirectory:
             enterWorkspaceAndExecuteSubprocessCommand.workingDirectory,
-        timeoutMillis: timeoutMillis,
+        timeoutMillis: subprocessTimeoutMillis,
     };
     return subprocessesScheduler.scheduleTask(
         () =>
@@ -52,9 +38,9 @@ export async function checkGeneratedProofsInSubprocess(
                 Signature.resultSchema,
                 (result) => result,
                 options,
-                benchmarkingLogger,
+                inputArgs.logger,
                 enableProcessLifetimeDebugLogs
             ),
-        benchmarkingLogger
+        (message) => inputArgs.logger.debug(message)
     );
 }

@@ -1,3 +1,6 @@
+import { AsyncScheduler } from "../../../utils/async/asyncScheduler";
+import { joinPaths, resolveAsAbsolutePath } from "../../../utils/fs/pathUtils";
+import { getRootDir } from "../../../utils/fs/rootResolvers";
 import { benchmark } from "../benchmarkingCore/benchmark";
 import { TimeMark } from "../benchmarkingCore/singleCompletionGeneration/measureTimeUtils";
 import { AbstractProofsChecker } from "../benchmarkingCore/singleCompletionGeneration/proofsCheckers/abstractProofsChecker";
@@ -17,12 +20,7 @@ import {
 import { DatasetCacheUsageMode } from "../structures/inputParameters/datasetCaching";
 import { ExperimentRunOptions } from "../structures/inputParameters/experimentRunOptions";
 import { InputBenchmarkingBundle } from "../structures/inputParameters/inputBenchmarkingBundle";
-import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
-import {
-    getRootDir,
-    joinPaths,
-    resolveAsAbsolutePath,
-} from "../utils/fileUtils/fs";
+import { installDemandedExternalServices } from "../utils/installers/externalServicesInstaller";
 import { throwBenchmarkingError } from "../utils/throwErrors";
 
 import {
@@ -138,6 +136,11 @@ export abstract class AbstractExperiment {
         const benchmarkingItems = await this.buildBenchmarkingItems(
             requestedTargets,
             executionContext
+        );
+
+        await installDemandedExternalServices(
+            this.bundles,
+            executionContext.logger
         );
 
         // Since `AbstractExperiment.run(...)` is not always called with `await`,
@@ -327,10 +330,14 @@ export abstract class AbstractExperiment {
                 false,
 
             failFast: optionsAfterStartupResolution.failFast ?? false,
-            logFailFastTasksAborting:
-                optionsAfterStartupResolution.logFailFastTasksAborting ?? false,
+            logAbortingTasks:
+                optionsAfterStartupResolution.logAbortingTasks ?? false,
             proofGenerationRetries:
                 optionsAfterStartupResolution.proofGenerationRetries,
+            openDocumentTimeoutMillis:
+                optionsAfterStartupResolution.openDocumentTimeoutMillis,
+            proofCheckTimeoutMillis:
+                optionsAfterStartupResolution.proofCheckTimeoutMillis,
             logTeamCityStatistics:
                 optionsAfterStartupResolution.logTeamCityStatistics ?? false,
         };

@@ -5,22 +5,22 @@ import {
     buildAjv,
     failedAjvValidatorErrorsAsString,
 } from "../../../../utils/ajvErrorsHandling";
-import { buildErrorCompleteLog } from "../../../../utils/errorsUtils";
-import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
-import { deserializeCodeElementRange } from "../../structures/common/codeElementPositions";
-import { deserializeTheoremData } from "../../structures/parsedCoqFile/theoremData";
-import { packIntoMap } from "../../utils/collectionUtils/mapUtils";
-import { deserializeGoal } from "../../utils/coqUtils/goalParser";
+import { packIntoMap } from "../../../../utils/collectionUtils/mapUtils";
+import { buildErrorCompleteLog } from "../../../../utils/errors/errorsUtils";
+import { isFile } from "../../../../utils/fs/fileTypeCheckers";
+import { readFile } from "../../../../utils/fs/fileUtils";
+import { exists } from "../../../../utils/fs/pathUtils";
 import {
-    exists,
-    getDatasetDir,
-    isFile,
     joinPaths,
-    readFile,
     relativizeAbsolutePaths,
     resolveAsAbsolutePath,
-} from "../../utils/fileUtils/fs";
+} from "../../../../utils/fs/pathUtils";
+import { getDatasetDir } from "../../../../utils/fs/rootResolvers";
+import { deserializeCodeElementRange } from "../../../../utils/structures/codeElementPositions";
+import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
+import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
+import { deserializeTheoremData } from "../../structures/parsedCoqFile/theoremData";
+import { deserializeGoal } from "../../utils/coqUtils/goalParser";
 import {
     CacheHolderData,
     WorkspaceCacheHolder,

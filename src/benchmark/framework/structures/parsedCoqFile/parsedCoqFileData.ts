@@ -3,12 +3,13 @@ import { JSONSchemaType } from "ajv";
 import { SourceFileEnvironment } from "../../../../core/completionGenerationContext";
 
 import { Theorem } from "../../../../coqParser/parsedTypes";
-import { Uri } from "../../../../utils/uri";
 import {
     fromMappedObject,
     mapValues,
     toMappedObject,
-} from "../../utils/collectionUtils/mapUtils";
+} from "../../../../utils/collectionUtils/mapUtils";
+import { Uri } from "../../../../utils/structures/uri";
+import { WorkspaceRoot } from "../common/workspaceRoot";
 
 import {
     SerializedTheorem,
@@ -39,13 +40,19 @@ export class ParsedCoqFileData {
             .map((theoremData) => theoremData.sourceTheorem);
     }
 
-    constructSourceFileEnvironment(): SourceFileEnvironment {
+    constructSourceFileEnvironment(
+        workspaceRoot: WorkspaceRoot
+    ): SourceFileEnvironment {
         return {
             fileTheorems: this.getOrderedFileTheorems().filter(
                 (theorem) => !theorem.proof.is_incomplete
             ),
             documentVersion: this.documentVersion,
             fileUri: Uri.fromPath(this.filePath),
+            projectRoot: {
+                uri: Uri.fromPath(workspaceRoot.directoryPath),
+                requiresNixEnvironment: workspaceRoot.requiresNixEnvironment,
+            },
         };
     }
 }

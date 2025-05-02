@@ -1,12 +1,19 @@
 import { Position } from "vscode-languageclient";
 
-import { ProofGenerationContext } from "../llm/proofGenerationContext";
+import {
+    ExternalPipelineProofGenerationContext,
+    ProofGenerationContext,
+} from "../llm/proofGenerationContext";
 
 import { Hyp, PpString, ProofGoal } from "../coqLsp/coqLspTypes";
 
-import { Theorem } from "../coqParser/parsedTypes";
+import { relativizeAbsolutePaths } from "../utils/fs/pathUtils";
+import { fromRange } from "../utils/structures/codeElementPositions";
 
-import { CompletionContext } from "./completionGenerationContext";
+import {
+    CompletionContext,
+    SourceFileEnvironment,
+} from "./completionGenerationContext";
 import { ContextTheoremsRanker } from "./contextTheoremRanker/contextTheoremsRanker";
 
 export function prepareProofToCheck(proof: string) {
@@ -37,10 +44,11 @@ export function goalToTargetLemma(proofGoal: ProofGoal): string {
 
 export function buildProofGenerationContext(
     completionContext: CompletionContext,
-    fileTheorems: Theorem[],
+    sourceFileEnvironment: SourceFileEnvironment,
     theoremRanker?: ContextTheoremsRanker,
     premisesNumber?: number
 ): ProofGenerationContext {
+    const fileTheorems = sourceFileEnvironment.fileTheorems;
     const rankedTheorems =
         theoremRanker
             ?.rankContextTheorems(fileTheorems, completionContext)
@@ -48,6 +56,37 @@ export function buildProofGenerationContext(
     return {
         contextTheorems: rankedTheorems,
         completionTarget: goalToTargetLemma(completionContext.proofGoal),
+        externalPipelineContext: buildExternalPipelineProofGenerationContext(
+            completionContext,
+            sourceFileEnvironment
+        ),
+    };
+}
+
+export function buildExternalPipelineProofGenerationContext(
+    completionContext: CompletionContext,
+    sourceFileEnvironment: SourceFileEnvironment
+): ExternalPipelineProofGenerationContext | undefined {
+    const projectRoot = sourceFileEnvironment.projectRoot;
+    if (projectRoot === undefined) {
+        return undefined;
+    }
+    const projectRootPath = projectRoot.uri.fsPath;
+    return {
+        completionTargetGoal: completionContext.proofGoal,
+        completionTargetRange: fromRange(completionContext.admitRange),
+
+        sourceTheoremName: completionContext.sourceTheorem.name,
+        sourceTheoremStartLine:
+            completionContext.sourceTheorem.statement_range.start.line,
+
+        relativeSourceFilePath: relativizeAbsolutePaths(
+            projectRootPath,
+            sourceFileEnvironment.fileUri.fsPath
+        ),
+        projectRootPath: projectRootPath,
+
+        requiresNixEnvironment: projectRoot.requiresNixEnvironment,
     };
 }
 

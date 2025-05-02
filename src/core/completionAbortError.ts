@@ -8,9 +8,3 @@ export class CompletionAbortError extends Error {
         this.name = "CompletionAbortError";
     }
 }
-
-export function throwOnAbort(abortSignal?: AbortSignal) {
-    if (abortSignal?.aborted) {
-        throw abortSignal.reason;
-    }
-}

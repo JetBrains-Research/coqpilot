@@ -1,8 +1,11 @@
 import {
+    illegalState,
+    unreachable,
+} from "../../../../utils/errors/throwErrors";
+import {
     stringifyAnyValue,
     stringifyDefinedValue,
 } from "../../../../utils/printers";
-import { illegalState, unreachable } from "../../../../utils/throwErrors";
 
 import { AbstractSingleParamResolver, PropertyKey } from "./abstractResolvers";
 import { SingleParamResolutionResult } from "./abstractResolvers";
@@ -187,6 +190,11 @@ export namespace ValidationRules {
     export const beNonNegativeNumber: ValidationRule<any, number> = [
         (value: number) => value >= 0,
         "be non-negative",
+    ];
+
+    export const beValidPortNumber: ValidationRule<any, number> = [
+        (value) => value >= 0 && value <= 65535,
+        "be a valid port value, i.e. in range between 0 and 65535",
     ];
 }
 

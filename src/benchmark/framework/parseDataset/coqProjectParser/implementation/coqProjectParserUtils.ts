@@ -1,4 +1,5 @@
-import { illegalState } from "../../../../../utils/throwErrors";
+import { entriesToMappedObject } from "../../../../../utils/collectionUtils/mapUtils";
+import { illegalState } from "../../../../../utils/errors/throwErrors";
 import {
     AllTheoremsTarget,
     SpecificTheoremTarget,
@@ -8,7 +9,6 @@ import {
     WorkspaceRoot,
     isStandaloneFilesRoot,
 } from "../../../structures/common/workspaceRoot";
-import { entriesToMappedObject } from "../../../utils/collectionUtils/mapUtils";
 
 import { ParseCoqProjectInternalSignature } from "./internalSignature";
 
@@ -48,13 +48,15 @@ export namespace CoqProjectParserUtils {
 
     export function buildArgs(
         workspaceTargets: Signature.ArgsModels.FilePathToFileTargets,
-        workspaceRoot: WorkspaceRoot
+        workspaceRoot: WorkspaceRoot,
+        openDocumentTimeoutMillis: number | undefined
     ): Signature.ArgsModels.Args {
         return {
             workspaceRootPath: isStandaloneFilesRoot(workspaceRoot)
                 ? undefined
                 : workspaceRoot.directoryPath,
             workspaceTargets: workspaceTargets,
+            openDocumentTimeoutMillis: openDocumentTimeoutMillis,
         };
     }
 }

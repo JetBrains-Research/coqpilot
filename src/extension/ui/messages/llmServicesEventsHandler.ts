@@ -13,17 +13,20 @@ import {
 } from "../../../llm/llmServices/commonStructures/llmServiceRequest";
 import { LLMServiceImpl } from "../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
+import { RangoError } from "../../../llm/llmServices/rango/rangoError";
 
 import { EventLogger } from "../../../logging/eventLogger";
-import { buildErrorCompleteLog } from "../../../utils/errorsUtils";
+import { SimpleSet } from "../../../utils/collectionUtils/simpleSet";
+import { buildErrorCompleteLog } from "../../../utils/errors/errorsUtils";
+import { illegalState } from "../../../utils/errors/throwErrors";
 import { stringifyAnyValue } from "../../../utils/printers";
-import { SimpleSet } from "../../../utils/simpleSet";
-import { illegalState } from "../../../utils/throwErrors";
 import { toSettingName } from "../../settings/settingsValidationError";
+import { openTextDocument } from "../documentOpener";
 
 import {
     EditorMessages,
     showMessageToUser,
+    showMessageToUserWithActions,
     showMessageToUserWithSettingsHint,
 } from "./editorMessages";
 
@@ -183,13 +186,10 @@ function reactToRequestFailedEvent(
             ) {
                 const serviceName = requestFailed.llmService.serviceName;
                 if (llmServiceError instanceof GenerationFailedError) {
-                    showMessageToUser(
-                        EditorMessages.serviceBecameUnavailable(
-                            serviceName,
-                            llmServiceError.cause.message,
-                            requestFailed.llmService.estimateTimeToBecomeAvailable()
-                        ),
-                        "warning"
+                    handleGenerationFailedError(
+                        serviceName,
+                        llmServiceError.cause,
+                        requestFailed
                     );
                 } else {
                     showMessageToUser(
@@ -222,4 +222,26 @@ function parseLLMServiceRequestEvent<T extends LLMServiceRequest>(
         illegalState(`no UI state for \`${serviceName}\``);
     }
     return [data, uiState];
+}
+
+function handleGenerationFailedError(
+    serviceName: string,
+    causeError: Error,
+    requestFailed: LLMServiceRequestFailed
+) {
+    const messageToShow = EditorMessages.serviceBecameUnavailable(
+        serviceName,
+        causeError.message,
+        requestFailed.llmService.estimateTimeToBecomeAvailable()
+    );
+    const logsFileToOpen =
+        causeError instanceof RangoError ? causeError.logsPath : undefined;
+    if (logsFileToOpen !== undefined) {
+        showMessageToUserWithActions(messageToShow, "warning", {
+            choiceItem: "Open logs",
+            callback: () => openTextDocument(logsFileToOpen),
+        });
+    } else {
+        showMessageToUser(messageToShow, "warning");
+    }
 }

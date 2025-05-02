@@ -1,9 +1,7 @@
 import { LogColor, colorize } from "../../../utils/colorLogging";
+import { createFileWithParentDirectories } from "../../../utils/fs/fileUtils";
+import { appendToFile } from "../../../utils/fs/fileUtils";
 import { stringifyAnyValue } from "../../../utils/printers";
-import {
-    appendToFile,
-    createFileWithParentDirectories,
-} from "../utils/fileUtils/fs";
 
 import { writeToConsoleErr } from "./consoleWriteUtils";
 

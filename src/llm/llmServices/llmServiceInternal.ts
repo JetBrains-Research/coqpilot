@@ -1,5 +1,5 @@
 import { EventLogger, Severity } from "../../logging/eventLogger";
-import { asErrorOrRethrow } from "../../utils/errorsUtils";
+import { asErrorOrRethrow } from "../../utils/errors/errorsUtils";
 import {
     ConfigurationError,
     GenerationFailedError,
@@ -118,7 +118,8 @@ export abstract class LLMServiceInternal<
     abstract generateFromChatImpl(
         analyzedChat: AnalyzedChatHistory,
         params: ResolvedModelParams,
-        choices: number
+        choices: number,
+        abortSignal?: AbortSignal
     ): Promise<GeneratedRawContent>;
 
     /**
@@ -144,6 +145,7 @@ export abstract class LLMServiceInternal<
         params: ResolvedModelParams,
         choices: number,
         metadataHolder: ProofGenerationMetadataHolder | undefined,
+        abortSignal: AbortSignal | undefined,
         buildAndValidateChat: () => AnalyzedChatHistory,
         wrapRawProofContent: (rawProof: GeneratedRawContentItem) => T
     ): Promise<T[]> => {
@@ -159,7 +161,8 @@ export abstract class LLMServiceInternal<
                 this.generateFromChatImpl(
                     request.analyzedChat!,
                     params,
-                    choices
+                    choices,
+                    abortSignal
                 ),
             wrapRawProofContent
         );

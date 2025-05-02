@@ -5,9 +5,12 @@ import {
     SourceFileEnvironment,
 } from "../../../../core/completionGenerationContext";
 
-import { EqualTo, HashUtils } from "../../utils/collectionUtils/equalityUtils";
+import {
+    EqualTo,
+    HashUtils,
+} from "../../../../utils/collectionUtils/equalityUtils";
+import { CodeElementRange } from "../../../../utils/structures/codeElementPositions";
 import { goalToProveAsString } from "../../utils/coqUtils/goalParser";
-import { CodeElementRange } from "../common/codeElementPositions";
 import { WorkspaceRoot } from "../common/workspaceRoot";
 import { ParsedCoqFileData } from "../parsedCoqFile/parsedCoqFileData";
 import { TheoremData } from "../parsedCoqFile/theoremData";
@@ -33,11 +36,14 @@ export class CompletionGenerationTask
         return {
             proofGoal: this.targetGoalToProve,
             admitRange: this.targetPositionRange,
+            sourceTheorem: this.sourceTheorem.sourceTheorem,
         };
     }
 
     getSourceFileEnvironment(): SourceFileEnvironment {
-        return this.parsedSourceFileData.constructSourceFileEnvironment();
+        return this.parsedSourceFileData.constructSourceFileEnvironment(
+            this.workspaceRoot
+        );
     }
 
     equalTo(other: CompletionGenerationTask): boolean {

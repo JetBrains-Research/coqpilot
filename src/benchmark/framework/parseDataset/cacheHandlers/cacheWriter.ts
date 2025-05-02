@@ -1,22 +1,22 @@
+import { packIntoMappedObject } from "../../../../utils/collectionUtils/mapUtils";
+import { invariantFailed } from "../../../../utils/errors/throwErrors";
+import { clearDirectory } from "../../../../utils/fs/directoryUtils";
+import { writeToFile } from "../../../../utils/fs/fileUtils";
+import {
+    joinPaths,
+    relativizeAbsolutePaths,
+} from "../../../../utils/fs/pathUtils";
+import { getDatasetDir } from "../../../../utils/fs/rootResolvers";
 import {
     stringifyAnyValue,
     toFormattedJsonString,
 } from "../../../../utils/printers";
-import { invariantFailed } from "../../../../utils/throwErrors";
+import { serializeCodeElementRange } from "../../../../utils/structures/codeElementPositions";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
-import { serializeCodeElementRange } from "../../structures/common/codeElementPositions";
 import { serializeTheoremData } from "../../structures/parsedCoqFile/theoremData";
-import { packIntoMappedObject } from "../../utils/collectionUtils/mapUtils";
 import { serializeGoal } from "../../utils/coqUtils/goalParser";
 import { extractTheoremFisrtProofStep } from "../../utils/coqUtils/proofTargetExtractor";
-import {
-    clearDirectory,
-    getDatasetDir,
-    joinPaths,
-    relativizeAbsolutePaths,
-    writeToFile,
-} from "../../utils/fileUtils/fs";
 import {
     CacheHolderData,
     DatasetCacheHolder,

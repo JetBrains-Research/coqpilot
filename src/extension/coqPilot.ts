@@ -5,9 +5,11 @@ import {
     workspace,
 } from "vscode";
 
+import { RangoInstallationOptions } from "../llm/llmServices/rango/rangoInstaller";
+
 import { CoqLspStartupError } from "../coqLsp/coqLspTypes";
 
-import { CompletionAbortError } from "../core/abortUtils";
+import { CompletionAbortError } from "../core/completionAbortError";
 import {
     CompletionContext,
     ProcessEnvironment,
@@ -23,16 +25,19 @@ import { CoqProofChecker } from "../core/coqProofChecker";
 import { inspectSourceFile } from "../core/inspectSourceFile";
 
 import { ProofStep } from "../coqParser/parsedTypes";
-import { buildErrorCompleteLog } from "../utils/errorsUtils";
-import { Uri } from "../utils/uri";
+import { stringifyProjectRoot } from "../utils/structures/projectRoot";
+import { Uri } from "../utils/structures/uri";
 
+import {
+    executeInstallationCommand,
+    executeUninstallationCommand,
+} from "./installers/abstractUserInstallation";
 import { PluginContext } from "./pluginContext";
 import { SessionState } from "./sessionState";
 import {
     buildTheoremsRankerFromConfig,
     readAndValidateUserModelsParams,
 } from "./settings/configReaders";
-import { SettingsValidationError } from "./settings/settingsValidationError";
 import {
     deleteTextFromRange,
     highlightTextInEditor,
@@ -45,12 +50,14 @@ import {
 } from "./ui/messages/editorMessages";
 import { subscribeToHandleLLMServicesEvents } from "./ui/messages/llmServicesEventsHandler";
 import { PluginStatusIndicator } from "./ui/pluginStatusIndicator";
-import { pluginId } from "./utils/pluginId";
+import { reportErrorToUser } from "./utils/errorHandlers";
+import { PLUGIN_ID } from "./utils/pluginId";
 import {
     positionInRange,
     toVSCodePosition,
     toVSCodeRange,
 } from "./utils/positionRangeUtils";
+import { inferProjectRoot } from "./utils/projectRootGetter";
 
 export class CoqPilot {
     private constructor(
@@ -77,6 +84,29 @@ export class CoqPilot {
             this.sessionState.toggleCurrentSession.bind(this.sessionState)
         );
 
+        this.registerCommand(
+            "install_rango",
+            executeInstallationCommand.bind(
+                null,
+                vscodeContext.extensionPath,
+                pluginContext.llmServices.rangoService.installationPath,
+                {
+                    enableModelCheckpointInstallation: true,
+                } as RangoInstallationOptions,
+                pluginContext.llmServices.rangoService.installer
+            )
+        );
+        this.registerCommand(
+            "uninstall_rango",
+            executeUninstallationCommand.bind(
+                null,
+                vscodeContext.extensionPath,
+                pluginContext.llmServices.rangoService.installationPath,
+                {},
+                pluginContext.llmServices.rangoService.installer
+            )
+        );
+
         this.vscodeContext.subscriptions.push(this);
     }
 
@@ -85,7 +115,7 @@ export class CoqPilot {
 
         const toggleCommand = `toggle_current_session`;
         const pluginStatusIndicator = new PluginStatusIndicator(
-            `${pluginId}.${toggleCommand}`,
+            `${PLUGIN_ID}.${toggleCommand}`,
             vscodeContext
         );
 
@@ -140,13 +170,11 @@ export class CoqPilot {
                 this.sessionState.abortController.signal
             );
         } catch (e) {
-            if (e instanceof SettingsValidationError) {
-                e.showAsMessageToUser();
-            } else if (e instanceof CoqLspStartupError) {
+            if (e instanceof CoqLspStartupError) {
                 showMessageToUserWithSettingsHint(
                     EditorMessages.coqLspStartupFailure(e.path),
                     "error",
-                    `${pluginId}.coqLspServerPath`
+                    `${PLUGIN_ID}.coqLspServerPath`
                 );
             } else if (e instanceof CompletionAbortError) {
                 if (!this.sessionState.userNotifiedAboutAbort) {
@@ -155,13 +183,7 @@ export class CoqPilot {
                     showMessageToUser(EditorMessages.completionAborted, "info");
                 }
             } else {
-                showMessageToUser(
-                    e instanceof Error
-                        ? EditorMessages.errorOccurred(e.message)
-                        : EditorMessages.objectWasThrownAsError(e),
-                    "error"
-                );
-                console.error(buildErrorCompleteLog(e));
+                reportErrorToUser(e);
             }
         } finally {
             this.sessionState.hideInProgressSpinner();
@@ -309,6 +331,32 @@ export class CoqPilot {
             this.sessionState.coqLspClient,
             this.pluginContext.eventLogger
         );
+
+        const processEnvironment: ProcessEnvironment = {
+            coqProofChecker: coqProofChecker,
+            modelsParams: await readAndValidateUserModelsParams(
+                workspace.getConfiguration(PLUGIN_ID),
+                this.pluginContext.llmServices,
+                this.vscodeContext
+            ),
+            services: this.pluginContext.llmServices,
+            theoremRanker: contextTheoremsRanker,
+        };
+
+        if (this.pluginContext.getProjectRoot() === undefined) {
+            const currentProjectRoot = inferProjectRoot();
+            if (currentProjectRoot !== undefined) {
+                this.pluginContext.selectProjectRoot(currentProjectRoot);
+            }
+        }
+        const currentProjectRootString = stringifyProjectRoot(
+            this.pluginContext.getProjectRoot()
+        );
+        this.pluginContext.eventLogger.log(
+            "Infered project root",
+            `Current project root is: ${currentProjectRootString}`
+        );
+
         // Note: here and later the target file is expected to be opened by the user,
         // so no explicit `coqLspClient.openTextDocument(...)` call is needed
         const [completionContexts, sourceFileEnvironment] =
@@ -316,26 +364,21 @@ export class CoqPilot {
                 documentVersion,
                 shouldCompleteHole,
                 fileUri,
+                this.pluginContext.getProjectRoot(),
                 this.sessionState.coqLspClient,
                 abortSignal,
                 contextTheoremsRanker.needsUnwrappedNotations,
                 this.pluginContext.eventLogger
             );
-        const processEnvironment: ProcessEnvironment = {
-            coqProofChecker: coqProofChecker,
-            modelsParams: readAndValidateUserModelsParams(
-                workspace.getConfiguration(pluginId),
-                this.pluginContext.llmServices
-            ),
-            services: this.pluginContext.llmServices,
-            theoremRanker: contextTheoremsRanker,
-        };
 
         return [completionContexts, sourceFileEnvironment, processEnvironment];
     }
 
     private registerCommand(command: string, fn: () => void) {
-        let disposable = commands.registerCommand(`${pluginId}.` + command, fn);
+        let disposable = commands.registerCommand(
+            `${PLUGIN_ID}.` + command,
+            fn
+        );
         this.vscodeContext.subscriptions.push(disposable);
     }
 
@@ -344,7 +387,7 @@ export class CoqPilot {
         fn: (editor: TextEditor) => void
     ) {
         let disposable = commands.registerTextEditorCommand(
-            `${pluginId}.` + command,
+            `${PLUGIN_ID}.` + command,
             fn
         );
         this.vscodeContext.subscriptions.push(disposable);

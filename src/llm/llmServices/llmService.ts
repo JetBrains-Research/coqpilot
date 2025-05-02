@@ -1,6 +1,5 @@
-import * as tmp from "tmp";
-
 import { EventLogger } from "../../logging/eventLogger";
+import { createTmpFile } from "../../utils/fs/tmpFs";
 import { Time } from "../../utils/time";
 import { ProofGenerationContext } from "../proofGenerationContext";
 import { UserModelParams } from "../userModelParams";
@@ -135,8 +134,7 @@ export abstract class LLMServiceImpl<
     ) {
         this.eventLogger = eventLogger;
         this.errorsHandlingMode = errorsHandlingMode;
-        this.generationLogsFilePath =
-            generationLogsFilePath ?? tmp.fileSync().name;
+        this.generationLogsFilePath = generationLogsFilePath ?? createTmpFile();
         this.generationsLoggerBuilder = () =>
             new GenerationsLogger(this.generationLogsFilePath, {
                 debug: debugLogs,
@@ -169,12 +167,14 @@ export abstract class LLMServiceImpl<
         analyzedChat: AnalyzedChatHistory,
         params: ResolvedModelParams,
         choices: number = params.defaultChoices,
-        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined
+        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined,
+        abortSignal?: AbortSignal
     ): Promise<string[]> {
         return this.internal.generateFromChatWrapped(
             params,
             choices,
             metadataHolder,
+            abortSignal,
             () => analyzedChat,
             (rawProof) => rawProof.content
         );
@@ -200,12 +200,14 @@ export abstract class LLMServiceImpl<
         proofGenerationContext: ProofGenerationContext,
         params: ResolvedModelParams,
         choices: number = params.defaultChoices,
-        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined
+        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined,
+        abortSignal?: AbortSignal
     ): Promise<GeneratedProofType[]> {
         return this.internal.generateFromChatWrapped(
             params,
             choices,
             metadataHolder,
+            abortSignal,
             () => buildProofGenerationChat(proofGenerationContext, params),
             (rawProof) =>
                 this.internal.constructGeneratedProof(

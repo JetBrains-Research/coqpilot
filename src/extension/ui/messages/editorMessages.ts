@@ -4,7 +4,7 @@ import { commands, window } from "vscode";
 import { ajvErrorsAsString } from "../../../utils/ajvErrorsHandling";
 import { stringifyAnyValue } from "../../../utils/printers";
 import { Time } from "../../../utils/time";
-import { pluginId } from "../../utils/pluginId";
+import { PLUGIN_ID } from "../../utils/pluginId";
 
 export const openSettingsItem = "Open settings";
 
@@ -26,6 +26,11 @@ export namespace EditorMessages {
 
     export const coqLspStartupFailure = (pathToServer: string) =>
         `CoqPilot failed to start the Coq LSP server at path "${pathToServer}". Please make sure the path is correct and the server is properly installed. If your installation is not in a standard location, please set the path to the server in the settings.`;
+
+    export const noWorkspaceIsOpened =
+        "No workspace is open, so some features will be limited (e.g., external proof providers like Rango). Please open the target Coq project in VS Code to enter its workspace.";
+
+    export const multipleWorkspacesAreOpened = `Multiple workspaces detected. CoqPilot cannot determine which one to use, so some features will be limited (e.g., external proof providers like Rango). Please try again with only one workspace open.`;
 
     export const reportUnexpectedError = (errorDescription: string) =>
         `Coqpilot got an unexpected error: ${errorDescription}. Please report this crash by opening an issue in the Coqpilot GitHub repository.`;
@@ -108,6 +113,11 @@ export namespace EditorMessages {
     };
 }
 
+export interface UIChoiceItemWithCallback {
+    choiceItem: string;
+    callback: () => Promise<void>;
+}
+
 export type UIMessageSeverity = "error" | "info" | "warning";
 
 export function showMessageToUser<T extends string>(
@@ -123,6 +133,46 @@ export function showMessageToUser<T extends string>(
         case "warning":
             return window.showWarningMessage(message, ...items);
     }
+}
+
+export async function showMessageToUserWithActions(
+    message: string,
+    severity: UIMessageSeverity,
+    ...choiceItemsWithCallbacks: UIChoiceItemWithCallback[]
+) {
+    const userChoice = await showMessageToUser(
+        message,
+        severity,
+        ...choiceItemsWithCallbacks.map(
+            (itemWithCallback) => itemWithCallback.choiceItem
+        )
+    );
+    for (const itemWithCallback of choiceItemsWithCallbacks) {
+        if (userChoice === itemWithCallback.choiceItem) {
+            return await itemWithCallback.callback();
+        }
+    }
+}
+
+export async function showMessageToUserWithSettingsHint(
+    message: string,
+    severity: UIMessageSeverity,
+    settingToOpenName: string = PLUGIN_ID,
+    ...otherChoiceItemsWithCallbacks: UIChoiceItemWithCallback[]
+) {
+    return showMessageToUserWithActions(
+        message,
+        severity,
+        {
+            choiceItem: openSettingsItem,
+            callback: async () =>
+                commands.executeCommand(
+                    "workbench.action.openSettings",
+                    settingToOpenName
+                ),
+        },
+        ...otherChoiceItemsWithCallbacks
+    );
 }
 
 function formatTimeToUIString(time: Time): string {
@@ -152,19 +202,4 @@ function formatTimeToUIString(time: Time): string {
 function formatTimeItem(value: number, name: string): string {
     const suffix = value === 1 ? "" : "s";
     return `${value} ${name}${suffix}`;
-}
-
-export function showMessageToUserWithSettingsHint(
-    message: string,
-    severity: UIMessageSeverity,
-    settingToOpenName: string = pluginId
-) {
-    showMessageToUser(message, severity, openSettingsItem).then((value) => {
-        if (value === openSettingsItem) {
-            commands.executeCommand(
-                "workbench.action.openSettings",
-                settingToOpenName
-            );
-        }
-    });
 }

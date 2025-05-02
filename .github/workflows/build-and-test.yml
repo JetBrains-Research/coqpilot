@@ -69,6 +69,14 @@ jobs:
         node-version-file: ".nvmrc"
     - run: npm ci
 
+    # Required prerequisite for Rango installation
+    - name: Install pyenv
+      run: |
+        curl https://pyenv.run | bash
+        echo "PYENV_ROOT=$HOME/.pyenv" >> $GITHUB_ENV
+        echo "$HOME/.pyenv/bin" >> $GITHUB_PATH
+        echo "$HOME/.pyenv/shims" >> $GITHUB_PATH
+
     - name: Check coq-lsp version
       env:
           OPAMYES: true
@@ -117,21 +125,8 @@ jobs:
       with:
         name: ${{ env.artifact-name }}
         path: ${{ steps.package-extension.outputs.vsixPath }}
-  
-  setup-ci-debug-session:
-    name: Start a CI debug session if build or test fail
-
-    needs: [build-and-test]
-    if: always()
     
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        ocaml-compiler: [4.14]
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - name: Setup tmate session
-        if: ${{ failure() }}
-        uses: mxschmitt/action-tmate@v3
+    - name: Start a CI debug session if build or test fail
+      if: ${{ failure() }}
+      uses: mxschmitt/action-tmate@v3
+      timeout-minutes: 10

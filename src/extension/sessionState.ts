@@ -4,10 +4,10 @@ import { createCoqLspClient } from "../coqLsp/coqLspBuilders";
 import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { CoqLspConnector } from "../coqLsp/coqLspConnector";
 
-import { CompletionAbortError } from "../core/abortUtils";
+import { CompletionAbortError } from "../core/completionAbortError";
 
 import { EventLogger, Severity } from "../logging/eventLogger";
-import { illegalState } from "../utils/throwErrors";
+import { illegalState } from "../utils/errors/throwErrors";
 
 import { parseCoqLspServerPath } from "./settings/configReaders";
 import {

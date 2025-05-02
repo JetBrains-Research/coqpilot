@@ -4,6 +4,7 @@ import {
     LMStudioUserModelParams,
     OpenAiUserModelParams,
     PredefinedProofsUserModelParams,
+    RangoUserModelParams,
     UserModelParams,
 } from "../../../../llm/userModelParams";
 
@@ -25,4 +26,6 @@ export namespace InputBenchmarkingModelParams {
     export interface LMStudioParams extends LMStudioUserModelParams, Params {}
 
     export interface DeepSeekParams extends DeepSeekUserModelParams, Params {}
+
+    export interface RangoParams extends RangoUserModelParams, Params {}
 }

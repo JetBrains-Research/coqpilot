@@ -16,14 +16,22 @@ import {
     SourceFileEnvironment,
 } from "../../../../core/completionGenerationContext";
 import { ContextTheoremsRanker } from "../../../../core/contextTheoremRanker/contextTheoremsRanker";
-import { prepareProofToCheck } from "../../../../core/exposedCompletionGeneratorUtils";
+import {
+    buildExternalPipelineProofGenerationContext,
+    prepareProofToCheck,
+} from "../../../../core/exposedCompletionGeneratorUtils";
 import { goalToTargetLemma } from "../../../../core/exposedCompletionGeneratorUtils";
 
-import { Theorem } from "../../../../coqParser/parsedTypes";
-import { delay } from "../../../../utils/delay";
-import { buildErrorCompleteLog } from "../../../../utils/errorsUtils";
+import { AsyncScheduler } from "../../../../utils/async/asyncScheduler";
+import { delay } from "../../../../utils/async/delay";
+import { groupByAndMap } from "../../../../utils/collectionUtils/mapUtils";
+import { buildErrorCompleteLog } from "../../../../utils/errors/errorsUtils";
+import {
+    illegalState,
+    invariantFailed,
+    rethrowAsIllegalState,
+} from "../../../../utils/errors/throwErrors";
 import { stringifyAnyValue } from "../../../../utils/printers";
-import { illegalState, invariantFailed } from "../../../../utils/throwErrors";
 import {
     millisToString,
     timeToMillis,
@@ -47,9 +55,7 @@ import {
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { ParsedCoqFileData } from "../../structures/parsedCoqFile/parsedCoqFileData";
 import { TheoremData } from "../../structures/parsedCoqFile/theoremData";
-import { throwOnAbort } from "../../utils/asyncUtils/abortUtils";
-import { AsyncScheduler } from "../../utils/asyncUtils/asyncScheduler";
-import { groupByAndMap } from "../../utils/collectionUtils/mapUtils";
+import { AbortError, throwOnAbort } from "../../utils/asyncUtils/abortUtils";
 import {
     benchmarkingInvariantFailed,
     throwBenchmarkingError,
@@ -99,7 +105,7 @@ export interface ParentProofToFix {
  *
  * The function handles errors as follows:
  * - throws a `BenchmarkingError` if proof generation fails within the configured `proofGenerationRetries` attempts;
- * - captures proof-checking errors, such as `coq-lsp` timeouts or `CoqProofChecker` failures,
+ * - captures proof-checking errors, such as proof-check timeouts or `CoqProofChecker` failures,
  *   within `FailedCompletionGenerationBenchmarking`.
  *
  * However, the following exceptions are always rethrown:
@@ -186,19 +192,23 @@ export async function benchmarkSingleCompletionGeneration<
         // Therefore, the following code handles proofs duplicates by itself.
         proofsCheckResult = await proofsChecker.checkProofs(
             Array.from(allGeneratedProofsMap.keys()),
-            generationArgs.completionContext,
-            generationArgs.sourceFileEnvironment,
-            generationArgs.workspaceRoot,
-            logger,
-            abortSignal
+            {
+                completionContext: generationArgs.completionContext,
+                sourceFileEnvironment: generationArgs.sourceFileEnvironment,
+                workspaceRoot: generationArgs.workspaceRoot,
+                openDocumentTimeoutMillis: options.openDocumentTimeoutMillis,
+                proofCheckTimeoutMillis: options.proofCheckTimeoutMillis,
+                logger: logger,
+                abortSignal: abortSignal,
+            }
         );
-    } catch (error) {
-        if (error instanceof ProofsCheckFailedError) {
-            const failureType = translateToFailureType(error.failureType);
+    } catch (err) {
+        if (err instanceof ProofsCheckFailedError) {
+            const failureType = translateToFailureType(err.failureType);
             logger
                 .asOneRecord()
                 .info(`Failed to validate proofs: ${failureType}`)
-                .debug(`Cause: ${error.causeMessage}`);
+                .debug(`Cause: ${err.causeMessage}`);
             return new FailedCompletionGenerationBenchmarking(
                 allGeneratedProofs,
                 contextTheorems,
@@ -207,13 +217,16 @@ export async function benchmarkSingleCompletionGeneration<
                 roundNumber,
                 {
                     failureType: failureType,
-                    causeMessage: error.causeMessage,
+                    causeMessage: err.causeMessage,
                 }
             );
+        } else if (err instanceof AbortError) {
+            throw err;
         } else {
-            // Potential bug (!): all unexpected errors should be wrapped into
-            // IllegalsStateError - it should be checked here and performed
-            throw error;
+            rethrowAsIllegalState(
+                err,
+                "unexpected error during checking proofs"
+            );
         }
     }
     const validatedProofs = proofsCheckResult.checkedProofs.flatMap(
@@ -239,7 +252,7 @@ export async function benchmarkSingleCompletionGeneration<
     }
 
     measuredTime.addProofsValidationMillis(
-        proofsCheckResult.effectiveElapsedMillis
+        proofsCheckResult.totalEffectiveElapsedMillis
     );
     const result = new SuccessfulCompletionGenerationBenchmarking(
         validatedProofs,
@@ -254,7 +267,11 @@ export async function benchmarkSingleCompletionGeneration<
             `Successfully verified proofs: ${result.thisRoundValidProofs.length} / ${allGeneratedProofsNumber} are valid`
         )
         .debug(
-            `Effective elapsed time: ${proofsCheckResult.effectiveElapsedMillis} ms`,
+            `Proof-check effective elapsed time: ${proofsCheckResult.proofCheckElapsedMillis} ms`,
+            "gray"
+        )
+        .debug(
+            `Proof-check & \`coq-lsp\` setup effective elapsed time: ${proofsCheckResult.totalEffectiveElapsedMillis} ms`,
             "gray"
         );
     return result;
@@ -300,52 +317,58 @@ async function generateProofWithRetriesExclusively<
     abortSignal: AbortSignal
 ): Promise<ProofGenerationResult> {
     const benchmarkingParams = generationArgs.benchmarkingModelParams;
-    return modelsScheduler.scheduleTask(async () => {
-        let generateProof:
-            | ((
-                  metadataHolder: ProofGenerationMetadataHolder
-              ) => Promise<GeneratedProof[]>)
-            | undefined = undefined;
-        if (generationArgs.roundNumber === 1) {
-            generateProof = async (metadataHolder) => {
-                const proofGenerationContext = buildProofGenerationContext(
-                    generationArgs.completionContext,
-                    generationArgs.sourceFileEnvironment.fileTheorems,
-                    generationArgs.sourceTheorem.name,
-                    benchmarkingParams.theoremRanker
-                );
-                return generationArgs.llmService.generateProof(
-                    proofGenerationContext,
-                    benchmarkingParams.modelParams,
-                    benchmarkingParams.modelParams.defaultChoices,
-                    metadataHolder
-                );
-            };
-        } else {
-            generateProof = async (metadataHolder) => {
-                const parentProof =
-                    generationArgs.parentProofToFix ??
-                    illegalState(
-                        `Proof-fix round should be performed (round number ${generationArgs.roundNumber} is > 1), `,
-                        "but `parentProofToFix` is not provided"
+    return modelsScheduler.scheduleTask(
+        async () => {
+            let generateProof:
+                | ((
+                      metadataHolder: ProofGenerationMetadataHolder
+                  ) => Promise<GeneratedProof[]>)
+                | undefined = undefined;
+            if (generationArgs.roundNumber === 1) {
+                generateProof = async (metadataHolder) => {
+                    const proofGenerationContext = buildProofGenerationContext(
+                        generationArgs.completionContext,
+                        generationArgs.sourceFileEnvironment,
+                        generationArgs.sourceTheorem.name,
+                        benchmarkingParams.theoremRanker,
+                        logger
                     );
-                return await parentProof.benchmarkedProof.proofObject.fixProof(
-                    parentProof.diagnostic,
-                    benchmarkingParams.modelParams.multiroundProfile
-                        .defaultProofFixChoices,
-                    metadataHolder
-                );
-            };
-        }
-        return generateProofWithRetriesMeasured(
-            generateProof,
-            generationArgs.llmService,
-            options,
-            generationArgs.roundNumber,
-            logger,
-            abortSignal
-        );
-    }, logger);
+                    return generationArgs.llmService.generateProof(
+                        proofGenerationContext,
+                        benchmarkingParams.modelParams,
+                        benchmarkingParams.modelParams.defaultChoices,
+                        metadataHolder,
+                        abortSignal
+                    );
+                };
+            } else {
+                generateProof = async (metadataHolder) => {
+                    const parentProof =
+                        generationArgs.parentProofToFix ??
+                        illegalState(
+                            `Proof-fix round should be performed (round number ${generationArgs.roundNumber} is > 1), `,
+                            "but `parentProofToFix` is not provided"
+                        );
+                    return await parentProof.benchmarkedProof.proofObject.fixProof(
+                        parentProof.diagnostic,
+                        benchmarkingParams.modelParams.multiroundProfile
+                            .defaultProofFixChoices,
+                        metadataHolder,
+                        abortSignal
+                    );
+                };
+            }
+            return generateProofWithRetriesMeasured(
+                generateProof,
+                generationArgs.llmService,
+                options,
+                generationArgs.roundNumber,
+                logger,
+                abortSignal
+            );
+        },
+        (message) => logger.debug(message)
+    );
 }
 
 async function generateProofWithRetriesMeasured(
@@ -433,6 +456,9 @@ async function generateProofWithRetriesMeasured(
                 throw llmServiceError;
             }
             if (llmServiceError instanceof GenerationFailedError) {
+                if (llmServiceError.cause instanceof AbortError) {
+                    throwOnAbort(abortSignal);
+                }
                 const estimatedTime =
                     llmService.estimateTimeToBecomeAvailable();
                 delayMillis = Math.max(
@@ -481,10 +507,12 @@ async function generateProofWithRetriesMeasured(
  */
 function buildProofGenerationContext(
     completionContext: CompletionContext,
-    fileTheorems: Theorem[],
+    sourceFileEnvironment: SourceFileEnvironment,
     targetTheoremName: string,
-    theoremRanker?: ContextTheoremsRanker
+    theoremRanker: ContextTheoremsRanker | undefined,
+    logger: BenchmarkingLogger
 ): ProofGenerationContext {
+    const fileTheorems = sourceFileEnvironment.fileTheorems;
     const contextTheorems = fileTheorems.filter(
         (theorem) => theorem.name !== targetTheoremName
     );
@@ -496,5 +524,14 @@ function buildProofGenerationContext(
     return {
         contextTheorems: rankedTheorems,
         completionTarget: goalToTargetLemma(completionContext.proofGoal),
+        externalPipelineContext:
+            buildExternalPipelineProofGenerationContext(
+                completionContext,
+                sourceFileEnvironment
+            ) ??
+            benchmarkingInvariantFailed(
+                logger,
+                "not enough data to build `externalPipelineContext`"
+            ),
     };
 }

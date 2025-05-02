@@ -2,7 +2,13 @@ import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/er
 import { LLMService } from "../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
 
-import { unreachable } from "../../../utils/throwErrors";
+import { AsyncScheduler } from "../../../utils/async/asyncScheduler";
+import {
+    IllegalStateError,
+    unreachable,
+} from "../../../utils/errors/throwErrors";
+import { provideEmptyDirectoryOrThrow } from "../../../utils/fs/directoryUtils";
+import { joinPaths } from "../../../utils/fs/pathUtils";
 import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
 import { BenchmarkingItem } from "../structures/benchmarkingCore/benchmarkingItem";
 import { BenchmarkingOptions } from "../structures/benchmarkingCore/benchmarkingOptions";
@@ -11,9 +17,7 @@ import {
     BenchmarkingResult,
 } from "../structures/benchmarkingResults/benchmarkedItem";
 import { throwOnAbort } from "../utils/asyncUtils/abortUtils";
-import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
 import { selectLLMServiceBuilder } from "../utils/commonStructuresUtils/llmServicesUtils";
-import { joinPaths, provideEmptyDirectoryOrThrow } from "../utils/fileUtils/fs";
 import { benchmarkingInvariantFailed } from "../utils/throwErrors";
 
 import { ExecuteBenchmarkingTaskErrorHandlingUtils } from "./executeBenchmarkingTaskUtils/errorHandling";
@@ -231,32 +235,18 @@ export async function executeBenchmarkingTask(
 
         return benchmarkedItem;
     } catch (e) {
-        const [error, isUnexpectedError] =
-            ErrorHandling.wrapUnexpectedErrorAsIllegalState(e);
-        if (options.failFast) {
-            ErrorHandling.logAndRethrowFailFastError(
-                error,
-                itemLogger,
-                params,
-                options,
-                abortSignal
-            );
-        } else {
-            ErrorHandling.logCommonError(
-                error,
-                itemLogger,
-                params,
-                options,
-                abortSignal
-            );
-            if (isUnexpectedError) {
-                // Potential bug (!): this error will stop the top-level
-                // execution, but if fail-fast is disabled, noone will
-                // cancel other promises.
-                throw error;
-            }
-            return undefined;
+        const wrappedError = ErrorHandling.wrapUnexpectedErrorAsIllegalState(e);
+        ErrorHandling.logErrorIfNeeded(
+            wrappedError,
+            itemLogger,
+            params,
+            options,
+            abortSignal
+        );
+        if (options.failFast || wrappedError instanceof IllegalStateError) {
+            throw wrappedError;
         }
+        return undefined;
     } finally {
         llmService.dispose();
     }

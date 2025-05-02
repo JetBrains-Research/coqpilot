@@ -1,11 +1,11 @@
 import { expect } from "earl";
-import * as tmp from "tmp";
 
 import { SyncFile } from "../../../../../llm/llmServices/utils/generationsLogger/syncFile";
 
+import { createTmpFile } from "../../../../../utils/fs/tmpFs";
+
 suite("[LLMService-s utils] SyncFile test", () => {
-    const filePath = tmp.fileSync().name;
-    const file = new SyncFile(filePath);
+    const file = new SyncFile(createTmpFile());
 
     test("Basic operations", () => {
         if (file.exists()) {

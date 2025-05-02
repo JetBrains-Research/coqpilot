@@ -1,4 +1,4 @@
-import { asErrorOrRethrow } from "../../../../utils/errorsUtils";
+import { asErrorOrRethrow } from "../../../../utils/errors/errorsUtils";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { WorkspaceInputTargets } from "../../structures/common/inputTargets";
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
@@ -20,13 +20,15 @@ export class LocalCoqProjectParser extends AbstractCoqProjectParser {
     async parseCoqProject(
         targets: WorkspaceInputTargets,
         workspaceRoot: WorkspaceRoot,
+        openDocumentTimeoutMillis: number | undefined,
         logger: BenchmarkingLogger
     ): Promise<ParsedWorkspaceHolder> {
         const workspaceTargets =
             CoqProjectParserUtils.packWorkspaceTargets(targets);
         const args = CoqProjectParserUtils.buildArgs(
             workspaceTargets,
-            workspaceRoot
+            workspaceRoot,
+            openDocumentTimeoutMillis
         );
         const parsedWorkspace = await this.parseCoqProjectAndWrapError(
             args,

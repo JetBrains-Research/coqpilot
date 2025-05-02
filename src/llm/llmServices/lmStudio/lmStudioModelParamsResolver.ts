@@ -1,6 +1,7 @@
 import { LMStudioUserModelParams } from "../../userModelParams";
 import { LMStudioModelParams, lmStudioModelParamsSchema } from "../modelParams";
 import { BasicModelParamsResolver } from "../utils/paramsResolvers/basicModelParamsResolvers";
+import { ValidationRules } from "../utils/paramsResolvers/builders";
 import { ValidParamsResolverImpl } from "../utils/paramsResolvers/paramsResolverImpl";
 
 export class LMStudioModelParamsResolver
@@ -21,8 +22,5 @@ export class LMStudioModelParamsResolver
 
     readonly port = this.resolveParam<number>("port")
         .requiredToBeConfigured()
-        .validate([
-            (value) => value >= 0 && value <= 65535,
-            "be a valid port value, i.e. in range between 0 and 65535",
-        ]);
+        .validate(ValidationRules.beValidPortNumber);
 }

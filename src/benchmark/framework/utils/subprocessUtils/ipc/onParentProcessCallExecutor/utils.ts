@@ -1,8 +1,8 @@
 import { ValidateFunction } from "ajv";
 
 import { failedAjvValidatorErrorsAsString } from "../../../../../../utils/ajvErrorsHandling";
+import { PromiseExecutor } from "../../../../../../utils/async/promiseUtils";
 import { stringifyAnyValue } from "../../../../../../utils/printers";
-import { PromiseExecutor } from "../../../asyncUtils/promiseUtils";
 import { IPCError } from "../ipcError";
 import { IPCMessage, createIPCErrorIPCMessage } from "../ipcProtocol";
 

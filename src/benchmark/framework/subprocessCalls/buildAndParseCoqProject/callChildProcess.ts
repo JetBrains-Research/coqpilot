@@ -1,11 +1,11 @@
-import { illegalState } from "../../../../utils/throwErrors";
+import { AsyncScheduler } from "../../../../utils/async/asyncScheduler";
+import { illegalState } from "../../../../utils/errors/throwErrors";
+import { checkIsInsideDirectory } from "../../../../utils/fs/directoryUtils";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { CoqProjectParserUtils } from "../../parseDataset/coqProjectParser/implementation/coqProjectParserUtils";
 import { ParseCoqProjectInternalSignature } from "../../parseDataset/coqProjectParser/implementation/internalSignature";
 import { ParsedWorkspaceHolder } from "../../parseDataset/coqProjectParser/implementation/parsedWorkspaceHolder";
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
-import { AsyncScheduler } from "../../utils/asyncUtils/asyncScheduler";
-import { checkIsInsideDirectory } from "../../utils/fileUtils/fs";
 import {
     ChildProcessOptions,
     executeProcessAsFunction,
@@ -18,8 +18,9 @@ import Signature = ParseCoqProjectInternalSignature;
 export async function buildAndParseCoqProjectInSubprocess(
     workspaceRoot: WorkspaceRoot,
     workspaceTargets: Signature.ArgsModels.FilePathToFileTargets,
+    openDocumentTimeoutMillis: number | undefined,
     buildProject: boolean,
-    timeoutMillis: number | undefined,
+    subprocessTimeoutMillis: number | undefined,
     subprocessesScheduler: AsyncScheduler,
     benchmarkingLogger: BenchmarkingLogger,
     enableProcessLifetimeDebugLogs: boolean = false
@@ -39,12 +40,13 @@ export async function buildAndParseCoqProjectInSubprocess(
 
     const args = CoqProjectParserUtils.buildArgs(
         workspaceTargets,
-        workspaceRoot
+        workspaceRoot,
+        openDocumentTimeoutMillis
     );
     const options: ChildProcessOptions = {
         workingDirectory:
             enterWorkspaceAndExecuteSubprocessCommand.workingDirectory,
-        timeoutMillis: timeoutMillis,
+        timeoutMillis: subprocessTimeoutMillis,
     };
 
     return subprocessesScheduler.scheduleTask(
@@ -60,7 +62,7 @@ export async function buildAndParseCoqProjectInSubprocess(
                 benchmarkingLogger,
                 enableProcessLifetimeDebugLogs
             ),
-        benchmarkingLogger
+        (message) => benchmarkingLogger.debug(message)
     );
 }
 

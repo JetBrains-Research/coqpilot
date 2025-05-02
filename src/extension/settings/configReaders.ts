@@ -1,7 +1,15 @@
 import Ajv, { DefinedError, JSONSchemaType } from "ajv";
-import { WorkspaceConfiguration, workspace } from "vscode";
+import {
+    ExtensionContext as VSCodeContext,
+    WorkspaceConfiguration,
+    workspace,
+} from "vscode";
 
 import { LLMServices } from "../../llm/llmServices";
+import {
+    AbstractExternalService,
+    ExternalService,
+} from "../../llm/llmServices/abstractExternalService/abstractExternalService";
 import { LLMService } from "../../llm/llmServices/llmService";
 import { ModelParams, ModelsParams } from "../../llm/llmServices/modelParams";
 import { SingleParamResolutionResult } from "../../llm/llmServices/utils/paramsResolvers/abstractResolvers";
@@ -11,12 +19,14 @@ import {
     LMStudioUserModelParams,
     OpenAiUserModelParams,
     PredefinedProofsUserModelParams,
+    RangoUserModelParams,
     UserModelParams,
     deepSeekUserModelParamsSchema,
     grazieUserModelParamsSchema,
     lmStudioUserModelParamsSchema,
     openAiUserModelParamsSchema,
     predefinedProofsUserModelParamsSchema,
+    rangoUserModelParamsSchema,
 } from "../../llm/userModelParams";
 
 import { DistanceContextTheoremsRanker } from "../../core/contextTheoremRanker/actualRankers/distanceContextTheoremsRanker";
@@ -25,13 +35,14 @@ import { RandomContextTheoremsRanker } from "../../core/contextTheoremRanker/act
 import { ContextTheoremsRanker } from "../../core/contextTheoremRanker/contextTheoremsRanker";
 
 import { AjvMode, buildAjv } from "../../utils/ajvErrorsHandling";
+import { illegalState, throwError } from "../../utils/errors/throwErrors";
 import { stringifyAnyValue, stringifyDefinedValue } from "../../utils/printers";
-import { illegalState, throwError } from "../../utils/throwErrors";
+import { UserInstallationInteractor } from "../installers/abstractUserInstallation";
 import {
     EditorMessages,
     showMessageToUserWithSettingsHint,
 } from "../ui/messages/editorMessages";
-import { pluginId } from "../utils/pluginId";
+import { PLUGIN_ID } from "../utils/pluginId";
 
 import {
     SettingsValidationError,
@@ -39,7 +50,7 @@ import {
 } from "./settingsValidationError";
 
 export function parseCoqLspServerPath(): string {
-    const workspaceConfig = workspace.getConfiguration(pluginId);
+    const workspaceConfig = workspace.getConfiguration(PLUGIN_ID);
     const coqLspServerPath = workspaceConfig.get("coqLspServerPath");
     if (typeof coqLspServerPath !== "string") {
         throwError("`coqLspServerPath` is not properly configured");
@@ -48,7 +59,7 @@ export function parseCoqLspServerPath(): string {
 }
 
 export function buildTheoremsRankerFromConfig(): ContextTheoremsRanker {
-    const workspaceConfig = workspace.getConfiguration(pluginId);
+    const workspaceConfig = workspace.getConfiguration(PLUGIN_ID);
     const rankerType = workspaceConfig.contextTheoremsRankerType;
     switch (rankerType) {
         case "distance":
@@ -66,10 +77,11 @@ export function buildTheoremsRankerFromConfig(): ContextTheoremsRanker {
     }
 }
 
-export function readAndValidateUserModelsParams(
+export async function readAndValidateUserModelsParams(
     config: WorkspaceConfiguration,
-    llmServices: LLMServices
-): ModelsParams {
+    llmServices: LLMServices,
+    vscodeContext: VSCodeContext
+): Promise<ModelsParams> {
     /*
      * Although the messages might become too verbose because of reporting all errors at once
      * (unfortuantely, vscode notifications do not currently support formatting);
@@ -118,6 +130,18 @@ export function readAndValidateUserModelsParams(
                 jsonSchemaValidator
             )
         );
+    const rangoUserParams: RangoUserModelParams[] =
+        config.rangoModelsParameters.map((params: any) =>
+            validateAndParseJson(
+                params,
+                rangoUserModelParamsSchema,
+                jsonSchemaValidator
+            )
+        );
+
+    await provideExternalServicesInstallations(vscodeContext.extensionPath, [
+        [llmServices.rangoService, rangoUserParams],
+    ]);
 
     validateIdsAreUnique([
         ...predefinedProofsUserParams,
@@ -125,11 +149,13 @@ export function readAndValidateUserModelsParams(
         ...grazieUserParams,
         ...lmStudioUserParams,
         ...deepSeekUserParams,
+        ...rangoUserParams,
     ]);
     validateApiKeysAreProvided(
         openAiUserParams,
         grazieUserParams,
-        deepSeekUserParams
+        deepSeekUserParams,
+        rangoUserParams
     );
 
     const modelsParams: ModelsParams = {
@@ -153,6 +179,10 @@ export function readAndValidateUserModelsParams(
             llmServices.deepSeekService,
             deepSeekUserParams
         ),
+        rangoParams: resolveParamsAndShowResolutionLogs(
+            llmServices.rangoService,
+            rangoUserParams
+        ),
     };
 
     validateModelsArePresent([
@@ -161,6 +191,7 @@ export function readAndValidateUserModelsParams(
         ...modelsParams.grazieParams,
         ...modelsParams.lmStudioParams,
         ...modelsParams.deepSeekParams,
+        ...modelsParams.rangoParams,
     ]);
 
     return modelsParams;
@@ -201,6 +232,27 @@ function validateAndParseJson<T>(
     return instance;
 }
 
+// TODO: skip service's models if the user declines its installation, don't throw
+async function provideExternalServicesInstallations(
+    coqPilotPath: string,
+    externalServicesWithUserParams: [
+        ExternalService<UserModelParams, any, any>,
+        UserModelParams[],
+    ][]
+) {
+    for (const [llmService, userParams] of externalServicesWithUserParams) {
+        if (llmService instanceof AbstractExternalService) {
+            await llmService.installer.provideInstallationForRequest(
+                userParams,
+                coqPilotPath,
+                llmService.installationPath,
+                undefined,
+                new UserInstallationInteractor(llmService.installer)
+            );
+        }
+    }
+}
+
 function validateIdsAreUnique(allModels: UserModelParams[]) {
     const modelIds = allModels.map((params) => params.modelId);
     const uniqueModelIds = new Set<string>();
@@ -219,7 +271,8 @@ function validateIdsAreUnique(allModels: UserModelParams[]) {
 function validateApiKeysAreProvided(
     openAiUserParams: OpenAiUserModelParams[],
     grazieUserParams: GrazieUserModelParams[],
-    deepSeekUserParams: DeepSeekUserModelParams[]
+    deepSeekUserParams: DeepSeekUserModelParams[],
+    rangoUserParams: RangoUserModelParams[]
 ) {
     const buildApiKeyError = (
         serviceName: string,
@@ -228,7 +281,7 @@ function validateApiKeysAreProvided(
         return new SettingsValidationError(
             `at least one of the ${serviceName} models has \`apiKey: "None"\``,
             EditorMessages.apiKeyIsNotSet(serviceName),
-            `${pluginId}.${serviceSettingsName}ModelsParameters`,
+            `${PLUGIN_ID}.${serviceSettingsName}ModelsParameters`,
             "info"
         );
     };
@@ -242,6 +295,15 @@ function validateApiKeysAreProvided(
     if (deepSeekUserParams.some((params) => params.apiKey === "None")) {
         throw buildApiKeyError("Deep Seek", "deepSeek");
     }
+    if (
+        rangoUserParams.some(
+            (params) =>
+                params.mode === "mockOpenAI" &&
+                params.mockOpenAIApiKey === "None"
+        )
+    ) {
+        throw buildApiKeyError("Rango", "rango");
+    }
 }
 
 function validateModelsArePresent<T>(allModels: T[]) {
@@ -249,7 +311,7 @@ function validateModelsArePresent<T>(allModels: T[]) {
         throw new SettingsValidationError(
             "no models specified for proof generation",
             EditorMessages.noValidModelsAreChosen,
-            pluginId,
+            PLUGIN_ID,
             "warning"
         );
     }

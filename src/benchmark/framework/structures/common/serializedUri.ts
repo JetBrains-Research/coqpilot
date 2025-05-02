@@ -1,4 +1,4 @@
-import { Uri } from "../../../../utils/uri";
+import { Uri } from "../../../../utils/structures/uri";
 
 export type SerializedUri = string;
 

@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 
-import { asErrorOrUndefined } from "../../../utils/errorsUtils";
-import { illegalState } from "../../../utils/throwErrors";
+import { asErrorOrUndefined } from "../../../utils/errors/errorsUtils";
+import { illegalState } from "../../../utils/errors/throwErrors";
 import {
     ConfigurationError,
     RemoteConnectionError,
@@ -204,13 +204,13 @@ class OpenAiServiceInternal extends LLMServiceInternal<
     }
 
     private static readonly unknownModelNamePattern =
-        /^The model `(.*)` does not exist or you do not have access to it\.$/;
+        /^404 The model `(.*)` does not exist or you do not have access to it\.$/;
 
     private static readonly incorrectApiKeyPattern =
         /^401 Incorrect API key provided: (.*)\.(.*)$/;
 
     private static readonly maximumContextLengthExceededPattern =
-        /^This model's maximum context length is ([0-9]+) tokens\. However, you requested ([0-9]+) tokens \(([0-9]+) in the messages, ([0-9]+) in the completion\)\..*$/;
+        /^400 This model's maximum context length is ([0-9]+) tokens\. However, you requested ([0-9]+) tokens \(([0-9]+) in the messages, ([0-9]+) in the completion\)\..*$/;
 
     private static readonly connectionErrorPattern = /^Connection error\.$/;
 

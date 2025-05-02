@@ -5,7 +5,7 @@ import {
     window,
 } from "vscode";
 
-import { pluginName } from "../utils/pluginId";
+import { PLUGIN_NAME } from "../utils/pluginId";
 
 export class PluginStatusIndicator {
     private readonly statusBarItem: StatusBarItem;
@@ -26,16 +26,16 @@ export class PluginStatusIndicator {
 
     updateStatusBar(isActive: boolean) {
         if (isActive) {
-            this.statusBarItem.text = `$(debug-stop) ${pluginName}: Running`;
+            this.statusBarItem.text = `$(debug-stop) ${PLUGIN_NAME}: Running`;
             this.statusBarItem.tooltip = "Click to stop the extension";
         } else {
-            this.statusBarItem.text = `$(debug-start) ${pluginName}: Stopped`;
+            this.statusBarItem.text = `$(debug-start) ${PLUGIN_NAME}: Stopped`;
             this.statusBarItem.tooltip = "Click to start the extension";
         }
     }
 
     showInProgressSpinner() {
-        this.statusBarItem.text = `$(sync~spin) ${pluginName}: In progress`;
+        this.statusBarItem.text = `$(sync~spin) ${PLUGIN_NAME}: In progress`;
         this.statusBarItem.tooltip = "Operation in progress...";
     }
 

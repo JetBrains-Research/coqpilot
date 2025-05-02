@@ -1,4 +1,4 @@
-import { illegalState } from "../../../../utils/throwErrors";
+import { illegalState } from "../../../../utils/errors/throwErrors";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { DatasetCacheUsageMode } from "../../structures/inputParameters/datasetCaching";
 import { ExperimentRunOptions } from "../../structures/inputParameters/experimentRunOptions";

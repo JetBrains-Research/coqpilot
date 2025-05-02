@@ -3,7 +3,7 @@ import { JSONSchemaType } from "ajv";
 import {
     SerializedCodeElementRange,
     serializedCodeElementRangeSchema,
-} from "../../structures/common/codeElementPositions";
+} from "../../../../utils/structures/codeElementPositions";
 import {
     SerializedTheorem,
     serializedTheoremSchema,

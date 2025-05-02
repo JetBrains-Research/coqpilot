@@ -46,6 +46,14 @@
       {
         "command": "coqpilot.perform_completion_in_selection",
         "title": "CoqPilot: Try to prove holes (admitted goals) in the selection"
+      },
+      {
+        "command": "coqpilot.install_rango",
+        "title": "CoqPilot: Install and build Rango project"
+      },
+      {
+        "command": "coqpilot.uninstall_rango",
+        "title": "CoqPilot: Uninstall Rango project"
       }
     ],
     "keybindings": [
@@ -124,7 +132,7 @@
                 },
                 "apiKey": {
                   "type": "string",
-                  "description": "Api key to communicate with the OpenAi api. You can get one [here](https://platform.openai.com/account/api-keys).",
+                  "description": "Api key to communicate with the OpenAI api. You can get one [here](https://platform.openai.com/account/api-keys).",
                   "default": "None"
                 },
                 "choices": {
@@ -463,6 +471,57 @@
             "markdownDescription": "List of configurations for DeepSeek models. Each configuration will be fetched for completions independently in the order they are listed.",
             "order": 4
           },
+          "coqpilot.rangoModelsParameters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "modelId": {
+                  "type": "string",
+                  "markdownDescription": "Unique identifier of this model to distinguish it from others. Could be any string.",
+                  "default": "rango-test"
+                },
+                "mode": {
+                  "type": "string",
+                  "enum": ["local", "remote", "mockOpenAI"],
+                  "markdownDescription": "Defines how proof generation is performed.\n* `local` runs the internal model locally, requiring CUDA support.\n* `remote` runs the internal model by sending requests to a server on the specified port, where the model is actually executed.\n* `mockOpenAI` is a mock mode that accesses the OpenAI API via Rango, which can be useful for testing the Rango setup.",
+                  "default": "local"
+                },
+                "timeoutSeconds": {
+                  "type": "number",
+                  "markdownDescription": "Sets the timeout in seconds for Rango's proof search. This timeout also determines how many attempts are allowed before the first successful result.",
+                  "default": 5
+                },
+                "localCheckpointPath": {
+                  "type": "string",
+                  "markdownDescription": "Available only in the `local` mode.\nSpecifies the path to Rango's model checkpoint for local execution. If a relative path is provided, it is resolved from the installed Rango repository root.",
+                  "default": "models/deepseek-bm25-proof-tfidf-proj-thm-prem-final/checkpoint-54500"
+                },
+                "mappedToRemotePort": {
+                  "type": "number",
+                  "markdownDescription": "Available only in the `remote` mode.\nSpecifies the SSH-mapped port of the remote server where the model is running.",
+                  "default": 5000
+                },
+                "mockOpenAIApiKey": {
+                  "type": "string",
+                  "markdownDescription": "Available only in the `mockOpenAI` mode.\nSpecifies the API key used by Rango to communicate with the OpenAI API. You can get one [here](https://platform.openai.com/account/api-keys).",
+                  "default": "None"
+                },
+                "enableWholeProjectDataPoints": {
+                  "type": "boolean",
+                  "markdownDescription": "If true, Rango will parse all Coq source files in the project directory into data points, providing a more complete context. Otherwise, only the file containing the proof target is parsed.",
+                  "default": false
+                },
+                "dataLocDirectoryPath": {
+                  "type": "string",
+                  "markdownDescription": "Specifies the absolute path to the directory used by Rango for proof generation data.\n\nIf the required directory structure (`repos/target_project` as a symlink to the target project, a `data_points/` folder, and `sentences.db`) is missing, it will be initialized.\n\nEssentially, this parameter allows you to cache built data points and the sentences database for future executions."
+                }
+              }
+            },
+            "default": [],
+            "markdownDescription": "List of configurations for Rango models. Each configuration will be fetched for completions independently in the order they are listed.",
+            "order": 5
+          },
           "coqpilot.contextTheoremsRankerType": {
             "type": "string",
             "enum": [
@@ -477,7 +536,7 @@
             ],
             "description": "Context of the LLM is limited. Usually not all theorems from the file may be used in the completion request. This parameter defines the way theorems are selected for the completion.",
             "default": "distance",
-            "order": 5
+            "order": 6
           },
           "coqpilot.loggingVerbosity": {
             "type": "string",
@@ -491,13 +550,13 @@
             ],
             "description": "The verbosity of the logs.",
             "default": "info",
-            "order": 6
+            "order": 7
           },
           "coqpilot.coqLspServerPath": {
             "type": "string",
             "description": "Path to the Coq LSP server. If not specified, CoqPilot will try to find the server automatically at the default location: coq-lsp at PATH.",
             "default": "coq-lsp",
-            "order": 7
+            "order": 8
           }
         }
       }
@@ -524,8 +583,8 @@
     "presingle-workspace-benchmark": "npm run prebenchmark",
     "single-workspace-benchmark": "npm run test-executables-unsafe -- -g=\"[SourceExecutable] Single Workspace Benchmark\"",
     "benchmark": "npm run single-workspace-benchmark",
-    "prebenchmark-test": "rm -rf benchmarksOutput",
-    "benchmark-test": "npm run benchmark",
+    "prebenchmark-dev": "rm -rf benchmarksOutput",
+    "benchmark-dev": "npm run benchmark",
     "preteamcity-benchmark-setup": "npm run prebenchmark",
     "teamcity-benchmark-setup": "node ./out/benchmark/teamCitySetup.js",
     "teamcity-benchmark-agent": "npm run test-executables-unsafe -- -g=\"[SourceExecutable] Team City Benchmark Agent\"",

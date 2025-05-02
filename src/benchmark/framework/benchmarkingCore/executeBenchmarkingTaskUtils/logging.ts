@@ -1,4 +1,4 @@
-import { illegalState } from "../../../../utils/throwErrors";
+import { illegalState } from "../../../../utils/errors/throwErrors";
 import { millisToString } from "../../../../utils/time";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { heavyCheckMark, heavyCrossMark } from "../../logging/specialSymbols";
@@ -102,7 +102,7 @@ export namespace ExecuteBenchmarkingTaskLoggingUtils {
                 }
                 const firstFailedRound = allFailedRounds[0];
                 switch (firstFailedRound.failureMetadata.failureType) {
-                    case "`coq-lsp` timeout":
+                    case "proof-check timeout":
                         failureMessage = "Proofs validation timeout";
                         break;
                     case "`CoqProofChecker` error":

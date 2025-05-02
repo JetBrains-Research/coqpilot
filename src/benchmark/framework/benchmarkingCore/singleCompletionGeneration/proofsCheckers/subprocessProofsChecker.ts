@@ -1,16 +1,10 @@
-import {
-    CompletionContext,
-    SourceFileEnvironment,
-} from "../../../../../core/completionGenerationContext";
-
-import { throwError } from "../../../../../utils/throwErrors";
-import { BenchmarkingLogger } from "../../../logging/benchmarkingLogger";
-import { WorkspaceRoot } from "../../../structures/common/workspaceRoot";
+import { AsyncScheduler } from "../../../../../utils/async/asyncScheduler";
+import { throwError } from "../../../../../utils/errors/throwErrors";
 import { checkGeneratedProofsInSubprocess } from "../../../subprocessCalls/checkGeneratedProofs/callChildProcess";
-import { AsyncScheduler } from "../../../utils/asyncUtils/asyncScheduler";
 
 import {
     AbstractProofsChecker,
+    ProofsCheckArgs,
     ProofsCheckResult,
 } from "./abstractProofsChecker";
 import { ProofsCheckerUtils } from "./implementation/proofsCheckerUtils";
@@ -26,20 +20,14 @@ export class SubprocessProofsChecker extends AbstractProofsChecker {
 
     async checkProofs(
         preparedProofs: string[],
-        completionContext: CompletionContext,
-        sourceFileEnvironment: SourceFileEnvironment,
-        workspaceRoot: WorkspaceRoot,
-        logger: BenchmarkingLogger
+        inputArgs: ProofsCheckArgs
     ): Promise<ProofsCheckResult> {
         const proofsCheckExecutionResult =
             await checkGeneratedProofsInSubprocess(
                 preparedProofs,
-                completionContext,
-                sourceFileEnvironment,
-                workspaceRoot,
+                inputArgs,
                 this.checkProofsSubprocessTimeoutMillis,
                 this.subprocessesScheduler,
-                logger,
                 this.enableSubprocessLifetimeDebugLogs
             );
         if (proofsCheckExecutionResult.isFailed()) {

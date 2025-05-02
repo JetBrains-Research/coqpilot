@@ -20,7 +20,13 @@ class VSCodeLogWriter {
             },
             level: process.env.LOG_LEVEL || "info",
             redact: {
-                paths: ["*.password", "*.token", "*.apiKey"],
+                paths: [
+                    "*.password",
+                    "*.token",
+                    "*.apiKey",
+                    "*.openAiApiKey",
+                    "*.options.env.OPENAI_API_KEY",
+                ],
                 censor: "***censored***",
             },
             timestamp: pino.stdTimeFunctions.isoTime,

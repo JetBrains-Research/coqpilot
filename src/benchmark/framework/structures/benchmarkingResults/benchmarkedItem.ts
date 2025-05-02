@@ -208,14 +208,14 @@ export interface FailureMetadata {
     causeMessage: string;
 }
 
-export type FailureType = "`coq-lsp` timeout" | "`CoqProofChecker` error";
+export type FailureType = "proof-check timeout" | "`CoqProofChecker` error";
 
 export function translateToFailureType(
     failureType: ProofsCheckFailureType
 ): FailureType {
     switch (failureType) {
         case "COQ_LSP_TIMEOUT":
-            return "`coq-lsp` timeout";
+            return "proof-check timeout";
         case "COQ_PROOF_CHECKER_ERROR":
             return "`CoqProofChecker` error";
     }

@@ -9,13 +9,12 @@ import {
     RangedSpan,
 } from "../coqLsp/coqLspTypes";
 
-import { throwOnAbort } from "../core/abortUtils";
-
 import { EventLogger } from "../logging/eventLogger";
-import { getErrorMessage } from "../utils/errorsUtils";
+import { throwOnAbort } from "../utils/async/abortUtils";
+import { getErrorMessage } from "../utils/errors/errorsUtils";
+import { throwError } from "../utils/errors/throwErrors";
 import { stringifyAnyValue } from "../utils/printers";
-import { throwError } from "../utils/throwErrors";
-import { Uri } from "../utils/uri";
+import { Uri } from "../utils/structures/uri";
 
 import { ProofStep, Theorem, TheoremProof, Vernacexpr } from "./parsedTypes";
 

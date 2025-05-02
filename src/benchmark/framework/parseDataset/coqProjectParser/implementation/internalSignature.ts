@@ -1,10 +1,10 @@
 import { JSONSchemaType } from "ajv";
 
-import { TargetType } from "../../../structures/benchmarkingCore/completionGenerationTask";
 import {
     SerializedCodeElementRange,
     serializedCodeElementRangeSchema,
-} from "../../../structures/common/codeElementPositions";
+} from "../../../../../utils/structures/codeElementPositions";
+import { TargetType } from "../../../structures/benchmarkingCore/completionGenerationTask";
 import { TargetRequestType } from "../../../structures/common/inputTargets";
 import {
     SerializedParsedCoqFile,
@@ -28,6 +28,8 @@ export namespace ParseCoqProjectInternalSignature {
              * (or inside `"dataset"` directory if workspace is undefined).
              */
             workspaceTargets: FilePathToFileTargets;
+
+            openDocumentTimeoutMillis: number | undefined;
         }
 
         export type FilePathToFileTargets = { [key: string]: FileTarget[] };
@@ -83,6 +85,10 @@ export namespace ParseCoqProjectInternalSignature {
                     nullable: true,
                 },
                 workspaceTargets: filePathToFileTargetsSchema,
+                openDocumentTimeoutMillis: {
+                    type: "number",
+                    nullable: true,
+                },
             },
             required: ["workspaceTargets"],
             additionalProperties: false,

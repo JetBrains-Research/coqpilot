@@ -8,16 +8,16 @@ import {
     Vernacexpr,
 } from "../../../../coqParser/parsedTypes";
 import {
-    SerializedGoal,
-    deserializeGoal,
-    serializeGoal,
-} from "../../utils/coqUtils/goalParser";
-import {
     SerializedCodeElementRange,
     deserializeCodeElementRange,
     serializeCodeElementRange,
     serializedCodeElementRangeSchema,
-} from "../common/codeElementPositions";
+} from "../../../../utils/structures/codeElementPositions";
+import {
+    SerializedGoal,
+    deserializeGoal,
+    serializeGoal,
+} from "../../utils/coqUtils/goalParser";
 
 export class TheoremData {
     constructor(

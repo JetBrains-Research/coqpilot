@@ -1,18 +1,21 @@
 import { ProofGoal } from "../../../../coqLsp/coqLspTypes";
 
 import { ProofStep } from "../../../../coqParser/parsedTypes";
+import { groupBy, mapValues } from "../../../../utils/collectionUtils/mapUtils";
+import { invariantFailed } from "../../../../utils/errors/throwErrors";
+import {
+    joinPaths,
+    relativizeAbsolutePaths,
+} from "../../../../utils/fs/pathUtils";
 import { toFormattedJsonString } from "../../../../utils/printers";
-import { invariantFailed } from "../../../../utils/throwErrors";
+import { fromRange } from "../../../../utils/structures/codeElementPositions";
 import {
     AsOneRecordLogsBuilder,
     BenchmarkingLogger,
 } from "../../logging/benchmarkingLogger";
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
-import { fromRange } from "../../structures/common/codeElementPositions";
 import { TheoremData } from "../../structures/parsedCoqFile/theoremData";
-import { groupBy, mapValues } from "../../utils/collectionUtils/mapUtils";
 import { extractTheoremFisrtProofStep } from "../../utils/coqUtils/proofTargetExtractor";
-import { joinPaths, relativizeAbsolutePaths } from "../../utils/fileUtils/fs";
 import {
     CacheHolderData,
     WorkspaceCacheHolder,

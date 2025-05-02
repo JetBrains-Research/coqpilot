@@ -28,7 +28,7 @@ import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { UserModelParams } from "../../../llm/userModelParams";
 
 import { EventLogger } from "../../../logging/eventLogger";
-import { throwError } from "../../../utils/throwErrors";
+import { throwError } from "../../../utils/errors/throwErrors";
 
 export interface MockLLMUserModelParams extends UserModelParams {
     proofsToGenerate: string[];
@@ -210,12 +210,14 @@ export class MockLLMGeneratedProof extends GeneratedProofImpl<
     async generateNextVersion(
         analyzedChat: AnalyzedChatHistory,
         choices: number,
-        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined
+        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined,
+        abortSignal?: AbortSignal
     ): Promise<MockLLMGeneratedProof[]> {
         return this.llmServiceInternal.generateFromChatWrapped(
             this.modelParams,
             choices,
             metadataHolder,
+            abortSignal,
             () => {
                 if (!this.nextVersionCanBeGenerated()) {
                     throw new ConfigurationError(

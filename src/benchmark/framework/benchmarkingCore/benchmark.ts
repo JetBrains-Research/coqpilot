@@ -1,5 +1,20 @@
 import { modelName } from "../../../llm/llmServices/utils/modelParamsAccessors";
 
+import { AsyncScheduler } from "../../../utils/async/asyncScheduler";
+import { groupBy, mapValues } from "../../../utils/collectionUtils/mapUtils";
+import { buildErrorCompleteLog } from "../../../utils/errors/errorsUtils";
+import { IllegalStateError } from "../../../utils/errors/throwErrors";
+import {
+    createDirectory,
+    provideEmptyDirectoryOrThrow,
+} from "../../../utils/fs/directoryUtils";
+import { translateToSafeFileName } from "../../../utils/fs/fileNameUtils";
+import { writeToFile } from "../../../utils/fs/fileUtils";
+import {
+    joinPaths,
+    relativizeAbsolutePaths,
+} from "../../../utils/fs/pathUtils";
+import { getDatasetDir } from "../../../utils/fs/rootResolvers";
 import { stringifyAnyValue } from "../../../utils/printers";
 import { millisToString } from "../../../utils/time";
 import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
@@ -9,22 +24,15 @@ import { BenchmarkedItem } from "../structures/benchmarkingResults/benchmarkedIt
 import { ExperimentResults } from "../structures/benchmarkingResults/experimentResults";
 import { LLMServiceIdentifier } from "../structures/common/llmServiceIdentifier";
 import { ExperimentRunOptions } from "../structures/inputParameters/experimentRunOptions";
-import { abortAsFailFast } from "../utils/asyncUtils/abortUtils";
-import { AsyncScheduler } from "../utils/asyncUtils/asyncScheduler";
-import { groupBy, mapValues } from "../utils/collectionUtils/mapUtils";
-import { getShortName } from "../utils/commonStructuresUtils/llmServicesUtils";
-import { translateToSafeFileName } from "../utils/fileUtils/fileNameUtils";
 import {
-    createDirectory,
-    getDatasetDir,
-    joinPaths,
-    provideEmptyDirectoryOrThrow,
-    relativizeAbsolutePaths,
-    writeToFile,
-} from "../utils/fileUtils/fs";
+    abortAsCriticalError,
+    abortAsFailFast,
+} from "../utils/asyncUtils/abortUtils";
+import { getShortName } from "../utils/commonStructuresUtils/llmServicesUtils";
 import { prependWithZeros } from "../utils/serializationUtils";
 import {
     benchmarkingInvariantFailed,
+    buildFailedBenchmarkingInvariant,
     throwBenchmarkingError,
 } from "../utils/throwErrors";
 
@@ -95,6 +103,7 @@ export async function benchmark(
     const benchmarkedItems = await runBenchmarkingItems(
         itemsPromises,
         options,
+        parentLogger,
         abortController
     );
     parentLogger
@@ -131,35 +140,52 @@ export async function benchmark(
 async function runBenchmarkingItems(
     itemsPromises: Promise<BenchmarkedItem | undefined>[],
     options: BenchmarkingOptions,
+    logger: BenchmarkingLogger,
     abortController: AbortController
 ): Promise<BenchmarkedItem[]> {
-    if (options.failFast) {
-        try {
-            const results = await Promise.all(itemsPromises);
-            return results.filter(
-                (result) => result !== undefined
-            ) as BenchmarkedItem[];
-        } catch (e) {
-            abortAsFailFast(abortController);
-            throw e;
-        }
-    } else {
-        /*
-         * Even though `itemsPromises` should not be rejected if the `options.failFast === false`
-         * (`executeBenchmarkingTask` catches all errors and returns `undefined` in such failure cases),
-         * using `Promise.allSettled` guarantees the expected behaviour of waiting for all promises to resolve
-         * that could become necessary in the future if `executeBenchmarkingTask` behaviour changes.
+    try {
+        /**
+         * If fail-fast mode is enabled, then `executeBenchmarkingTask` rethrows all the errors.
+         * Namely, the following `Promise.all` will be rejected as soon as an arbitrary error occurs.
+         *
+         * If fail-fast mode is disabled, then `executeBenchmarkingTask` guarantees to throw
+         * only `IllegalStateError`-s, that indicate internal invariant violations
+         * potentially leading to unpredictable behavior.
+         * In other words, in such case, `Promise.all` will be rejected only and as soon as
+         * any `IllegalStateError` occurs.
          */
-        const settledResults = await Promise.allSettled(itemsPromises);
-        return settledResults
-            .filter(
-                (result) =>
-                    result.status === "fulfilled" && result.value !== undefined
-            )
-            .map(
-                (result) =>
-                    (result as PromiseFulfilledResult<BenchmarkedItem>).value
-            );
+        const results = await Promise.all(itemsPromises);
+        return results.filter(
+            (result) => result !== undefined
+        ) as BenchmarkedItem[];
+    } catch (err) {
+        const criticalError = options.failFast
+            ? err
+            : err instanceof IllegalStateError
+              ? err
+              : buildFailedBenchmarkingInvariant(
+                    logger,
+                    "despite fail-fast mode is disabled, `executeBenchmarkingTask` threw an error, ",
+                    "which is not of `IllegalStateError` type:\n",
+                    buildErrorCompleteLog(err)
+                );
+        if (options.failFast) {
+            abortAsFailFast(abortController);
+        } else {
+            logger
+                .asOneRecord()
+                .error(
+                    "Critical error occurred, the benchmarking pipeline will be aborted"
+                )
+                .error(buildErrorCompleteLog(err));
+            abortAsCriticalError(abortController, criticalError);
+        }
+        /**
+         * Regardless of the mode enabled, all the promises should be awaited to finish gracefully.
+         * This shouldn't take much time due to the abort signal being raised.
+         */
+        await Promise.allSettled(itemsPromises);
+        throw criticalError;
     }
 }
 
@@ -229,14 +255,18 @@ function extractBenchmarkingOptions(
 ): BenchmarkingOptions {
     const {
         failFast,
-        logFailFastTasksAborting,
+        logAbortingTasks: logFailFastTasksAborting,
         proofGenerationRetries,
+        openDocumentTimeoutMillis,
+        proofCheckTimeoutMillis,
         logTeamCityStatistics,
     } = experimentRunOptions;
     return {
         failFast: failFast,
-        logFailFastTasksAborting: logFailFastTasksAborting,
+        logAbortingTasks: logFailFastTasksAborting,
         proofGenerationRetries: proofGenerationRetries,
+        openDocumentTimeoutMillis: openDocumentTimeoutMillis,
+        proofCheckTimeoutMillis: proofCheckTimeoutMillis,
         logTeamCityStatistics: logTeamCityStatistics,
     };
 }

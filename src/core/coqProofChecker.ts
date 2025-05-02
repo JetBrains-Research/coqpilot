@@ -5,7 +5,8 @@ import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { CoqLspTimeoutError } from "../coqLsp/coqLspTypes";
 
 import { EventLogger } from "../logging/eventLogger";
-import { Uri } from "../utils/uri";
+import { Uri } from "../utils/structures/uri";
+import { millisToString } from "../utils/time";
 
 export interface ProofCheckResult {
     proof: string;
@@ -32,7 +33,7 @@ export class CoqProofChecker {
         documentVersion: number,
         positionToCheckAt: Position,
         proofs: Proof[],
-        coqLspTimeoutMillis: number = 15000
+        timeoutMillis: number = 15000
     ): Promise<ProofCheckResult[]> {
         return await this.mutex.runExclusive(async () => {
             const timeoutPromise = new Promise<ProofCheckResult[]>(
@@ -40,10 +41,10 @@ export class CoqProofChecker {
                     setTimeout(() => {
                         reject(
                             new CoqLspTimeoutError(
-                                `checkProofs timed out after ${coqLspTimeoutMillis} milliseconds`
+                                `timed out after ${millisToString(timeoutMillis)}`
                             )
                         );
-                    }, coqLspTimeoutMillis);
+                    }, timeoutMillis);
                 }
             );
 

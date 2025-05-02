@@ -1,6 +1,5 @@
 import * as fs from "fs";
 import * as path from "path";
-import * as tmp from "tmp";
 import { Disposable, WorkspaceConfiguration, window, workspace } from "vscode";
 
 import { LLMServices, disposeServices } from "../llm/llmServices";
@@ -10,25 +9,40 @@ import { GrazieService } from "../llm/llmServices/grazie/grazieService";
 import { LMStudioService } from "../llm/llmServices/lmStudio/lmStudioService";
 import { OpenAiService } from "../llm/llmServices/openai/openAiService";
 import { PredefinedProofsService } from "../llm/llmServices/predefinedProofs/predefinedProofsService";
+import { RangoService } from "../llm/llmServices/rango/rangoService";
 
 import { EventLogger, Severity } from "../logging/eventLogger";
-import { illegalState } from "../utils/throwErrors";
+import { illegalState } from "../utils/errors/throwErrors";
+import { createTmpDirectory } from "../utils/fs/tmpFs";
+import { ProjectRoot } from "../utils/structures/projectRoot";
 
 import VSCodeLogWriter from "./ui/vscodeLogWriter";
-import { pluginId } from "./utils/pluginId";
+import { PLUGIN_ID } from "./utils/pluginId";
+import { inferProjectRoot } from "./utils/projectRootGetter";
 
 export class PluginContext implements Disposable {
     readonly eventLogger: EventLogger = new EventLogger();
     readonly logWriter: VSCodeLogWriter = new VSCodeLogWriter(
         this.eventLogger,
-        this.parseLoggingVerbosity(workspace.getConfiguration(pluginId))
+        this.parseLoggingVerbosity(workspace.getConfiguration(PLUGIN_ID))
     );
     readonly logOutputChannel = window.createOutputChannel(
         "CoqPilot: coq-lsp events"
     );
 
+    // TODO: support a way in the UI to reconfigure it manually
+    private _projectRoot: ProjectRoot | undefined = inferProjectRoot();
+
+    getProjectRoot(): ProjectRoot | undefined {
+        return this._projectRoot;
+    }
+
+    selectProjectRoot(projectRoot: ProjectRoot) {
+        this._projectRoot = projectRoot;
+    }
+
     readonly llmServicesLogsDir = path.join(
-        tmp.dirSync().name,
+        createTmpDirectory(),
         "llm-services-logs"
     );
 
@@ -73,6 +87,13 @@ export class PluginContext implements Disposable {
             this.llmServicesSetup.errorsHandlingMode,
             path.join(this.llmServicesLogsDir, "deepseek-logs.txt"),
             this.llmServicesSetup.debugLogs
+        ),
+        rangoService: new RangoService(
+            this.llmServicesSetup.eventLogger,
+            this.llmServicesSetup.errorsHandlingMode,
+            path.join(this.llmServicesLogsDir, "rango-logs.txt"),
+            this.llmServicesSetup.debugLogs,
+            undefined // use the default path to Rango
         ),
     };
 

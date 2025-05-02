@@ -1,14 +1,14 @@
 import { ProofGoal } from "../../../../coqLsp/coqLspTypes";
 
+import { all } from "../../../../utils/collectionUtils/listUtils";
+import { mapValues } from "../../../../utils/collectionUtils/mapUtils";
+import { joinPaths } from "../../../../utils/fs/pathUtils";
+import { CodeElementRange } from "../../../../utils/structures/codeElementPositions";
 import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
-import { CodeElementRange } from "../../structures/common/codeElementPositions";
 import { TargetRequestType } from "../../structures/common/inputTargets";
 import { ParsedCoqFileData } from "../../structures/parsedCoqFile/parsedCoqFileData";
 import { TheoremData } from "../../structures/parsedCoqFile/theoremData";
-import { all } from "../../utils/collectionUtils/listUtils";
-import { mapValues } from "../../utils/collectionUtils/mapUtils";
 import { toTargetType } from "../../utils/commonStructuresUtils/targetTypeUtils";
-import { joinPaths } from "../../utils/fileUtils/fs";
 
 export class DatasetCacheHolder {
     private readonly workspacePathToCache: Map<string, WorkspaceCacheHolder> =

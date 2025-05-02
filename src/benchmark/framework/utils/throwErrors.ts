@@ -1,4 +1,4 @@
-import { InvariantFailedError } from "../../../utils/throwErrors";
+import { InvariantFailedError } from "../../../utils/errors/throwErrors";
 import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
 
 export function throwBenchmarkingError(...errorMessage: string[]): never {
@@ -17,11 +17,18 @@ export class BenchmarkingError extends Error {
     }
 }
 
+export function buildFailedBenchmarkingInvariant(
+    logger: BenchmarkingLogger,
+    ...errorMessage: string[]
+): InvariantFailedError {
+    const joinedMessage = `Benchmarking invariant failed: ${errorMessage.join("")}`;
+    logger.error(joinedMessage);
+    return new InvariantFailedError(joinedMessage);
+}
+
 export function benchmarkingInvariantFailed(
     logger: BenchmarkingLogger,
     ...errorMessage: string[]
 ): never {
-    const joinedMessage = `Benchmarking invariant failed: ${errorMessage.join("")}`;
-    logger.error(joinedMessage);
-    throw new InvariantFailedError(joinedMessage);
+    throw buildFailedBenchmarkingInvariant(logger, ...errorMessage);
 }

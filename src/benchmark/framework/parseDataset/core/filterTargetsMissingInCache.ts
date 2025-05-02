@@ -1,5 +1,7 @@
+import { all } from "../../../../utils/collectionUtils/listUtils";
+import { illegalState } from "../../../../utils/errors/throwErrors";
+import { listCoqSourceFiles } from "../../../../utils/fs/listFiles";
 import { stringifyAnyValue } from "../../../../utils/printers";
-import { illegalState } from "../../../../utils/throwErrors";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import {
     AllTheoremsTarget,
@@ -11,8 +13,6 @@ import {
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { DatasetCacheUsageMode } from "../../structures/inputParameters/datasetCaching";
 import { ExperimentRunOptions } from "../../structures/inputParameters/experimentRunOptions";
-import { all } from "../../utils/collectionUtils/listUtils";
-import { listCoqSourceFiles } from "../../utils/fileUtils/fs";
 import { readRequestedFilesCache } from "../cacheHandlers/cacheReader";
 import { WorkspaceCacheHolder } from "../cacheStructures/cacheHolders";
 import { createEmptyCache } from "../utils/cacheHoldersUtils";

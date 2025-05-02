@@ -4,11 +4,15 @@ import { CoqLspError } from "../../../../../coqLsp/coqLspTypes";
 
 import { createSourceFileEnvironment } from "../../../../../core/inspectSourceFile";
 
-import { unexpectedError } from "../../../../../utils/throwErrors";
-import { Uri } from "../../../../../utils/uri";
+import {
+    mappedObjectValues,
+    packIntoMappedObject,
+} from "../../../../../utils/collectionUtils/mapUtils";
+import { unexpectedError } from "../../../../../utils/errors/throwErrors";
+import { deserializeCodeElementPosition } from "../../../../../utils/structures/codeElementPositions";
+import { Uri } from "../../../../../utils/structures/uri";
 import { BenchmarkingLogger } from "../../../logging/benchmarkingLogger";
 import { TargetType } from "../../../structures/benchmarkingCore/completionGenerationTask";
-import { deserializeCodeElementPosition } from "../../../structures/common/codeElementPositions";
 import { TargetRequestType } from "../../../structures/common/inputTargets";
 import { SerializedParsedCoqFile } from "../../../structures/parsedCoqFile/parsedCoqFileData";
 import {
@@ -17,11 +21,7 @@ import {
     TheoremData,
     serializeTheoremData,
 } from "../../../structures/parsedCoqFile/theoremData";
-import { FailFastAbortError } from "../../../utils/asyncUtils/abortUtils";
-import {
-    mappedObjectValues,
-    packIntoMappedObject,
-} from "../../../utils/collectionUtils/mapUtils";
+import { AbortError } from "../../../utils/asyncUtils/abortUtils";
 import {
     SerializedGoal,
     serializeGoal,
@@ -55,7 +55,10 @@ export namespace ParseCoqProjectImpl {
                 for (const filePath in args.workspaceTargets) {
                     parsedWorkspace[filePath] =
                         await coqLspClient.withTextDocument(
-                            { uri: Uri.fromPath(filePath) },
+                            {
+                                uri: Uri.fromPath(filePath),
+                                timeoutMillis: args.openDocumentTimeoutMillis,
+                            },
                             () =>
                                 parseFileTargets(
                                     args.workspaceTargets[filePath],
@@ -105,6 +108,7 @@ export namespace ParseCoqProjectImpl {
         const sourceFileEnvironment = await createSourceFileEnvironment(
             mockDocumentVersion,
             Uri.fromPath(filePath),
+            undefined,
             coqLspClient,
             new AbortController().signal, // abort behaviour is not supported at the parsing stage
             true // TODO: pass `ContextTheoremsRanker.needsUnwrappedNotations` here to improve performance
@@ -261,7 +265,7 @@ export namespace ParseCoqProjectImpl {
                     `Failed to retrieve target goal at point: "${err.message}" at ${startPosition}, "${serializedParsedFile.filePath}"${stack}`
                 );
                 throw err;
-            } else if (err instanceof FailFastAbortError) {
+            } else if (err instanceof AbortError) {
                 throw err;
             }
             unexpectedError(err);

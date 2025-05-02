@@ -1,4 +1,5 @@
-import { getDatasetDir, joinPaths } from "../../utils/fileUtils/fs";
+import { joinPaths } from "../../../../utils/fs/pathUtils";
+import { getDatasetDir } from "../../../../utils/fs/rootResolvers";
 
 export interface WorkspaceRoot {
     /**

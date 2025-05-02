@@ -15,7 +15,7 @@ import {
     mockProofGenerationContext,
     testModelId,
 } from "../llmSpecificTestUtils/constants";
-import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testAdmitCompletion";
+import { testLLMServiceCompletesAdmitFromFile } from "../llmSpecificTestUtils/testLLMServiceInEnvironment";
 import {
     paramsResolvedWithBasicDefaults,
     testResolveParametersFailsWithSingleCause,

@@ -62,12 +62,64 @@ export interface DeepSeekModelParams extends ModelParams {
     apiKey: string;
 }
 
+export type RangoModelMode = "local" | "remote" | "mockOpenAI";
+
+export interface RangoModelParams extends ModelParams {
+    mode: RangoModelMode;
+    timeoutSeconds: number;
+
+    /**
+     * Available only in the `local` mode.
+     *
+     * A path to the Rango's model checkpoint to execute locally.
+     * In case of the relative path, it will be resolved from the installed Rango repository root.
+     */
+    localCheckpointPath: string;
+
+    /**
+     * Available only in the `remote` mode.
+     *
+     * A number of a port mapped by the SSH to the remote server serving the model.
+     */
+    mappedToRemotePort: number;
+
+    /**
+     * Available only in the `mockOpenAI` mode.
+     *
+     * A key to the OpenAI API.
+     */
+    mockOpenAIApiKey: string;
+
+    /**
+     * If set to true, all Coq source files located inside the project directory
+     * will be parsed into data points by Rango (so to be used to form the context further).
+     *
+     * Otherwise, only the aux file for the one containing the proof target will be parsed.
+     */
+    enableWholeProjectDataPoints: boolean;
+
+    /**
+     * The directory to be used as the Rango's proof generation data location.
+     *
+     * If the expected directories structure is not present inside
+     * (`repos/target_project` as a symlink to the target project, `data_points/` folder and `sentences.db`),
+     * it will be initialized.
+     *
+     * Basically, this parameter makes it possible to "cache" the built data points
+     * and the sentences database for the further executions.
+     *
+     * The path specified should be an absolute path.
+     */
+    dataLocDirectoryPath: string;
+}
+
 export interface ModelsParams {
     predefinedProofsModelParams: PredefinedProofsModelParams[];
     openAiParams: OpenAiModelParams[];
     grazieParams: GrazieModelParams[];
     lmStudioParams: LMStudioModelParams[];
     deepSeekParams: DeepSeekModelParams[];
+    rangoParams: RangoModelParams[];
 }
 
 export const multiroundProfileSchema: JSONSchemaType<MultiroundProfile> = {
@@ -191,6 +243,32 @@ export const deepSeekModelParamsSchema: JSONSchemaType<DeepSeekModelParams> = {
         "modelName",
         "temperature",
         "apiKey",
+        ...modelParamsSchema.required,
+    ],
+    additionalProperties: false,
+};
+
+export const rangoModelParamsSchema: JSONSchemaType<RangoModelParams> = {
+    title: "rangoModelsParameters",
+    type: "object",
+    properties: {
+        mode: { type: "string", enum: ["local", "remote", "mockOpenAI"] },
+        timeoutSeconds: { type: "number" },
+        localCheckpointPath: { type: "string" },
+        mappedToRemotePort: { type: "number" },
+        mockOpenAIApiKey: { type: "string" },
+        enableWholeProjectDataPoints: { type: "boolean" },
+        dataLocDirectoryPath: { type: "string" },
+        ...(modelParamsSchema.properties as PropertiesSchema<ModelParams>),
+    },
+    required: [
+        "mode",
+        "timeoutSeconds",
+        "localCheckpointPath",
+        "mappedToRemotePort",
+        "mockOpenAIApiKey",
+        "enableWholeProjectDataPoints",
+        "dataLocDirectoryPath",
         ...modelParamsSchema.required,
     ],
     additionalProperties: false,

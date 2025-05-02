@@ -172,12 +172,22 @@ experiment.updateRunOptions({
     // If set to `true`, any error that occurs during the benchmarking process will cause
     // the entire pipeline to fail, halting the execution of all subsequent tasks.
     failFast: false,
-    // Additional logging to watch the task being aborted due to the fail-fast strategy.
-    logFailFastTasksAborting: false,
+    // Additional logging to watch the task being aborted due to the fail-fast strategy or a critical error.
+    logAbortingTasks: false,
 
     // Max number of proof-generation retries for each benchmarking task.
     // Can be left `undefined` to make the retries unlimited.
     proofGenerationRetries: 10,
+
+    // Timeout for `coq-lsp` to type-check a source Coq file.
+    // Such type-check is needed to be performed
+    // before parsing a file or checking a new proof inside it.
+    // Can be left `undefined` to use the default value set by CoqPilot.
+    openDocumentTimeoutMillis: 300_000,
+
+    // Timeout for `CoqProofChecker` to check a proof.
+    // Can be left `undefined` to use the default value set by CoqPilot.
+    proofCheckTimeoutMillis: 10_000;
 
     // There might be many parallel proof-generation requests to the same model
     // (in terms of model type, for example, "gpt-4o" models from OpenAI service),

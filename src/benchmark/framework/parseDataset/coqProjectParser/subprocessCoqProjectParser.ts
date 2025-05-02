@@ -1,8 +1,8 @@
+import { AsyncScheduler } from "../../../../utils/async/asyncScheduler";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { WorkspaceInputTargets } from "../../structures/common/inputTargets";
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { buildAndParseCoqProjectInSubprocess } from "../../subprocessCalls/buildAndParseCoqProject/callChildProcess";
-import { AsyncScheduler } from "../../utils/asyncUtils/asyncScheduler";
 
 import {
     AbstractCoqProjectParser,
@@ -25,11 +25,13 @@ export class SubprocessCoqProjectParser extends AbstractCoqProjectParser {
     async parseCoqProject(
         targets: WorkspaceInputTargets,
         workspaceRoot: WorkspaceRoot,
+        openDocumentTimeoutMillis: number | undefined,
         logger: BenchmarkingLogger
     ): Promise<ParsedWorkspaceHolder> {
         const executionResult = await buildAndParseCoqProjectInSubprocess(
             workspaceRoot,
             CoqProjectParserUtils.packWorkspaceTargets(targets),
+            openDocumentTimeoutMillis,
             false, // TODO: support turning projects building on
             this.buildAndParseCoqProjectSubprocessTimeoutMillis,
             this.subprocessesScheduler,

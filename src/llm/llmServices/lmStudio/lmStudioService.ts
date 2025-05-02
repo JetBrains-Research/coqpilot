@@ -1,4 +1,5 @@
-import { asErrorOrRethrow } from "../../../utils/errorsUtils";
+import { throwOnAbort } from "../../../utils/async/abortUtils";
+import { asErrorOrRethrow } from "../../../utils/errors/errorsUtils";
 import { toUnformattedJsonString } from "../../../utils/printers";
 import { ProofGenerationContext } from "../../proofGenerationContext";
 import { LMStudioUserModelParams } from "../../userModelParams";
@@ -78,7 +79,8 @@ class LMStudioServiceInternal extends LLMServiceInternal<
     async generateFromChatImpl(
         analyzedChat: AnalyzedChatHistory,
         params: LMStudioModelParams,
-        choices: number
+        choices: number,
+        abortSignal?: AbortSignal
     ): Promise<GeneratedRawContent> {
         LLMServiceInternal.validateChoices(choices);
         let attempts = choices * 2;
@@ -90,6 +92,7 @@ class LMStudioServiceInternal extends LLMServiceInternal<
         let lastErrorThrown: Error | undefined = undefined;
         while (completions.length < choices && attempts > 0) {
             try {
+                throwOnAbort(abortSignal);
                 const responce = await fetch(this.endpoint(params), {
                     method: "POST",
                     headers: this.headers,
