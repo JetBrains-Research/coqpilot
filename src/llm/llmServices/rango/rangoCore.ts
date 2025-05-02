@@ -27,6 +27,7 @@ import {
     readFile,
     writeToFile,
 } from "../../../utils/fs/fileUtils";
+import { locateExecutable } from "../../../utils/fs/lookup";
 import {
     joinPaths,
     relativizeAbsolutePaths,
@@ -51,6 +52,8 @@ import {
     RangoModelSettings,
     buildRangoModelSettingsFromParams,
 } from "./rangoModelSettings";
+
+// TODO: generalize to support more external services the same way (if needed)
 
 /**
  * Runs Rango proof generation.
@@ -81,27 +84,34 @@ export async function runRangoProof(
         async (auxLemma) => {
             logDebug?.event("Created aux lemma", auxLemma);
             return new Promise((resolve, reject) => {
-                try {
-                    executeRangoProofGenerationOrThrow(
-                        context,
-                        params,
-                        rangoDirPath,
-                        inFileRequestUniqueIdentifier,
-                        auxLemma,
-                        clearLogsOnSuccess,
-                        logDebug,
-                        abortSignal,
-                        { resolve: resolve, reject: reject }
-                    );
-                } catch (err) {
-                    reject(asRangoErrorOrIllegalState(err));
-                }
+                /**
+                 * Note: current pattern allows to both await the async function
+                 * (needed for the async function call deep inside, namely, `locateExecutable`)
+                 * and construct `Promise` with custom `{resolve, reject}` being passed further.
+                 */
+                (async () => {
+                    try {
+                        await executeRangoProofGenerationOrThrow(
+                            context,
+                            params,
+                            rangoDirPath,
+                            inFileRequestUniqueIdentifier,
+                            auxLemma,
+                            clearLogsOnSuccess,
+                            logDebug,
+                            abortSignal,
+                            { resolve, reject }
+                        );
+                    } catch (err) {
+                        reject(asRangoErrorOrIllegalState(err));
+                    }
+                })();
             });
         }
     );
 }
 
-function executeRangoProofGenerationOrThrow(
+async function executeRangoProofGenerationOrThrow(
     context: ExternalPipelineProofGenerationContext,
     params: RangoModelParams,
     rangoDirPath: string,
@@ -143,9 +153,10 @@ function executeRangoProofGenerationOrThrow(
     logDebug?.event("Prepared shared files", rangoFiles);
 
     throwOnAbort(abortSignal);
-    const rangoProcess = spawnRangoProcess(
+    const rangoProcess = await spawnRangoProcess(
         rangoDirPath,
         rangoFiles,
+        context,
         params,
         logDebug,
         abortSignal,
@@ -228,23 +239,27 @@ function prepareSharedFiles(
     };
 }
 
-function spawnRangoProcess(
+async function spawnRangoProcess(
     rangoDirPath: string,
     rangoFiles: RangoSharedFiles,
+    context: ExternalPipelineProofGenerationContext,
     params: RangoModelParams,
     logDebug: DebugLogsWrappers | undefined,
     abortSignal: AbortSignal | undefined,
     reject: RejectType
-): ChildProcess {
+): Promise<ChildProcess> {
     const executionScriptPath = createExecutionScript(rangoDirPath, rangoFiles);
+    const scriptExecutable = await wrapExecutionScriptIntoExecutable(
+        executionScriptPath,
+        context.requiresNixEnvironment
+    );
 
-    // TODO (!): support nix
     const spawnOptions: SpawnOptionsWithStdioTuple<
         StdioNull,
         StdioPipe,
         StdioPipe
     > = {
-        cwd: rangoDirPath,
+        cwd: context.projectRootPath,
         stdio: ["ignore", "pipe", "pipe"],
         env: {
             ...process.env,
@@ -254,7 +269,7 @@ function spawnRangoProcess(
         shell: true,
         signal: abortSignal,
     };
-    const childProccess = spawn(executionScriptPath, [], spawnOptions);
+    const childProccess = spawn(scriptExecutable, [], spawnOptions);
 
     // Set up logs
     function appendRangoLogs(data: any) {
@@ -404,6 +419,24 @@ function createExecutionScript(
             `Failed to create execution script: ${getErrorMessage(err)}`
         );
     }
+}
+
+async function wrapExecutionScriptIntoExecutable(
+    executionScriptPath: string,
+    requiresNixEnvironment: boolean
+): Promise<string> {
+    if (!requiresNixEnvironment) {
+        return executionScriptPath;
+    }
+    const nixShell = await locateExecutable("nix-shell");
+    if (nixShell === undefined) {
+        throwRangoError(
+            "Failed to locate `nix-shell` required to spawn Rango subprocess ",
+            "in the Nix environment, which is used by the target Coq project. ",
+            "Check `nix-shell` is accessible and try again."
+        );
+    }
+    return `${nixShell} --run "${executionScriptPath}"`;
 }
 
 function getPythonVenvEnterShellCommand(): string {
