@@ -3,12 +3,12 @@ import { JSONSchemaType } from "ajv";
 import { SourceFileEnvironment } from "../../../../core/completionGenerationContext";
 
 import { Theorem } from "../../../../coqParser/parsedTypes";
-import { Uri } from "../../../../utils/structures/uri";
 import {
     fromMappedObject,
     mapValues,
     toMappedObject,
-} from "../../utils/collectionUtils/mapUtils";
+} from "../../../../utils/collectionUtils/mapUtils";
+import { Uri } from "../../../../utils/structures/uri";
 import { WorkspaceRoot } from "../common/workspaceRoot";
 
 import {
@@ -49,7 +49,10 @@ export class ParsedCoqFileData {
             ),
             documentVersion: this.documentVersion,
             fileUri: Uri.fromPath(this.filePath),
-            projectRootUri: Uri.fromPath(workspaceRoot.directoryPath),
+            projectRoot: {
+                uri: Uri.fromPath(workspaceRoot.directoryPath),
+                requiresNixEnvironment: workspaceRoot.requiresNixEnvironment,
+            },
         };
     }
 }

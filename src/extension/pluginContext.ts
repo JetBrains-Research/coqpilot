@@ -14,11 +14,11 @@ import { RangoService } from "../llm/llmServices/rango/rangoService";
 import { EventLogger, Severity } from "../logging/eventLogger";
 import { illegalState } from "../utils/errors/throwErrors";
 import { createTmpDirectory } from "../utils/fs/tmpFs";
-import { Uri } from "../utils/structures/uri";
+import { ProjectRoot } from "../utils/structures/projectRoot";
 
 import VSCodeLogWriter from "./ui/vscodeLogWriter";
 import { PLUGIN_ID } from "./utils/pluginId";
-import { getOpenedWorkspaceAsProjectRoot } from "./utils/projectRootGetter";
+import { inferProjectRoot } from "./utils/projectRootGetter";
 
 export class PluginContext implements Disposable {
     readonly eventLogger: EventLogger = new EventLogger();
@@ -31,15 +31,14 @@ export class PluginContext implements Disposable {
     );
 
     // TODO: support a way in the UI to reconfigure it manually
-    private _projectRootUri: Uri | undefined =
-        getOpenedWorkspaceAsProjectRoot();
+    private _projectRoot: ProjectRoot | undefined = inferProjectRoot();
 
-    getProjectRoot(): Uri | undefined {
-        return this._projectRootUri;
+    getProjectRoot(): ProjectRoot | undefined {
+        return this._projectRoot;
     }
 
-    selectProjectRoot(projectRoot: Uri) {
-        this._projectRootUri = projectRoot;
+    selectProjectRoot(projectRoot: ProjectRoot) {
+        this._projectRoot = projectRoot;
     }
 
     readonly llmServicesLogsDir = path.join(

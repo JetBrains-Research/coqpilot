@@ -25,6 +25,7 @@ import { CoqProofChecker } from "../core/coqProofChecker";
 import { inspectSourceFile } from "../core/inspectSourceFile";
 
 import { ProofStep } from "../coqParser/parsedTypes";
+import { stringifyProjectRoot } from "../utils/structures/projectRoot";
 import { Uri } from "../utils/structures/uri";
 
 import {
@@ -56,7 +57,7 @@ import {
     toVSCodePosition,
     toVSCodeRange,
 } from "./utils/positionRangeUtils";
-import { getOpenedWorkspaceAsProjectRoot } from "./utils/projectRootGetter";
+import { inferProjectRoot } from "./utils/projectRootGetter";
 
 export class CoqPilot {
     private constructor(
@@ -343,11 +344,18 @@ export class CoqPilot {
         };
 
         if (this.pluginContext.getProjectRoot() === undefined) {
-            const currentProjectRoot = getOpenedWorkspaceAsProjectRoot();
+            const currentProjectRoot = inferProjectRoot();
             if (currentProjectRoot !== undefined) {
                 this.pluginContext.selectProjectRoot(currentProjectRoot);
             }
         }
+        const currentProjectRootString = stringifyProjectRoot(
+            this.pluginContext.getProjectRoot()
+        );
+        this.pluginContext.eventLogger.log(
+            "Infered project root",
+            `Current project root is: ${currentProjectRootString}`
+        );
 
         // Note: here and later the target file is expected to be opened by the user,
         // so no explicit `coqLspClient.openTextDocument(...)` call is needed

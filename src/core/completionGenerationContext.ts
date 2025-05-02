@@ -6,6 +6,7 @@ import { ModelsParams } from "../llm/llmServices/modelParams";
 import { ProofGoal } from "../coqLsp/coqLspTypes";
 
 import { Theorem } from "../coqParser/parsedTypes";
+import { ProjectRoot } from "../utils/structures/projectRoot";
 import { Uri } from "../utils/structures/uri";
 
 import { ContextTheoremsRanker } from "./contextTheoremRanker/contextTheoremsRanker";
@@ -33,7 +34,7 @@ export interface SourceFileEnvironment {
      *
      * _Conclusion:_ define this value whether it is possible, this way all the functionality will be available.
      */
-    projectRootUri?: Uri;
+    projectRoot?: ProjectRoot;
 }
 
 export interface ProcessEnvironment {

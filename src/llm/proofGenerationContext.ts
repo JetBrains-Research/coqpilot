@@ -20,4 +20,6 @@ export interface ExternalPipelineProofGenerationContext {
 
     relativeSourceFilePath: string;
     projectRootPath: string;
+
+    requiresNixEnvironment: boolean;
 }

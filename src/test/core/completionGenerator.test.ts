@@ -15,17 +15,20 @@ import {
     createDefaultServices,
     createPredefinedProofsModelsParams,
 } from "../commonTestFunctions/defaultLLMServicesBuilder";
-import { withPreparedEnvironment } from "../commonTestFunctions/prepareEnvironment";
+import {
+    ProjectRootDir,
+    withPreparedEnvironment,
+} from "../commonTestFunctions/prepareEnvironment";
 
 suite("Completion generation tests", () => {
     async function generateCompletionForAdmitsFromFile(
         resourcePath: string[],
         predefinedProofs: string[],
-        projectRootPath?: string[]
+        projectRootDir?: ProjectRootDir
     ): Promise<GenerationResult[]> {
         return withPreparedEnvironment(
             resourcePath,
-            projectRootPath,
+            projectRootDir,
             async (environment) => {
                 const processEnvironment: ProcessEnvironment = {
                     coqProofChecker: environment.coqProofChecker,
@@ -133,7 +136,7 @@ suite("Completion generation tests", () => {
         const results = await generateCompletionForAdmitsFromFile(
             resourcePath,
             predefinedProofs,
-            projectRootPath
+            { path: projectRootPath, requiresNixEnvironment: false }
         );
 
         expect(results).toHaveLength(1);

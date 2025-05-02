@@ -67,10 +67,11 @@ export function buildExternalPipelineProofGenerationContext(
     completionContext: CompletionContext,
     sourceFileEnvironment: SourceFileEnvironment
 ): ExternalPipelineProofGenerationContext | undefined {
-    const projectRootPath = sourceFileEnvironment.projectRootUri?.fsPath;
-    if (projectRootPath === undefined) {
+    const projectRoot = sourceFileEnvironment.projectRoot;
+    if (projectRoot === undefined) {
         return undefined;
     }
+    const projectRootPath = projectRoot.uri.fsPath;
     return {
         completionTargetGoal: completionContext.proofGoal,
         completionTargetRange: fromRange(completionContext.admitRange),
@@ -84,6 +85,8 @@ export function buildExternalPipelineProofGenerationContext(
             sourceFileEnvironment.fileUri.fsPath
         ),
         projectRootPath: projectRootPath,
+
+        requiresNixEnvironment: projectRoot.requiresNixEnvironment,
     };
 }
 

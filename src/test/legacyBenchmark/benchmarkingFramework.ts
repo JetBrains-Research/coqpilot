@@ -35,6 +35,7 @@ import { ProofStep, Theorem } from "../../coqParser/parsedTypes";
 import { EventLogger } from "../../logging/eventLogger";
 import { illegalState, throwError } from "../../utils/errors/throwErrors";
 import { stringifyAnyValue } from "../../utils/printers";
+import { ProjectRoot } from "../../utils/structures/projectRoot";
 import { Uri } from "../../utils/structures/uri";
 
 import { AdditionalFileImport } from "./additionalImports";
@@ -494,10 +495,17 @@ async function extractCompletionTargets(
     rankerNeedsUnwrappedNotations: boolean
 ): Promise<[BenchmarkingCompletionTargets, SourceFileEnvironment]> {
     const abortController = new AbortController();
+    const projectRoot: ProjectRoot | undefined =
+        workspaceRootUri === undefined
+            ? undefined
+            : {
+                  uri: workspaceRootUri,
+                  requiresNixEnvironment: false, // TODO: support specifying top-level
+              };
     const sourceFileEnvironment = await createSourceFileEnvironment(
         documentVersion,
         fileUri,
-        workspaceRootUri,
+        projectRoot,
         client,
         abortController.signal,
         rankerNeedsUnwrappedNotations

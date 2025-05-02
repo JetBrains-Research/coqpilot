@@ -3,6 +3,7 @@ import { CoqLspClient } from "../coqLsp/coqLspClient";
 import { parseCoqFile } from "../coqParser/parseCoqFile";
 import { ProofStep, Theorem } from "../coqParser/parsedTypes";
 import { EventLogger } from "../logging/eventLogger";
+import { ProjectRoot } from "../utils/structures/projectRoot";
 import { Uri } from "../utils/structures/uri";
 
 import {
@@ -16,7 +17,7 @@ export async function inspectSourceFile(
     documentVersion: number,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileUri: Uri,
-    projectRootUri: Uri | undefined,
+    projectRoot: ProjectRoot | undefined,
     client: CoqLspClient,
     abortSignal: AbortSignal,
     needsTheoremInitialGoals: boolean,
@@ -25,7 +26,7 @@ export async function inspectSourceFile(
     const sourceFileEnvironment = await createSourceFileEnvironment(
         documentVersion,
         fileUri,
-        projectRootUri,
+        projectRoot,
         client,
         abortSignal,
         needsTheoremInitialGoals,
@@ -81,7 +82,7 @@ async function createCompletionContexts(
 export async function createSourceFileEnvironment(
     documentVersion: number,
     fileUri: Uri,
-    projectRootUri: Uri | undefined,
+    projectRoot: ProjectRoot | undefined,
     client: CoqLspClient,
     abortSignal: AbortSignal,
     needsTheoremInitialGoals: boolean,
@@ -99,6 +100,6 @@ export async function createSourceFileEnvironment(
         fileTheorems: fileTheorems,
         documentVersion: documentVersion,
         fileUri: fileUri,
-        projectRootUri: projectRootUri,
+        projectRoot: projectRoot,
     };
 }
