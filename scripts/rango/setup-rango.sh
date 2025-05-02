@@ -3,7 +3,16 @@ set -e
 
 # Note: this script requires `git` and `pyenv` to be installed as prerequisites
 
-REPO_URL="git@github.com:GlebSolovev/rango.git" # TODO: replace with the original repo once changes are accepted
+# Cross-platform in-place sed (macOS vs GNU)
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  SED_INPLACE=("sed" "-i" "")
+else
+  SED_INPLACE=("sed" "-i")
+fi
+
+# TODO: replace the fork with the original repo once changes are accepted
+SSH_REPO_URL="git@github.com:GlebSolovev/rango.git"
+HTTPS_REPO_URL="https://github.com/GlebSolovev/rango.git"
 BRANCH_NAME="coqpilot-adapter"
 PYTHON_VERSION="3.11"
 
@@ -35,11 +44,38 @@ if [[ -z "$RANGO_DIR" ]]; then
 fi
 
 if [ ! -d "$RANGO_DIR" ]; then
+  echo "Checking if SSH access to GitHub is available..."
+  if ssh -T git@github.com -o BatchMode=yes -o ConnectTimeout=5 2>&1 | grep -q "successfully authenticated"; then
+    echo "SSH access available. Using SSH for cloning."
+    REPO_URL=$SSH_REPO_URL
+    USE_HTTPS_FOR_SUBMODULES=false
+  else
+    echo "SSH not available. Falling back to HTTPS for cloning."
+    REPO_URL=$HTTPS_REPO_URL
+    USE_HTTPS_FOR_SUBMODULES=true
+  fi
+
   echo "Cloning Rango into $RANGO_DIR..."
   git clone "$REPO_URL" "$RANGO_DIR"
   cd "$RANGO_DIR"
   git checkout "$BRANCH_NAME"
-  git submodule update --init --recursive
+
+  if $USE_HTTPS_FOR_SUBMODULES; then
+    echo "Rewriting .gitmodules from SSH to HTTPS and initializing submodules..."
+    # Rewrite top-level .gitmodules from SSH to HTTPS
+    "${SED_INPLACE[@]}" 's|git@github.com:|https://github.com/|g' .gitmodules || true
+    git submodule sync
+    git submodule update --init
+
+    # Recursively find and fix .gitmodules in submodules now that they exist
+    find . -name .gitmodules -exec "${SED_INPLACE[@]}" 's|git@github.com:|https://github.com/|g' {} \; || true
+    git submodule sync --recursive
+    git submodule update --init --recursive
+  else
+    echo "Using SSH to initialize submodules..."
+    git submodule update --init --recursive
+  fi
+
   echo "Rango repository is sucessfully initialized..."
 else
   echo "Rango repository already exists at $RANGO_DIR..."
