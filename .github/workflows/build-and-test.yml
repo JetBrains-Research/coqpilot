@@ -128,15 +128,8 @@ jobs:
       with:
         name: ${{ env.artifact-name }}
         path: ${{ steps.package-extension.outputs.vsixPath }}
-  
-  setup-ci-debug-session:
-    name: Start a CI debug session if build or test fail
-    if: ${{ failure() }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
+    
+    - name: Start a CI debug session if build or test fail
+      if: ${{ failure() }}
+      uses: mxschmitt/action-tmate@v3
+      timeout-minutes: 10
