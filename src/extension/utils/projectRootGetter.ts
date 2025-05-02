@@ -46,10 +46,5 @@ export function getOpenedWorkspaceAsProjectRoot(): Uri | undefined {
 }
 
 export function isRunningInNixEnvironment(): boolean {
-    const env = process.env;
-    return (
-        env.IN_NIX_SHELL !== undefined ||
-        env.NIX_PROFILES !== undefined ||
-        env.NIX_PATH !== undefined
-    );
+    return process.env.IN_NIX_SHELL !== undefined;
 }
