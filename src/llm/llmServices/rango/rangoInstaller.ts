@@ -37,7 +37,15 @@ export class RangoInstaller extends AbstractExternalServiceInstaller<
 
     readonly installationPrerequisites: InstallationPrerequisite[] = [
         { name: "git", checkCommand: "git --version" },
-        { name: "pyenv", checkCommand: "pyenv --version" },
+        {
+            name: "pyenv",
+            checkCommand: [
+                `export PYENV_ROOT="$HOME/.pyenv"`,
+                `export PATH="$PYENV_ROOT/bin:$PATH"`,
+                `eval "$(pyenv init -)"`,
+                "pyenv --version",
+            ].join(" && "),
+        },
     ];
 
     protected readonly scriptsManager = new RangoInstallationScriptsManager();
