@@ -120,18 +120,12 @@ jobs:
   
   setup-ci-debug-session:
     name: Start a CI debug session if build or test fail
-
-    needs: [build-and-test]
-    if: always()
-    
+    if: ${{ failure() }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        ocaml-compiler: [4.14]
-
+        os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
       - name: Setup tmate session
-        if: ${{ failure() }}
         uses: mxschmitt/action-tmate@v3
