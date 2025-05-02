@@ -1,6 +1,6 @@
 import { invariantFailed } from "../../../../utils/errors/throwErrors";
 
-import { AbstractExternalServiceInstaller } from "./abstractLLMServiceInstaller";
+import { AbstractExternalServiceInstaller } from "./abstractExternalServiceInstaller";
 import {
     InstallationInteractor,
     InteractorChoiceItemWithCallback,

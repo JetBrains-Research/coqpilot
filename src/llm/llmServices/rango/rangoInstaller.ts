@@ -1,8 +1,8 @@
 import { any } from "../../../utils/collectionUtils/listUtils";
 import { exists, joinPaths } from "../../../utils/fs/pathUtils";
 import { RangoUserModelParams } from "../../userModelParams";
+import { AbstractExternalServiceInstaller } from "../abstractExternalService/installation/abstractExternalServiceInstaller";
 import { AbstractInstallationScriptsManager } from "../abstractExternalService/installation/abstractInstallationScriptsManager";
-import { AbstractExternalServiceInstaller } from "../abstractExternalService/installation/abstractLLMServiceInstaller";
 import { InstallationPrerequisite } from "../abstractExternalService/installation/prerequisitesChecker";
 
 export interface RangoInstallationOptions {

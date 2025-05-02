@@ -1,4 +1,4 @@
-import { AbstractExternalServiceInstaller } from "../../../../llm/llmServices/abstractExternalService/installation/abstractLLMServiceInstaller";
+import { AbstractExternalServiceInstaller } from "../../../../llm/llmServices/abstractExternalService/installation/abstractExternalServiceInstaller";
 import { provideDefaultInstallationForRequest } from "../../../../llm/llmServices/abstractExternalService/installation/wrappers";
 import { RangoInstaller } from "../../../../llm/llmServices/rango/rangoInstaller";
 import { UserModelParams } from "../../../../llm/userModelParams";

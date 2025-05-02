@@ -30,7 +30,7 @@ import { LLMServiceInternal } from "../llmServiceInternal";
 import { ModelParams } from "../modelParams";
 import { throwConfigurationError } from "../utils/errorUtils";
 
-import { AbstractExternalServiceInstaller } from "./installation/abstractLLMServiceInstaller";
+import { AbstractExternalServiceInstaller } from "./installation/abstractExternalServiceInstaller";
 
 export type ExternalService<
     InputModelParams extends UserModelParams,

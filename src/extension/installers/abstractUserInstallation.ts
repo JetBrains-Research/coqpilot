@@ -1,4 +1,4 @@
-import { AbstractExternalServiceInstaller } from "../../llm/llmServices/abstractExternalService/installation/abstractLLMServiceInstaller";
+import { AbstractExternalServiceInstaller } from "../../llm/llmServices/abstractExternalService/installation/abstractExternalServiceInstaller";
 import {
     InstallationInteractor,
     InteractorChoiceItemWithCallback,

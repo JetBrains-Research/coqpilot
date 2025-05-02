@@ -1,7 +1,7 @@
 import { getRootDir } from "../../../../utils/fs/rootResolvers";
 import { UserModelParams } from "../../../userModelParams";
 
-import { AbstractExternalServiceInstaller } from "./abstractLLMServiceInstaller";
+import { AbstractExternalServiceInstaller } from "./abstractExternalServiceInstaller";
 import { InteractorMessageSeverity } from "./installationInteractor";
 import { SimpleInstallationInteractor } from "./simpleInstallationInteractor";
 
