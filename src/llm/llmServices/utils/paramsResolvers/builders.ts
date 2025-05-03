@@ -66,10 +66,6 @@ export interface SingleParamResolverBuilder<InputType, T> {
      * but describes overriding with a mock value, i.e. the value
      * that will never be actually used. Thus, this override always succeeds
      * and cannot return undefined.
-     *
-     * Also, this override is never shown in logs (`overriden.wasPerformed` is false),
-     * since mock resolutions should not be tracked the same as real once.
-     * *TODO: support mock resolutions in logs with a separate property.*
      */
     overrideWithMock(
         valueBuilder: StrictValueBuilder<InputType, T>
@@ -339,6 +335,9 @@ class SingleParamResolverImpl<InputType, T> extends AbstractSingleParamResolver<
             overriden: {
                 wasPerformed: false,
             },
+            overridenWithMock: {
+                wasPerformed: false,
+            },
             resolvedWithDefault: {
                 wasPerformed: false,
             },
@@ -390,6 +389,9 @@ class SingleParamResolverImpl<InputType, T> extends AbstractSingleParamResolver<
         inputParams: InputType,
         result: SingleParamResolutionResult<T>
     ): T | undefined {
+        result.inputReadCorrectly = {
+            wasPerformed: true,
+        };
         if (this.inputParamKey === undefined) {
             return undefined;
         }
@@ -400,14 +402,12 @@ class SingleParamResolverImpl<InputType, T> extends AbstractSingleParamResolver<
         // if user specified a value, then take it
         const userValueAsT = userValue as T;
         if (userValueAsT !== null) {
-            result.inputReadCorrectly = {
-                wasPerformed: true,
-                withValue: userValueAsT,
-            };
+            result.inputReadCorrectly.withValue = userValueAsT;
             return userValueAsT;
         } else {
             // unfortunately, this case is unreachable: TypeScript does not provide the way to check that `userValue` is of the `T` type indeed
             // TODO: actually, it does: the type validator should be passed and used (for example, Ajv one)
+            result.inputReadCorrectly.wasPerformed = false;
             unreachable(
                 "cast of `any` to generic `T` type should always succeed, ",
                 `value = ${stringifyAnyValue(userValue)} for ${this.quotedName()} parameter`
@@ -429,7 +429,11 @@ class SingleParamResolverImpl<InputType, T> extends AbstractSingleParamResolver<
         const { valueBuilder, explanationMessage } = this.overrider;
         const valueToOverrideWith = valueBuilder(inputParams);
         if (this.overridenWithMockValue) {
-            // no checks and logs are needed, just return the mock value
+            // mock override always suceeds
+            result.overridenWithMock = {
+                wasPerformed: true,
+                withValue: valueToOverrideWith,
+            };
             result.resultValue = valueToOverrideWith;
             if (valueToOverrideWith === undefined) {
                 illegalState(

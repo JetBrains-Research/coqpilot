@@ -136,13 +136,13 @@ suite("[LLMService-s utils] Test single parameter resolution", () => {
         [
             [false, "specified value"],
             [undefined, "no value specified"],
-            [true, 'already specified "true" value is not'],
+            [true, 'already specified "true" value'],
         ] as [boolean | undefined, string][]
     ).forEach(([value, testCaseName]) => {
-        const inputReadCorrectly: ResolutionActionResult<boolean> =
-            value === undefined
-                ? { wasPerformed: false }
-                : { wasPerformed: true, withValue: value };
+        const inputReadCorrectly: ResolutionActionResult<boolean> = {
+            wasPerformed: true,
+            withValue: value,
+        };
         const overriden: ResolutionActionDetailedResult<boolean> =
             value === true
                 ? { wasPerformed: false }
@@ -151,9 +151,12 @@ suite("[LLMService-s utils] Test single parameter resolution", () => {
                       withValue: true,
                       message: "is always true",
                   };
+        const overridenMessage = overriden
+            ? "is overriden"
+            : "is not overriden";
 
         testSingleParamResolution<boolean>(
-            `Test override with "always true": ${testCaseName} overriden`,
+            `Test override with "always true": ${testCaseName} ${overridenMessage}`,
             value,
             (builder) =>
                 builder
@@ -168,10 +171,17 @@ suite("[LLMService-s utils] Test single parameter resolution", () => {
         );
 
         testSingleParamResolution<boolean>(
-            `Test override with mock: ${testCaseName} overriden`,
+            `Test override with mock: ${testCaseName}`,
             value,
             (builder) => builder.overrideWithMock(() => true),
-            { resultValue: true, inputReadCorrectly: inputReadCorrectly }
+            {
+                resultValue: true,
+                inputReadCorrectly: inputReadCorrectly,
+                overridenWithMock: {
+                    wasPerformed: true,
+                    withValue: true,
+                },
+            }
         );
     });
 
@@ -213,7 +223,7 @@ suite("[LLMService-s utils] Test single parameter resolution", () => {
             {
                 resultValue: expectedResultValue,
                 inputReadCorrectly: {
-                    wasPerformed: value === undefined ? false : true,
+                    wasPerformed: true,
                     withValue: value,
                 },
                 overriden: overriden,

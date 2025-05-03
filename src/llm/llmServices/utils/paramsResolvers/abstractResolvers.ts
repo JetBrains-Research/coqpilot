@@ -63,7 +63,12 @@ export interface SingleParamResolutionResult<T> {
 
     /**
      * `inputReadCorrectly.wasPerformed` is true iff the parameter's input value
-     * is read as a defined value (of the correct type, if it is verifiable).
+     * is read as a value of the correct type (if it is verifiable) or is `undefined`.
+     * In other words, `inputReadCorrectly.wasPerformed` is false iff the parameter's input value
+     * is a defined invalid value.
+     *
+     * Note: to differentiate two cases of value being correctly defined or being undefined,
+     * it is enough to check the `inputReadCorrectly.withValue` property.
      */
     inputReadCorrectly: ResolutionActionResult<T>;
 
@@ -73,6 +78,17 @@ export interface SingleParamResolutionResult<T> {
      * `overriden.wasPerformed` will be false.
      */
     overriden: ResolutionActionDetailedResult<T>;
+
+    /**
+     * `overridenWithMock.wasPerformed` is true iff the parameter's input value is overriden with a mock value.
+     * I.e. it will be true regardless whether the mock value was the same as the input one or not,
+     * mock override always succeeds if declared.
+     *
+     * Basically, this property might be useful to track the case when
+     * the input value was defined for some reason but then gets overriden with mock.
+     * I.e. in the case of the value, expected not to be actually used, was specified.
+     */
+    overridenWithMock: ResolutionActionResult<T>;
 
     /**
      * `resolvedWithDefault.wasPerformed` is true iff the default resolver is called,
