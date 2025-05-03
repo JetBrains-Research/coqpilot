@@ -81,7 +81,7 @@ export namespace EditorMessages {
         modelId: string,
         errorMessage: string
     ) =>
-        `Model "${modelId}" is configured incorrectly: ${errorMessage}. Thus, "${modelId}" will be skipped for this run. Please fix the model's configuration in the settings.`;
+        `${errorMessage} Thus, "${modelId}" will be skipped for this run. Please fix the model's configuration in the settings.`;
 
     export const unknownContextTheoremsRanker = `Please select one of the existing theorems-ranker types: "distance" or "random".`;
 
@@ -100,17 +100,6 @@ export namespace EditorMessages {
 
     export const noValidModelsAreChosen =
         "No valid models are chosen. Please specify at least one in the settings.";
-
-    export const userValueWasOverriden = (
-        modelId: string,
-        paramName: string,
-        withValue: any,
-        explanationMessage?: string
-    ) => {
-        const explanation =
-            explanationMessage === undefined ? "" : `: ${explanationMessage}`;
-        return `The \`${paramName}\` parameter of the "${modelId}" model was overriden with the value ${stringifyAnyValue(withValue)}${explanation}. Please configure it the same way in the settings.`;
-    };
 }
 
 export interface UIChoiceItemWithCallback {

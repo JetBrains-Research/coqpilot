@@ -12,7 +12,7 @@ import {
 } from "../../llm/llmServices/abstractExternalService/abstractExternalService";
 import { LLMService } from "../../llm/llmServices/llmService";
 import { ModelParams, ModelsParams } from "../../llm/llmServices/modelParams";
-import { SingleParamResolutionResult } from "../../llm/llmServices/utils/paramsResolvers/abstractResolvers";
+import { buildParamsResolutionMessages } from "../../llm/llmServices/utils/paramsResolvers/kit/paramsResolutionAnalysis";
 import {
     DeepSeekUserModelParams,
     GrazieUserModelParams,
@@ -329,72 +329,29 @@ function resolveParamsAndShowResolutionLogs<
 
     for (const inputParams of inputParamsList) {
         const resolutionResult = llmService.resolveParameters(inputParams);
-
-        // notify user about errors (with full logs for failed parameters) and overrides
-        for (const paramLog of resolutionResult.resolutionLogs) {
-            if (paramLog.resultValue === undefined) {
-                // failed to resolve parameter
-                const resolutionHistory = buildResolutionHistory(paramLog);
-                showMessageToUserWithSettingsHint(
-                    EditorMessages.modelConfiguredIncorrectly(
-                        inputParams.modelId,
-                        `${paramLog.isInvalidCause}${resolutionHistory}`
-                    ),
-                    "error",
-                    settingName
-                );
-            } else if (
-                paramLog.overriden.wasPerformed &&
-                paramLog.inputReadCorrectly.wasPerformed
-            ) {
-                // resolved parameter, but the user value was overriden
-                showMessageToUserWithSettingsHint(
-                    EditorMessages.userValueWasOverriden(
-                        inputParams.modelId,
-                        paramLog.inputParamName ?? "<undefined parameter>",
-                        paramLog.overriden.withValue,
-                        paramLog.overriden.message
-                    ),
-                    "info",
-                    settingName
-                );
-            }
+        const resolutionMessages = buildParamsResolutionMessages(
+            resolutionResult,
+            inputParams.modelId
+        );
+        if (resolutionMessages.invalidConfigurationMessage !== undefined) {
+            showMessageToUserWithSettingsHint(
+                EditorMessages.modelConfiguredIncorrectly(
+                    inputParams.modelId,
+                    resolutionMessages.invalidConfigurationMessage
+                ),
+                "error",
+                settingName
+            );
+        } else if (resolutionMessages.warningMessage !== undefined) {
+            showMessageToUserWithSettingsHint(
+                resolutionMessages.warningMessage,
+                "warning",
+                settingName
+            );
         }
-
         if (resolutionResult.resolved !== undefined) {
             resolvedParamsList.push(resolutionResult.resolved);
         }
     }
     return resolvedParamsList;
-}
-
-function buildResolutionHistory(
-    paramLog: SingleParamResolutionResult<any>
-): string {
-    const inputReadPerformed = paramLog.inputReadCorrectly.wasPerformed;
-    const overridePerformed = paramLog.overriden.wasPerformed;
-    const withDefaultPerformed = paramLog.resolvedWithDefault.wasPerformed;
-
-    const onlySuccessfulRead =
-        inputReadPerformed && !overridePerformed && !withDefaultPerformed;
-    if (onlySuccessfulRead) {
-        return "";
-    }
-    const inputRead = paramLog.inputReadCorrectly.wasPerformed
-        ? `read ${stringifyAnyValue(paramLog.inputReadCorrectly.withValue)}`
-        : "no input value read";
-    const withOverride = paramLog.overriden.wasPerformed
-        ? `, overriden with ${stringifyAnyValue(paramLog.overriden.withValue)}`
-        : "";
-    const withDefault = paramLog.resolvedWithDefault.wasPerformed
-        ? `, resolved with default ${stringifyAnyValue(paramLog.resolvedWithDefault.withValue)}`
-        : "";
-
-    const onlyFailedRead =
-        !inputReadPerformed && !overridePerformed && !withDefaultPerformed;
-    const anyResolutionActionPerformed =
-        overridePerformed || withDefaultPerformed;
-    return onlyFailedRead || anyResolutionActionPerformed
-        ? `; value's resolution: ${inputRead}${withOverride}${withDefault}`
-        : "";
 }
