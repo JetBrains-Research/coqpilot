@@ -14,7 +14,7 @@ import {
     modelParamsSchema,
 } from "../../../llm/llmServices/modelParams";
 import { GenerationsLogger } from "../../../llm/llmServices/utils/generationsLogger/generationsLogger";
-import { BasicModelParamsResolver } from "../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";
+import { BasicModelParamsResolver } from "../../../llm/llmServices/utils/paramsResolvers/kit/basicModelParamsResolvers";
 import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { UserModelParams } from "../../../llm/userModelParams";
 

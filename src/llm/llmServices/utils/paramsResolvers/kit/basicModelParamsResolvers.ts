@@ -1,18 +1,17 @@
 import {
     UserModelParams,
     UserMultiroundProfile,
-} from "../../../userModelParams";
+} from "../../../../userModelParams";
 import {
     ModelParams,
     MultiroundProfile,
     multiroundProfileSchema,
-} from "../../modelParams";
-
-import { ValidationRules } from "./builders";
+} from "../../../modelParams";
+import { ValidationRules } from "../builders";
 import {
     ParamsResolverImpl,
     ValidParamsResolverImpl,
-} from "./paramsResolverImpl";
+} from "../paramsResolverImpl";
 
 export class BasicMultiroundProfileResolver
     extends ParamsResolverImpl<UserMultiroundProfile, MultiroundProfile>

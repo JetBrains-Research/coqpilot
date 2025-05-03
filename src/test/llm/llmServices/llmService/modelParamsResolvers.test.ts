@@ -11,7 +11,7 @@ import {
     defaultMaxContextTheoremsNumber,
     defaultMultiroundProfile,
     defaultSystemMessageContent,
-} from "../../../../llm/llmServices/utils/paramsResolvers/basicModelParamsResolvers";
+} from "../../../../llm/llmServices/utils/paramsResolvers/kit/basicModelParamsResolvers";
 import { UserModelParams } from "../../../../llm/userModelParams";
 
 import { withLLMService } from "../../../commonTestFunctions/withLLMService";

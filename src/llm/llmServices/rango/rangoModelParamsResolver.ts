@@ -8,7 +8,7 @@ import {
     rangoModelParamsSchema,
 } from "../modelParams";
 import { ValidationRules } from "../utils/paramsResolvers/builders";
-import { DefaultNonChatBasedModelParamsResolver } from "../utils/paramsResolvers/nonChatBasedModelParamsResolver";
+import { DefaultNonChatBasedModelParamsResolver } from "../utils/paramsResolvers/kit/nonChatBasedModelParamsResolver";
 import { ValidParamsResolverImpl } from "../utils/paramsResolvers/paramsResolverImpl";
 
 export class RangoModelParamsResolver

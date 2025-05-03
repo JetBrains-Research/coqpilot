@@ -1,7 +1,7 @@
 import { LMStudioUserModelParams } from "../../userModelParams";
 import { LMStudioModelParams, lmStudioModelParamsSchema } from "../modelParams";
-import { BasicModelParamsResolver } from "../utils/paramsResolvers/basicModelParamsResolvers";
 import { ValidationRules } from "../utils/paramsResolvers/builders";
+import { BasicModelParamsResolver } from "../utils/paramsResolvers/kit/basicModelParamsResolvers";
 import { ValidParamsResolverImpl } from "../utils/paramsResolvers/paramsResolverImpl";
 
 export class LMStudioModelParamsResolver

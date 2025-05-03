@@ -1,6 +1,6 @@
 import { DeepSeekUserModelParams } from "../../userModelParams";
 import { DeepSeekModelParams, deepSeekModelParamsSchema } from "../modelParams";
-import { BasicModelParamsResolver } from "../utils/paramsResolvers/basicModelParamsResolvers";
+import { BasicModelParamsResolver } from "../utils/paramsResolvers/kit/basicModelParamsResolvers";
 import { ValidParamsResolverImpl } from "../utils/paramsResolvers/paramsResolverImpl";
 
 export class DeepSeekModelParamsResolver

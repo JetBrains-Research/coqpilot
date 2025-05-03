@@ -1,5 +1,5 @@
-import { UserModelParams } from "../../../userModelParams";
-import { ModelParams, MultiroundProfile } from "../../modelParams";
+import { UserModelParams } from "../../../../userModelParams";
+import { ModelParams, MultiroundProfile } from "../../../modelParams";
 
 import { BasicModelParamsResolver } from "./basicModelParamsResolvers";
 
