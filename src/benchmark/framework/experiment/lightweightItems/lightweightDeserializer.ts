@@ -85,7 +85,7 @@ export namespace LightweightDeserializer {
         logger: BenchmarkingLogger
     ): BenchmarkingItem[] {
         const [workspaceRootsByRelativePaths, resolvedParamsByIds] =
-            prepareResolutionMaps(serialization);
+            prepareResolutionMaps(serialization, logger);
 
         const benchmarkingItems: BenchmarkingItem[] = [];
         const itemsByWorkspaces = groupBy(
@@ -151,7 +151,8 @@ export namespace LightweightDeserializer {
     }
 
     function prepareResolutionMaps(
-        serialization: LightweightSerialization.PackedItems
+        serialization: LightweightSerialization.PackedItems,
+        logger: BenchmarkingLogger
     ): [
         Map<string, WorkspaceRoot>,
         Map<string, BenchmarkingModelParams<ModelParams>>,
@@ -178,7 +179,8 @@ export namespace LightweightDeserializer {
                 return resolveInputBenchmarkingModelParams(
                     inputModelParams,
                     params.llmServiceIdentifier,
-                    paramsResolvers
+                    paramsResolvers,
+                    logger
                 );
             }
         );

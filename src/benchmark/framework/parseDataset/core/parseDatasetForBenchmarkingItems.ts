@@ -87,7 +87,8 @@ export async function parseDatasetForBenchmarkingItems(
 
     const benchmarkingItems = buildBenchmarkingItems(
         inputBundles,
-        datasetCache
+        datasetCache,
+        logger
     );
     logger
         .asOneRecord()

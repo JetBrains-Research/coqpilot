@@ -1,8 +1,11 @@
+import { ConfigurationError } from "../../../../../llm/llmServiceErrors";
 import { ModelParams } from "../../../../../llm/llmServices/modelParams";
-import { resolveOrThrow } from "../../../../../llm/llmServices/utils/resolveOrThrow";
+import { buildParamsResolutionMessages } from "../../../../../llm/llmServices/utils/paramsResolvers/kit/paramsResolutionAnalysis";
 
 import { EqualitySet } from "../../../../../utils/collectionUtils/equalitySet";
 import { getOrPut } from "../../../../../utils/collectionUtils/mapUtils";
+import { unreachable } from "../../../../../utils/errors/throwErrors";
+import { BenchmarkingLogger } from "../../../logging/benchmarkingLogger";
 import { BenchmarkingItem } from "../../../structures/benchmarkingCore/benchmarkingItem";
 import { BenchmarkingModelParams } from "../../../structures/benchmarkingCore/benchmarkingModelParams";
 import { CompletionGenerationTask } from "../../../structures/benchmarkingCore/completionGenerationTask";
@@ -21,10 +24,11 @@ import { constructTasksForBundleTargets } from "./constructTasks";
 
 export function buildBenchmarkingItems(
     inputBundles: InputBenchmarkingBundle[],
-    datasetCache: DatasetCacheHolder
+    datasetCache: DatasetCacheHolder,
+    logger: BenchmarkingLogger
 ): BenchmarkingItem[] {
     const [modelIdToRequestedTasks, modelIdToResolvedParams] =
-        buildTasksAndResolveParams(inputBundles, datasetCache);
+        buildTasksAndResolveParams(inputBundles, datasetCache, logger);
 
     return constructBenchmarkingItems(
         modelIdToRequestedTasks,
@@ -34,7 +38,8 @@ export function buildBenchmarkingItems(
 
 function buildTasksAndResolveParams(
     inputBundles: InputBenchmarkingBundle[],
-    datasetCache: DatasetCacheHolder
+    datasetCache: DatasetCacheHolder,
+    logger: BenchmarkingLogger
 ): [
     Map<string, CompletionGenerationTask[]>,
     Map<string, BenchmarkingModelParams<ModelParams>>,
@@ -67,7 +72,8 @@ function buildTasksAndResolveParams(
                         resolveInputBenchmarkingModelParams(
                             inputParams,
                             bundle.llmServiceIdentifier,
-                            paramsResolvers
+                            paramsResolvers,
+                            logger
                         )
                     );
                     return [] as CompletionGenerationTask[];
@@ -82,17 +88,40 @@ function buildTasksAndResolveParams(
 export function resolveInputBenchmarkingModelParams(
     inputParams: InputBenchmarkingModelParams.Params,
     llmServiceIdentifier: LLMServiceIdentifier,
-    paramsResolvers: LLMServicesParamsResolvers
+    paramsResolvers: LLMServicesParamsResolvers,
+    logger: BenchmarkingLogger
 ): BenchmarkingModelParams<ModelParams> {
     const paramsResolver = getParamsResolver(
         llmServiceIdentifier,
         paramsResolvers
     );
     const { ranker, ...pureInputModelParams } = inputParams;
+
+    const resolutionResult = paramsResolver.resolve(pureInputModelParams);
+    const resolutionMessages = buildParamsResolutionMessages(
+        resolutionResult,
+        inputParams.modelId
+    );
+    if (resolutionMessages.invalidConfigurationMessage !== undefined) {
+        logger.error(resolutionMessages.invalidConfigurationMessage);
+        throw new ConfigurationError(
+            `Failed to resolve model parameters. ${resolutionMessages.invalidConfigurationMessage}`
+        );
+    }
+    if (resolutionMessages.warningMessage !== undefined) {
+        logger.error(
+            `[Warning!] ${resolutionMessages.warningMessage}`,
+            "yellow"
+        );
+    }
     return {
         theoremRanker: resolveTheoremsRanker(inputParams.ranker),
-        // TODO (!): warn using resolution logs as it is done in UI (so no unexpected params change happens)
-        modelParams: resolveOrThrow(paramsResolver, pureInputModelParams),
+        modelParams:
+            resolutionResult.resolved ??
+            unreachable(
+                "`resolutionResult.resolved` should be defined, ",
+                "since params resolution analysis `invalidConfigurationMessage` is undefined"
+            ),
         llmServiceIdentifier: llmServiceIdentifier,
     };
 }
