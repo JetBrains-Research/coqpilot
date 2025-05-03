@@ -82,6 +82,18 @@ function makeAnyElementsUniqueImpl<T, K>(
     return set.elements().map((wrappedElement) => wrappedElement.element);
 }
 
+export function findFirstDuplicate(xs: string[]): string | undefined {
+    const uniqueXs = new Set<string>();
+    for (const x of xs) {
+        if (uniqueXs.has(x)) {
+            return x;
+        } else {
+            uniqueXs.add(x);
+        }
+    }
+    return undefined;
+}
+
 export function zip<T, V>(ts: T[], vs: V[]): [T, V][] {
     if (ts.length !== vs.length) {
         invariantFailed(

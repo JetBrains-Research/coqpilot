@@ -1,3 +1,6 @@
+import { ConfigurationError } from "../../../../llm/llmServiceErrors";
+
+import { findFirstDuplicate } from "../../../../utils/collectionUtils/listUtils";
 import {
     DatasetInputTargets,
     mergeInputTargets,
@@ -77,10 +80,26 @@ export class BenchmarkingBundleWithLLMService<
     withBenchmarkingModelsParams(
         ...inputParams: InputParams[]
     ): BenchmarkingBundleWithModelsParams<InputParams> {
+        this.throwOnDuplicateModelIds(inputParams);
         return new BenchmarkingBundleWithModelsParams(
             this.llmServiceIdentifier,
             inputParams
         );
+    }
+
+    /**
+     * Note: unfortunately, this check is not sufficient to prevent
+     * models from different bundles having clashing `modelId`-s;
+     * however, this check protects from a basic mistake.
+     */
+    private throwOnDuplicateModelIds(inputParams: InputParams[]) {
+        const modelIds = inputParams.map((params) => params.modelId);
+        const duplicateModelId = findFirstDuplicate(modelIds);
+        if (duplicateModelId !== undefined) {
+            throw new ConfigurationError(
+                `models' identifiers are not unique: several models have \`modelId: "${duplicateModelId}"\``
+            );
+        }
     }
 }
 

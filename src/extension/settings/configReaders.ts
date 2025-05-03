@@ -35,6 +35,7 @@ import { RandomContextTheoremsRanker } from "../../core/contextTheoremRanker/act
 import { ContextTheoremsRanker } from "../../core/contextTheoremRanker/contextTheoremsRanker";
 
 import { AjvMode, buildAjv } from "../../utils/ajvErrorsHandling";
+import { findFirstDuplicate } from "../../utils/collectionUtils/listUtils";
 import { illegalState, throwError } from "../../utils/errors/throwErrors";
 import { stringifyAnyValue, stringifyDefinedValue } from "../../utils/printers";
 import { UserInstallationInteractor } from "../installers/abstractUserInstallation";
@@ -255,16 +256,12 @@ async function provideExternalServicesInstallations(
 
 function validateIdsAreUnique(allModels: UserModelParams[]) {
     const modelIds = allModels.map((params) => params.modelId);
-    const uniqueModelIds = new Set<string>();
-    for (const modelId of modelIds) {
-        if (uniqueModelIds.has(modelId)) {
-            throw new SettingsValidationError(
-                `models' identifiers are not unique: several models have \`modelId: "${modelId}"\``,
-                EditorMessages.modelsIdsAreNotUnique(modelId)
-            );
-        } else {
-            uniqueModelIds.add(modelId);
-        }
+    const duplicateModelId = findFirstDuplicate(modelIds);
+    if (duplicateModelId !== undefined) {
+        throw new SettingsValidationError(
+            `models' identifiers are not unique: several models have \`modelId: "${duplicateModelId}"\``,
+            EditorMessages.modelsIdsAreNotUnique(duplicateModelId)
+        );
     }
 }
 
