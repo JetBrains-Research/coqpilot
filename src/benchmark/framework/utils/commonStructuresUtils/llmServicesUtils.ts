@@ -1,9 +1,11 @@
+import { asLLMServices } from "../../../../llm/llmServices";
 import { ErrorsHandlingMode } from "../../../../llm/llmServices/commonStructures/errorsHandlingMode";
 import { DeepSeekModelParamsResolver } from "../../../../llm/llmServices/deepSeek/deepSeekModelParamsResolver";
 import { DeepSeekService } from "../../../../llm/llmServices/deepSeek/deepSeekService";
 import { GrazieModelParamsResolver } from "../../../../llm/llmServices/grazie/grazieModelParamsResolver";
 import { GrazieService } from "../../../../llm/llmServices/grazie/grazieService";
 import { LLMService } from "../../../../llm/llmServices/llmService";
+import { LLMServiceParams } from "../../../../llm/llmServices/llmServiceParams";
 import { LMStudioModelParamsResolver } from "../../../../llm/llmServices/lmStudio/lmStudioModelParamsResolver";
 import { LMStudioService } from "../../../../llm/llmServices/lmStudio/lmStudioService";
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
@@ -48,25 +50,31 @@ export type LLMServiceBuilder = (
 export function selectLLMServiceBuilder(
     identifier: LLMServiceIdentifier
 ): LLMServiceBuilder {
+    function createBuilder(
+        serviceCtor: new (
+            serviceParams: LLMServiceParams
+        ) => LLMService<UserModelParams, ModelParams>
+    ): LLMServiceBuilder {
+        return (eventLogger, errorsHandlingMode) =>
+            new serviceCtor({
+                eventLogger: eventLogger,
+                errorsHandlingMode: errorsHandlingMode,
+            });
+    }
+    asLLMServices;
     switch (identifier) {
         case LLMServiceIdentifier.PREDEFINED_PROOFS:
-            return (eventLogger, errorsHandlingMode) =>
-                new PredefinedProofsService(eventLogger, errorsHandlingMode);
+            return createBuilder(PredefinedProofsService);
         case LLMServiceIdentifier.OPENAI:
-            return (eventLogger, errorsHandlingMode) =>
-                new OpenAiService(eventLogger, errorsHandlingMode);
+            return createBuilder(OpenAiService);
         case LLMServiceIdentifier.GRAZIE:
-            return (eventLogger, errorsHandlingMode) =>
-                new GrazieService(eventLogger, errorsHandlingMode);
+            return createBuilder(GrazieService);
         case LLMServiceIdentifier.LMSTUDIO:
-            return (eventLogger, errorsHandlingMode) =>
-                new LMStudioService(eventLogger, errorsHandlingMode);
+            return createBuilder(LMStudioService);
         case LLMServiceIdentifier.DEEPSEEK:
-            return (eventLogger, errorsHandlingMode) =>
-                new DeepSeekService(eventLogger, errorsHandlingMode);
+            return createBuilder(DeepSeekService);
         case LLMServiceIdentifier.RANGO:
-            return (eventLogger, errorsHandlingMode) =>
-                new RangoService(eventLogger, errorsHandlingMode);
+            return createBuilder(RangoService);
     }
 }
 

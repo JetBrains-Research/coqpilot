@@ -41,12 +41,11 @@ export class DummyLLMService extends LLMServiceImpl<
     );
 
     constructor(generationsLogger: GenerationsLogger) {
-        super(
-            undefined,
-            ErrorsHandlingMode.RETHROW_ERRORS,
-            generationsLogger.filePath,
-            true
-        );
+        super({
+            errorsHandlingMode: ErrorsHandlingMode.RETHROW_ERRORS,
+            generationLogsFilePath: generationsLogger.filePath,
+            debugLogs: true,
+        });
         this.internal = new DummyLLMServiceInternal(
             this,
             this.eventLogger,

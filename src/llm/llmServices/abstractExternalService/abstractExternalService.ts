@@ -1,7 +1,4 @@
-import { availableParallelism } from "os";
-
 import { PLUGIN_VERSION } from "../../../extension/utils/pluginId";
-import { EventLogger } from "../../../logging/eventLogger";
 import { AsyncScheduler } from "../../../utils/async/asyncScheduler";
 import { invariantFailed } from "../../../utils/errors/throwErrors";
 import { getCoqPilotInstallationsDirPath } from "../../../utils/fs/coqPilotInstallationsDir";
@@ -14,7 +11,6 @@ import {
 } from "../../proofGenerationContext";
 import { UserModelParams } from "../../userModelParams";
 import { AnalyzedChatHistory } from "../commonStructures/chat";
-import { ErrorsHandlingMode } from "../commonStructures/errorsHandlingMode";
 import {
     GeneratedRawContent,
     GeneratedRawContentItem,
@@ -30,6 +26,10 @@ import { LLMServiceInternal } from "../llmServiceInternal";
 import { ModelParams } from "../modelParams";
 import { throwConfigurationError } from "../utils/errorUtils";
 
+import {
+    ResolvedExternalServiceParams,
+    resolveExternalServiceParamsWithDefaults,
+} from "./abstractExternalServiceParams";
 import { AbstractExternalServiceInstaller } from "./installation/abstractExternalServiceInstaller";
 
 export type ExternalService<
@@ -80,33 +80,30 @@ export abstract class AbstractExternalService<
         InstallationOptions,
         InputModelParams
     >;
+    readonly installationPath: string;
+    readonly clearProofGenerationLogsOnSuccess: boolean;
 
     protected readonly maxSubprocessesSpawnedInParallel: number;
     protected readonly subprocessesScheduler: AsyncScheduler;
 
-    // TODO: put most of the options to a separate object and pass it, resolving the defaults
     constructor(
         readonly externalProjectName: string,
         readonly defaultMaxSubprocessesParallelism: number,
-        eventLogger: EventLogger | undefined = undefined,
-        errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.RETHROW_ERRORS,
-        generationLogsFilePath: string | undefined = undefined,
-        debugLogs: boolean = false,
-        readonly installationPath: string = AbstractExternalService.getDefaultInstallationPath(
-            externalProjectName
-        ),
-        maxSubprocessesSpawnedInParallel: number | undefined = undefined,
-        readonly clearProofGenerationLogsOnSuccess: boolean = true
+        serviceParams: Partial<ResolvedExternalServiceParams> = {}
     ) {
-        super(
-            eventLogger,
-            errorsHandlingMode,
-            generationLogsFilePath,
-            debugLogs
+        const resolvedServiceParams = resolveExternalServiceParamsWithDefaults(
+            serviceParams,
+            externalProjectName,
+            defaultMaxSubprocessesParallelism
         );
+        super(resolvedServiceParams);
+
+        this.installationPath = resolvedServiceParams.installationPath;
         this.maxSubprocessesSpawnedInParallel =
-            maxSubprocessesSpawnedInParallel ??
-            this.getDefaultMaxSubprocessesSpawnedInParallel();
+            resolvedServiceParams.maxSubprocessesSpawnedInParallel;
+        this.clearProofGenerationLogsOnSuccess =
+            resolvedServiceParams.clearProofGenerationLogsOnSuccess;
+
         this.subprocessesScheduler = new AsyncScheduler(
             this.maxSubprocessesSpawnedInParallel,
             true,
@@ -163,13 +160,6 @@ export abstract class AbstractExternalService<
 
     estimateTimeToBecomeAvailable(): Time {
         return time(5, "second"); // some cool-down for the subprocess spawning
-    }
-
-    protected getDefaultMaxSubprocessesSpawnedInParallel(): number {
-        return Math.min(
-            availableParallelism(),
-            this.defaultMaxSubprocessesParallelism
-        );
     }
 
     static getDefaultInstallationDirPrefix(

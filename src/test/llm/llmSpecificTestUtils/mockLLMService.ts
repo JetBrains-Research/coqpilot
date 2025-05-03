@@ -134,7 +134,12 @@ export class MockLLMService extends LLMServiceImpl<
         errorsHandlingMode: ErrorsHandlingMode,
         generationLogsFilePath: string | undefined = undefined
     ) {
-        super(eventLogger, errorsHandlingMode, generationLogsFilePath, true);
+        super({
+            eventLogger,
+            errorsHandlingMode,
+            generationLogsFilePath,
+            debugLogs: true,
+        });
     }
 
     static readonly generationFromChatEvent = "mockllm-generation-from-chat";

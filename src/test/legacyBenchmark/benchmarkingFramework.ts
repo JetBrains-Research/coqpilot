@@ -462,13 +462,16 @@ async function prepareForBenchmarkCompletions(
             coqLspClient,
             true // TODO: pass `ranker.needsUnwrappedNotations` here
         );
+    const serviceParams = {
+        eventLogger: eventLogger,
+    };
     const llmServices: LLMServices = {
-        openAiService: new OpenAiService(eventLogger),
-        grazieService: new GrazieService(eventLogger),
-        predefinedProofsService: new PredefinedProofsService(eventLogger),
-        lmStudioService: new LMStudioService(eventLogger),
-        deepSeekService: new DeepSeekService(eventLogger),
-        rangoService: new RangoService(eventLogger),
+        openAiService: new OpenAiService(serviceParams),
+        grazieService: new GrazieService(serviceParams),
+        predefinedProofsService: new PredefinedProofsService(serviceParams),
+        lmStudioService: new LMStudioService(serviceParams),
+        deepSeekService: new DeepSeekService(serviceParams),
+        rangoService: new RangoService(serviceParams),
     };
     const processEnvironment: ProcessEnvironment = {
         coqProofChecker: coqProofChecker,

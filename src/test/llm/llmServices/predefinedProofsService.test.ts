@@ -46,12 +46,11 @@ suite("[LLMService] Test `PredefinedProofsService`", function () {
     ) {
         const testEventLogger = new EventLogger();
         return withLLMService(
-            new PredefinedProofsService(
-                testEventLogger,
-                errorsHandlingMode,
-                undefined,
-                true
-            ),
+            new PredefinedProofsService({
+                eventLogger: testEventLogger,
+                errorsHandlingMode: errorsHandlingMode,
+                debugLogs: true,
+            }),
             async (predefinedProofsService) => {
                 return block(predefinedProofsService, testEventLogger);
             }

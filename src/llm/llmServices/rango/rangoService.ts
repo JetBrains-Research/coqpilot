@@ -1,4 +1,3 @@
-import { EventLogger } from "../../../logging/eventLogger";
 import {
     ExternalPipelineProofGenerationContext,
     ProofGenerationContext,
@@ -9,7 +8,7 @@ import {
     AbstractExternalService,
     AbstractExternalServiceInternal,
 } from "../abstractExternalService/abstractExternalService";
-import { ErrorsHandlingMode } from "../commonStructures/errorsHandlingMode";
+import { ExternalServiceParams } from "../abstractExternalService/abstractExternalServiceParams";
 import {
     GeneratedRawContent,
     GeneratedRawContentItem,
@@ -35,26 +34,8 @@ export class RangoService extends AbstractExternalService<
     readonly serviceName = "RangoService";
     static readonly externalProjectName = "Rango";
 
-    constructor(
-        eventLogger: EventLogger | undefined = undefined,
-        errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.RETHROW_ERRORS,
-        generationLogsFilePath: string | undefined = undefined,
-        debugLogs: boolean = false,
-        installationPath: string | undefined = undefined,
-        maxSubprocessesSpawnedInParallel: number | undefined = undefined,
-        clearProofGenerationLogsOnSuccess: boolean = true
-    ) {
-        super(
-            RangoService.externalProjectName,
-            3,
-            eventLogger,
-            errorsHandlingMode,
-            generationLogsFilePath,
-            debugLogs,
-            installationPath,
-            maxSubprocessesSpawnedInParallel,
-            clearProofGenerationLogsOnSuccess
-        );
+    constructor(serviceParams: ExternalServiceParams = {}) {
+        super(RangoService.externalProjectName, 3, serviceParams);
     }
 
     protected readonly internal = new RangoServiceInternal(

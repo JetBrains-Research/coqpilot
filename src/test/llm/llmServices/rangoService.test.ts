@@ -407,7 +407,9 @@ suite("[LLMService] Test `RangoService`", function () {
             mockOpenAIApiKey: "non-defined",
         };
         await withLLMService(
-            new RangoService(undefined, ErrorsHandlingMode.RETHROW_ERRORS),
+            new RangoService({
+                errorsHandlingMode: ErrorsHandlingMode.RETHROW_ERRORS,
+            }),
             async (rangoService) => {
                 const resolvedParams = resolveParametersOrThrow(
                     rangoService,

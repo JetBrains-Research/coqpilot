@@ -9,6 +9,10 @@ import { ErrorsHandlingMode } from "./commonStructures/errorsHandlingMode";
 import { ProofGenerationMetadataHolder } from "./commonStructures/proofGenerationMetadata";
 import { GeneratedProofImpl } from "./generatedProof";
 import { LLMServiceInternal } from "./llmServiceInternal";
+import {
+    LLMServiceParams,
+    resolveServiceParamsWithDefaults,
+} from "./llmServiceParams";
 import { ModelParams } from "./modelParams";
 import { buildProofGenerationChat } from "./utils/chatFactory";
 import { estimateTimeToBecomeAvailableDefault } from "./utils/defaultAvailabilityEstimator";
@@ -126,18 +130,16 @@ export abstract class LLMServiceImpl<
      * @param debugLogs enables debug logs for the internal `GenerationsLogger`.
      * @param generationLogsFilePath if it is not specified, a temporary file will be used.
      */
-    constructor(
-        eventLogger: EventLogger | undefined = undefined,
-        errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.RETHROW_ERRORS,
-        generationLogsFilePath: string | undefined = undefined,
-        debugLogs: boolean = false
-    ) {
-        this.eventLogger = eventLogger;
-        this.errorsHandlingMode = errorsHandlingMode;
-        this.generationLogsFilePath = generationLogsFilePath ?? createTmpFile();
+    constructor(serviceParams: LLMServiceParams = {}) {
+        const resolvedServiceParams =
+            resolveServiceParamsWithDefaults(serviceParams);
+        this.eventLogger = resolvedServiceParams.eventLogger;
+        this.errorsHandlingMode = resolvedServiceParams.errorsHandlingMode;
+        this.generationLogsFilePath =
+            resolvedServiceParams.generationLogsFilePath ?? createTmpFile();
         this.generationsLoggerBuilder = () =>
             new GenerationsLogger(this.generationLogsFilePath, {
-                debug: debugLogs,
+                debug: resolvedServiceParams.debugLogs,
                 paramsPropertiesToCensor: {
                     apiKey: GenerationsLogger.censorString,
                 },
