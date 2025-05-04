@@ -2,6 +2,7 @@ import { expect } from "earl";
 
 import {
     BenchmarkingBundle,
+    BenchmarkingBundleWithModelsParams,
     BenchmarkingBundleWithTargets,
 } from "../../benchmark/framework/experiment/setupDSL/benchmarkingBundleBuilder";
 import { TargetsBuilder } from "../../benchmark/framework/experiment/setupDSL/targetsBuilder";
@@ -15,11 +16,6 @@ import { time, timeToMillis } from "../../utils/time";
 import { createRelativeTmpDir } from "../commonTestFunctions/pathsResolver";
 
 suite("[Benchmarking Framework Tests] Regression tests", () => {
-    const testTarget = new TargetsBuilder()
-        .withStandaloneFilesRoot()
-        .withAdmitTargetsFromFile("auto_benchmark.v", "test")
-        .buildInputTargets();
-
     function buildExperimentWithBundle(
         bundle: BenchmarkingBundleWithTargets<any>
     ): SingleWorkspaceExperiment {
@@ -47,14 +43,22 @@ suite("[Benchmarking Framework Tests] Regression tests", () => {
     }
 
     async function runSmokeTestExperimentWithBundle(
-        bundle: BenchmarkingBundleWithTargets<any>
+        modelsBundle: BenchmarkingBundleWithModelsParams<any>
     ) {
-        const experiment = buildExperimentWithBundle(bundle);
+        const testTarget = new TargetsBuilder()
+            .withWorkspaceRoot(
+                ".test-standalone-files",
+                "no-special-environment"
+            )
+            .withAdmitTargetsFromFile("test.v", "test")
+            .buildInputTargets();
+        const completeBundle = modelsBundle.withTargets(testTarget);
+        const experiment = buildExperimentWithBundle(completeBundle);
         await runSmokeTestExperiment(experiment);
     }
 
     test("Smoke test: fill standalone file with predefined `auto`", async () => {
-        const autoBundle = new BenchmarkingBundle()
+        const autoModel = new BenchmarkingBundle()
             .withLLMService("predefined")
             .withBenchmarkingModelsParamsCommons({
                 ranker: "random",
@@ -62,13 +66,12 @@ suite("[Benchmarking Framework Tests] Regression tests", () => {
             .withBenchmarkingModelsParams({
                 modelId: "prove-with-auto",
                 tactics: ["auto."],
-            })
-            .withTargets(testTarget);
-        await runSmokeTestExperimentWithBundle(autoBundle);
+            });
+        await runSmokeTestExperimentWithBundle(autoModel);
     }).timeout(timeToMillis(time(5, "minute")));
 
     test("Smoke test: fill standalone file via default `BenchTest`", async () => {
-        const autoBundle = new BenchmarkingBundle()
+        const benchTestModel = new BenchmarkingBundle()
             .withCustomLLMService<BenchTestInputBenchmarkingModelParams>(
                 () => new BenchTestServiceProvider()
             )
@@ -86,9 +89,8 @@ suite("[Benchmarking Framework Tests] Regression tests", () => {
                     modelId: "immediate-model",
                     tactics: ["invalid proof", "auto."],
                 }
-            )
-            .withTargets(testTarget);
-        await runSmokeTestExperimentWithBundle(autoBundle);
+            );
+        await runSmokeTestExperimentWithBundle(benchTestModel);
     }).timeout(timeToMillis(time(5, "minute")));
 
     test("Context theorems must not contain the target one", async () => {
