@@ -1,56 +1,29 @@
-import { AbstractExternalServiceInstaller } from "../../../../llm/llmServices/abstractExternalService/installation/abstractExternalServiceInstaller";
 import { provideDefaultInstallationForRequest } from "../../../../llm/llmServices/abstractExternalService/installation/wrappers";
-import { RangoInstaller } from "../../../../llm/llmServices/rango/rangoInstaller";
 import { UserModelParams } from "../../../../llm/userModelParams";
 
-import { groupBy } from "../../../../utils/collectionUtils/mapUtils";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { logBySeverityLevelName } from "../../logging/wrappers";
-import { LLMServiceIdentifier } from "../../structures/common/llmServiceIdentifier";
 import { InputBenchmarkingBundle } from "../../structures/inputParameters/inputBenchmarkingBundle";
-
-interface InstallerWithOptions<InstallationOptions> {
-    installer: AbstractExternalServiceInstaller<InstallationOptions, any>;
-    options?: InstallationOptions;
-}
-
-const EXTERNAL_SERVICES_TO_INSTALLERS_WITH_OPTIONS: Map<
-    LLMServiceIdentifier,
-    () => InstallerWithOptions<any>
-> = new Map([
-    [
-        LLMServiceIdentifier.RANGO,
-        () => {
-            return {
-                installer: new RangoInstaller(),
-                options: undefined,
-            };
-        },
-    ],
-]);
+import { InstallerWithOptions } from "../../structures/llmServiceProvider/installerProvider";
 
 export async function installDemandedExternalServices(
     inputBundles: InputBenchmarkingBundle[],
     logger: BenchmarkingLogger
 ) {
-    const bundlesByService = groupBy(
-        inputBundles,
-        (bundle) => bundle.llmServiceIdentifier
-    );
-    for (const [
-        llmServiceIdentifier,
-        serviceBundles,
-    ] of bundlesByService.entries()) {
+    /**
+     * Note: this implementation does not optimize duplicate installations
+     * for the duplicate service providers from different bundles;
+     * however, that:
+     * a) is a rare case, since all the targets needed for the specific service can be defined in one bundle;
+     * b) even if an effective duplicate is present, the installer would reuse the already existing installation.
+     */
+    for (const bundle of inputBundles) {
         const installerProvider =
-            EXTERNAL_SERVICES_TO_INSTALLERS_WITH_OPTIONS.get(
-                llmServiceIdentifier
-            );
+            bundle.llmServiceProvider.getInstallerProvider();
         if (installerProvider === undefined) {
             continue;
         }
-        const allInputParams = serviceBundles.flatMap(
-            (bundle) => bundle.inputBenchmarkingModelsParams
-        );
+        const allInputParams = bundle.inputBenchmarkingModelsParams;
         await checkInstallationIsSufficientOrInstall(
             installerProvider(),
             allInputParams,
