@@ -17,7 +17,6 @@ import {
     BenchmarkingResult,
 } from "../structures/benchmarkingResults/benchmarkedItem";
 import { throwOnAbort } from "../utils/asyncUtils/abortUtils";
-import { selectLLMServiceBuilder } from "../utils/commonStructuresUtils/llmServicesUtils";
 import { benchmarkingInvariantFailed } from "../utils/throwErrors";
 
 import { ExecuteBenchmarkingTaskErrorHandlingUtils } from "./executeBenchmarkingTaskUtils/errorHandling";
@@ -89,9 +88,11 @@ export async function executeBenchmarkingTask(
     const task = benchmarkingItem.task;
     const params = benchmarkingItem.params;
 
-    const llmService = selectLLMServiceBuilder(
-        benchmarkingItem.params.llmServiceIdentifier
-    )(undefined, ErrorsHandlingMode.RETHROW_ERRORS);
+    const llmService =
+        benchmarkingItem.params.llmServiceProvider.constructService(
+            undefined,
+            ErrorsHandlingMode.RETHROW_ERRORS
+        );
 
     try {
         ArtifactsUtils.saveInputTaskToFileOrThrow(

@@ -2,12 +2,12 @@ import { ModelParams } from "../../../../llm/llmServices/modelParams";
 
 import { ContextTheoremsRanker } from "../../../../core/contextTheoremRanker/contextTheoremsRanker";
 
-import { LLMServiceIdentifier } from "../common/llmServiceIdentifier";
+import { LLMServiceProvider } from "../llmServiceProvider/llmServiceProvider";
 
 export interface BenchmarkingModelParams<
     ResolvedModelParams extends ModelParams,
 > {
     theoremRanker: ContextTheoremsRanker;
     modelParams: ResolvedModelParams;
-    llmServiceIdentifier: LLMServiceIdentifier;
+    llmServiceProvider: LLMServiceProvider;
 }
