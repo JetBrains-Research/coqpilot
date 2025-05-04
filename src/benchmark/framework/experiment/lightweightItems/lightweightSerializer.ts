@@ -33,6 +33,7 @@ import { LightweightBenchmarkingItem } from "../../structures/inputParameters/li
 import { LightweightCompletionGenerationTask } from "../../structures/inputParameters/lightweight/lightweightCompletionGenerationTask";
 import { LightweightInputModelParams } from "../../structures/inputParameters/lightweight/lightweightInputModelParams";
 import { LightweightWorkspaceRoot } from "../../structures/inputParameters/lightweight/lightweightWorkspaceRoot";
+import { serializeLLMServiceProvider } from "../../structures/llmServiceProvider/llmServiceProviderSerialization";
 import { serializeGoal } from "../../utils/coqUtils/goalParser";
 import { prependWithZeros } from "../../utils/serializationUtils";
 
@@ -72,7 +73,9 @@ export namespace LightweightSerializer {
                         params.modelParams.modelId,
                         `Lightweight serialization failed, invariant has been violated: no input model with "${params.modelParams.modelId}" model id`
                     ) as InputBenchmarkingModelParams.Params),
-                    llmServiceIdentifier: params.llmServiceIdentifier,
+                    llmServiceProvider: serializeLLMServiceProvider(
+                        params.llmServiceProvider
+                    ),
                 };
             }
         );

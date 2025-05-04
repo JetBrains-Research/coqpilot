@@ -1,7 +1,7 @@
-import { LLMServiceIdentifier } from "../../common/llmServiceIdentifier";
+import { SerializedLLMServiceProvider } from "../../llmServiceProvider/llmServiceProviderSerialization";
 import { InputBenchmarkingModelParams } from "../inputBenchmarkingModelParams";
 
 export interface LightweightInputModelParams
     extends InputBenchmarkingModelParams.Params {
-    llmServiceIdentifier: LLMServiceIdentifier;
+    llmServiceProvider: SerializedLLMServiceProvider;
 }

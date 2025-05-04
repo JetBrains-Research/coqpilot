@@ -10,9 +10,9 @@ import {
     CompletionGenerationTime,
     FailureMetadata,
 } from "../../structures/benchmarkingResults/benchmarkedItem";
-import { LLMServiceIdentifier } from "../../structures/common/llmServiceIdentifier";
 import { LengthMetrics } from "../../structures/common/measureStructures";
 import { LightweightWorkspaceRoot } from "../../structures/inputParameters/lightweight/lightweightWorkspaceRoot";
+import { SerializedLLMServiceProvider } from "../../structures/llmServiceProvider/llmServiceProviderSerialization";
 import { SerializedTheoremsByNames } from "../../structures/parsedCoqFile/parsedCoqFileData";
 import { SerializedGoal } from "../../utils/coqUtils/goalParser";
 
@@ -47,7 +47,7 @@ export namespace BasicJsonSerializationStructures {
     > {
         theoremRanker: RankerType;
         modelParams: ResolvedModelParams;
-        llmServiceIdentifier: LLMServiceIdentifier;
+        llmServiceProvider: SerializedLLMServiceProvider;
     }
 
     export type SerializedBenchmarkingResult =

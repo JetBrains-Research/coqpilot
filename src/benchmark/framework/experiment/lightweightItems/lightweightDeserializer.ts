@@ -23,8 +23,8 @@ import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
 import { LightweightBenchmarkingItem } from "../../structures/inputParameters/lightweight/lightweightBenchmarkingItem";
 import { LightweightInputModelParams } from "../../structures/inputParameters/lightweight/lightweightInputModelParams";
 import { LightweightWorkspaceRoot } from "../../structures/inputParameters/lightweight/lightweightWorkspaceRoot";
+import { deserializeLLMServiceProvider } from "../../structures/llmServiceProvider/llmServiceProviderSerialization";
 import { ParsedCoqFileData } from "../../structures/parsedCoqFile/parsedCoqFileData";
-import { createParamsResolvers } from "../../utils/commonStructuresUtils/llmServicesUtils";
 import { deserializeGoal } from "../../utils/coqUtils/goalParser";
 
 import { LightweightSerialization } from "./lightweightSerialization";
@@ -170,16 +170,14 @@ export namespace LightweightDeserializer {
                 } as WorkspaceRoot;
             }
         );
-        const paramsResolvers = createParamsResolvers();
         const resolvedParamsByIds = packIntoMap(
             serialization.models,
             (params) => params.modelId,
             (params) => {
-                const { llmServiceIdentifier, ...inputModelParams } = params;
+                const { llmServiceProvider, ...inputModelParams } = params;
                 return resolveInputBenchmarkingModelParams(
                     inputModelParams,
-                    params.llmServiceIdentifier,
-                    paramsResolvers,
+                    deserializeLLMServiceProvider(params.llmServiceProvider),
                     logger
                 );
             }
