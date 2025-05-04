@@ -9,6 +9,7 @@ import {
     CorrespondingInputParams,
     CorrespondingInputServiceParams,
     LLMServiceStringIdentifier,
+    toEnumIdentifier,
 } from "../../structures/common/llmServiceIdentifier";
 import { InputBenchmarkingModelParams } from "../../structures/inputParameters/inputBenchmarkingModelParams";
 import { BasicLLMServiceProvider } from "../../structures/llmServiceProvider/implementors/basicLLMServiceProvider";
@@ -24,7 +25,7 @@ export class BenchmarkingBundle {
     ): BenchmarkingBundleWithLLMService<CorrespondingInputParams<T>> {
         return new BenchmarkingBundleWithLLMService(
             new BasicLLMServiceProvider(
-                llmServiceStringIdentifier,
+                toEnumIdentifier(llmServiceStringIdentifier),
                 serviceParams
             )
         );

@@ -1,4 +1,5 @@
 import { ErrorsHandlingMode } from "../../../../../llm/llmServices/commonStructures/errorsHandlingMode";
+import { LLMServiceParams } from "../../../../../llm/llmServices/llmServiceParams";
 import { ModelParams } from "../../../../../llm/llmServices/modelParams";
 import { ParamsResolverImpl } from "../../../../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";
 import { UserModelParams } from "../../../../../llm/userModelParams";
@@ -10,6 +11,7 @@ import { JsonSpacing, toJsonString } from "../../../../../utils/printers";
 import { getShortName } from "../../../utils/commonStructuresUtils/llmServicesUtils";
 import {
     CorrespondingInputServiceParams,
+    LLMServiceIdentifier,
     LLMServiceStringIdentifier,
 } from "../../common/llmServiceIdentifier";
 import { InstallerProvider } from "../installerProvider";
@@ -27,12 +29,10 @@ import {
     createSchedulersProviders,
 } from "./llmServicesProfile";
 
-export class BasicLLMServiceProvider<
-    T extends LLMServiceStringIdentifier,
-> extends LLMServiceProvider {
+export class BasicLLMServiceProvider extends LLMServiceProvider {
     constructor(
-        readonly serviceIdentifier: T,
-        readonly serviceParams?: CorrespondingInputServiceParams<T>
+        readonly serviceIdentifier: LLMServiceIdentifier,
+        readonly serviceParams?: CorrespondingInputServiceParams<LLMServiceStringIdentifier>
     ) {
         super();
     }
@@ -112,7 +112,7 @@ export class BasicLLMServiceProvider<
         return this._schedulersProviders;
     }
 
-    serializeData(): BasicLLMServiceProviderSerializedData<T> {
+    serializeData(): BasicLLMServiceProviderSerializedData {
         return {
             service: this.serviceIdentifier,
             serviceParams: this.serviceParams,
@@ -121,16 +121,14 @@ export class BasicLLMServiceProvider<
 
     static deserialize(serializedProviderData: any): LLMServiceProvider {
         // TODO: would be nice to validate data, at least somehow
-        return new BasicLLMServiceProvider<any>(
+        return new BasicLLMServiceProvider(
             serializedProviderData.service,
             serializedProviderData.serviceParams
         );
     }
 }
 
-interface BasicLLMServiceProviderSerializedData<
-    T extends LLMServiceStringIdentifier,
-> {
-    service: T;
-    serviceParams?: CorrespondingInputServiceParams<T>;
+interface BasicLLMServiceProviderSerializedData {
+    service: LLMServiceIdentifier;
+    serviceParams?: LLMServiceParams;
 }

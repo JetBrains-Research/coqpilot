@@ -26,7 +26,6 @@ import { ParamsResolverImpl } from "../../../../../llm/llmServices/utils/paramsR
 import { UserModelParams } from "../../../../../llm/userModelParams";
 
 import { EventLogger } from "../../../../../logging/eventLogger";
-import { unreachable } from "../../../../../utils/errors/throwErrors";
 import {
     LimitedParallelismSchedulersProvider,
     SchedulersProvider,
@@ -37,11 +36,7 @@ import {
     LLMServicesItemsHolder,
     getShortName,
 } from "../../../utils/commonStructuresUtils/llmServicesUtils";
-import {
-    CorrespondingInputServiceParams,
-    CorrespondingServiceParams,
-    LLMServiceStringIdentifier,
-} from "../../common/llmServiceIdentifier";
+import { LLMServiceIdentifier } from "../../common/llmServiceIdentifier";
 import { LLMServicesMaxParallelism } from "../../inputParameters/experimentRunOptions";
 import { InstallerProvider } from "../installerProvider";
 
@@ -50,11 +45,9 @@ export type LLMServiceBuilder = (
     errorsHandlingMode: ErrorsHandlingMode
 ) => LLMService<UserModelParams, ModelParams>;
 
-export function selectLLMServiceBuilder<T extends LLMServiceStringIdentifier>(
-    serviceIdentifier: T,
-    serviceParams?:
-        | CorrespondingServiceParams<T>
-        | CorrespondingInputServiceParams<T>
+export function selectLLMServiceBuilder(
+    serviceIdentifier: LLMServiceIdentifier,
+    serviceParams?: LLMServiceParams
 ): LLMServiceBuilder {
     function createBuilder(
         serviceCtor: new (
@@ -69,36 +62,32 @@ export function selectLLMServiceBuilder<T extends LLMServiceStringIdentifier>(
             });
     }
     switch (serviceIdentifier) {
-        case "predefined":
+        case LLMServiceIdentifier.PREDEFINED_PROOFS:
             return createBuilder(PredefinedProofsService);
-        case "openai":
+        case LLMServiceIdentifier.OPENAI:
             return createBuilder(OpenAiService);
-        case "grazie":
+        case LLMServiceIdentifier.GRAZIE:
             return createBuilder(GrazieService);
-        case "lmstudio":
+        case LLMServiceIdentifier.LMSTUDIO:
             return createBuilder(LMStudioService);
-        case "deepseek":
+        case LLMServiceIdentifier.DEEPSEEK:
             return createBuilder(DeepSeekService);
-        case "rango":
+        case LLMServiceIdentifier.RANGO:
             return createBuilder(RangoService);
-        default:
-            unreachable(
-                `unknown \`LLMServiceStringIdentifier\` "${serviceIdentifier}"`
-            );
     }
 }
 
 export function selectInstallerProvider(
-    serviceIdentifier: LLMServiceStringIdentifier
+    serviceIdentifier: LLMServiceIdentifier
 ): InstallerProvider | undefined {
     switch (serviceIdentifier) {
-        case "predefined":
-        case "openai":
-        case "grazie":
-        case "lmstudio":
-        case "deepseek":
+        case LLMServiceIdentifier.PREDEFINED_PROOFS:
+        case LLMServiceIdentifier.OPENAI:
+        case LLMServiceIdentifier.GRAZIE:
+        case LLMServiceIdentifier.LMSTUDIO:
+        case LLMServiceIdentifier.DEEPSEEK:
             return undefined;
-        case "rango":
+        case LLMServiceIdentifier.RANGO:
             return () => {
                 return {
                     installer: new RangoInstaller(),
@@ -147,36 +136,36 @@ export function createSchedulersProviders(
             super({
                 predefinedProofs:
                     new UnlimitedSchedulersProvider<PredefinedProofsModelParams>(
-                        `Models Scheduler: ${getShortName("predefined")} Service, unlimited parallelism`,
+                        `Models Scheduler: ${getShortName(LLMServiceIdentifier.PREDEFINED_PROOFS)} Service, unlimited parallelism`,
                         enableLogs
                     ),
                 openAi: createDefaultLLMServiceSchedulersProvider(
                     maxParallelism.perOpenAiModelName,
                     (params: OpenAiModelParams) => params.modelName,
-                    "openai",
+                    LLMServiceIdentifier.OPENAI,
                     enableLogs
                 ),
                 grazie: createDefaultLLMServiceSchedulersProvider(
                     maxParallelism.perGrazieModelName,
                     (params: GrazieModelParams) => params.modelName,
-                    "grazie",
+                    LLMServiceIdentifier.GRAZIE,
                     enableLogs
                 ),
                 lmStudio: createDefaultLLMServiceSchedulersProvider(
                     maxParallelism.perLmStudioPort,
                     (params: LMStudioModelParams) => params.port,
-                    "lmstudio",
+                    LLMServiceIdentifier.LMSTUDIO,
                     enableLogs
                 ),
                 deepSeek: createDefaultLLMServiceSchedulersProvider(
                     maxParallelism.perDeepSeekModelName,
                     (params: DeepSeekModelParams) => params.modelName,
-                    "deepseek",
+                    LLMServiceIdentifier.DEEPSEEK,
                     enableLogs
                 ),
                 rango: new LimitedParallelismSchedulersProvider(
                     maxParallelism.rangoInstancesInParallel,
-                    `Models Scheduler: ${getShortName("rango")} Service, max ${maxParallelism.rangoInstancesInParallel} request per time`,
+                    `Models Scheduler: ${getShortName(LLMServiceIdentifier.RANGO)} Service, max ${maxParallelism.rangoInstancesInParallel} request per time`,
                     enableLogs
                 ),
             });

@@ -1,24 +1,22 @@
-import { LLMServiceStringIdentifier } from "../../structures/common/llmServiceIdentifier";
+import { LLMServiceIdentifier } from "../../structures/common/llmServiceIdentifier";
 
 /**
  * Regardless of the string values defined in the implementation of `LLMServiceIdentifier` (they can change with time),
  * this function guarantees to provide nice and human-readable names of the services.
  */
-export function getShortName(
-    serviceIdentifier: LLMServiceStringIdentifier
-): string {
+export function getShortName(serviceIdentifier: LLMServiceIdentifier): string {
     switch (serviceIdentifier) {
-        case "predefined":
+        case LLMServiceIdentifier.PREDEFINED_PROOFS:
             return "Predefined Proofs";
-        case "openai":
+        case LLMServiceIdentifier.OPENAI:
             return "Open AI";
-        case "grazie":
+        case LLMServiceIdentifier.GRAZIE:
             return "Grazie";
-        case "lmstudio":
+        case LLMServiceIdentifier.LMSTUDIO:
             return "LM Studio";
-        case "deepseek":
+        case LLMServiceIdentifier.DEEPSEEK:
             return "DeepSeek";
-        case "rango":
+        case LLMServiceIdentifier.RANGO:
             return "Rango";
     }
 }
@@ -33,21 +31,21 @@ export interface LLMServicesItems<ItemType> {
 }
 
 export function selectLLMServiceItem<ItemType>(
-    serviceIdentifier: LLMServiceStringIdentifier,
+    serviceIdentifier: LLMServiceIdentifier,
     items: LLMServicesItems<ItemType>
 ): ItemType {
     switch (serviceIdentifier) {
-        case "predefined":
+        case LLMServiceIdentifier.PREDEFINED_PROOFS:
             return items.predefinedProofs;
-        case "openai":
+        case LLMServiceIdentifier.OPENAI:
             return items.openAi;
-        case "grazie":
+        case LLMServiceIdentifier.GRAZIE:
             return items.grazie;
-        case "lmstudio":
+        case LLMServiceIdentifier.LMSTUDIO:
             return items.lmStudio;
-        case "deepseek":
+        case LLMServiceIdentifier.DEEPSEEK:
             return items.deepSeek;
-        case "rango":
+        case LLMServiceIdentifier.RANGO:
             return items.rango;
     }
 }
@@ -66,7 +64,7 @@ export class LLMServicesItemsHolder<ItemType>
         Object.assign(this, items);
     }
 
-    select(serviceIdentifier: LLMServiceStringIdentifier): ItemType {
+    select(serviceIdentifier: LLMServiceIdentifier): ItemType {
         return selectLLMServiceItem(serviceIdentifier, this);
     }
 }

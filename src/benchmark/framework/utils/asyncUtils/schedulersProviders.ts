@@ -2,7 +2,7 @@ import { ModelParams } from "../../../../llm/llmServices/modelParams";
 
 import { AsyncScheduler } from "../../../../utils/async/asyncScheduler";
 import { getOrPut } from "../../../../utils/collectionUtils/mapUtils";
-import { LLMServiceStringIdentifier } from "../../structures/common/llmServiceIdentifier";
+import { LLMServiceIdentifier } from "../../structures/common/llmServiceIdentifier";
 import { getShortName } from "../commonStructuresUtils/llmServicesUtils";
 
 export interface SchedulersProvider {
@@ -44,7 +44,7 @@ export function createDefaultLLMServiceSchedulersProvider<
 >(
     maxParallelRequestsToKey: number,
     extractKey: (modelParams: ResolvedModelParams) => K,
-    serviceIdentifier: LLMServiceStringIdentifier,
+    serviceIdentifier: LLMServiceIdentifier,
     enableModelsSchedulingDebugLogs: boolean
 ): LimitedByKeyParallelismSchedulersProvider<ResolvedModelParams, K> {
     return new LimitedByKeyParallelismSchedulersProvider<

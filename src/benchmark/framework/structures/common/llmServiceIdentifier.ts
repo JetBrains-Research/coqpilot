@@ -54,22 +54,21 @@ export type CorrespondingInputParams<T extends LLMServiceStringIdentifier> =
                   ? InputBenchmarkingModelParams.RangoParams
                   : never;
 
-// Legacy ?
-// function toEnumIdentifier(
-//     llmServiceStringIdentifier: LLMServiceStringIdentifier
-// ): LLMServiceIdentifier {
-//     switch (llmServiceStringIdentifier) {
-//         case "predefined":
-//             return LLMServiceIdentifier.PREDEFINED_PROOFS;
-//         case "openai":
-//             return LLMServiceIdentifier.OPENAI;
-//         case "grazie":
-//             return LLMServiceIdentifier.GRAZIE;
-//         case "lmstudio":
-//             return LLMServiceIdentifier.LMSTUDIO;
-//         case "deepseek":
-//             return LLMServiceIdentifier.DEEPSEEK;
-//         case "rango":
-//             return LLMServiceIdentifier.RANGO;
-//     }
-// }
+export function toEnumIdentifier(
+    llmServiceStringIdentifier: LLMServiceStringIdentifier
+): LLMServiceIdentifier {
+    switch (llmServiceStringIdentifier) {
+        case "predefined":
+            return LLMServiceIdentifier.PREDEFINED_PROOFS;
+        case "openai":
+            return LLMServiceIdentifier.OPENAI;
+        case "grazie":
+            return LLMServiceIdentifier.GRAZIE;
+        case "lmstudio":
+            return LLMServiceIdentifier.LMSTUDIO;
+        case "deepseek":
+            return LLMServiceIdentifier.DEEPSEEK;
+        case "rango":
+            return LLMServiceIdentifier.RANGO;
+    }
+}
