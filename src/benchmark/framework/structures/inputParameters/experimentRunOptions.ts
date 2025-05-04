@@ -56,7 +56,7 @@ export namespace ExperimentRunOptions {
         datasetCacheDirectoryPath: string;
     }
 
-    export type AfterStartupResolution = Partial<ExperimentRunOptions> &
+    export type AfterStartupResolution = InputExperimentRunOptions &
         ResolveOnStartup;
 }
 
@@ -67,3 +67,10 @@ export interface LLMServicesMaxParallelism {
     perDeepSeekModelName: number;
     rangoInstancesInParallel: number;
 }
+
+export type InputExperimentRunOptions = Omit<
+    Partial<ExperimentRunOptions>,
+    "servicesMaxParallelism"
+> & {
+    servicesMaxParallelism?: Partial<LLMServicesMaxParallelism>;
+};

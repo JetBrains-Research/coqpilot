@@ -20,6 +20,7 @@ import {
 import { DatasetCacheUsageMode } from "../structures/inputParameters/datasetCaching";
 import {
     ExperimentRunOptions,
+    InputExperimentRunOptions,
     LLMServicesMaxParallelism,
 } from "../structures/inputParameters/experimentRunOptions";
 import { InputBenchmarkingBundle } from "../structures/inputParameters/inputBenchmarkingBundle";
@@ -45,7 +46,7 @@ namespace CacheDirNames {
 export abstract class AbstractExperiment {
     constructor(
         protected readonly bundles: InputBenchmarkingBundle[] = [],
-        protected sharedRunOptions: Partial<ExperimentRunOptions> = {}
+        protected sharedRunOptions: InputExperimentRunOptions = {}
     ) {}
 
     protected abstract validateExecutionContextOrThrow(
@@ -69,7 +70,7 @@ export abstract class AbstractExperiment {
      * Changes made are applied to **all** further runs.
      * The properties that are not specified stay unchanged.
      */
-    updateRunOptions(runOptions: Partial<ExperimentRunOptions>) {
+    updateRunOptions(runOptions: InputExperimentRunOptions) {
         this.sharedRunOptions = {
             ...this.sharedRunOptions,
             ...runOptions,
@@ -119,7 +120,7 @@ export abstract class AbstractExperiment {
      */
     async run(
         artifactsDirPath: string,
-        runOptions: Partial<ExperimentRunOptions> = {}
+        runOptions: InputExperimentRunOptions = {}
     ): Promise<ExperimentResults> {
         const [requestedTargets, executionContext] =
             this.prepareExecutionContextFromInputTargets(
@@ -192,7 +193,7 @@ export abstract class AbstractExperiment {
     }
 
     protected prepareExecutionContextFromInputTargets(
-        runOptions: Partial<ExperimentRunOptions>,
+        runOptions: InputExperimentRunOptions,
         loggerIdentifier: string,
         buildRequestedTargets: (
             logger: BenchmarkingLogger
@@ -210,7 +211,7 @@ export abstract class AbstractExperiment {
     }
 
     protected prepareExecutionContext<T>(
-        runOptions: Partial<ExperimentRunOptions>,
+        runOptions: InputExperimentRunOptions,
         loggerIdentifier: string,
         prepareTargets: (logger: BenchmarkingLogger) => T,
         getRequestedWorkspaces: (preparedTargets: T) => string[]
@@ -268,7 +269,7 @@ export abstract class AbstractExperiment {
     }
 
     private resolveOnStartupOptions(
-        inputOptions: Partial<ExperimentRunOptions>
+        inputOptions: InputExperimentRunOptions
     ): ExperimentRunOptions.AfterStartupResolution {
         return {
             ...inputOptions,
@@ -332,9 +333,9 @@ export abstract class AbstractExperiment {
                 optionsAfterStartupResolution.enableModelsSchedulingDebugLogs ??
                 false,
 
-            servicesMaxParallelism:
-                optionsAfterStartupResolution.servicesMaxParallelism ??
-                this.resolveServicesParallelism({}),
+            servicesMaxParallelism: this.resolveServicesParallelism(
+                optionsAfterStartupResolution.servicesMaxParallelism ?? {}
+            ),
 
             failFast: optionsAfterStartupResolution.failFast ?? false,
             logAbortingTasks:
