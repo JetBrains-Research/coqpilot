@@ -27,7 +27,7 @@ import { ModelParams } from "../modelParams";
 import { throwConfigurationError } from "../utils/errorUtils";
 
 import {
-    ResolvedExternalServiceParams,
+    ExternalServiceParams,
     resolveExternalServiceParamsWithDefaults,
 } from "./abstractExternalServiceParams";
 import { AbstractExternalServiceInstaller } from "./installation/abstractExternalServiceInstaller";
@@ -89,7 +89,7 @@ export abstract class AbstractExternalService<
     constructor(
         readonly externalProjectName: string,
         readonly defaultMaxSubprocessesParallelism: number,
-        serviceParams: Partial<ResolvedExternalServiceParams> = {}
+        serviceParams: ExternalServiceParams = {}
     ) {
         const resolvedServiceParams = resolveExternalServiceParamsWithDefaults(
             serviceParams,

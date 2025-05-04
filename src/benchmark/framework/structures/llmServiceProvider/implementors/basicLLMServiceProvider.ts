@@ -7,7 +7,6 @@ import { UserModelParams } from "../../../../../llm/userModelParams";
 import { EventLogger } from "../../../../../logging/eventLogger";
 import { AsyncScheduler } from "../../../../../utils/async/asyncScheduler";
 import { invariantFailed } from "../../../../../utils/errors/throwErrors";
-import { JsonSpacing, toJsonString } from "../../../../../utils/printers";
 import { getShortName } from "../../../utils/commonStructuresUtils/llmServicesUtils";
 import {
     CorrespondingInputServiceParams,
@@ -16,6 +15,7 @@ import {
 } from "../../common/llmServiceIdentifier";
 import { InstallerProvider } from "../installerProvider";
 import { LLMServiceProvider } from "../llmServiceProvider";
+import { toOneLineLogString } from "../utils/toLog";
 
 import {
     selectInstallerProvider,
@@ -71,11 +71,11 @@ export class BasicLLMServiceProvider extends LLMServiceProvider {
     }
 
     toLogString(verbose: boolean): string {
-        const serviceParamsString =
-            this.serviceParams === undefined || !verbose
-                ? ""
-                : ` ${toJsonString(this.serviceParams, JsonSpacing.UNFORMATTED)}`;
-        return `${getShortName(this.serviceIdentifier)}${serviceParamsString}`;
+        return toOneLineLogString(
+            getShortName(this.serviceIdentifier),
+            this.serviceParams,
+            verbose
+        );
     }
 
     static setSchedulersProvidersSettings(

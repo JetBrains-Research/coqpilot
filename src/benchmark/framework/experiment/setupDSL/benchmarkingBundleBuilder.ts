@@ -30,6 +30,14 @@ export class BenchmarkingBundle {
             )
         );
     }
+
+    withCustomLLMService<
+        InputParams extends InputBenchmarkingModelParams.Params,
+    >(
+        llmServiceProviderCtor: () => LLMServiceProvider
+    ): BenchmarkingBundleWithLLMService<InputParams> {
+        return new BenchmarkingBundleWithLLMService(llmServiceProviderCtor());
+    }
 }
 
 export class BenchmarkingBundleWithLLMService<
