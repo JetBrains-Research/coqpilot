@@ -1,29 +1,31 @@
-import { ErrorsHandlingMode } from "../../../../llm/llmServices/commonStructures/errorsHandlingMode";
-import { ModelParams } from "../../../../llm/llmServices/modelParams";
-import { ParamsResolverImpl } from "../../../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";
-import { UserModelParams } from "../../../../llm/userModelParams";
+import { ErrorsHandlingMode } from "../../../../../llm/llmServices/commonStructures/errorsHandlingMode";
+import { ModelParams } from "../../../../../llm/llmServices/modelParams";
+import { ParamsResolverImpl } from "../../../../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";
+import { UserModelParams } from "../../../../../llm/userModelParams";
 
-import { EventLogger } from "../../../../logging/eventLogger";
-import { AsyncScheduler } from "../../../../utils/async/asyncScheduler";
-import { invariantFailed } from "../../../../utils/errors/throwErrors";
-import { JsonSpacing, toJsonString } from "../../../../utils/printers";
+import { EventLogger } from "../../../../../logging/eventLogger";
+import { AsyncScheduler } from "../../../../../utils/async/asyncScheduler";
+import { invariantFailed } from "../../../../../utils/errors/throwErrors";
+import { JsonSpacing, toJsonString } from "../../../../../utils/printers";
+import { getShortName } from "../../../utils/commonStructuresUtils/llmServicesUtils";
+import {
+    CorrespondingInputServiceParams,
+    LLMServiceStringIdentifier,
+} from "../../common/llmServiceIdentifier";
+import { InstallerProvider } from "../installerProvider";
+import { LLMServiceProvider } from "../llmServiceProvider";
+
+import {
+    selectInstallerProvider,
+    selectLLMServiceBuilder,
+} from "./llmServicesProfile";
 import {
     BasicModelsSchedulersOptions,
     LLMServicesParamsResolvers,
     LLMServicesSchedulersProviders,
     createParamsResolvers,
     createSchedulersProviders,
-    getShortName,
-    selectInstallerProvider,
-    selectLLMServiceBuilder,
-} from "../../utils/commonStructuresUtils/llmServicesUtils";
-import {
-    CorrespondingInputServiceParams,
-    LLMServiceStringIdentifier,
-} from "../common/llmServiceIdentifier";
-
-import { InstallerProvider } from "./installerProvider";
-import { LLMServiceProvider } from "./llmServiceProvider";
+} from "./llmServicesProfile";
 
 export class BasicLLMServiceProvider<
     T extends LLMServiceStringIdentifier,

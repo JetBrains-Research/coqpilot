@@ -19,7 +19,7 @@ import { BenchmarkingOptions } from "../structures/benchmarkingCore/benchmarking
 import { BenchmarkedItem } from "../structures/benchmarkingResults/benchmarkedItem";
 import { ExperimentResults } from "../structures/benchmarkingResults/experimentResults";
 import { ExperimentRunOptions } from "../structures/inputParameters/experimentRunOptions";
-import { BasicLLMServiceProvider } from "../structures/llmServiceProvider/basicLLMServiceProvider";
+import { BasicLLMServiceProvider } from "../structures/llmServiceProvider/implementors/basicLLMServiceProvider";
 import {
     abortAsCriticalError,
     abortAsFailFast,

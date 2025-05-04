@@ -11,7 +11,7 @@ import {
     LLMServiceStringIdentifier,
 } from "../../structures/common/llmServiceIdentifier";
 import { InputBenchmarkingModelParams } from "../../structures/inputParameters/inputBenchmarkingModelParams";
-import { BasicLLMServiceProvider } from "../../structures/llmServiceProvider/basicLLMServiceProvider";
+import { BasicLLMServiceProvider } from "../../structures/llmServiceProvider/implementors/basicLLMServiceProvider";
 import { LLMServiceProvider } from "../../structures/llmServiceProvider/llmServiceProvider";
 import { AbstractExperiment } from "../abstractExperiment";
 
