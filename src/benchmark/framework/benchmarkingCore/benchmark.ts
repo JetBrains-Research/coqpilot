@@ -220,7 +220,7 @@ function buildUniqueItemReportDirName(
         item.task.sourceFilePath
     );
     const unsafeFileName = [
-        `${augmentedIndex}-${item.params.llmServiceProvider.toLogString()}-${modelId}`,
+        `${augmentedIndex}-${item.params.llmServiceProvider.toLogString(false)}-${modelId}`,
         `-${fileIdentifier}-${item.task.sourceTheorem.name}`,
     ].join("");
     return translateToSafeFileName(unsafeFileName);

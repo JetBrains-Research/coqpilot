@@ -68,12 +68,12 @@ export class BasicLLMServiceProvider<
         );
     }
 
-    toLogString(): string {
+    toLogString(verbose: boolean): string {
         const serviceParamsString =
-            this.serviceParams === undefined
+            this.serviceParams === undefined || !verbose
                 ? ""
-                : toJsonString(this.serviceParams, JsonSpacing.UNFORMATTED);
-        return `${getShortName(this.serviceIdentifier)} ${serviceParamsString}`;
+                : ` ${toJsonString(this.serviceParams, JsonSpacing.UNFORMATTED)}`;
+        return `${getShortName(this.serviceIdentifier)}${serviceParamsString}`;
     }
 
     static setSchedulersProvidersSettings(
@@ -110,20 +110,25 @@ export class BasicLLMServiceProvider<
         return this._schedulersProviders;
     }
 
-    serializeData(): string {
-        const data = {
+    serializeData(): BasicLLMServiceProviderSerializedData<T> {
+        return {
             service: this.serviceIdentifier,
             serviceParams: this.serviceParams,
         };
-        return toJsonString(data, JsonSpacing.UNFORMATTED);
     }
 
     static deserialize(serializedProviderData: any): LLMServiceProvider {
         // TODO: would be nice to validate data, at least somehow
-        const data = JSON.parse(serializedProviderData);
         return new BasicLLMServiceProvider<any>(
-            data.service,
-            data.serviceParams
+            serializedProviderData.service,
+            serializedProviderData.serviceParams
         );
     }
+}
+
+interface BasicLLMServiceProviderSerializedData<
+    T extends LLMServiceStringIdentifier,
+> {
+    service: T;
+    serviceParams?: CorrespondingInputServiceParams<T>;
 }

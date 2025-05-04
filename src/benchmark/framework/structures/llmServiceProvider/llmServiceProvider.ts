@@ -73,7 +73,7 @@ export abstract class LLMServiceProvider {
     /**
      * Pretty output to show in logs.
      */
-    abstract toLogString(): string;
+    abstract toLogString(verbose: boolean): string;
 
     /**
      * It is important to implement this method compatible with the static `deserialize(...)`
