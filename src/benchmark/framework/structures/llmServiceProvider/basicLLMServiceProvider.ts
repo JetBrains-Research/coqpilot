@@ -1,0 +1,129 @@
+import { ErrorsHandlingMode } from "../../../../llm/llmServices/commonStructures/errorsHandlingMode";
+import { ModelParams } from "../../../../llm/llmServices/modelParams";
+import { ParamsResolverImpl } from "../../../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";
+import { UserModelParams } from "../../../../llm/userModelParams";
+
+import { EventLogger } from "../../../../logging/eventLogger";
+import { AsyncScheduler } from "../../../../utils/async/asyncScheduler";
+import { invariantFailed } from "../../../../utils/errors/throwErrors";
+import { JsonSpacing, toJsonString } from "../../../../utils/printers";
+import {
+    BasicModelsSchedulersOptions,
+    LLMServicesParamsResolvers,
+    LLMServicesSchedulersProviders,
+    createParamsResolvers,
+    createSchedulersProviders,
+    getShortName,
+    selectInstallerProvider,
+    selectLLMServiceBuilder,
+} from "../../utils/commonStructuresUtils/llmServicesUtils";
+import {
+    CorrespondingInputServiceParams,
+    LLMServiceStringIdentifier,
+} from "../common/llmServiceIdentifier";
+
+import { InstallerProvider } from "./installerProvider";
+import { LLMServiceProvider } from "./llmServiceProvider";
+
+export class BasicLLMServiceProvider<
+    T extends LLMServiceStringIdentifier,
+> extends LLMServiceProvider {
+    constructor(
+        readonly serviceIdentifier: T,
+        readonly serviceParams?: CorrespondingInputServiceParams<T>
+    ) {
+        super();
+    }
+
+    protected readonly selfClass = BasicLLMServiceProvider;
+
+    static readonly serializationType = "basicProvider";
+    static {
+        LLMServiceProvider.registerSelfSerialization(
+            this.serializationType,
+            BasicLLMServiceProvider
+        );
+    }
+
+    constructService(
+        eventLogger: EventLogger | undefined,
+        errorsHandlingMode: ErrorsHandlingMode
+    ) {
+        return selectLLMServiceBuilder(
+            this.serviceIdentifier,
+            this.serviceParams
+        )(eventLogger, errorsHandlingMode);
+    }
+
+    getInstallerProvider(): InstallerProvider | undefined {
+        return selectInstallerProvider(this.serviceIdentifier);
+    }
+
+    private static readonly paramsResolvers: LLMServicesParamsResolvers =
+        createParamsResolvers();
+
+    getParamsResolver(): ParamsResolverImpl<UserModelParams, ModelParams> {
+        return BasicLLMServiceProvider.paramsResolvers.select(
+            this.serviceIdentifier
+        );
+    }
+
+    toLogString(): string {
+        const serviceParamsString =
+            this.serviceParams === undefined
+                ? ""
+                : toJsonString(this.serviceParams, JsonSpacing.UNFORMATTED);
+        return `${getShortName(this.serviceIdentifier)} ${serviceParamsString}`;
+    }
+
+    static setSchedulersProvidersSettings(
+        schedulersSettings: BasicModelsSchedulersOptions
+    ) {
+        this._schedulersSettings = schedulersSettings;
+    }
+
+    selectScheduler(modelParams: ModelParams): AsyncScheduler {
+        return BasicLLMServiceProvider.accessSchedulersProviders()
+            .select(this.serviceIdentifier)
+            .getScheduler(modelParams);
+    }
+
+    private static _schedulersProviders:
+        | LLMServicesSchedulersProviders
+        | undefined = undefined;
+
+    private static _schedulersSettings:
+        | BasicModelsSchedulersOptions
+        | undefined = undefined;
+
+    private static accessSchedulersProviders(): LLMServicesSchedulersProviders {
+        if (this._schedulersProviders === undefined) {
+            this._schedulersProviders = createSchedulersProviders(
+                this._schedulersSettings ??
+                    invariantFailed(
+                        "`BasicLLMServiceProvider`",
+                        "`BasicLLMServiceProvider._schedulersProviders` is accessed before ",
+                        "setting schedulers-providers settings"
+                    )
+            );
+        }
+        return this._schedulersProviders;
+    }
+
+    serializeData(): string {
+        const data = {
+            service: this.serviceIdentifier,
+            serviceParams: this.serviceParams,
+        };
+        return toJsonString(data, JsonSpacing.UNFORMATTED);
+    }
+
+    static deserialize(serializedProviderData: any): LLMServiceProvider {
+        // TODO: would be nice to validate data, at least somehow
+        const data = JSON.parse(serializedProviderData);
+        return new BasicLLMServiceProvider<any>(
+            data.service,
+            data.serviceParams
+        );
+    }
+}

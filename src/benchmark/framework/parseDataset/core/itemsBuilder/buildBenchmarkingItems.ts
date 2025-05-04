@@ -9,14 +9,9 @@ import { BenchmarkingLogger } from "../../../logging/benchmarkingLogger";
 import { BenchmarkingItem } from "../../../structures/benchmarkingCore/benchmarkingItem";
 import { BenchmarkingModelParams } from "../../../structures/benchmarkingCore/benchmarkingModelParams";
 import { CompletionGenerationTask } from "../../../structures/benchmarkingCore/completionGenerationTask";
-import { LLMServiceIdentifier } from "../../../structures/common/llmServiceIdentifier";
 import { InputBenchmarkingBundle } from "../../../structures/inputParameters/inputBenchmarkingBundle";
 import { InputBenchmarkingModelParams } from "../../../structures/inputParameters/inputBenchmarkingModelParams";
-import {
-    LLMServicesParamsResolvers,
-    createParamsResolvers,
-    getParamsResolver,
-} from "../../../utils/commonStructuresUtils/llmServicesUtils";
+import { LLMServiceProvider } from "../../../structures/llmServiceProvider/llmServiceProvider";
 import { resolveTheoremsRanker } from "../../../utils/inputResolutionUtils/resolveTheoremsRanker";
 import { DatasetCacheHolder } from "../../cacheStructures/cacheHolders";
 
@@ -50,7 +45,6 @@ function buildTasksAndResolveParams(
         string,
         BenchmarkingModelParams<ModelParams>
     > = new Map();
-    const paramsResolvers = createParamsResolvers();
 
     for (const bundle of inputBundles) {
         const bundleTasks: CompletionGenerationTask[] =
@@ -71,8 +65,7 @@ function buildTasksAndResolveParams(
                         modelId,
                         resolveInputBenchmarkingModelParams(
                             inputParams,
-                            bundle.llmServiceIdentifier,
-                            paramsResolvers,
+                            bundle.llmServiceProvider,
                             logger
                         )
                     );
@@ -87,14 +80,10 @@ function buildTasksAndResolveParams(
 
 export function resolveInputBenchmarkingModelParams(
     inputParams: InputBenchmarkingModelParams.Params,
-    llmServiceIdentifier: LLMServiceIdentifier,
-    paramsResolvers: LLMServicesParamsResolvers,
+    llmServiceProvider: LLMServiceProvider,
     logger: BenchmarkingLogger
 ): BenchmarkingModelParams<ModelParams> {
-    const paramsResolver = getParamsResolver(
-        llmServiceIdentifier,
-        paramsResolvers
-    );
+    const paramsResolver = llmServiceProvider.getParamsResolver();
     const { ranker, ...pureInputModelParams } = inputParams;
 
     const resolutionResult = paramsResolver.resolve(pureInputModelParams);
@@ -122,7 +111,7 @@ export function resolveInputBenchmarkingModelParams(
                 "`resolutionResult.resolved` should be defined, ",
                 "since params resolution analysis `invalidConfigurationMessage` is undefined"
             ),
-        llmServiceIdentifier: llmServiceIdentifier,
+        llmServiceProvider: llmServiceProvider,
     };
 }
 
