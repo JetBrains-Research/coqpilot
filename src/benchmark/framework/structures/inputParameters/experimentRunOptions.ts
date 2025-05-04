@@ -43,6 +43,8 @@ export interface ExperimentRunOptions extends BenchmarkingOptions {
 
     enableSubprocessesSchedulingDebugLogs: boolean;
     enableModelsSchedulingDebugLogs: boolean;
+
+    servicesMaxParallelism: LLMServicesMaxParallelism;
 }
 
 export namespace ExperimentRunOptions {
@@ -56,4 +58,12 @@ export namespace ExperimentRunOptions {
 
     export type AfterStartupResolution = Partial<ExperimentRunOptions> &
         ResolveOnStartup;
+}
+
+export interface LLMServicesMaxParallelism {
+    perOpenAiModelName: number;
+    perGrazieModelName: number;
+    perLmStudioPort: number;
+    perDeepSeekModelName: number;
+    rangoInstancesInParallel: number;
 }

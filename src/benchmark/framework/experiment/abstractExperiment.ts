@@ -18,7 +18,10 @@ import {
     mergeInputTargets,
 } from "../structures/common/inputTargets";
 import { DatasetCacheUsageMode } from "../structures/inputParameters/datasetCaching";
-import { ExperimentRunOptions } from "../structures/inputParameters/experimentRunOptions";
+import {
+    ExperimentRunOptions,
+    LLMServicesMaxParallelism,
+} from "../structures/inputParameters/experimentRunOptions";
 import { InputBenchmarkingBundle } from "../structures/inputParameters/inputBenchmarkingBundle";
 import { installDemandedExternalServices } from "../utils/installers/externalServicesInstaller";
 import { throwBenchmarkingError } from "../utils/throwErrors";
@@ -329,6 +332,10 @@ export abstract class AbstractExperiment {
                 optionsAfterStartupResolution.enableModelsSchedulingDebugLogs ??
                 false,
 
+            servicesMaxParallelism:
+                optionsAfterStartupResolution.servicesMaxParallelism ??
+                this.resolveServicesParallelism({}),
+
             failFast: optionsAfterStartupResolution.failFast ?? false,
             logAbortingTasks:
                 optionsAfterStartupResolution.logAbortingTasks ?? false,
@@ -340,6 +347,19 @@ export abstract class AbstractExperiment {
                 optionsAfterStartupResolution.proofCheckTimeoutMillis,
             logTeamCityStatistics:
                 optionsAfterStartupResolution.logTeamCityStatistics ?? false,
+        };
+    }
+
+    private resolveServicesParallelism(
+        inputOptions: Partial<LLMServicesMaxParallelism>
+    ): LLMServicesMaxParallelism {
+        return {
+            perOpenAiModelName: inputOptions.perOpenAiModelName ?? 1,
+            perGrazieModelName: inputOptions.perGrazieModelName ?? 1,
+            perLmStudioPort: inputOptions.perLmStudioPort ?? 1,
+            perDeepSeekModelName: inputOptions.perDeepSeekModelName ?? 1,
+            rangoInstancesInParallel:
+                inputOptions.rangoInstancesInParallel ?? 1,
         };
     }
 
