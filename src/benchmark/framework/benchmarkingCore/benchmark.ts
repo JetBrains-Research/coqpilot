@@ -192,16 +192,18 @@ function extractBenchmarkingOptions(
 ): BenchmarkingOptions {
     const {
         failFast,
-        logAbortingTasks: logFailFastTasksAborting,
+        logAbortingTasks,
         proofGenerationRetries,
+        coqLspProvider,
         openDocumentTimeoutMillis,
         proofCheckTimeoutMillis,
         logTeamCityStatistics,
     } = experimentRunOptions;
     return {
         failFast: failFast,
-        logAbortingTasks: logFailFastTasksAborting,
+        logAbortingTasks: logAbortingTasks,
         proofGenerationRetries: proofGenerationRetries,
+        coqLspProvider: coqLspProvider,
         openDocumentTimeoutMillis: openDocumentTimeoutMillis,
         proofCheckTimeoutMillis: proofCheckTimeoutMillis,
         logTeamCityStatistics: logTeamCityStatistics,

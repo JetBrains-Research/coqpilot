@@ -1,4 +1,5 @@
 import { withDocumentOpenedByTestCoqLsp } from "../../../../../../coqLsp/coqLspBuilders";
+import { CoqLspProvider } from "../../../../../../coqLsp/coqLspProvider";
 import { CoqLspTimeoutError } from "../../../../../../coqLsp/coqLspTypes";
 
 import {
@@ -26,9 +27,12 @@ export namespace CheckProofsImpl {
 
     export type ProvidedLogger = LogsIPCSender | undefined;
 
+    // TODO: wrap this call into `CoqLspProvider` instead of using it inside;
+    // that way, it'd be possible to schedule `coq-lsp` clients even in the multiprocessing case.
     export async function checkProofsMeasured(
         args: Signature.Args,
         providedLogger: ProvidedLogger,
+        coqLspProvider?: CoqLspProvider,
         abortSignal?: AbortSignal
     ): Promise<Signature.Result> {
         const fileUri = deserializeUri(args.serializedFileUri);
@@ -63,7 +67,8 @@ export namespace CheckProofsImpl {
                             proofCheckResults,
                             proofCheckTimeMark.measureElapsedMillis(),
                         ];
-                    }
+                    },
+                    coqLspProvider
                 );
             const totalMillis = totalTimeMark.measureElapsedMillis();
 

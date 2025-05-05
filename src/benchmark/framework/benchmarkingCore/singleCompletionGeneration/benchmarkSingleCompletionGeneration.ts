@@ -199,6 +199,7 @@ export async function benchmarkSingleCompletionGeneration<
                 openDocumentTimeoutMillis: options.openDocumentTimeoutMillis,
                 proofCheckTimeoutMillis: options.proofCheckTimeoutMillis,
                 logger: logger,
+                coqLspProvider: options.coqLspProvider,
                 abortSignal: abortSignal,
             }
         );
