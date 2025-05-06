@@ -1,4 +1,4 @@
-import { CoqLspProvider } from "../../../../../coqLsp/coqLspProvider";
+import { CoqLspProvider } from "../../../../../coqLsp/coqLspProviders/abstractCoqLspProvider";
 
 import {
     CompletionContext,

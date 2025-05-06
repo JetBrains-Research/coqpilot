@@ -1,4 +1,4 @@
-import { CoqLspProviders } from "../../../coqLsp/coqLspProvider";
+import { CoqLspProviderBuilders } from "../../../coqLsp/coqLspProviders/coqLspProviderBuilders";
 
 import { AsyncScheduler } from "../../../utils/async/asyncScheduler";
 import { joinPaths, resolveAsAbsolutePath } from "../../../utils/fs/pathUtils";
@@ -14,7 +14,6 @@ import {
 import { AbstractCoqProjectParser } from "../parseDataset/coqProjectParser/abstractCoqProjectParser";
 import { parseDatasetForBenchmarkingItems } from "../parseDataset/core/parseDatasetForBenchmarkingItems";
 import { BenchmarkingItem } from "../structures/benchmarkingCore/benchmarkingItem";
-import { BenchmarkingOptionsDefaults } from "../structures/benchmarkingCore/benchmarkingOptions";
 import { ExperimentResults } from "../structures/benchmarkingResults/experimentResults";
 import {
     DatasetInputTargets,
@@ -339,17 +338,17 @@ export abstract class AbstractExperiment {
             servicesMaxParallelism: this.resolveServicesParallelism(
                 optionsAfterStartupResolution.servicesMaxParallelism ?? {}
             ),
+            coqLspProviderBuilder:
+                optionsAfterStartupResolution.coqLspProviderBuilder ??
+                CoqLspProviderBuilders.newClientPerRequestWithLimitedParallelism(
+                    ExperimentRunOptionsDefaults.DEFAULT_MAX_RUNNING_COQ_LSP_CLIENTS
+                ),
 
             failFast: optionsAfterStartupResolution.failFast ?? false,
             logAbortingTasks:
                 optionsAfterStartupResolution.logAbortingTasks ?? false,
             proofGenerationRetries:
                 optionsAfterStartupResolution.proofGenerationRetries,
-            coqLspProvider:
-                optionsAfterStartupResolution.coqLspProvider ??
-                CoqLspProviders.newCoqLspPerRequestWithLimitedParallelism(
-                    BenchmarkingOptionsDefaults.DEFAULT_MAX_RUNNING_COQ_LSP_CLIENTS
-                ),
             openDocumentTimeoutMillis:
                 optionsAfterStartupResolution.openDocumentTimeoutMillis,
             proofCheckTimeoutMillis:
@@ -384,4 +383,8 @@ export abstract class AbstractExperiment {
         );
         return mergedTargets;
     }
+}
+
+export namespace ExperimentRunOptionsDefaults {
+    export const DEFAULT_MAX_RUNNING_COQ_LSP_CLIENTS = 30;
 }

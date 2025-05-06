@@ -1,3 +1,5 @@
+import { CoqLspProvider } from "../../../coqLsp/coqLspProviders/abstractCoqLspProvider";
+
 import { buildErrorCompleteLog } from "../../../utils/errors/errorsUtils";
 import { IllegalStateError } from "../../../utils/errors/throwErrors";
 import {
@@ -57,13 +59,44 @@ export async function benchmark(
         resolvedArtifactsDirPath,
         ArtifactsNames.itemsReportsDir
     );
+    const experimentReportPath = joinPaths(
+        resolvedArtifactsDirPath,
+        ArtifactsNames.experimentReportFileName
+    );
 
     createModelsSchedulers(experimentRunOptions);
 
     const options = extractBenchmarkingOptions(experimentRunOptions);
     const abortController = new AbortController();
-    const abortSignal = abortController.signal;
+    const coqLspProvider = experimentRunOptions.coqLspProviderBuilder();
+    try {
+        return await benchmarkWithResources(
+            benchmarkingItems,
+            parentLogger,
+            totalTime,
+            proofsChecker,
+            itemsDirPath,
+            experimentReportPath,
+            options,
+            abortController,
+            coqLspProvider
+        );
+    } finally {
+        await coqLspProvider.dispose();
+    }
+}
 
+async function benchmarkWithResources(
+    benchmarkingItems: BenchmarkingItem[],
+    parentLogger: BenchmarkingLogger,
+    totalTime: TimeMark,
+    proofsChecker: AbstractProofsChecker,
+    itemsDirPath: string,
+    experimentReportPath: string,
+    options: BenchmarkingOptions,
+    abortController: AbortController,
+    coqLspProvider: CoqLspProvider
+): Promise<ExperimentResults> {
     const itemsPromises: Promise<BenchmarkedItem | undefined>[] = [];
     for (let i = 0; i < benchmarkingItems.length; i++) {
         const item = benchmarkingItems[i];
@@ -84,8 +117,9 @@ export async function benchmark(
                 options,
                 itemLogger,
                 modelsScheduler,
+                coqLspProvider,
                 proofsChecker,
-                abortSignal
+                abortController.signal
             )
         );
     }
@@ -108,10 +142,6 @@ export async function benchmark(
 
     const experimentResult = new ExperimentResults(benchmarkedItems);
 
-    const experimentReportPath = joinPaths(
-        resolvedArtifactsDirPath,
-        ArtifactsNames.experimentReportFileName
-    );
     writeToFile(experimentResult.asJson(), experimentReportPath, (e) =>
         parentLogger
             .asOneRecord()
@@ -194,7 +224,6 @@ function extractBenchmarkingOptions(
         failFast,
         logAbortingTasks,
         proofGenerationRetries,
-        coqLspProvider,
         openDocumentTimeoutMillis,
         proofCheckTimeoutMillis,
         logTeamCityStatistics,
@@ -203,7 +232,6 @@ function extractBenchmarkingOptions(
         failFast: failFast,
         logAbortingTasks: logAbortingTasks,
         proofGenerationRetries: proofGenerationRetries,
-        coqLspProvider: coqLspProvider,
         openDocumentTimeoutMillis: openDocumentTimeoutMillis,
         proofCheckTimeoutMillis: proofCheckTimeoutMillis,
         logTeamCityStatistics: logTeamCityStatistics,

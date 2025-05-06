@@ -1,5 +1,3 @@
-import { CoqLspProvider } from "../../../../coqLsp/coqLspProvider";
-
 export interface BenchmarkingOptions {
     /**
      * If set to `true`, any error that occurs during the benchmarking process will cause
@@ -16,20 +14,6 @@ export interface BenchmarkingOptions {
      * If `undefined`, the retries number will not be limited.
      */
     proofGenerationRetries: number | undefined;
-
-    /**
-     * Control `coq-lsp` clients creation and usage.
-     *
-     * Use `CoqLspProviders` namespace to select one of the already implemented strategies.
-     *
-     * The default `coqLspProvider` for benchmarking frameworks is:
-     * ```
-     * CoqLspProviders.newCoqLspPerRequestWithLimitedParallelism(
-     *     BenchmarkingOptionsDefaults.DEFAULT_MAX_RUNNING_COQ_LSP_CLIENTS
-     * )
-     * ```
-     */
-    coqLspProvider: CoqLspProvider;
 
     /**
      * If `undefined`, the default one specified by CoqPilot will be used (`300_000 ms`).
@@ -60,8 +44,4 @@ export interface BenchmarkingOptions {
     proofCheckTimeoutMillis: number | undefined;
 
     logTeamCityStatistics: boolean;
-}
-
-export namespace BenchmarkingOptionsDefaults {
-    export const DEFAULT_MAX_RUNNING_COQ_LSP_CLIENTS = 30;
 }

@@ -2,6 +2,8 @@ import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/er
 import { LLMService } from "../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
 
+import { CoqLspProvider } from "../../../coqLsp/coqLspProviders/abstractCoqLspProvider";
+
 import { AsyncScheduler } from "../../../utils/async/asyncScheduler";
 import {
     IllegalStateError,
@@ -72,6 +74,7 @@ export async function executeBenchmarkingTask(
     options: BenchmarkingOptions,
     itemLogger: BenchmarkingLogger,
     modelsScheduler: AsyncScheduler,
+    coqLspProvider: CoqLspProvider,
     proofsChecker: AbstractProofsChecker,
     abortSignal: AbortSignal
 ): Promise<BenchmarkedItem | undefined> {
@@ -138,6 +141,7 @@ export async function executeBenchmarkingTask(
                 thisRoundGenerationArgs,
                 options,
                 modelsScheduler,
+                coqLspProvider,
                 thisRoundLogger,
                 proofsChecker,
                 abortSignal

@@ -11,6 +11,8 @@ import { LLMService } from "../../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 import { ProofGenerationContext } from "../../../../llm/proofGenerationContext";
 
+import { CoqLspProvider } from "../../../../coqLsp/coqLspProviders/abstractCoqLspProvider";
+
 import {
     CompletionContext,
     SourceFileEnvironment,
@@ -124,6 +126,7 @@ export async function benchmarkSingleCompletionGeneration<
     >,
     options: BenchmarkingOptions,
     modelsScheduler: AsyncScheduler,
+    coqLspProvider: CoqLspProvider,
     logger: BenchmarkingLogger,
     proofsChecker: AbstractProofsChecker,
     abortSignal: AbortSignal
@@ -199,7 +202,7 @@ export async function benchmarkSingleCompletionGeneration<
                 openDocumentTimeoutMillis: options.openDocumentTimeoutMillis,
                 proofCheckTimeoutMillis: options.proofCheckTimeoutMillis,
                 logger: logger,
-                coqLspProvider: options.coqLspProvider,
+                coqLspProvider: coqLspProvider,
                 abortSignal: abortSignal,
             }
         );
