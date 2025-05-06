@@ -24,6 +24,36 @@ function reverseCondition<T>(
     return (element) => !condition(element);
 }
 
+export function lastElement<T extends Exclude<unknown, undefined | null>>(
+    elements: T[]
+): T | undefined {
+    return elements[elements.length - 1];
+}
+
+export function removeElement(
+    elements: string[],
+    elementToRemove: string,
+    onNoSuchElement: () => void = () => {}
+) {
+    const removedAtIndex = removeElementAndReturn(elements, elementToRemove);
+    if (removedAtIndex === undefined) {
+        onNoSuchElement();
+    }
+}
+
+export function removeElementAndReturn(
+    elements: string[],
+    elementToRemove: string
+): number | undefined {
+    const index = elements.indexOf(elementToRemove);
+    if (index !== -1) {
+        elements.splice(index, 1);
+        return index;
+    } else {
+        return undefined;
+    }
+}
+
 export function makeElementsUnique<T extends EqualTo<T>>(elements: T[]) {
     return new EqualitySet(elements).elements();
 }
@@ -103,4 +133,22 @@ export function zip<T, V>(ts: T[], vs: V[]): [T, V][] {
         );
     }
     return ts.map((t, i) => [t, vs[i]]);
+}
+
+export function printHeadTailItems<T>(
+    headItemsNumber: number,
+    tailItemsNumber: number,
+    items: T[],
+    printItem: (item: T) => string
+): string {
+    function itemsToString(selectedItems: T[]): string {
+        return selectedItems.map(printItem).join(", ");
+    }
+
+    if (items.length <= headItemsNumber + tailItemsNumber) {
+        return `[${itemsToString(items)}]`;
+    }
+    const firstKeys = items.slice(0, headItemsNumber);
+    const lastKeys = items.slice(items.length - tailItemsNumber - 1);
+    return `[${itemsToString(firstKeys)}, ..., ${itemsToString(lastKeys)}]`;
 }
