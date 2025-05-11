@@ -1,4 +1,5 @@
 import { ErrorsHandlingMode } from "../../../../../llm/llmServices/commonStructures/errorsHandlingMode";
+import { InstallerProvider } from "../../../../../llm/llmServices/commonStructures/installerProvider";
 import { LLMService } from "../../../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../../../llm/llmServices/modelParams";
 import { ParamsResolverImpl } from "../../../../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";

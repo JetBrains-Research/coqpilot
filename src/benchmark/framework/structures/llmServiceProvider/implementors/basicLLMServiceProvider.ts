@@ -1,4 +1,5 @@
 import { ErrorsHandlingMode } from "../../../../../llm/llmServices/commonStructures/errorsHandlingMode";
+import { InstallerProvider } from "../../../../../llm/llmServices/commonStructures/installerProvider";
 import { LLMServiceParams } from "../../../../../llm/llmServices/llmServiceParams";
 import { ModelParams } from "../../../../../llm/llmServices/modelParams";
 import { ParamsResolverImpl } from "../../../../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";
@@ -13,7 +14,6 @@ import {
     LLMServiceIdentifier,
     LLMServiceStringIdentifier,
 } from "../../common/llmServiceIdentifier";
-import { InstallerProvider } from "../installerProvider";
 import { LLMServiceProvider } from "../llmServiceProvider";
 import { toOneLineLogString } from "../utils/toLog";
 

@@ -16,6 +16,7 @@ import {
     GeneratedRawContentItem,
 } from "../commonStructures/generatedRawContent";
 import { zeroTokens } from "../commonStructures/generationTokens";
+import { InstallerProvider } from "../commonStructures/installerProvider";
 import { LLMServiceRequest } from "../commonStructures/llmServiceRequest";
 import { ProofGenerationMetadataHolder } from "../commonStructures/proofGenerationMetadata";
 import { ProofGenerationType } from "../commonStructures/proofGenerationType";
@@ -80,6 +81,12 @@ export abstract class AbstractExternalService<
         InstallationOptions,
         InputModelParams
     >;
+    readonly installerProvider: InstallerProvider | undefined = () => {
+        return {
+            installer: this.installer,
+            options: undefined,
+        };
+    };
     readonly installationPath: string;
     readonly clearProofGenerationLogsOnSuccess: boolean;
 

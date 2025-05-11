@@ -1,10 +1,10 @@
 import { provideDefaultInstallationForRequest } from "../../../../llm/llmServices/abstractExternalService/installation/wrappers";
+import { InstallerWithOptions } from "../../../../llm/llmServices/commonStructures/installerProvider";
 import { UserModelParams } from "../../../../llm/userModelParams";
 
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { logBySeverityLevelName } from "../../logging/wrappers";
 import { InputBenchmarkingBundle } from "../../structures/inputParameters/inputBenchmarkingBundle";
-import { InstallerWithOptions } from "../../structures/llmServiceProvider/installerProvider";
 
 export async function installDemandedExternalServices(
     inputBundles: InputBenchmarkingBundle[],

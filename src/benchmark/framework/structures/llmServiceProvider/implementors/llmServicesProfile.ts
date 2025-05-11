@@ -1,4 +1,5 @@
 import { ErrorsHandlingMode } from "../../../../../llm/llmServices/commonStructures/errorsHandlingMode";
+import { InstallerProvider } from "../../../../../llm/llmServices/commonStructures/installerProvider";
 import { DeepSeekModelParamsResolver } from "../../../../../llm/llmServices/deepSeek/deepSeekModelParamsResolver";
 import { DeepSeekService } from "../../../../../llm/llmServices/deepSeek/deepSeekService";
 import { GrazieModelParamsResolver } from "../../../../../llm/llmServices/grazie/grazieModelParamsResolver";
@@ -38,7 +39,6 @@ import {
 } from "../../../utils/commonStructuresUtils/llmServicesUtils";
 import { LLMServiceIdentifier } from "../../common/llmServiceIdentifier";
 import { LLMServicesMaxParallelism } from "../../inputParameters/experimentRunOptions";
-import { InstallerProvider } from "../installerProvider";
 
 export type LLMServiceBuilder = (
     eventLogger: EventLogger | undefined,

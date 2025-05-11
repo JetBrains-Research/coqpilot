@@ -1,4 +1,4 @@
-import { AbstractExternalServiceInstaller } from "../../../../llm/llmServices/abstractExternalService/installation/abstractExternalServiceInstaller";
+import { AbstractExternalServiceInstaller } from "../abstractExternalService/installation/abstractExternalServiceInstaller";
 
 export interface InstallerWithOptions<InstallationOptions> {
     installer: AbstractExternalServiceInstaller<InstallationOptions, any>;

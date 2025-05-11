@@ -6,6 +6,7 @@ import { UserModelParams } from "../userModelParams";
 
 import { AnalyzedChatHistory } from "./commonStructures/chat";
 import { ErrorsHandlingMode } from "./commonStructures/errorsHandlingMode";
+import { InstallerProvider } from "./commonStructures/installerProvider";
 import { ProofGenerationMetadataHolder } from "./commonStructures/proofGenerationMetadata";
 import { GeneratedProofImpl } from "./generatedProof";
 import { LLMServiceInternal } from "./llmServiceInternal";
@@ -219,6 +220,17 @@ export abstract class LLMServiceImpl<
                 )
         );
     }
+
+    /**
+     * Provide installer with its options to perform required installations with
+     * for this `LLMServiceImpl` to functionate.
+     *
+     * By default, this function returns `undefined`, meaning no installation is needed.
+     *
+     * For its implementation for an external service check
+     * `AbstractExternalService` and `AbstractExternalServiceInstaller`.
+     */
+    readonly installerProvider: InstallerProvider | undefined = undefined;
 
     /**
      * Estimates the expected time for service to become available.
