@@ -1,5 +1,9 @@
 import { ErrorsHandlingMode } from "../../../../../llm/llmServices/commonStructures/errorsHandlingMode";
 import { InstallerProvider } from "../../../../../llm/llmServices/commonStructures/installerProvider";
+import {
+    SchedulersProvider,
+    SchedulersProviderBuilders,
+} from "../../../../../llm/llmServices/commonStructures/schedulersProviders";
 import { DeepSeekModelParamsResolver } from "../../../../../llm/llmServices/deepSeek/deepSeekModelParamsResolver";
 import { DeepSeekService } from "../../../../../llm/llmServices/deepSeek/deepSeekService";
 import { GrazieModelParamsResolver } from "../../../../../llm/llmServices/grazie/grazieModelParamsResolver";
@@ -27,16 +31,7 @@ import { ParamsResolverImpl } from "../../../../../llm/llmServices/utils/paramsR
 import { UserModelParams } from "../../../../../llm/userModelParams";
 
 import { EventLogger } from "../../../../../logging/eventLogger";
-import {
-    LimitedParallelismSchedulersProvider,
-    SchedulersProvider,
-    UnlimitedSchedulersProvider,
-    createDefaultLLMServiceSchedulersProvider,
-} from "../../../utils/asyncUtils/schedulersProviders";
-import {
-    LLMServicesItemsHolder,
-    getShortName,
-} from "../../../utils/commonStructuresUtils/llmServicesUtils";
+import { LLMServicesItemsHolder } from "../../../utils/commonStructuresUtils/llmServicesUtils";
 import { LLMServiceIdentifier } from "../../common/llmServiceIdentifier";
 import { LLMServicesMaxParallelism } from "../../inputParameters/experimentRunOptions";
 
@@ -135,37 +130,39 @@ export function createSchedulersProviders(
         constructor() {
             super({
                 predefinedProofs:
-                    new UnlimitedSchedulersProvider<PredefinedProofsModelParams>(
-                        `Models Scheduler: ${getShortName(LLMServiceIdentifier.PREDEFINED_PROOFS)} Service, unlimited parallelism`,
+                    SchedulersProviderBuilders.unlimitedParallelism<PredefinedProofsModelParams>(
+                        LLMServiceIdentifier.PREDEFINED_PROOFS,
                         enableLogs
                     ),
-                openAi: createDefaultLLMServiceSchedulersProvider(
+                openAi: SchedulersProviderBuilders.limitParallelismForModelsWithSameKey(
                     maxParallelism.perOpenAiModelName,
                     (params: OpenAiModelParams) => params.modelName,
                     LLMServiceIdentifier.OPENAI,
                     enableLogs
                 ),
-                grazie: createDefaultLLMServiceSchedulersProvider(
+                grazie: SchedulersProviderBuilders.limitParallelismForModelsWithSameKey(
                     maxParallelism.perGrazieModelName,
                     (params: GrazieModelParams) => params.modelName,
                     LLMServiceIdentifier.GRAZIE,
                     enableLogs
                 ),
-                lmStudio: createDefaultLLMServiceSchedulersProvider(
-                    maxParallelism.perLmStudioPort,
-                    (params: LMStudioModelParams) => params.port,
-                    LLMServiceIdentifier.LMSTUDIO,
-                    enableLogs
-                ),
-                deepSeek: createDefaultLLMServiceSchedulersProvider(
-                    maxParallelism.perDeepSeekModelName,
-                    (params: DeepSeekModelParams) => params.modelName,
-                    LLMServiceIdentifier.DEEPSEEK,
-                    enableLogs
-                ),
-                rango: new LimitedParallelismSchedulersProvider(
+                lmStudio:
+                    SchedulersProviderBuilders.limitParallelismForModelsWithSameKey(
+                        maxParallelism.perLmStudioPort,
+                        (params: LMStudioModelParams) => params.port,
+                        LLMServiceIdentifier.LMSTUDIO,
+                        enableLogs
+                    ),
+                deepSeek:
+                    SchedulersProviderBuilders.limitParallelismForModelsWithSameKey(
+                        maxParallelism.perDeepSeekModelName,
+                        (params: DeepSeekModelParams) => params.modelName,
+                        LLMServiceIdentifier.DEEPSEEK,
+                        enableLogs
+                    ),
+                rango: SchedulersProviderBuilders.limitParallelismGlobally(
                     maxParallelism.rangoInstancesInParallel,
-                    `Models Scheduler: ${getShortName(LLMServiceIdentifier.RANGO)} Service, max ${maxParallelism.rangoInstancesInParallel} request per time`,
+                    LLMServiceIdentifier.RANGO,
                     enableLogs
                 ),
             });

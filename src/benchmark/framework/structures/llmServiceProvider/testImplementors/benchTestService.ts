@@ -4,13 +4,12 @@ import {
     GeneratedRawContentItem,
 } from "../../../../../llm/llmServices/commonStructures/generatedRawContent";
 import { ProofVersion } from "../../../../../llm/llmServices/commonStructures/proofVersion";
+import { SchedulersProvider } from "../../../../../llm/llmServices/commonStructures/schedulersProviders";
 import { GeneratedProofImpl } from "../../../../../llm/llmServices/generatedProof";
 import { LLMServiceImpl } from "../../../../../llm/llmServices/llmService";
 import { LLMServiceInternal } from "../../../../../llm/llmServices/llmServiceInternal";
-import { GenerationsLogger } from "../../../../../llm/llmServices/utils/generationsLogger/generationsLogger";
 import { ProofGenerationContext } from "../../../../../llm/proofGenerationContext";
 
-import { EventLogger } from "../../../../../logging/eventLogger";
 import { BenchmarkingLogger } from "../../../logging/benchmarkingLogger";
 
 import {
@@ -32,7 +31,9 @@ export class BenchTestService extends LLMServiceImpl<
     BenchTestGeneratedProof,
     BenchTestServiceInternal
 > {
-    readonly serviceName = "BenchTestService";
+    readonly fullName = "BenchTestService";
+    readonly shortName = "BenchTest";
+
     protected readonly internal: BenchTestServiceInternal;
 
     constructor(
@@ -48,8 +49,7 @@ export class BenchTestService extends LLMServiceImpl<
             this,
             resolvedServiceParams.logger,
             resolvedServiceParams.generateRawProofs,
-            this.eventLogger,
-            this.generationsLoggerBuilder
+            resolvedServiceParams.getSchedulersProvider
         );
     }
 
@@ -87,10 +87,11 @@ class BenchTestServiceInternal extends LLMServiceInternal<
         readonly llmService: BenchTestService,
         private readonly logger: BenchmarkingLogger,
         private readonly generateRawProofs: GenerateRawProofsType,
-        eventLogger: EventLogger | undefined,
-        generationsLoggerBuilder: () => GenerationsLogger
+        private readonly getSchedulersProvider: (
+            service: BenchTestService
+        ) => SchedulersProvider
     ) {
-        super(llmService, eventLogger, generationsLoggerBuilder);
+        super(llmService);
     }
 
     constructGeneratedProof(
@@ -106,6 +107,10 @@ class BenchTestServiceInternal extends LLMServiceInternal<
             this
         );
     }
+
+    readonly modelsSchedulersProvider = this.getSchedulersProvider(
+        this.llmService
+    );
 
     async generateFromChatImpl(
         analyzedChat: AnalyzedChatHistory,

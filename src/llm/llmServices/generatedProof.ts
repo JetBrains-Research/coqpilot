@@ -1,4 +1,5 @@
 import { invariantFailed } from "../../utils/errors/throwErrors";
+import { MessageHandler } from "../../utils/structures/messageHandler";
 import { ConfigurationError } from "../llmServiceErrors";
 import { ProofGenerationContext } from "../proofGenerationContext";
 import { UserModelParams } from "../userModelParams";
@@ -171,8 +172,8 @@ export abstract class GeneratedProofImpl<
      * The default implementation is based on the generation from chat, namely,
      * it calls `LLMServiceInternal.generateFromChatImpl`.
      * If it is not the desired way, `fixProof` should be overriden;
-     * however, maintaining all errors-handling and logging invariants.
-     * Consider `LLMServiceInternal.logGenerationAndHandleErrors` for help.
+     * however, maintaining all errors-handling and logging invariants and, perfectly, models scheduling.
+     * Consider `LLMServiceInternal.scheduleLoggedGenerationAndHandleErrors` for help.
      *
      * @param diagnostic the diagnostic received from the compiler.
      * @param choices specifies the number of choices for generation. If not provided, the `params.multiroundProfile.defaultProofFixChoices` value is used.
@@ -183,13 +184,16 @@ export abstract class GeneratedProofImpl<
         choices: number = this.modelParams.multiroundProfile
             .defaultProofFixChoices,
         metadataHolder: ProofGenerationMetadataHolder | undefined = undefined,
-        abortSignal?: AbortSignal
+        abortSignal?: AbortSignal,
+        onSchedulerDebugLog: MessageHandler = this.llmServiceInternal
+            .sendDebugEventOnSchedulerLog
     ): Promise<GeneratedProofType[]> {
         return this.llmServiceInternal.generateFromChatWrapped(
             this.modelParams,
             choices,
             metadataHolder,
             abortSignal,
+            onSchedulerDebugLog,
             () => {
                 if (!this.canBeFixed()) {
                     throw new ConfigurationError(

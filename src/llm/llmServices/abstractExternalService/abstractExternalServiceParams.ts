@@ -11,9 +11,14 @@ export type ExternalServiceParams = Partial<ResolvedExternalServiceParams>;
 
 export interface ResolvedExternalServiceParams
     extends ResolvedLLMServiceParams {
-    installationPath: string;
-    maxSubprocessesSpawnedInParallel: number;
-    clearProofGenerationLogsOnSuccess: boolean;
+    readonly installationPath: string;
+    readonly maxSubprocessesSpawnedInParallel: number;
+    readonly clearProofGenerationLogsOnSuccess: boolean;
+
+    /**
+     * Is unused by `AbstractExternalService` by default.
+     */
+    readonly generationParallelism: number;
 }
 
 export function resolveExternalServiceParamsWithDefaults(

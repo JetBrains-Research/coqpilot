@@ -10,6 +10,7 @@ import {
     GeneratedRawContentItem,
 } from "../commonStructures/generatedRawContent";
 import { ProofVersion } from "../commonStructures/proofVersion";
+import { SchedulersProviderBuilders } from "../commonStructures/schedulersProviders";
 import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
 import { LLMServiceInternal } from "../llmServiceInternal";
@@ -26,12 +27,10 @@ export class GrazieService extends LLMServiceImpl<
     GrazieGeneratedProof,
     GrazieServiceInternal
 > {
-    readonly serviceName = "GrazieService";
-    protected readonly internal = new GrazieServiceInternal(
-        this,
-        this.eventLogger,
-        this.generationsLoggerBuilder
-    );
+    readonly fullName = "GrazieService";
+    readonly shortName = "Grazie";
+
+    protected readonly internal = new GrazieServiceInternal(this);
     protected readonly modelParamsResolver = new GrazieModelParamsResolver();
 
     /**
@@ -85,6 +84,14 @@ class GrazieServiceInternal extends LLMServiceInternal<
             previousProofVersions
         );
     }
+
+    readonly modelsSchedulersProvider =
+        SchedulersProviderBuilders.limitParallelismForModelsWithSameKey(
+            this.serviceSetup.generationParallelism,
+            (params: GrazieModelParams) => params.modelName,
+            this.llmService.fullName,
+            this.serviceSetup.enableModelsSchedulingDebugLogs
+        );
 
     async generateFromChatImpl(
         analyzedChat: AnalyzedChatHistory,

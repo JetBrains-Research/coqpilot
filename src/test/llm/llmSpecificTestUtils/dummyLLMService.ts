@@ -6,6 +6,7 @@ import {
 } from "../../../llm/llmServices/commonStructures/generatedRawContent";
 import { ProofGenerationMetadataHolder } from "../../../llm/llmServices/commonStructures/proofGenerationMetadata";
 import { ProofVersion } from "../../../llm/llmServices/commonStructures/proofVersion";
+import { SchedulersProviderBuilders } from "../../../llm/llmServices/commonStructures/schedulersProviders";
 import { GeneratedProofImpl } from "../../../llm/llmServices/generatedProof";
 import { LLMServiceImpl } from "../../../llm/llmServices/llmService";
 import { LLMServiceInternal } from "../../../llm/llmServices/llmServiceInternal";
@@ -33,7 +34,9 @@ export class DummyLLMService extends LLMServiceImpl<
     DummyGeneratedProof,
     DummyLLMServiceInternal
 > {
-    readonly serviceName = "DummyLLMService";
+    readonly fullName = "DummyLLMService";
+    readonly shortName = "Dummy";
+
     protected readonly internal: DummyLLMServiceInternal;
     protected readonly modelParamsResolver = new BasicModelParamsResolver(
         modelParamsSchema,
@@ -46,11 +49,7 @@ export class DummyLLMService extends LLMServiceImpl<
             generationLogsFilePath: generationsLogger.filePath,
             debugLogs: true,
         });
-        this.internal = new DummyLLMServiceInternal(
-            this,
-            this.eventLogger,
-            () => generationsLogger
-        );
+        this.internal = new DummyLLMServiceInternal(this, generationsLogger);
     }
 
     dispose(): void {}
@@ -111,6 +110,15 @@ class DummyLLMServiceInternal extends LLMServiceInternal<
     DummyGeneratedProof,
     DummyLLMServiceInternal
 > {
+    constructor(
+        llmService: DummyLLMService,
+        generationsLogger: GenerationsLogger
+    ) {
+        super(llmService);
+        this.generationsLogger.dispose();
+        this.generationsLogger = generationsLogger;
+    }
+
     constructGeneratedProof(
         _rawProof: GeneratedRawContentItem,
         _proofGenerationContext: ProofGenerationContext,
@@ -119,6 +127,12 @@ class DummyLLMServiceInternal extends LLMServiceInternal<
     ): DummyGeneratedProof {
         unsupported("I'm a teapot");
     }
+
+    readonly modelsSchedulersProvider =
+        SchedulersProviderBuilders.unlimitedParallelism(
+            this.llmService.fullName,
+            this.serviceSetup.enableModelsSchedulingDebugLogs
+        );
 
     async generateFromChatImpl(
         _analyzedChat: AnalyzedChatHistory,

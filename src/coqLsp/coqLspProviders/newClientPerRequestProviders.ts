@@ -1,4 +1,5 @@
 import { AsyncScheduler } from "../../utils/async/asyncScheduler";
+import { MessageHandler } from "../../utils/structures/messageHandler";
 import {
     TestCoqLspClientOptions,
     withTestCoqLspClient,
@@ -18,7 +19,7 @@ export class UnlimitedParallelismCoqLspProvider extends CoqLspProvider {
 
 export class LimitedParallelismCoqLspProvider extends CoqLspProvider {
     private readonly scheduler: AsyncScheduler;
-    private readonly onSchedulingLog: (message: string) => void;
+    private readonly onSchedulingLog: MessageHandler;
 
     constructor(
         maxRunningClients: number,

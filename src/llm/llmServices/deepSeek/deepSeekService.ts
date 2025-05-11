@@ -10,6 +10,7 @@ import {
     GeneratedRawContentItem,
 } from "../commonStructures/generatedRawContent";
 import { ProofVersion } from "../commonStructures/proofVersion";
+import { SchedulersProviderBuilders } from "../commonStructures/schedulersProviders";
 import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
 import { LLMServiceInternal } from "../llmServiceInternal";
@@ -25,12 +26,10 @@ export class DeepSeekService extends LLMServiceImpl<
     DeepSeekGeneratedProof,
     DeepSeekServiceInternal
 > {
-    readonly serviceName = "DeepSeekService";
-    protected readonly internal = new DeepSeekServiceInternal(
-        this,
-        this.eventLogger,
-        this.generationsLoggerBuilder
-    );
+    readonly fullName = "DeepSeekService";
+    readonly shortName = "DeepSeek";
+
+    protected readonly internal = new DeepSeekServiceInternal(this);
     protected readonly modelParamsResolver = new DeepSeekModelParamsResolver();
 }
 
@@ -79,6 +78,14 @@ class DeepSeekServiceInternal extends LLMServiceInternal<
             previousProofVersions
         );
     }
+
+    readonly modelsSchedulersProvider =
+        SchedulersProviderBuilders.limitParallelismForModelsWithSameKey(
+            this.serviceSetup.generationParallelism,
+            (params: DeepSeekModelParams) => params.modelName,
+            this.llmService.fullName,
+            this.serviceSetup.enableModelsSchedulingDebugLogs
+        );
 
     async generateFromChatImpl(
         analyzedChat: AnalyzedChatHistory,

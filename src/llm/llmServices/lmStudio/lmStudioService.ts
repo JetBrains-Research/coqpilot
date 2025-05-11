@@ -9,6 +9,7 @@ import {
     GeneratedRawContentItem,
 } from "../commonStructures/generatedRawContent";
 import { ProofVersion } from "../commonStructures/proofVersion";
+import { SchedulersProviderBuilders } from "../commonStructures/schedulersProviders";
 import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
 import { LLMServiceInternal } from "../llmServiceInternal";
@@ -23,12 +24,10 @@ export class LMStudioService extends LLMServiceImpl<
     LMStudioGeneratedProof,
     LMStudioServiceInternal
 > {
-    readonly serviceName = "LMStudioService";
-    protected readonly internal = new LMStudioServiceInternal(
-        this,
-        this.eventLogger,
-        this.generationsLoggerBuilder
-    );
+    readonly fullName = "LMStudioService";
+    readonly shortName = "LM Studio";
+
+    protected readonly internal = new LMStudioServiceInternal(this);
     protected readonly modelParamsResolver = new LMStudioModelParamsResolver();
 }
 
@@ -75,6 +74,14 @@ class LMStudioServiceInternal extends LLMServiceInternal<
             previousProofVersions
         );
     }
+
+    readonly modelsSchedulersProvider =
+        SchedulersProviderBuilders.limitParallelismForModelsWithSameKey(
+            this.serviceSetup.generationParallelism,
+            (params: LMStudioModelParams) => params.port,
+            this.llmService.fullName,
+            this.serviceSetup.enableModelsSchedulingDebugLogs
+        );
 
     async generateFromChatImpl(
         analyzedChat: AnalyzedChatHistory,

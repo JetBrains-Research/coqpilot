@@ -1,23 +1,21 @@
-import { EventLogger } from "../../logging/eventLogger";
-import { createTmpFile } from "../../utils/fs/tmpFs";
+import { MessageHandler } from "../../utils/structures/messageHandler";
 import { Time } from "../../utils/time";
 import { ProofGenerationContext } from "../proofGenerationContext";
 import { UserModelParams } from "../userModelParams";
 
 import { AnalyzedChatHistory } from "./commonStructures/chat";
-import { ErrorsHandlingMode } from "./commonStructures/errorsHandlingMode";
 import { InstallerProvider } from "./commonStructures/installerProvider";
 import { ProofGenerationMetadataHolder } from "./commonStructures/proofGenerationMetadata";
 import { GeneratedProofImpl } from "./generatedProof";
 import { LLMServiceInternal } from "./llmServiceInternal";
 import {
     LLMServiceParams,
+    ResolvedLLMServiceParams,
     resolveServiceParamsWithDefaults,
 } from "./llmServiceParams";
 import { ModelParams } from "./modelParams";
 import { buildProofGenerationChat } from "./utils/chatFactory";
 import { estimateTimeToBecomeAvailableDefault } from "./utils/defaultAvailabilityEstimator";
-import { GenerationsLogger } from "./utils/generationsLogger/generationsLogger";
 import { LoggerRecord } from "./utils/generationsLogger/loggerRecord";
 import {
     ParamsResolutionResult,
@@ -112,40 +110,22 @@ export abstract class LLMServiceImpl<
         LLMServiceInternalType
     >,
 > {
-    abstract readonly serviceName: string;
+    abstract readonly fullName: string;
+    abstract readonly shortName: string;
+
     protected abstract readonly internal: LLMServiceInternalType;
     protected abstract readonly modelParamsResolver: ParamsResolver<
         InputModelParams,
         ResolvedModelParams
     >;
 
-    protected readonly eventLogger: EventLogger | undefined;
-    readonly errorsHandlingMode: ErrorsHandlingMode;
-    readonly generationLogsFilePath: string;
-    protected readonly generationsLoggerBuilder: () => GenerationsLogger;
+    readonly serviceSetup: ResolvedLLMServiceParams;
 
     /**
      * Creates an instance of `LLMServiceImpl`.
-     * @param eventLogger is used to send proof generation events. If not specified, event logging will be disabled.
-     * @param errorsHandlingMode defines how errors during method calls are handled: whether they are rethrown or swallowed. Regardless of the mode, errors are logged.
-     * @param debugLogs enables debug logs for the internal `GenerationsLogger`.
-     * @param generationLogsFilePath if it is not specified, a temporary file will be used.
      */
     constructor(serviceParams: LLMServiceParams = {}) {
-        const resolvedServiceParams =
-            resolveServiceParamsWithDefaults(serviceParams);
-        this.eventLogger = resolvedServiceParams.eventLogger;
-        this.errorsHandlingMode = resolvedServiceParams.errorsHandlingMode;
-        this.generationLogsFilePath =
-            resolvedServiceParams.generationLogsFilePath ?? createTmpFile();
-        this.generationsLoggerBuilder = () =>
-            new GenerationsLogger(this.generationLogsFilePath, {
-                debug: resolvedServiceParams.debugLogs,
-                paramsPropertiesToCensor: {
-                    apiKey: GenerationsLogger.censorString,
-                },
-                cleanLogsOnStart: true,
-            });
+        this.serviceSetup = resolveServiceParamsWithDefaults(serviceParams);
     }
 
     static readonly requestSucceededEvent = `llmservice-request-succeeded`;
@@ -157,8 +137,8 @@ export abstract class LLMServiceImpl<
      *
      * The default implementation relies on `LLMServiceInternal.generateFromChatImpl`.
      * If a different behavior is required, the `generateFromChat` method should be overridden;
-     * however, maintaining all errors-handling and logging invariants.
-     * Consider `LLMServiceInternal.logGenerationAndHandleErrors` for help.
+     * however, maintaining all errors-handling and logging invariants and, perfectly, models scheduling.
+     * Consider `LLMServiceInternal.scheduleLoggedGenerationAndHandleErrors` for help.
      *
      * @param analyzedChat the analyzed chat history used as input for proof generation.
      * @param params resolved model parameters for configuring the generation process.
@@ -171,13 +151,16 @@ export abstract class LLMServiceImpl<
         params: ResolvedModelParams,
         choices: number = params.defaultChoices,
         metadataHolder: ProofGenerationMetadataHolder | undefined = undefined,
-        abortSignal?: AbortSignal
+        abortSignal?: AbortSignal,
+        onSchedulerDebugLog: MessageHandler = this.internal
+            .sendDebugEventOnSchedulerLog
     ): Promise<string[]> {
         return this.internal.generateFromChatWrapped(
             params,
             choices,
             metadataHolder,
             abortSignal,
+            onSchedulerDebugLog,
             () => analyzedChat,
             (rawProof) => rawProof.content
         );
@@ -190,8 +173,8 @@ export abstract class LLMServiceImpl<
      * The default implementation is based on the generation from chat, namely,
      * it calls `LLMServiceInternal.generateFromChatImpl`.
      * If it is not the desired way, `generateProof` should be overriden;
-     * however, maintaining all errors-handling and logging invariants.
-     * Consider `LLMServiceInternal.logGenerationAndHandleErrors` for help.
+     * however, maintaining all errors-handling and logging invariants and, perfectly, models scheduling.
+     * Consider `LLMServiceInternal.scheduleLoggedGenerationAndHandleErrors` for help.
      *
      * @param proofGenerationContext the context used as input for proof generation.
      * @param params resolved model parameters for configuring the generation process.
@@ -204,13 +187,16 @@ export abstract class LLMServiceImpl<
         params: ResolvedModelParams,
         choices: number = params.defaultChoices,
         metadataHolder: ProofGenerationMetadataHolder | undefined = undefined,
-        abortSignal?: AbortSignal
+        abortSignal?: AbortSignal,
+        onSchedulerDebugLog: MessageHandler = this.internal
+            .sendDebugEventOnSchedulerLog
     ): Promise<GeneratedProofType[]> {
         return this.internal.generateFromChatWrapped(
             params,
             choices,
             metadataHolder,
             abortSignal,
+            onSchedulerDebugLog,
             () => buildProofGenerationChat(proofGenerationContext, params),
             (rawProof) =>
                 this.internal.constructGeneratedProof(

@@ -1,3 +1,5 @@
+import { MessageHandler } from "../structures/messageHandler";
+
 import { ResolveType } from "./promiseUtils";
 
 export class AsyncScheduler {
@@ -16,7 +18,7 @@ export class AsyncScheduler {
 
     scheduleTask<T>(
         executeTask: () => Promise<T>,
-        onDebugLog: (message: string) => void
+        onDebugLog: MessageHandler
     ): Promise<T> {
         const debugLog: (...messages: string[]) => void = (
             ...messages: string[]

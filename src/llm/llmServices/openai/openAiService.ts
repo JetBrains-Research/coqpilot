@@ -14,6 +14,7 @@ import {
     GeneratedRawContentItem,
 } from "../commonStructures/generatedRawContent";
 import { ProofVersion } from "../commonStructures/proofVersion";
+import { SchedulersProviderBuilders } from "../commonStructures/schedulersProviders";
 import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
 import { LLMServiceInternal } from "../llmServiceInternal";
@@ -29,12 +30,10 @@ export class OpenAiService extends LLMServiceImpl<
     OpenAiGeneratedProof,
     OpenAiServiceInternal
 > {
-    readonly serviceName = "OpenAiService";
-    protected readonly internal = new OpenAiServiceInternal(
-        this,
-        this.eventLogger,
-        this.generationsLoggerBuilder
-    );
+    readonly fullName = "OpenAiService";
+    readonly shortName = "Open AI";
+
+    protected readonly internal = new OpenAiServiceInternal(this);
     protected readonly modelParamsResolver = new OpenAiModelParamsResolver();
 }
 
@@ -81,6 +80,14 @@ class OpenAiServiceInternal extends LLMServiceInternal<
             previousProofVersions
         );
     }
+
+    readonly modelsSchedulersProvider =
+        SchedulersProviderBuilders.limitParallelismForModelsWithSameKey(
+            this.serviceSetup.generationParallelism,
+            (params: OpenAiModelParams) => params.modelName,
+            this.llmService.fullName,
+            this.serviceSetup.enableModelsSchedulingDebugLogs
+        );
 
     async generateFromChatImpl(
         analyzedChat: AnalyzedChatHistory,

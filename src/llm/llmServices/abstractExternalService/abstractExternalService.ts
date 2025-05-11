@@ -4,6 +4,7 @@ import { invariantFailed } from "../../../utils/errors/throwErrors";
 import { getCoqPilotInstallationsDirPath } from "../../../utils/fs/coqPilotInstallationsDir";
 import { translateToSafeFileName } from "../../../utils/fs/fileNameUtils";
 import { joinPaths } from "../../../utils/fs/pathUtils";
+import { MessageHandler } from "../../../utils/structures/messageHandler";
 import { Time, time } from "../../../utils/time";
 import {
     ExternalPipelineProofGenerationContext,
@@ -21,6 +22,7 @@ import { LLMServiceRequest } from "../commonStructures/llmServiceRequest";
 import { ProofGenerationMetadataHolder } from "../commonStructures/proofGenerationMetadata";
 import { ProofGenerationType } from "../commonStructures/proofGenerationType";
 import { ProofVersion } from "../commonStructures/proofVersion";
+import { SchedulersProviderBuilders } from "../commonStructures/schedulersProviders";
 import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
 import { LLMServiceInternal } from "../llmServiceInternal";
@@ -81,7 +83,7 @@ export abstract class AbstractExternalService<
         InstallationOptions,
         InputModelParams
     >;
-    readonly installerProvider: InstallerProvider | undefined = () => {
+    readonly installerProvider: InstallerProvider = () => {
         return {
             installer: this.installer,
             options: undefined,
@@ -123,13 +125,16 @@ export abstract class AbstractExternalService<
         params: ResolvedModelParams,
         choices: number = params.defaultChoices,
         metadataHolder: ProofGenerationMetadataHolder | undefined = undefined,
-        abortSignal?: AbortSignal
+        abortSignal?: AbortSignal,
+        onSchedulerDebugLog: MessageHandler = this.internal
+            .sendDebugEventOnSchedulerLog
     ): Promise<GeneratedProofType[]> {
-        return this.internal.logGenerationAndHandleErrors(
+        return this.internal.scheduleLoggedGenerationAndHandleErrors(
             ProofGenerationType.NO_CHAT,
             params,
             choices,
             metadataHolder,
+            onSchedulerDebugLog,
             (request) =>
                 this.internal.validateGenerationRequestOrThrow(
                     request,
@@ -282,12 +287,15 @@ export abstract class AbstractExternalServiceInternal<
     GeneratedProofType,
     LLMServiceInternalType
 > {
-    abstract constructGeneratedProof(
-        rawProof: GeneratedRawContentItem,
-        proofGenerationContext: ProofGenerationContext,
-        modelParams: ResolvedModelParams,
-        previousProofVersions?: ProofVersion[] | undefined
-    ): GeneratedProofType;
+    /**
+     * Note: since `AbstractExternalService` already implements mechanism to limit parallelism
+     * (by limiting max number of subprocesses spawned), no need in any additional one by default.
+     */
+    readonly modelsSchedulersProvider =
+        SchedulersProviderBuilders.unlimitedParallelism(
+            this.llmService.fullName,
+            this.serviceSetup.enableModelsSchedulingDebugLogs
+        );
 
     abstract performExternalProofGeneration(
         externalPipelineContext: ExternalPipelineProofGenerationContext,
@@ -323,7 +331,7 @@ export abstract class AbstractExternalServiceInternal<
         _choices: number
     ): Promise<GeneratedRawContent> {
         this.unsupportedMethod(
-            `\`${this.llmService.serviceName}\` does not support generation from chat`,
+            `\`${this.llmService.fullName}\` does not support generation from chat`,
             ProofGenerationType.NO_CHAT,
             _params,
             _choices

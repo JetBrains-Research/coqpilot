@@ -1,3 +1,4 @@
+import { MessageHandler } from "../../../utils/structures/messageHandler";
 import { Time, timeZero } from "../../../utils/time";
 import { ConfigurationError } from "../../llmServiceErrors";
 import { ProofGenerationContext } from "../../proofGenerationContext";
@@ -11,6 +12,7 @@ import { zeroTokens } from "../commonStructures/generationTokens";
 import { ProofGenerationMetadataHolder } from "../commonStructures/proofGenerationMetadata";
 import { ProofGenerationType } from "../commonStructures/proofGenerationType";
 import { ProofVersion } from "../commonStructures/proofVersion";
+import { SchedulersProviderBuilders } from "../commonStructures/schedulersProviders";
 import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
 import { LLMServiceInternal } from "../llmServiceInternal";
@@ -25,12 +27,10 @@ export class PredefinedProofsService extends LLMServiceImpl<
     PredefinedProof,
     PredefinedProofsServiceInternal
 > {
-    readonly serviceName = "PredefinedProofsService";
-    protected readonly internal = new PredefinedProofsServiceInternal(
-        this,
-        this.eventLogger,
-        this.generationsLoggerBuilder
-    );
+    readonly fullName = "PredefinedProofsService";
+    readonly shortName = "Predefined Proofs";
+
+    protected readonly internal = new PredefinedProofsServiceInternal(this);
     protected readonly modelParamsResolver =
         new PredefinedProofsModelParamsResolver();
 
@@ -38,13 +38,17 @@ export class PredefinedProofsService extends LLMServiceImpl<
         proofGenerationContext: ProofGenerationContext,
         params: PredefinedProofsModelParams,
         choices: number = params.defaultChoices,
-        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined
+        metadataHolder: ProofGenerationMetadataHolder | undefined = undefined,
+        _abortSignal?: AbortSignal,
+        onSchedulerDebugLog: MessageHandler = this.internal
+            .sendDebugEventOnSchedulerLog
     ): Promise<PredefinedProof[]> {
-        return this.internal.logGenerationAndHandleErrors(
+        return this.internal.scheduleLoggedGenerationAndHandleErrors(
             ProofGenerationType.NO_CHAT,
             params,
             choices,
             metadataHolder,
+            onSchedulerDebugLog,
             (_request) => {
                 LLMServiceInternal.validateChoices(choices);
                 const tactics = params.tactics;
@@ -149,6 +153,13 @@ class PredefinedProofsServiceInternal extends LLMServiceInternal<
             this
         );
     }
+
+    // `this.serviceSetup.generationParallelism` is actually unused, yes
+    readonly modelsSchedulersProvider =
+        SchedulersProviderBuilders.unlimitedParallelism(
+            this.llmService.fullName,
+            this.serviceSetup.enableModelsSchedulingDebugLogs
+        );
 
     async generateFromChatImpl(
         _analyzedChat: AnalyzedChatHistory,

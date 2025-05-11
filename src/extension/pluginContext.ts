@@ -61,6 +61,13 @@ export class PluginContext implements Disposable {
         errorsHandlingMode: ErrorsHandlingMode.SWALLOW_ERRORS,
 
         /**
+         * Use the safest option by default: this way,
+         * the overall progress is guaranteed
+         * (although potentially slowing down the whole process).
+         */
+        generationParallelism: 1,
+
+        /**
          * Could be turned on if debug is needed.
          */
         debugLogs: false,
@@ -76,6 +83,8 @@ export class PluginContext implements Disposable {
         }),
         openAiService: new OpenAiService({
             ...this.llmServicesSetup,
+            // In practice, `OpenAI` is capable of processing multiple requests.
+            generationParallelism: 5,
             generationLogsFilePath: path.join(
                 this.llmServicesLogsDir,
                 "openai-logs.txt"
@@ -83,6 +92,7 @@ export class PluginContext implements Disposable {
         }),
         grazieService: new GrazieService({
             ...this.llmServicesSetup,
+            generationParallelism: 5,
             generationLogsFilePath: path.join(
                 this.llmServicesLogsDir,
                 "grazie-logs.txt"

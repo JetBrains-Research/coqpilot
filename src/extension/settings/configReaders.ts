@@ -234,6 +234,7 @@ function validateAndParseJson<T>(
 }
 
 // TODO: skip service's models if the user declines its installation, don't throw
+// TODO: this method could be made more abstract, handling any `llmService`
 async function provideExternalServicesInstallations(
     coqPilotPath: string,
     externalServicesWithUserParams: [
@@ -243,11 +244,12 @@ async function provideExternalServicesInstallations(
 ) {
     for (const [llmService, userParams] of externalServicesWithUserParams) {
         if (llmService instanceof AbstractExternalService) {
-            await llmService.installer.provideInstallationForRequest(
+            const { installer, options } = llmService.installerProvider();
+            await installer.provideInstallationForRequest(
                 userParams,
                 coqPilotPath,
                 llmService.installationPath,
-                undefined,
+                options,
                 new UserInstallationInteractor(llmService.installer)
             );
         }

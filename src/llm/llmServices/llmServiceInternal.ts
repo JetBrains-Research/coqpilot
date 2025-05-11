@@ -1,5 +1,7 @@
 import { EventLogger, Severity } from "../../logging/eventLogger";
 import { asErrorOrRethrow } from "../../utils/errors/errorsUtils";
+import { createTmpFile } from "../../utils/fs/tmpFs";
+import { MessageHandler } from "../../utils/structures/messageHandler";
 import {
     ConfigurationError,
     GenerationFailedError,
@@ -27,8 +29,10 @@ import {
 import { ProofGenerationMetadataHolder } from "./commonStructures/proofGenerationMetadata";
 import { ProofGenerationType } from "./commonStructures/proofGenerationType";
 import { ProofVersion } from "./commonStructures/proofVersion";
+import { SchedulersProvider } from "./commonStructures/schedulersProviders";
 import { GeneratedProofImpl } from "./generatedProof";
 import { LLMServiceImpl } from "./llmService";
+import { ResolvedLLMServiceParams } from "./llmServiceParams";
 import { ModelParams } from "./modelParams";
 import { TokensCounter } from "./utils/chatTokensFitter";
 import { GenerationsLogger } from "./utils/generationsLogger/generationsLogger";
@@ -66,21 +70,31 @@ export abstract class LLMServiceInternal<
         LLMServiceInternalType
     >,
 > {
-    readonly eventLogger: EventLogger | undefined;
-    readonly errorsHandlingMode: ErrorsHandlingMode;
-    readonly generationsLogger: GenerationsLogger;
+    readonly serviceSetup: ResolvedLLMServiceParams =
+        this.llmService.serviceSetup;
+
+    readonly eventLogger: EventLogger | undefined =
+        this.serviceSetup.eventLogger;
+    readonly errorsHandlingMode: ErrorsHandlingMode =
+        this.serviceSetup.errorsHandlingMode;
+
+    // Note: it is made non-readonly for being testable and concise at the same time
+    generationsLogger: GenerationsLogger;
     readonly logDebug: DebugLogsWrappers;
 
-    constructor(
-        readonly llmService: LLMServiceType,
-        eventLogger: EventLogger | undefined,
-        generationsLoggerBuilder: () => GenerationsLogger
-    ) {
-        this.eventLogger = eventLogger;
-        this.errorsHandlingMode = llmService.errorsHandlingMode;
-        this.generationsLogger = generationsLoggerBuilder();
+    constructor(readonly llmService: LLMServiceType) {
+        const generationLogsFilePath =
+            llmService.serviceSetup.generationLogsFilePath ?? createTmpFile();
+        this.generationsLogger = new GenerationsLogger(generationLogsFilePath, {
+            debug: llmService.serviceSetup.debugLogs,
+            paramsPropertiesToCensor: {
+                apiKey: GenerationsLogger.censorString,
+            },
+            cleanLogsOnStart: true,
+        });
+
         this.logDebug = new DebugLogsWrappers(
-            llmService.serviceName,
+            llmService.fullName,
             this.eventLogger
         );
     }
@@ -96,6 +110,14 @@ export abstract class LLMServiceInternal<
         modelParams: ResolvedModelParams,
         previousProofVersions?: ProofVersion[]
     ): GeneratedProofType;
+
+    /**
+     * Maintain schedulers to execute generation task involving given models.
+     * `modelsSchedulersProvider` allows to control the maximum parallelism for the models of this `LLMService`.
+     *
+     * Check `SchedulersProviderBuilders` for already available implementations.
+     */
+    abstract readonly modelsSchedulersProvider: SchedulersProvider;
 
     /**
      * This method should be mostly a pure implementation of
@@ -135,8 +157,26 @@ export abstract class LLMServiceInternal<
     }
 
     /**
+     * Helper function that wraps a generation task to execute it scheduled
+     * with respect to the other generation tasks involving `params` model.
+     *
+     * Basically, all proof-generation calls should be wrapped into this method
+     * to enable the maximum parallelism control, which, in turn, guarantees
+     * the whole system progress on high requests workload.
+     */
+    readonly scheduleGenerationTask = async <T>(
+        params: ResolvedModelParams,
+        task: () => Promise<T>,
+        onDebugLog: MessageHandler
+    ): Promise<T> => {
+        return this.modelsSchedulersProvider
+            .getScheduler(params)
+            .scheduleTask(task, onDebugLog);
+    };
+
+    /**
      * Helper function that wraps `LLMServiceInternal.generateFromChatImpl` call with
-     * logging and errors handling.
+     * generation task scheduling and logging and errors handling.
      *
      * To know more about the latter,
      * check `LLMServiceInternal.logGenerationAndHandleErrors` docs.
@@ -146,14 +186,16 @@ export abstract class LLMServiceInternal<
         choices: number,
         metadataHolder: ProofGenerationMetadataHolder | undefined,
         abortSignal: AbortSignal | undefined,
+        onSchedulerDebugLog: MessageHandler,
         buildAndValidateChat: () => AnalyzedChatHistory,
         wrapRawProofContent: (rawProof: GeneratedRawContentItem) => T
-    ): Promise<T[]> => {
-        return this.logGenerationAndHandleErrors<T>(
+    ): Promise<T[]> =>
+        this.scheduleLoggedGenerationAndHandleErrors(
             ProofGenerationType.CHAT_BASED,
             params,
             choices,
             metadataHolder,
+            onSchedulerDebugLog,
             (request) => {
                 request.analyzedChat = buildAndValidateChat();
             },
@@ -166,7 +208,37 @@ export abstract class LLMServiceInternal<
                 ),
             wrapRawProofContent
         );
-    };
+
+    /**
+     * Helper function that wraps `LLMServiceInternal.logGenerationAndHandleErrors` call
+     * with generation task scheduling (i.e. `LLMServiceInternal.scheduleGenerationTask` call).
+     */
+    readonly scheduleLoggedGenerationAndHandleErrors = async <T>(
+        proofGenerationType: ProofGenerationType,
+        params: ResolvedModelParams,
+        choices: number,
+        metadataHolder: ProofGenerationMetadataHolder | undefined,
+        onSchedulerDebugLog: MessageHandler,
+        completeAndValidateRequest: (request: LLMServiceRequest) => void,
+        generateProofs: (
+            request: LLMServiceRequest
+        ) => Promise<GeneratedRawContent>,
+        wrapRawProofContent: (rawProof: GeneratedRawContentItem) => T
+    ): Promise<T[]> =>
+        this.scheduleGenerationTask(
+            params,
+            () =>
+                this.logGenerationAndHandleErrors(
+                    proofGenerationType,
+                    params,
+                    choices,
+                    metadataHolder,
+                    completeAndValidateRequest,
+                    generateProofs,
+                    wrapRawProofContent
+                ),
+            onSchedulerDebugLog
+        );
 
     /**
      * This is a helper function that wraps the implementation calls,
@@ -373,6 +445,10 @@ export abstract class LLMServiceInternal<
             throw requestFailed.llmServiceError;
         }
     }
+
+    readonly sendDebugEventOnSchedulerLog: MessageHandler = (
+        schedulerDebugLog: string
+    ) => this.logDebug.event(schedulerDebugLog);
 }
 
 /**

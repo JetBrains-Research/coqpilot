@@ -67,7 +67,7 @@ export function switchByLLMServiceType<T>(
         return onRangoService();
     } else {
         illegalState(
-            `switch by unknown \`LLMService\`: "${llmService.serviceName}"`
+            `switch by unknown \`LLMService\`: "${llmService.fullName}"`
         );
     }
 }

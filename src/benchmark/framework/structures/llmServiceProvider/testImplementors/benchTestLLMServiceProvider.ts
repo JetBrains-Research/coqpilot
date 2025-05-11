@@ -1,5 +1,9 @@
 import { ErrorsHandlingMode } from "../../../../../llm/llmServices/commonStructures/errorsHandlingMode";
 import { InstallerProvider } from "../../../../../llm/llmServices/commonStructures/installerProvider";
+import {
+    SchedulersProvider,
+    UnlimitedSchedulersProvider,
+} from "../../../../../llm/llmServices/commonStructures/schedulersProviders";
 import { LLMService } from "../../../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../../../llm/llmServices/modelParams";
 import { ParamsResolverImpl } from "../../../../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";
@@ -8,11 +12,6 @@ import { UserModelParams } from "../../../../../llm/userModelParams";
 import { EventLogger } from "../../../../../logging/eventLogger";
 import { AsyncScheduler } from "../../../../../utils/async/asyncScheduler";
 import { unsupported } from "../../../../../utils/errors/throwErrors";
-import {
-    SchedulersProvider,
-    UnlimitedSchedulersProvider,
-} from "../../../utils/asyncUtils/schedulersProviders";
-import { InstallerProvider } from "../installerProvider";
 import { LLMServiceProvider } from "../llmServiceProvider";
 import { toOneLineLogString } from "../utils/toLog";
 

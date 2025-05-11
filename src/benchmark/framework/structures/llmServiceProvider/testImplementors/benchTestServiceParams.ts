@@ -1,4 +1,8 @@
 import { AnalyzedChatHistory } from "../../../../../llm/llmServices/commonStructures/chat";
+import {
+    SchedulersProvider,
+    SchedulersProviderBuilders,
+} from "../../../../../llm/llmServices/commonStructures/schedulersProviders";
 import { LLMServiceInternal } from "../../../../../llm/llmServices/llmServiceInternal";
 import {
     ResolvedLLMServiceParams,
@@ -13,6 +17,7 @@ import {
 } from "../../../logging/benchmarkingLogger";
 
 import { BenchTestModelParams } from "./benchTestModelParams";
+import { BenchTestService } from "./benchTestService";
 
 export type GenerateRawProofsType = (
     analyzedChat: AnalyzedChatHistory,
@@ -27,6 +32,7 @@ export interface ResolvedBenchTestServiceParams
     extends ResolvedLLMServiceParams {
     logger: BenchmarkingLogger;
     generateRawProofs: GenerateRawProofsType;
+    getSchedulersProvider: (service: BenchTestService) => SchedulersProvider;
 }
 
 export function resolveBenchTestServiceParamsWithDefaults(
@@ -44,6 +50,11 @@ export function resolveBenchTestServiceParamsWithDefaults(
         generateRawProofs:
             serviceParams.generateRawProofs ??
             BenchTestDefaults.generateRawProofs,
+        getSchedulersProvider: (service: BenchTestService) =>
+            SchedulersProviderBuilders.unlimitedParallelism<BenchTestModelParams>(
+                service.fullName,
+                false
+            ),
     };
 }
 

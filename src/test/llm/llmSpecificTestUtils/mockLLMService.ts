@@ -14,6 +14,7 @@ import {
 } from "../../../llm/llmServices/commonStructures/generatedRawContent";
 import { ProofGenerationMetadataHolder } from "../../../llm/llmServices/commonStructures/proofGenerationMetadata";
 import { ProofVersion } from "../../../llm/llmServices/commonStructures/proofVersion";
+import { SchedulersProviderBuilders } from "../../../llm/llmServices/commonStructures/schedulersProviders";
 import { GeneratedProofImpl } from "../../../llm/llmServices/generatedProof";
 import { LLMServiceImpl } from "../../../llm/llmServices/llmService";
 import { LLMServiceInternal } from "../../../llm/llmServices/llmServiceInternal";
@@ -29,6 +30,7 @@ import { UserModelParams } from "../../../llm/userModelParams";
 
 import { EventLogger } from "../../../logging/eventLogger";
 import { throwError } from "../../../utils/errors/throwErrors";
+import { MessageHandler } from "../../../utils/structures/messageHandler";
 
 export interface MockLLMUserModelParams extends UserModelParams {
     proofsToGenerate: string[];
@@ -115,13 +117,11 @@ export class MockLLMService extends LLMServiceImpl<
     MockLLMGeneratedProof,
     MockLLMServiceInternal
 > {
-    readonly serviceName = "MockLLMService";
+    readonly fullName = "MockLLMService";
+    readonly shortName = "Mock";
+
     protected readonly internal: MockLLMServiceInternal =
-        new MockLLMServiceInternal(
-            this,
-            this.eventLogger,
-            this.generationsLoggerBuilder
-        );
+        new MockLLMServiceInternal(this);
     protected readonly modelParamsResolver = new MockLLMModelParamsResolver();
 
     /**
@@ -216,13 +216,16 @@ export class MockLLMGeneratedProof extends GeneratedProofImpl<
         analyzedChat: AnalyzedChatHistory,
         choices: number,
         metadataHolder: ProofGenerationMetadataHolder | undefined = undefined,
-        abortSignal?: AbortSignal
+        abortSignal?: AbortSignal,
+        onSchedulerDebugLog: MessageHandler = this.llmServiceInternal
+            .sendDebugEventOnSchedulerLog
     ): Promise<MockLLMGeneratedProof[]> {
         return this.llmServiceInternal.generateFromChatWrapped(
             this.modelParams,
             choices,
             metadataHolder,
             abortSignal,
+            onSchedulerDebugLog,
             () => {
                 if (!this.nextVersionCanBeGenerated()) {
                     throw new ConfigurationError(
@@ -264,6 +267,13 @@ class MockLLMServiceInternal extends LLMServiceInternal<
             previousProofVersions
         );
     }
+
+    // TODO: use `SchedulersProviderBuilders.limitParallelismForModelsWithSameKey` and test it
+    readonly modelsSchedulersProvider =
+        SchedulersProviderBuilders.unlimitedParallelism(
+            this.llmService.fullName,
+            this.serviceSetup.enableModelsSchedulingDebugLogs
+        );
 
     /**
      * Generally, `generateFromChatImpl` simply returns first `choices` proofs from the `MockLLMModelParams.proofsToGenerate`.

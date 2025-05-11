@@ -31,20 +31,22 @@ export class RangoService extends AbstractExternalService<
     RangoGeneratedProof,
     RangoServiceInternal
 > {
-    readonly serviceName = "RangoService";
+    readonly fullName = "RangoService";
+    readonly shortName = "Rango";
+
     static readonly externalProjectName = "Rango";
+    static readonly DEFAULT_MAX_SUBPROCESSES_PARALLELISM = 3;
 
     constructor(serviceParams: ExternalServiceParams = {}) {
-        super(RangoService.externalProjectName, 3, serviceParams);
+        super(
+            RangoService.externalProjectName,
+            RangoService.DEFAULT_MAX_SUBPROCESSES_PARALLELISM,
+            serviceParams
+        );
     }
 
-    protected readonly internal = new RangoServiceInternal(
-        this,
-        this.eventLogger,
-        this.generationsLoggerBuilder
-    );
+    protected readonly internal = new RangoServiceInternal(this);
     protected readonly modelParamsResolver = new RangoModelParamsResolver();
-
     readonly installer = new RangoInstaller();
 }
 
