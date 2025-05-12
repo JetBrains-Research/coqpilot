@@ -4,13 +4,13 @@ import { PropertiesSchema } from "ajv/dist/types/json-schema";
 import {
     ModelParams,
     modelParamsSchema,
-} from "../../../../../llm/llmServices/modelParams";
-import { ValidationRules } from "../../../../../llm/llmServices/utils/paramsResolvers/builders";
-import { BasicModelParamsResolver } from "../../../../../llm/llmServices/utils/paramsResolvers/kit/basicModelParamsResolvers";
-import { ValidParamsResolverImpl } from "../../../../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";
-import { UserModelParams } from "../../../../../llm/userModelParams";
+} from "../../../llm/llmServices/modelParams";
+import { ValidationRules } from "../../../llm/llmServices/utils/paramsResolvers/builders";
+import { BasicModelParamsResolver } from "../../../llm/llmServices/utils/paramsResolvers/kit/basicModelParamsResolvers";
+import { ValidParamsResolverImpl } from "../../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";
+import { UserModelParams } from "../../../llm/userModelParams";
 
-import { InputBenchmarkingModelParams } from "../../inputParameters/inputBenchmarkingModelParams";
+import { InputBenchmarkingModelParams } from "../structures/inputParameters/inputBenchmarkingModelParams";
 
 export interface BenchTestUserModelParams extends UserModelParams {
     testModelName?: string;

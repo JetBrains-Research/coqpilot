@@ -16,10 +16,13 @@ import {
 } from "../../../llm/llmServices/modelParams";
 import { GenerationsLogger } from "../../../llm/llmServices/utils/generationsLogger/generationsLogger";
 import { BasicModelParamsResolver } from "../../../llm/llmServices/utils/paramsResolvers/kit/basicModelParamsResolvers";
+import { LLMServiceSerializer } from "../../../llm/llmServices/utils/serialization/llmServiceSerializer";
 import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { UserModelParams } from "../../../llm/userModelParams";
 
 import { unsupported } from "../../../utils/errors/throwErrors";
+
+import { provideTestSerializer } from "./testServiceSerializer";
 
 /**
  * Mock implementation that always throws on any proof-generation call.
@@ -34,22 +37,26 @@ export class DummyLLMService extends LLMServiceImpl<
     DummyGeneratedProof,
     DummyLLMServiceInternal
 > {
-    readonly fullName = "DummyLLMService";
-    readonly shortName = "Dummy";
+    readonly name = "DummyLLMService";
+    readonly identifier = undefined;
 
     protected readonly internal: DummyLLMServiceInternal;
     protected readonly modelParamsResolver = new BasicModelParamsResolver(
         modelParamsSchema,
         "ModelParams"
     );
+    protected readonly serializer: LLMServiceSerializer;
 
     constructor(generationsLogger: GenerationsLogger) {
         super({
             errorsHandlingMode: ErrorsHandlingMode.RETHROW_ERRORS,
-            generationLogsFilePath: generationsLogger.filePath,
             debugLogs: true,
         });
         this.internal = new DummyLLMServiceInternal(this, generationsLogger);
+        this.serializer = provideTestSerializer<GenerationsLogger>(
+            generationsLogger,
+            (generationsLogger) => new DummyLLMService(generationsLogger)
+        );
     }
 
     dispose(): void {}
@@ -110,15 +117,6 @@ class DummyLLMServiceInternal extends LLMServiceInternal<
     DummyGeneratedProof,
     DummyLLMServiceInternal
 > {
-    constructor(
-        llmService: DummyLLMService,
-        generationsLogger: GenerationsLogger
-    ) {
-        super(llmService);
-        this.generationsLogger.dispose();
-        this.generationsLogger = generationsLogger;
-    }
-
     constructGeneratedProof(
         _rawProof: GeneratedRawContentItem,
         _proofGenerationContext: ProofGenerationContext,
@@ -130,7 +128,7 @@ class DummyLLMServiceInternal extends LLMServiceInternal<
 
     readonly modelsSchedulersProvider =
         SchedulersProviderBuilders.unlimitedParallelism(
-            this.llmService.fullName,
+            this.llmService.name,
             this.serviceSetup.enableModelsSchedulingDebugLogs
         );
 

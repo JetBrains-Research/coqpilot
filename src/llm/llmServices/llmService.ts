@@ -7,6 +7,7 @@ import { AnalyzedChatHistory } from "./commonStructures/chat";
 import { InstallerProvider } from "./commonStructures/installerProvider";
 import { ProofGenerationMetadataHolder } from "./commonStructures/proofGenerationMetadata";
 import { GeneratedProofImpl } from "./generatedProof";
+import { LLMServiceIdentifier } from "./llmServiceIdentifier";
 import { LLMServiceInternal } from "./llmServiceInternal";
 import {
     LLMServiceParams,
@@ -21,6 +22,8 @@ import {
     ParamsResolutionResult,
     ParamsResolver,
 } from "./utils/paramsResolvers/abstractResolvers";
+import { LLMServiceSerializer } from "./utils/serialization/llmServiceSerializer";
+import { SerializedLLMService } from "./utils/serialization/serializedLLMService";
 
 /**
  * Facade type for the `LLMServiceImpl<InputModelParams, ResolvedModelParams, LLMServiceType, GeneratedProofType, LLMServiceInternalType>` type.
@@ -40,10 +43,11 @@ export type LLMService<
  * Generated proofs are represented by `GeneratedProofImpl` class and
  * can be further regenerated (fixed / shortened / etc), also keeping their previous versions.
  *
+ *
  * 1. All model parameters of the `ResolvedModelParams` type accepted by `LLMService`-related methods
- * are expected to be resolved by `resolveParameters` method beforehand.
- * This method resolves partially-undefined `InputModelParams` to complete and validated `ResolvedModelParams`.
- * See the `resolveParameters` method for more details.
+ *    are expected to be resolved by `resolveParameters` method beforehand.
+ *    This method resolves partially-undefined `InputModelParams` to complete and validated `ResolvedModelParams`.
+ *    See the `resolveParameters` method for more details.
  *
  * 2. All proofs-generation methods support errors handling and logging.
  *    - Each successfull generation is logged both by `GenerationsLogger` and `EventLogger`.
@@ -59,7 +63,13 @@ export type LLMService<
  *     `GenerationsLogger` maintains the logs of both successful and failed generations
  *     used for the further estimation of the service availability. See the `estimateTimeToBecomeAvailable` method.
  *
- * 3. To implement a new `LLMServiceImpl` based on generating proofs from chats, one should:
+ * 3. `LLMServiceImpl` is responsible for the way to interact with the actual proof-generation service,
+ *    meaning all proof-generation requests to the actual service should be scheduled
+ *    through the same `LLMServiceImpl` instance.
+ *    Thus, only one instance of each `LLMServiceImpl` type is maintained active by default.
+ *    However, there can be exceptions, see `LLMServiceImpl.isSameInstance(...)` for more details.
+ *
+ * 4. To implement a new `LLMServiceImpl` based on generating proofs from chats, one should:
  *    - declare the specification of models parameters via custom `UserModelParams` and `ModelParams` interfaces;
  *    - implement custom `ParamsResolver` class, declaring the algorithm to resolve parameters with;
  *    - declare custom `GeneratedProofImpl`;
@@ -110,15 +120,24 @@ export abstract class LLMServiceImpl<
         LLMServiceInternalType
     >,
 > {
-    abstract readonly fullName: string;
-    abstract readonly shortName: string;
+    abstract readonly name: string;
+    abstract readonly identifier: LLMServiceIdentifier | undefined;
 
     protected abstract readonly internal: LLMServiceInternalType;
     protected abstract readonly modelParamsResolver: ParamsResolver<
         InputModelParams,
         ResolvedModelParams
     >;
+    /**
+     * Provides serialization-deserialization cycle for the given `LLMService`.
+     *
+     * Check implementations of `LLMServiceSerializer` for more insights
+     * (for example, `BasicLLMServiceSerializer` via `provideBasicSerializer(...)`).
+     */
+    protected abstract readonly serializer: LLMServiceSerializer;
 
+    // TODO: parametrize class with `ResolvedLLMServiceParams`,
+    // so as to support custom ones better
     readonly serviceSetup: ResolvedLLMServiceParams;
 
     /**
@@ -257,5 +276,41 @@ export abstract class LLMServiceImpl<
         params: InputModelParams
     ): ParamsResolutionResult<ResolvedModelParams> {
         return this.modelParamsResolver.resolve(params);
+    }
+
+    /**
+     * Serialize `LLMService` to disk via defined `this.serializer`.
+     *
+     * This method never throws, so as not to halt a successful execution.
+     * If recovery from the disk is impossible, deserialization should throw.
+     */
+    readonly serialize = (): SerializedLLMService => {
+        return this.serializer.serialize();
+    };
+
+    readonly toLogString = (verbose: boolean): string => {
+        return this.serializer.toLogString(verbose);
+    };
+
+    /**
+     * This function controls the rule to maintain instances of this `LLMServiceImpl`.
+     * Only instances that marked as different (so that `isSameInstance` return `false`)
+     * can coexist together. Otherwise, an error will be thrown on attempt to register the second instance
+     * (see `LLMServicesStorage` for more details).
+     *
+     * Basically, this function prevents from accident creation of different instances of the same service,
+     * so that no more global control to the actual service is possible (different instances will use
+     * different models schedulers, for example).
+     *
+     * However, sometimes this function might return `false`: for example, the same external service
+     * might be instantiated with different installation paths, so basically such instances will correspond
+     * to different actual services.
+     *
+     * *_All in all, implementation note:_* return `true` by default, so to force having only
+     * one instance of `LLMService` per execution. Return `false` if you want to provide more flexibility,
+     * but do it carefully checking the setup.
+     */
+    isSameInstance(_other: LLMService<any, any>): boolean {
+        return true;
     }
 }

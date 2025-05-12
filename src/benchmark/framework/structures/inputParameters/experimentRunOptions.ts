@@ -46,8 +46,6 @@ export interface ExperimentRunOptions extends BenchmarkingOptions {
     enableSubprocessesSchedulingDebugLogs: boolean;
     enableModelsSchedulingDebugLogs: boolean;
 
-    servicesMaxParallelism: LLMServicesMaxParallelism;
-
     /**
      * Control `coq-lsp` clients creation and usage.
      *

@@ -80,25 +80,29 @@ export class TeamCityAgent extends SingleWorkspaceExperiment {
             );
         }
 
-        const benchmarkingItems =
+        const [llmServices, benchmarkingItems] =
             LightweightDeserializer.restoreBenchmarkingItems(
                 serialization,
                 executionContext.resolvedRunOptions.datasetCacheDirectoryPath,
                 executionContext.logger
             );
-        if (benchmarkingItems.length === 0) {
-            throwBenchmarkingError(
-                "No items to benchmark: make sure the experiment input is configured correctly"
-            );
-        }
+        try {
+            if (benchmarkingItems.length === 0) {
+                throwBenchmarkingError(
+                    "No items to benchmark: make sure the experiment input is configured correctly"
+                );
+            }
 
-        // Note: `await` is here for consistency with other execution methods
-        return await this.executeBenchmarkingItems(
-            benchmarkingItems,
-            artifactsDirPath,
-            executionContext,
-            totalTime
-        );
+            // Note: `await` is here for consistency with other execution methods
+            return await this.executeBenchmarkingItems(
+                benchmarkingItems,
+                artifactsDirPath,
+                executionContext,
+                totalTime
+            );
+        } finally {
+            llmServices.dispose();
+        }
     }
 
     private checkSerializationWillProduceManyBenchmarkingItems(

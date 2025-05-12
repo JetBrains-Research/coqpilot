@@ -17,7 +17,6 @@ import {
     NonValidatedProof,
     ValidatedProof,
 } from "../../structures/benchmarkingResults/benchmarkedProof";
-import { serializeLLMServiceProvider } from "../../structures/llmServiceProvider/llmServiceProviderSerialization";
 import { serializeParsedCoqFile } from "../../structures/parsedCoqFile/parsedCoqFileData";
 
 import { BasicJsonSerializationStructures } from "./structures";
@@ -93,9 +92,7 @@ export namespace BasicJsonSerialization {
         return {
             theoremRanker: params.theoremRanker.type,
             modelParams: params.modelParams,
-            llmServiceProvider: serializeLLMServiceProvider(
-                params.llmServiceProvider
-            ),
+            serializedService: params.llmService.serialize(),
         };
     }
 

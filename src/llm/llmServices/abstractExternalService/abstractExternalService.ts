@@ -24,7 +24,7 @@ import { ProofGenerationType } from "../commonStructures/proofGenerationType";
 import { ProofVersion } from "../commonStructures/proofVersion";
 import { SchedulersProviderBuilders } from "../commonStructures/schedulersProviders";
 import { GeneratedProofImpl } from "../generatedProof";
-import { LLMServiceImpl } from "../llmService";
+import { LLMService, LLMServiceImpl } from "../llmService";
 import { LLMServiceInternal } from "../llmServiceInternal";
 import { ModelParams } from "../modelParams";
 import { throwConfigurationError } from "../utils/errorUtils";
@@ -174,6 +174,13 @@ export abstract class AbstractExternalService<
         return time(5, "second"); // some cool-down for the subprocess spawning
     }
 
+    isSameInstance(other: LLMService<any, any>): boolean {
+        return (
+            other instanceof AbstractExternalService &&
+            this.installationPath === other.installationPath
+        );
+    }
+
     static getDefaultInstallationDirPrefix(
         externalProjectName: string
     ): string {
@@ -293,7 +300,7 @@ export abstract class AbstractExternalServiceInternal<
      */
     readonly modelsSchedulersProvider =
         SchedulersProviderBuilders.unlimitedParallelism(
-            this.llmService.fullName,
+            this.llmService.name,
             this.serviceSetup.enableModelsSchedulingDebugLogs
         );
 
@@ -331,7 +338,7 @@ export abstract class AbstractExternalServiceInternal<
         _choices: number
     ): Promise<GeneratedRawContent> {
         this.unsupportedMethod(
-            `\`${this.llmService.fullName}\` does not support generation from chat`,
+            `\`${this.llmService.name}\` does not support generation from chat`,
             ProofGenerationType.NO_CHAT,
             _params,
             _choices

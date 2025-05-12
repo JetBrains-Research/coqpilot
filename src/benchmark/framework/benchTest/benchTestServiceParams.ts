@@ -1,20 +1,20 @@
-import { AnalyzedChatHistory } from "../../../../../llm/llmServices/commonStructures/chat";
+import { AnalyzedChatHistory } from "../../../llm/llmServices/commonStructures/chat";
 import {
     SchedulersProvider,
     SchedulersProviderBuilders,
-} from "../../../../../llm/llmServices/commonStructures/schedulersProviders";
-import { LLMServiceInternal } from "../../../../../llm/llmServices/llmServiceInternal";
+} from "../../../llm/llmServices/commonStructures/schedulersProviders";
+import { LLMServiceInternal } from "../../../llm/llmServices/llmServiceInternal";
 import {
     ResolvedLLMServiceParams,
     resolveServiceParamsWithDefaults,
-} from "../../../../../llm/llmServices/llmServiceParams";
+} from "../../../llm/llmServices/llmServiceParams";
 
-import { delay } from "../../../../../utils/async/delay";
+import { delay } from "../../../utils/async/delay";
 import {
     BenchmarkingLogger,
     BenchmarkingLoggerImpl,
     SeverityLevel,
-} from "../../../logging/benchmarkingLogger";
+} from "../logging/benchmarkingLogger";
 
 import { BenchTestModelParams } from "./benchTestModelParams";
 import { BenchTestService } from "./benchTestService";
@@ -52,7 +52,7 @@ export function resolveBenchTestServiceParamsWithDefaults(
             BenchTestDefaults.generateRawProofs,
         getSchedulersProvider: (service: BenchTestService) =>
             SchedulersProviderBuilders.unlimitedParallelism<BenchTestModelParams>(
-                service.fullName,
+                service.name,
                 false
             ),
     };

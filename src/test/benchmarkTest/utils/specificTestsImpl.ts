@@ -3,6 +3,11 @@ import { expect } from "earl";
 import { AnalyzedChatHistory } from "../../../llm/llmServices/commonStructures/chat";
 
 import {
+    BenchTestInputBenchmarkingModelParams,
+    BenchTestModelParams,
+} from "../../../benchmark/framework/benchTest/benchTestModelParams";
+import { BenchTestService } from "../../../benchmark/framework/benchTest/benchTestService";
+import {
     BenchmarkingBundle,
     BenchmarkingBundleWithModelsParams,
 } from "../../../benchmark/framework/experiment/setupDSL/benchmarkingBundleBuilder";
@@ -12,11 +17,6 @@ import {
     BenchmarkingLoggerImpl,
     SeverityLevel,
 } from "../../../benchmark/framework/logging/benchmarkingLogger";
-import { BenchTestServiceProvider } from "../../../benchmark/framework/structures/llmServiceProvider/testImplementors/benchTestLLMServiceProvider";
-import {
-    BenchTestInputBenchmarkingModelParams,
-    BenchTestModelParams,
-} from "../../../benchmark/framework/structures/llmServiceProvider/testImplementors/benchTestModelParams";
 
 import { runSimpleTestExperimentWithBundle } from "./experimentRunners";
 import { BenchmarkingTestsConstants } from "./testConstants";
@@ -56,8 +56,9 @@ export async function testContextTheoremsNotContainTarget(
 
     const bundle = new BenchmarkingBundle()
         .withCustomLLMService<BenchTestInputBenchmarkingModelParams>(
-            () =>
-                new BenchTestServiceProvider({
+            (controlParams) =>
+                new BenchTestService({
+                    ...controlParams,
                     logger: new BenchmarkingLoggerImpl(
                         SeverityLevel.DEBUG,
                         undefined,

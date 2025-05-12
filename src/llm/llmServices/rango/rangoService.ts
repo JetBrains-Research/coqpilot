@@ -16,8 +16,10 @@ import {
 import { zeroTokens } from "../commonStructures/generationTokens";
 import { LLMServiceRequest } from "../commonStructures/llmServiceRequest";
 import { ProofVersion } from "../commonStructures/proofVersion";
+import { LLMServiceIdentifier } from "../llmServiceIdentifier";
 import { RangoModelParams } from "../modelParams";
 import { throwConfigurationError } from "../utils/errorUtils";
+import { provideBasicSerializer } from "../utils/serialization/basicLLMServiceSerializer";
 
 import { runRangoProof } from "./rangoCore";
 import { RangoInstallationOptions, RangoInstaller } from "./rangoInstaller";
@@ -31,8 +33,8 @@ export class RangoService extends AbstractExternalService<
     RangoGeneratedProof,
     RangoServiceInternal
 > {
-    readonly fullName = "RangoService";
-    readonly shortName = "Rango";
+    readonly name = "RangoService";
+    readonly identifier = LLMServiceIdentifier.RANGO;
 
     static readonly externalProjectName = "Rango";
     static readonly DEFAULT_MAX_SUBPROCESSES_PARALLELISM = 3;
@@ -47,6 +49,8 @@ export class RangoService extends AbstractExternalService<
 
     protected readonly internal = new RangoServiceInternal(this);
     protected readonly modelParamsResolver = new RangoModelParamsResolver();
+    protected readonly serializer = provideBasicSerializer(this);
+
     readonly installer = new RangoInstaller();
 }
 

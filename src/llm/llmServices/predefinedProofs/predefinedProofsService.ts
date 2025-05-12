@@ -15,8 +15,10 @@ import { ProofVersion } from "../commonStructures/proofVersion";
 import { SchedulersProviderBuilders } from "../commonStructures/schedulersProviders";
 import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
+import { LLMServiceIdentifier } from "../llmServiceIdentifier";
 import { LLMServiceInternal } from "../llmServiceInternal";
 import { PredefinedProofsModelParams } from "../modelParams";
+import { provideBasicSerializer } from "../utils/serialization/basicLLMServiceSerializer";
 
 import { PredefinedProofsModelParamsResolver } from "./predefinedProofsModelParamsResolver";
 
@@ -27,12 +29,13 @@ export class PredefinedProofsService extends LLMServiceImpl<
     PredefinedProof,
     PredefinedProofsServiceInternal
 > {
-    readonly fullName = "PredefinedProofsService";
-    readonly shortName = "Predefined Proofs";
+    readonly name = "PredefinedProofsService";
+    readonly identifier = LLMServiceIdentifier.PREDEFINED_PROOFS;
 
     protected readonly internal = new PredefinedProofsServiceInternal(this);
     protected readonly modelParamsResolver =
         new PredefinedProofsModelParamsResolver();
+    protected readonly serializer = provideBasicSerializer(this);
 
     async generateProof(
         proofGenerationContext: ProofGenerationContext,
@@ -157,7 +160,7 @@ class PredefinedProofsServiceInternal extends LLMServiceInternal<
     // `this.serviceSetup.generationParallelism` is actually unused, yes
     readonly modelsSchedulersProvider =
         SchedulersProviderBuilders.unlimitedParallelism(
-            this.llmService.fullName,
+            this.llmService.name,
             this.serviceSetup.enableModelsSchedulingDebugLogs
         );
 

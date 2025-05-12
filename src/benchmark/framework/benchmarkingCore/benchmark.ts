@@ -21,7 +21,6 @@ import { BenchmarkingOptions } from "../structures/benchmarkingCore/benchmarking
 import { BenchmarkedItem } from "../structures/benchmarkingResults/benchmarkedItem";
 import { ExperimentResults } from "../structures/benchmarkingResults/experimentResults";
 import { ExperimentRunOptions } from "../structures/inputParameters/experimentRunOptions";
-import { BasicLLMServiceProvider } from "../structures/llmServiceProvider/implementors/basicLLMServiceProvider";
 import {
     abortAsCriticalError,
     abortAsFailFast,
@@ -64,8 +63,6 @@ export async function benchmark(
         ArtifactsNames.experimentReportFileName
     );
 
-    createModelsSchedulers(experimentRunOptions);
-
     const options = extractBenchmarkingOptions(experimentRunOptions);
     const abortController = new AbortController();
     const coqLspProvider = experimentRunOptions.coqLspProviderBuilder();
@@ -107,16 +104,12 @@ async function benchmarkWithResources(
         );
 
         const itemLogger = buildItemLogger(item, parentLogger);
-        const modelsScheduler = item.params.llmServiceProvider.selectScheduler(
-            item.params.modelParams
-        );
         itemsPromises.push(
             executeBenchmarkingTask(
                 item,
                 itemArtifactsDirPath,
                 options,
                 itemLogger,
-                modelsScheduler,
                 coqLspProvider,
                 proofsChecker,
                 abortController.signal
@@ -209,14 +202,6 @@ async function runBenchmarkingItems(
     }
 }
 
-function createModelsSchedulers(experimentRunOptions: ExperimentRunOptions) {
-    BasicLLMServiceProvider.setSchedulersProvidersSettings({
-        enableModelsSchedulingDebugLogs:
-            experimentRunOptions.enableModelsSchedulingDebugLogs,
-        maxParallelism: experimentRunOptions.servicesMaxParallelism,
-    });
-}
-
 function extractBenchmarkingOptions(
     experimentRunOptions: ExperimentRunOptions
 ): BenchmarkingOptions {
@@ -250,7 +235,7 @@ function buildUniqueItemReportDirName(
         item.task.sourceFilePath
     );
     const unsafeFileName = [
-        `${augmentedIndex}-${item.params.llmServiceProvider.toLogString(false)}-${modelId}`,
+        `${augmentedIndex}-${item.params.llmService.toLogString(false)}-${modelId}`,
         `-${fileIdentifier}-${item.task.sourceTheorem.name}`,
     ].join("");
     return translateToSafeFileName(unsafeFileName);

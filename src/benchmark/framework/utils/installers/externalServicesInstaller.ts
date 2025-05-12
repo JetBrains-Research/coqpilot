@@ -4,22 +4,18 @@ import { UserModelParams } from "../../../../llm/userModelParams";
 
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { logBySeverityLevelName } from "../../logging/wrappers";
-import { InputBenchmarkingBundle } from "../../structures/inputParameters/inputBenchmarkingBundle";
+import { ResolvedWithServiceBenchmarkingBundle } from "../../structures/inputParameters/resolvedWithServiceBenchmarkingBundle";
 
 export async function installDemandedExternalServices(
-    inputBundles: InputBenchmarkingBundle[],
+    resolvedBundles: ResolvedWithServiceBenchmarkingBundle[],
     logger: BenchmarkingLogger
 ) {
     /**
-     * Note: this implementation does not optimize duplicate installations
-     * for the duplicate service providers from different bundles;
-     * however, that:
-     * a) is a rare case, since all the targets needed for the specific service can be defined in one bundle;
-     * b) even if an effective duplicate is present, the installer would reuse the already existing installation.
+     * Note: no check for duplicate installations needed, since each of the `llmService` instances
+     * of `resolvedBundles` is unique.
      */
-    for (const bundle of inputBundles) {
-        const installerProvider =
-            bundle.llmServiceProvider.getInstallerProvider();
+    for (const bundle of resolvedBundles) {
+        const installerProvider = bundle.llmService.installerProvider;
         if (installerProvider === undefined) {
             continue;
         }

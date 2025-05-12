@@ -1,6 +1,7 @@
 import { GeneratedRawContentItem } from "../../../../llm/llmServices/commonStructures/generatedRawContent";
 import { GenerationTokens } from "../../../../llm/llmServices/commonStructures/generationTokens";
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
+import { SerializedLLMService } from "../../../../llm/llmServices/utils/serialization/serializedLLMService";
 
 import { RankerType } from "../../../../core/contextTheoremRanker/contextTheoremsRanker";
 
@@ -12,7 +13,6 @@ import {
 } from "../../structures/benchmarkingResults/benchmarkedItem";
 import { LengthMetrics } from "../../structures/common/measureStructures";
 import { LightweightWorkspaceRoot } from "../../structures/inputParameters/lightweight/lightweightWorkspaceRoot";
-import { SerializedLLMServiceProvider } from "../../structures/llmServiceProvider/llmServiceProviderSerialization";
 import { SerializedTheoremsByNames } from "../../structures/parsedCoqFile/parsedCoqFileData";
 import { SerializedGoal } from "../../utils/coqUtils/goalParser";
 
@@ -47,7 +47,7 @@ export namespace BasicJsonSerializationStructures {
     > {
         theoremRanker: RankerType;
         modelParams: ResolvedModelParams;
-        llmServiceProvider: SerializedLLMServiceProvider;
+        serializedService: SerializedLLMService;
     }
 
     export type SerializedBenchmarkingResult =

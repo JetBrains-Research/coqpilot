@@ -1,4 +1,12 @@
 import { ConfigurationError } from "../../../../llm/llmServiceErrors";
+import {
+    CorrespondingIdentifier,
+    CorrespondingInputServiceParams,
+    LLMServiceStringIdentifier,
+    toEnumIdentifier,
+} from "../../../../llm/llmServices/llmServiceIdentifier";
+import { selectLLMServiceProvider } from "../../../../llm/llmServices/llmServiceProvider";
+import { LLMServiceProvider } from "../../../../llm/llmServices/llmServiceProvider";
 
 import { findFirstDuplicate } from "../../../../utils/collectionUtils/listUtils";
 import {
@@ -7,13 +15,8 @@ import {
 } from "../../structures/common/inputTargets";
 import {
     CorrespondingInputParams,
-    CorrespondingInputServiceParams,
-    LLMServiceStringIdentifier,
-    toEnumIdentifier,
-} from "../../structures/common/llmServiceIdentifier";
-import { InputBenchmarkingModelParams } from "../../structures/inputParameters/inputBenchmarkingModelParams";
-import { BasicLLMServiceProvider } from "../../structures/llmServiceProvider/implementors/basicLLMServiceProvider";
-import { LLMServiceProvider } from "../../structures/llmServiceProvider/llmServiceProvider";
+    InputBenchmarkingModelParams,
+} from "../../structures/inputParameters/inputBenchmarkingModelParams";
 import { AbstractExperiment } from "../abstractExperiment";
 
 export class BenchmarkingBundle {
@@ -21,22 +24,24 @@ export class BenchmarkingBundle {
 
     withLLMService<T extends LLMServiceStringIdentifier>(
         llmServiceStringIdentifier: T,
-        serviceParams?: CorrespondingInputServiceParams<T>
-    ): BenchmarkingBundleWithLLMService<CorrespondingInputParams<T>> {
+        serviceParams?: CorrespondingInputServiceParams<
+            CorrespondingIdentifier<T>
+        >
+    ): BenchmarkingBundleWithLLMService<
+        CorrespondingInputParams<CorrespondingIdentifier<T>>
+    > {
+        const identifier = toEnumIdentifier(llmServiceStringIdentifier);
         return new BenchmarkingBundleWithLLMService(
-            new BasicLLMServiceProvider(
-                toEnumIdentifier(llmServiceStringIdentifier),
-                serviceParams
-            )
+            selectLLMServiceProvider(identifier, serviceParams ?? {})
         );
     }
 
     withCustomLLMService<
         InputParams extends InputBenchmarkingModelParams.Params,
     >(
-        llmServiceProviderCtor: () => LLMServiceProvider
+        llmServiceProvider: LLMServiceProvider
     ): BenchmarkingBundleWithLLMService<InputParams> {
-        return new BenchmarkingBundleWithLLMService(llmServiceProviderCtor());
+        return new BenchmarkingBundleWithLLMService(llmServiceProvider);
     }
 }
 

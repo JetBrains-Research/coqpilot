@@ -25,12 +25,15 @@ import {
 import { ValidationRules } from "../../../llm/llmServices/utils/paramsResolvers/builders";
 import { BasicModelParamsResolver } from "../../../llm/llmServices/utils/paramsResolvers/kit/basicModelParamsResolvers";
 import { ValidParamsResolverImpl } from "../../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";
+import { LLMServiceSerializer } from "../../../llm/llmServices/utils/serialization/llmServiceSerializer";
 import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 import { UserModelParams } from "../../../llm/userModelParams";
 
 import { EventLogger } from "../../../logging/eventLogger";
 import { throwError } from "../../../utils/errors/throwErrors";
 import { MessageHandler } from "../../../utils/structures/messageHandler";
+
+import { provideTestSerializer } from "./testServiceSerializer";
 
 export interface MockLLMUserModelParams extends UserModelParams {
     proofsToGenerate: string[];
@@ -117,12 +120,21 @@ export class MockLLMService extends LLMServiceImpl<
     MockLLMGeneratedProof,
     MockLLMServiceInternal
 > {
-    readonly fullName = "MockLLMService";
-    readonly shortName = "Mock";
+    readonly name = "MockLLMService";
+    readonly identifier = undefined;
 
     protected readonly internal: MockLLMServiceInternal =
         new MockLLMServiceInternal(this);
     protected readonly modelParamsResolver = new MockLLMModelParamsResolver();
+    protected readonly serializer: LLMServiceSerializer = provideTestSerializer(
+        this.serviceSetup,
+        (serviceParams, controlParams) =>
+            new MockLLMService(
+                controlParams.eventLogger,
+                controlParams.errorsHandlingMode,
+                serviceParams.generationLogsFilePath
+            )
+    );
 
     /**
      * _**Invariant:**_ `MockLLMService` has `debugLogs` always enabled,
@@ -271,7 +283,7 @@ class MockLLMServiceInternal extends LLMServiceInternal<
     // TODO: use `SchedulersProviderBuilders.limitParallelismForModelsWithSameKey` and test it
     readonly modelsSchedulersProvider =
         SchedulersProviderBuilders.unlimitedParallelism(
-            this.llmService.fullName,
+            this.llmService.name,
             this.serviceSetup.enableModelsSchedulingDebugLogs
         );
 

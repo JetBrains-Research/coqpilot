@@ -1,19 +1,19 @@
-import { ErrorsHandlingMode } from "../../../../llm/llmServices/commonStructures/errorsHandlingMode";
-import { InstallerProvider } from "../../../../llm/llmServices/commonStructures/installerProvider";
-import { LLMService } from "../../../../llm/llmServices/llmService";
-import { ModelParams } from "../../../../llm/llmServices/modelParams";
-import { ParamsResolverImpl } from "../../../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";
-import { UserModelParams } from "../../../../llm/userModelParams";
-
-import { EventLogger } from "../../../../logging/eventLogger";
-import { AsyncScheduler } from "../../../../utils/async/asyncScheduler";
+import { buildErrorCompleteLog } from "../../../../utils/errors/errorsUtils";
 import {
     invariantFailed,
     throwError,
+    unreachable,
 } from "../../../../utils/errors/throwErrors";
+import { UserModelParams } from "../../../userModelParams";
+import { LLMService } from "../../llmService";
+import { LLMServiceProvider } from "../../llmServiceProvider";
+import { ModelParams } from "../../modelParams";
+import { LLMServiceControlParams } from "../llmServiceControlParams";
 
-export abstract class LLMServiceProvider {
-    protected abstract readonly selfClass: LLMServiceProviderClass;
+import { SerializedLLMService } from "./serializedLLMService";
+
+export abstract class LLMServiceSerializer {
+    protected abstract readonly selfClass: LLMServiceSerializerClass;
 
     /**
      * Unique string to identify this provider during deserialization.
@@ -29,11 +29,11 @@ export abstract class LLMServiceProvider {
 
     protected static registerSelfSerialization(
         serializationType: string,
-        self: LLMServiceProviderClass
+        self: LLMServiceSerializerClass
     ) {
         if (this.serializationTypeToClass.has(serializationType)) {
             invariantFailed(
-                "`LLMServiceProvider`",
+                "`LLMServiceSerializer`",
                 "each `serializationType` can be registered only once, ",
                 `failed to register "${serializationType}"`
             );
@@ -42,32 +42,12 @@ export abstract class LLMServiceProvider {
     }
 
     /**
-     * _Note:_ provided `eventLogger` and `errorsHandlingMode` **must** be used
-     * to construct the resulting `LLMService`;
+     * _Note:_ provided `controlParams` **must** be used to construct the resulting `LLMService`;
      * otherwise, internal invariants of the framework might be violated.
      */
     abstract constructService(
-        eventLogger: EventLogger | undefined,
-        errorsHandlingMode: ErrorsHandlingMode
+        controlParams: LLMServiceControlParams
     ): LLMService<UserModelParams, ModelParams>;
-
-    /**
-     * Return `undefined` if no installation is needed.
-     */
-    abstract getInstallerProvider(): InstallerProvider | undefined;
-
-    abstract getParamsResolver(): ParamsResolverImpl<
-        UserModelParams,
-        ModelParams
-    >;
-
-    /**
-     * Select a scheduler to execute the `modelParams` model.
-     * This method allows to control the maximum parallelism for services' models.
-     *
-     * Check `SchedulersProvider` and its implementations for more insights.
-     */
-    abstract selectScheduler(modelParams: ModelParams): AsyncScheduler;
 
     /**
      * Pretty output to show in logs.
@@ -82,27 +62,42 @@ export abstract class LLMServiceProvider {
      */
     abstract serializeData(): any;
 
+    readonly serialize = (): SerializedLLMService => {
+        try {
+            return {
+                serializationType: this.getSerializationType(),
+                serializedData: this.serializeData(),
+            };
+        } catch (e) {
+            unreachable(
+                "`LLMServiceSerializer.serialize()` should never throw, ",
+                `but an error occurred: ${buildErrorCompleteLog(e)}`
+            );
+        }
+    };
+
     static deserealizeBy(
         serializationType: string,
         serializedProviderData: any
     ): LLMServiceProvider {
-        const serviceProviderClass =
+        const serializerClass =
             this.serializationTypeToClass.get(serializationType) ??
             throwError(
-                "`LLMServiceProvider` deserialization failed: ",
+                "`LLMServiceSerializer` deserialization failed: ",
                 `uknown serialization type "${serializationType}"`
             );
-        return serviceProviderClass.deserialize(serializedProviderData);
+        return serializerClass.deserialize(serializedProviderData)
+            .constructService;
     }
 
     private static readonly serializationTypeToClass: Map<
         string,
-        LLMServiceProviderClass
+        LLMServiceSerializerClass
     > = new Map();
 }
 
-export interface LLMServiceProviderClass {
-    new (...args: any[]): LLMServiceProvider;
+export interface LLMServiceSerializerClass {
+    new (...args: any[]): LLMServiceSerializer;
 
     /**
      * Unique string to identify this provider during deserialization.
@@ -119,5 +114,5 @@ export interface LLMServiceProviderClass {
      * for the implemented service provider. This way, it will state that such service provider
      * does not support recovery from disk.
      */
-    deserialize(serializedProviderData: any): LLMServiceProvider;
+    deserialize(serializedProviderData: any): LLMServiceSerializer;
 }

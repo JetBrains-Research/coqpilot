@@ -1,9 +1,12 @@
+import { LLMServicesStorage } from "../../../llm/llmServices";
+
 import { CoqLspProviderBuilders } from "../../../coqLsp/coqLspProviders/coqLspProviderBuilders";
 
 import { AsyncScheduler } from "../../../utils/async/asyncScheduler";
 import { joinPaths, resolveAsAbsolutePath } from "../../../utils/fs/pathUtils";
 import { getRootDir } from "../../../utils/fs/rootResolvers";
 import { benchmark } from "../benchmarkingCore/benchmark";
+import { BENCHMARKING_CONTROL_PARAMS } from "../benchmarkingCore/executeBenchmarkingTask";
 import { TimeMark } from "../benchmarkingCore/singleCompletionGeneration/measureTimeUtils";
 import { AbstractProofsChecker } from "../benchmarkingCore/singleCompletionGeneration/proofsCheckers/abstractProofsChecker";
 import {
@@ -23,9 +26,9 @@ import { DatasetCacheUsageMode } from "../structures/inputParameters/datasetCach
 import {
     ExperimentRunOptions,
     InputExperimentRunOptions,
-    LLMServicesMaxParallelism,
 } from "../structures/inputParameters/experimentRunOptions";
 import { InputBenchmarkingBundle } from "../structures/inputParameters/inputBenchmarkingBundle";
+import { ResolvedWithServiceBenchmarkingBundle } from "../structures/inputParameters/resolvedWithServiceBenchmarkingBundle";
 import { installDemandedExternalServices } from "../utils/installers/externalServicesInstaller";
 import { throwBenchmarkingError } from "../utils/throwErrors";
 
@@ -137,34 +140,43 @@ export abstract class AbstractExperiment {
                         logger
                     )
             );
-        const totalTime = new TimeMark();
 
-        const benchmarkingItems = await this.buildBenchmarkingItems(
-            requestedTargets,
-            executionContext
-        );
+        const [llmServices, resolvedBundles] =
+            AbstractExperiment.resolveWithServices(this.bundles);
+        try {
+            const totalTime = new TimeMark();
 
-        await installDemandedExternalServices(
-            this.bundles,
-            executionContext.logger
-        );
+            const benchmarkingItems = await this.buildBenchmarkingItems(
+                resolvedBundles,
+                requestedTargets,
+                executionContext
+            );
 
-        // Since `AbstractExperiment.run(...)` is not always called with `await`,
-        // this one might help triggering the expected behaviour
-        return await this.executeBenchmarkingItems(
-            benchmarkingItems,
-            artifactsDirPath,
-            executionContext,
-            totalTime
-        );
+            await installDemandedExternalServices(
+                resolvedBundles,
+                executionContext.logger
+            );
+
+            // Since `AbstractExperiment.run(...)` is not always called with `await`,
+            // this one might help triggering the expected behaviour
+            return await this.executeBenchmarkingItems(
+                benchmarkingItems,
+                artifactsDirPath,
+                executionContext,
+                totalTime
+            );
+        } finally {
+            llmServices.dispose();
+        }
     }
 
     protected async buildBenchmarkingItems(
+        resolvedBundles: ResolvedWithServiceBenchmarkingBundle[],
         requestedTargets: DatasetInputTargets,
         executionContext: ExecutionContext
     ): Promise<BenchmarkingItem[]> {
         const benchmarkingItems = await parseDatasetForBenchmarkingItems(
-            this.bundles,
+            resolvedBundles,
             requestedTargets,
             executionContext.resolvedRunOptions,
             executionContext.logger,
@@ -335,9 +347,6 @@ export abstract class AbstractExperiment {
                 optionsAfterStartupResolution.enableModelsSchedulingDebugLogs ??
                 false,
 
-            servicesMaxParallelism: this.resolveServicesParallelism(
-                optionsAfterStartupResolution.servicesMaxParallelism ?? {}
-            ),
             coqLspProviderBuilder:
                 optionsAfterStartupResolution.coqLspProviderBuilder ??
                 CoqLspProviderBuilders.newClientPerRequestWithLimitedParallelism(
@@ -358,19 +367,6 @@ export abstract class AbstractExperiment {
         };
     }
 
-    private resolveServicesParallelism(
-        inputOptions: Partial<LLMServicesMaxParallelism>
-    ): LLMServicesMaxParallelism {
-        return {
-            perOpenAiModelName: inputOptions.perOpenAiModelName ?? 1,
-            perGrazieModelName: inputOptions.perGrazieModelName ?? 1,
-            perLmStudioPort: inputOptions.perLmStudioPort ?? 1,
-            perDeepSeekModelName: inputOptions.perDeepSeekModelName ?? 1,
-            rangoInstancesInParallel:
-                inputOptions.rangoInstancesInParallel ?? 1,
-        };
-    }
-
     protected static mergeAndResolveRequestedTargets(
         inputBundles: InputBenchmarkingBundle[],
         logger: BenchmarkingLogger
@@ -382,6 +378,29 @@ export abstract class AbstractExperiment {
             `Successfully merged requested targets: {\n${mergedTargets.toString()}\n}`
         );
         return mergedTargets;
+    }
+
+    protected static resolveWithServices(
+        inputBundles: InputBenchmarkingBundle[]
+    ): [LLMServicesStorage, ResolvedWithServiceBenchmarkingBundle[]] {
+        const resolvedBundles = [];
+        const services = new LLMServicesStorage();
+        try {
+            for (const inputBundle of inputBundles) {
+                const newService = services.registerService(() =>
+                    inputBundle.llmServiceProvider(BENCHMARKING_CONTROL_PARAMS)
+                );
+                resolvedBundles.push({
+                    llmService: newService,
+                    inputBenchmarkingModelsParams:
+                        inputBundle.inputBenchmarkingModelsParams,
+                    requestedTargets: inputBundle.requestedTargets,
+                });
+            }
+            return [services, resolvedBundles];
+        } finally {
+            services.dispose();
+        }
     }
 }
 

@@ -78,23 +78,32 @@ export abstract class LLMServiceInternal<
     readonly errorsHandlingMode: ErrorsHandlingMode =
         this.serviceSetup.errorsHandlingMode;
 
-    // Note: it is made non-readonly for being testable and concise at the same time
-    generationsLogger: GenerationsLogger;
+    readonly generationsLogger: GenerationsLogger;
     readonly logDebug: DebugLogsWrappers;
 
-    constructor(readonly llmService: LLMServiceType) {
-        const generationLogsFilePath =
-            llmService.serviceSetup.generationLogsFilePath ?? createTmpFile();
-        this.generationsLogger = new GenerationsLogger(generationLogsFilePath, {
-            debug: llmService.serviceSetup.debugLogs,
-            paramsPropertiesToCensor: {
-                apiKey: GenerationsLogger.censorString,
-            },
-            cleanLogsOnStart: true,
-        });
-
+    constructor(
+        readonly llmService: LLMServiceType,
+        prebuiltGenerationsLogger?: GenerationsLogger
+    ) {
+        if (prebuiltGenerationsLogger === undefined) {
+            const generationLogsFilePath =
+                llmService.serviceSetup.generationLogsFilePath ??
+                createTmpFile();
+            this.generationsLogger = new GenerationsLogger(
+                generationLogsFilePath,
+                {
+                    debug: llmService.serviceSetup.debugLogs,
+                    paramsPropertiesToCensor: {
+                        apiKey: GenerationsLogger.censorString,
+                    },
+                    cleanLogsOnStart: true,
+                }
+            );
+        } else {
+            this.generationsLogger = prebuiltGenerationsLogger;
+        }
         this.logDebug = new DebugLogsWrappers(
-            llmService.fullName,
+            llmService.name,
             this.eventLogger
         );
     }

@@ -27,13 +27,12 @@ import { BenchmarkingItem } from "../../structures/benchmarkingCore/benchmarking
 import { BenchmarkingModelParams } from "../../structures/benchmarkingCore/benchmarkingModelParams";
 import { CompletionGenerationTask } from "../../structures/benchmarkingCore/completionGenerationTask";
 import { WorkspaceRoot } from "../../structures/common/workspaceRoot";
-import { InputBenchmarkingBundle } from "../../structures/inputParameters/inputBenchmarkingBundle";
 import { InputBenchmarkingModelParams } from "../../structures/inputParameters/inputBenchmarkingModelParams";
 import { LightweightBenchmarkingItem } from "../../structures/inputParameters/lightweight/lightweightBenchmarkingItem";
 import { LightweightCompletionGenerationTask } from "../../structures/inputParameters/lightweight/lightweightCompletionGenerationTask";
 import { LightweightInputModelParams } from "../../structures/inputParameters/lightweight/lightweightInputModelParams";
 import { LightweightWorkspaceRoot } from "../../structures/inputParameters/lightweight/lightweightWorkspaceRoot";
-import { serializeLLMServiceProvider } from "../../structures/llmServiceProvider/llmServiceProviderSerialization";
+import { ResolvedWithServiceBenchmarkingBundle } from "../../structures/inputParameters/resolvedWithServiceBenchmarkingBundle";
 import { serializeGoal } from "../../utils/coqUtils/goalParser";
 import { prependWithZeros } from "../../utils/serializationUtils";
 
@@ -42,9 +41,9 @@ import { LightweightSerialization } from "./lightweightSerialization";
 export namespace LightweightSerializer {
     export function serializeToLightweight(
         benchmarkingItems: BenchmarkingItem[],
-        inputBundles: InputBenchmarkingBundle[]
+        resolvedBundles: ResolvedWithServiceBenchmarkingBundle[]
     ): LightweightSerialization.PackedItems {
-        const inputModels = inputBundles.flatMap(
+        const inputModels = resolvedBundles.flatMap(
             (bundle) => bundle.inputBenchmarkingModelsParams
         );
         const inputModelsByIds = packIntoMap(
@@ -73,9 +72,7 @@ export namespace LightweightSerializer {
                         params.modelParams.modelId,
                         `Lightweight serialization failed, invariant has been violated: no input model with "${params.modelParams.modelId}" model id`
                     ) as InputBenchmarkingModelParams.Params),
-                    llmServiceProvider: serializeLLMServiceProvider(
-                        params.llmServiceProvider
-                    ),
+                    serializedService: params.llmService.serialize(),
                 };
             }
         );

@@ -1,6 +1,6 @@
+import { BenchTestInputBenchmarkingModelParams } from "../../benchmark/framework/benchTest/benchTestModelParams";
+import { BenchTestService } from "../../benchmark/framework/benchTest/benchTestService";
 import { BenchmarkingBundle } from "../../benchmark/framework/experiment/setupDSL/benchmarkingBundleBuilder";
-import { BenchTestServiceProvider } from "../../benchmark/framework/structures/llmServiceProvider/testImplementors/benchTestLLMServiceProvider";
-import { BenchTestInputBenchmarkingModelParams } from "../../benchmark/framework/structures/llmServiceProvider/testImplementors/benchTestModelParams";
 
 import {
     runSmokeTestExperimentWithBundle,
@@ -27,7 +27,7 @@ suite("[Benchmarking Framework Tests] Regression tests", () => {
     test("Smoke test: fill standalone file via default `BenchTest`", async () => {
         const benchTestModel = new BenchmarkingBundle()
             .withCustomLLMService<BenchTestInputBenchmarkingModelParams>(
-                () => new BenchTestServiceProvider()
+                (controlParams) => new BenchTestService(controlParams)
             )
             .withBenchmarkingModelsParamsCommons({
                 ranker: "random",

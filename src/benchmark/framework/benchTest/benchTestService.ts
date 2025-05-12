@@ -1,16 +1,16 @@
-import { AnalyzedChatHistory } from "../../../../../llm/llmServices/commonStructures/chat";
+import { AnalyzedChatHistory } from "../../../llm/llmServices/commonStructures/chat";
 import {
     GeneratedRawContent,
     GeneratedRawContentItem,
-} from "../../../../../llm/llmServices/commonStructures/generatedRawContent";
-import { ProofVersion } from "../../../../../llm/llmServices/commonStructures/proofVersion";
-import { SchedulersProvider } from "../../../../../llm/llmServices/commonStructures/schedulersProviders";
-import { GeneratedProofImpl } from "../../../../../llm/llmServices/generatedProof";
-import { LLMServiceImpl } from "../../../../../llm/llmServices/llmService";
-import { LLMServiceInternal } from "../../../../../llm/llmServices/llmServiceInternal";
-import { ProofGenerationContext } from "../../../../../llm/proofGenerationContext";
+} from "../../../llm/llmServices/commonStructures/generatedRawContent";
+import { ProofVersion } from "../../../llm/llmServices/commonStructures/proofVersion";
+import { SchedulersProvider } from "../../../llm/llmServices/commonStructures/schedulersProviders";
+import { GeneratedProofImpl } from "../../../llm/llmServices/generatedProof";
+import { LLMServiceImpl } from "../../../llm/llmServices/llmService";
+import { LLMServiceInternal } from "../../../llm/llmServices/llmServiceInternal";
+import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
 
-import { BenchmarkingLogger } from "../../../logging/benchmarkingLogger";
+import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
 
 import {
     BenchTestModelParams,
@@ -23,6 +23,7 @@ import {
     ResolvedBenchTestServiceParams,
     resolveBenchTestServiceParamsWithDefaults,
 } from "./benchTestServiceParams";
+import { BenchTestServiceSerializer } from "./benchTestServiceSerializer";
 
 export class BenchTestService extends LLMServiceImpl<
     BenchTestUserModelParams,
@@ -31,10 +32,13 @@ export class BenchTestService extends LLMServiceImpl<
     BenchTestGeneratedProof,
     BenchTestServiceInternal
 > {
-    readonly fullName = "BenchTestService";
+    readonly name = "BenchTestService";
     readonly shortName = "BenchTest";
+    readonly identifier = undefined;
 
     protected readonly internal: BenchTestServiceInternal;
+    protected readonly modelParamsResolver = new BenchTestModelParamsResolver();
+    protected readonly serializer;
 
     constructor(
         serviceParams: BenchTestServiceParams = {},
@@ -51,9 +55,8 @@ export class BenchTestService extends LLMServiceImpl<
             resolvedServiceParams.generateRawProofs,
             resolvedServiceParams.getSchedulersProvider
         );
+        this.serializer = new BenchTestServiceSerializer(resolvedServiceParams);
     }
-
-    protected readonly modelParamsResolver = new BenchTestModelParamsResolver();
 }
 
 export class BenchTestGeneratedProof extends GeneratedProofImpl<

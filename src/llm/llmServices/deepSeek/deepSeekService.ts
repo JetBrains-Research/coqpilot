@@ -13,9 +13,11 @@ import { ProofVersion } from "../commonStructures/proofVersion";
 import { SchedulersProviderBuilders } from "../commonStructures/schedulersProviders";
 import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
+import { LLMServiceIdentifier } from "../llmServiceIdentifier";
 import { LLMServiceInternal } from "../llmServiceInternal";
 import { DeepSeekModelParams } from "../modelParams";
 import { toO1CompatibleChatHistory } from "../utils/o1ClassModels";
+import { provideBasicSerializer } from "../utils/serialization/basicLLMServiceSerializer";
 
 import { DeepSeekModelParamsResolver } from "./deepSeekModelParamsResolver";
 
@@ -26,11 +28,12 @@ export class DeepSeekService extends LLMServiceImpl<
     DeepSeekGeneratedProof,
     DeepSeekServiceInternal
 > {
-    readonly fullName = "DeepSeekService";
-    readonly shortName = "DeepSeek";
+    readonly name = "DeepSeekService";
+    readonly identifier = LLMServiceIdentifier.DEEPSEEK;
 
     protected readonly internal = new DeepSeekServiceInternal(this);
     protected readonly modelParamsResolver = new DeepSeekModelParamsResolver();
+    protected readonly serializer = provideBasicSerializer(this);
 }
 
 export class DeepSeekGeneratedProof extends GeneratedProofImpl<
@@ -83,7 +86,7 @@ class DeepSeekServiceInternal extends LLMServiceInternal<
         SchedulersProviderBuilders.limitParallelismForModelsWithSameKey(
             this.serviceSetup.generationParallelism,
             (params: DeepSeekModelParams) => params.modelName,
-            this.llmService.fullName,
+            this.llmService.name,
             this.serviceSetup.enableModelsSchedulingDebugLogs
         );
 

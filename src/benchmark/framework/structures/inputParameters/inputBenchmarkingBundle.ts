@@ -1,5 +1,6 @@
+import { LLMServiceProvider } from "../../../../llm/llmServices/llmServiceProvider";
+
 import { DatasetInputTargets } from "../common/inputTargets";
-import { LLMServiceProvider } from "../llmServiceProvider/llmServiceProvider";
 
 import { InputBenchmarkingModelParams } from "./inputBenchmarkingModelParams";
 

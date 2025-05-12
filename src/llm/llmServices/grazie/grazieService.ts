@@ -13,9 +13,11 @@ import { ProofVersion } from "../commonStructures/proofVersion";
 import { SchedulersProviderBuilders } from "../commonStructures/schedulersProviders";
 import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
+import { LLMServiceIdentifier } from "../llmServiceIdentifier";
 import { LLMServiceInternal } from "../llmServiceInternal";
 import { GrazieModelParams } from "../modelParams";
 import { toO1CompatibleChatHistory } from "../utils/o1ClassModels";
+import { provideBasicSerializer } from "../utils/serialization/basicLLMServiceSerializer";
 
 import { GrazieApi, GrazieChatRole, GrazieFormattedHistory } from "./grazieApi";
 import { GrazieModelParamsResolver } from "./grazieModelParamsResolver";
@@ -27,11 +29,12 @@ export class GrazieService extends LLMServiceImpl<
     GrazieGeneratedProof,
     GrazieServiceInternal
 > {
-    readonly fullName = "GrazieService";
-    readonly shortName = "Grazie";
+    readonly name = "GrazieService";
+    readonly identifier = LLMServiceIdentifier.GRAZIE;
 
     protected readonly internal = new GrazieServiceInternal(this);
     protected readonly modelParamsResolver = new GrazieModelParamsResolver();
+    protected readonly serializer = provideBasicSerializer(this);
 
     /**
      * As specified in Grazie REST API, `maxTokensToGenerate` is a constant currently.
@@ -89,7 +92,7 @@ class GrazieServiceInternal extends LLMServiceInternal<
         SchedulersProviderBuilders.limitParallelismForModelsWithSameKey(
             this.serviceSetup.generationParallelism,
             (params: GrazieModelParams) => params.modelName,
-            this.llmService.fullName,
+            this.llmService.name,
             this.serviceSetup.enableModelsSchedulingDebugLogs
         );
 

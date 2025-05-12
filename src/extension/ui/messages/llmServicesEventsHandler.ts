@@ -93,7 +93,7 @@ function createLLMServiceToUIState(
     };
     return new Map(
         asLLMServices(llmServices).map((llmService) => [
-            llmService.fullName,
+            llmService.name,
             {
                 ...initialState,
             },
@@ -122,7 +122,7 @@ function reactToRequestSucceededEvent(
             ) {
                 showMessageToUser(
                     EditorMessages.serviceIsAvailableAgain(
-                        requestSucceeded.llmService.fullName
+                        requestSucceeded.llmService.name
                     ),
                     "info"
                 );
@@ -184,7 +184,7 @@ function reactToRequestFailedEvent(
                 uiState.messagesShownState ===
                 LLMServiceMessagesShownState.NO_MESSAGES_SHOWN
             ) {
-                const serviceName = requestFailed.llmService.fullName;
+                const serviceName = requestFailed.llmService.name;
                 if (llmServiceError instanceof GenerationFailedError) {
                     handleGenerationFailedError(
                         serviceName,
@@ -216,7 +216,7 @@ function parseLLMServiceRequestEvent<T extends LLMServiceRequest>(
     if (!checkType(data)) {
         illegalState(`${errorMessage}, but data = ${stringifyAnyValue(data)}`);
     }
-    const serviceName = data.llmService.fullName;
+    const serviceName = data.llmService.name;
     const uiState = llmServiceToUIState.get(serviceName);
     if (uiState === undefined) {
         illegalState(`no UI state for \`${serviceName}\``);
