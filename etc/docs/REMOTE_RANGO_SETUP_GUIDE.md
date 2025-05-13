@@ -76,6 +76,12 @@ Every time you want to run the inference server:
         decoder-local models/deepseek-bm25-proof-tfidf-proj-thm-prem-final/checkpoint-54500 \
         0 5000
     ```
+    or, in one command:
+    ```bash
+    cd ~/rango && export OPENAI_API_KEY="" && pyenv shell 3.11 && source ./venv/bin/activate && exec python3 src/model_deployment/tactic_gen_server_remote.py \
+        decoder-local models/deepseek-bm25-proof-tfidf-proj-thm-prem-final/checkpoint-54500 \
+        0 5000
+    ```
 
 ## Using Rango from CoqPilot
 
