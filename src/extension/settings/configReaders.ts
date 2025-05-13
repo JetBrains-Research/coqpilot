@@ -171,14 +171,11 @@ function validateApiKeysAreProvided(
     inputParamsByIdentifier: Map<LLMServiceIdentifier, UserModelParams[]>,
     identifiersToValidate: LLMServiceIdentifier[]
 ) {
-    function throwBuildApiKeyError(
-        serviceName: string,
-        serviceSettingsName: string
-    ) {
+    function throwBuildApiKeyError(serviceName: string, settingName: string) {
         throw new SettingsValidationError(
             `at least one of the ${serviceName} models has \`apiKey: "None"\``,
             EditorMessages.apiKeyIsNotSet(serviceName),
-            `${PLUGIN_ID}.${serviceSettingsName}ModelsParameters`,
+            settingName,
             "info"
         );
     }
@@ -188,8 +185,7 @@ function validateApiKeysAreProvided(
     }
 
     for (const identifier of identifiersToValidate) {
-        const inputModels =
-            inputParamsByIdentifier.get(LLMServiceIdentifier.GRAZIE) ?? [];
+        const inputModels = inputParamsByIdentifier.get(identifier) ?? [];
         if (inputModels.some(checkApiKeyIsNone)) {
             throwBuildApiKeyError(
                 getShortName(identifier),
@@ -228,7 +224,7 @@ function resolveParamsAndShowResolutionLogs<
         );
         if (resolutionMessages.invalidConfigurationMessage !== undefined) {
             showMessageToUserWithSettingsHint(
-                EditorMessages.modelConfiguredIncorrectly(
+                EditorMessages.modelResolutionFailed(
                     inputParams.modelId,
                     resolutionMessages.invalidConfigurationMessage
                 ),

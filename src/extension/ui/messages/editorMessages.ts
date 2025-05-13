@@ -77,11 +77,19 @@ export namespace EditorMessages {
     export const serviceIsAvailableAgain = (serviceName: string) =>
         `\`${serviceName}\` is available again!`;
 
+    const modelWillBeSkippedForThisRun = (modelId: string) =>
+        `Thus, "${modelId}" will be skipped for this run. Please fix the model's configuration in the settings.`;
+
     export const modelConfiguredIncorrectly = (
         modelId: string,
         errorMessage: string
     ) =>
-        `${errorMessage} Thus, "${modelId}" will be skipped for this run. Please fix the model's configuration in the settings.`;
+        `Model "${modelId}" is configured incorrectly: ${errorMessage}. ${modelWillBeSkippedForThisRun(modelId)}`;
+
+    export const modelResolutionFailed = (
+        modelId: string,
+        errorMessage: string
+    ) => `${errorMessage} ${modelWillBeSkippedForThisRun(modelId)}`;
 
     export const unknownContextTheoremsRanker = `Please select one of the existing theorems-ranker types: "distance" or "random".`;
 
