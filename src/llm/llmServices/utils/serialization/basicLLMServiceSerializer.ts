@@ -2,12 +2,12 @@ import { illegalState } from "../../../../utils/errors/throwErrors";
 import { LLMService } from "../../llmService";
 import { CorrespondingInputServiceParams } from "../../llmServiceIdentifier";
 import { LLMServiceIdentifier } from "../../llmServiceIdentifier";
+import { getShortName } from "../../llmServiceIdentifier";
 import { LLMServiceParams } from "../../llmServiceParams";
 import { selectLLMServiceProvider } from "../../llmServiceProvider";
 import { LLMServiceControlParams } from "../llmServiceControlParams";
 
 import { LLMServiceSerializer } from "./llmServiceSerializer";
-import { getShortName } from "./toLog";
 import { toOneLineLogString } from "./toLog";
 
 export function provideBasicSerializer(

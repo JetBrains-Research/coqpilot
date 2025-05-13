@@ -74,17 +74,4 @@ export namespace ExperimentRunOptions {
         ResolveOnStartup;
 }
 
-export interface LLMServicesMaxParallelism {
-    perOpenAiModelName: number;
-    perGrazieModelName: number;
-    perLmStudioPort: number;
-    perDeepSeekModelName: number;
-    rangoInstancesInParallel: number;
-}
-
-export type InputExperimentRunOptions = Omit<
-    Partial<ExperimentRunOptions>,
-    "servicesMaxParallelism"
-> & {
-    servicesMaxParallelism?: Partial<LLMServicesMaxParallelism>;
-};
+export type InputExperimentRunOptions = Partial<ExperimentRunOptions>;

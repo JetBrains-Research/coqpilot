@@ -7,13 +7,13 @@ import {
     CorrespondingInputServiceParams,
     LLMServiceIdentifier,
 } from "../llm/llmServices/llmServiceIdentifier";
+import { getShortName } from "../llm/llmServices/llmServiceIdentifier";
 import { LLMServiceParams } from "../llm/llmServices/llmServiceParams";
 import { selectLLMServiceProvider } from "../llm/llmServices/llmServiceProvider";
 import {
     BasicLLMServiceCustomizationParams,
     LLMServiceControlParams,
 } from "../llm/llmServices/utils/llmServiceControlParams";
-import { getShortName } from "../llm/llmServices/utils/serialization/toLog";
 import { LLMServicesStorage } from "../llm/llmServicesStorage";
 
 import { EventLogger, Severity } from "../logging/eventLogger";

@@ -12,9 +12,9 @@ import {
 } from "../../llm/generationBundles";
 import { LLMService } from "../../llm/llmServices/llmService";
 import { LLMServiceIdentifier } from "../../llm/llmServices/llmServiceIdentifier";
+import { getShortName } from "../../llm/llmServices/llmServiceIdentifier";
 import { ModelParams } from "../../llm/llmServices/modelParams";
 import { buildParamsResolutionMessages } from "../../llm/llmServices/utils/paramsResolvers/kit/paramsResolutionAnalysis";
-import { getShortName } from "../../llm/llmServices/utils/serialization/toLog";
 import { LLMServicesStorage } from "../../llm/llmServicesStorage";
 import {
     UserModelParams,

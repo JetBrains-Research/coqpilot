@@ -1,11 +1,5 @@
 import { ExternalServiceParams } from "./abstractExternalService/abstractExternalServiceParams";
-import { DeepSeekService } from "./deepSeek/deepSeekService";
-import { GrazieService } from "./grazie/grazieService";
 import { LLMServiceParams } from "./llmServiceParams";
-import { LMStudioService } from "./lmStudio/lmStudioService";
-import { OpenAiService } from "./openai/openAiService";
-import { PredefinedProofsService } from "./predefinedProofs/predefinedProofsService";
-import { RangoService } from "./rango/rangoService";
 import { LLMServiceCustomizationParams } from "./utils/llmServiceControlParams";
 
 export enum LLMServiceIdentifier {
@@ -16,21 +10,6 @@ export enum LLMServiceIdentifier {
     DEEPSEEK = "DeepSeek",
     RANGO = "Rango",
 }
-
-export type CorrespondingLLMServiceType<T extends LLMServiceIdentifier> =
-    T extends LLMServiceIdentifier.PREDEFINED_PROOFS
-        ? PredefinedProofsService
-        : T extends LLMServiceIdentifier.OPENAI
-          ? OpenAiService
-          : T extends LLMServiceIdentifier.GRAZIE
-            ? GrazieService
-            : T extends LLMServiceIdentifier.LMSTUDIO
-              ? LMStudioService
-              : T extends LLMServiceIdentifier.DEEPSEEK
-                ? DeepSeekService
-                : T extends LLMServiceIdentifier.RANGO
-                  ? RangoService
-                  : never;
 
 export type CorrespondingServiceParams<T extends LLMServiceIdentifier> =
     T extends LLMServiceIdentifier.PREDEFINED_PROOFS
@@ -89,5 +68,26 @@ export function toEnumIdentifier(
             return LLMServiceIdentifier.DEEPSEEK;
         case "rango":
             return LLMServiceIdentifier.RANGO;
+    }
+}
+
+/**
+ * Regardless of the string values defined in the implementation of `LLMServiceIdentifier` (they can change with time),
+ * this function guarantees to provide nice and human-readable names of the services.
+ */
+export function getShortName(serviceIdentifier: LLMServiceIdentifier): string {
+    switch (serviceIdentifier) {
+        case LLMServiceIdentifier.PREDEFINED_PROOFS:
+            return "Predefined Proofs";
+        case LLMServiceIdentifier.OPENAI:
+            return "Open AI";
+        case LLMServiceIdentifier.GRAZIE:
+            return "Grazie";
+        case LLMServiceIdentifier.LMSTUDIO:
+            return "LM Studio";
+        case LLMServiceIdentifier.DEEPSEEK:
+            return "DeepSeek";
+        case LLMServiceIdentifier.RANGO:
+            return "Rango";
     }
 }
