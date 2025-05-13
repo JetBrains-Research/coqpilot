@@ -35,11 +35,19 @@ These steps are required once per new remote machine:
       Port <EXPOSED_PORT>
     ```
 
+    Now you can access the remote machine by simply running:
+
+    ```bash
+    ssh -L 5000:localhost:5000 zebra
+    ```
+
+    `5000:localhost:5000` here is port mapping needed for actual serving the server, it can be omitted until the moment you run the server.
+
 4. **Run the remote setup script**  
    SSH into your pod and execute:
 
     ```bash
-    bash -c "$(curl -fsSL https://raw.githubusercontent.com/JetBrains-Research/coqpilot/main/scripts/rango/setup-remote-rango.sh)"
+    curl -O https://raw.githubusercontent.com/JetBrains-Research/coqpilot/v2.5.0-dev/scripts/rango/setup-remote-rango.sh
     ```
 
     Or, if you've cloned the repo:
