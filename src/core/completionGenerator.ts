@@ -196,7 +196,9 @@ async function checkAndFixProofs(
     const fixedProofs = await fixProofs(proofsWithFeedback, abortSignal);
     eventLogger?.log(
         "core-proofs-fixed",
-        "Proofs were fixed",
+        fixedProofs.length === 0
+            ? "No proofs to be fixed"
+            : "Proofs were fixed",
         fixedProofs.map(
             (generatedProof) =>
                 `New proof: "${generatedProof.proof}" with version ${generatedProof.versionNumber}\n Previous version: ${stringifyAnyValue(generatedProof.proofVersions.slice(-2))}`

@@ -88,13 +88,6 @@ export class CoqProofChecker {
                 proof
             );
 
-            if (goalsResult.err) {
-                this.eventLogger?.log(
-                    "new-proof-check",
-                    `Checking proof: ${proof}, goalsResult: ${goalsResult.val.message}`
-                );
-            }
-
             results.push({
                 proof: proof,
                 isValid: goalsResult.ok,
@@ -103,7 +96,14 @@ export class CoqProofChecker {
                     : undefined,
             });
         }
-
+        this.eventLogger?.log(
+            "proofs-check",
+            "Proofs were checked",
+            results.map(
+                (res) =>
+                    `{ proof: '${res.proof}', isValid: ${res.isValid}, diagnostic: '${res.diagnostic}' }`
+            )
+        );
         return results;
     }
 
