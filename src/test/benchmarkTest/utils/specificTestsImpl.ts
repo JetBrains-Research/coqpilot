@@ -17,6 +17,7 @@ import {
     BenchmarkingLoggerImpl,
     SeverityLevel,
 } from "../../../benchmark/framework/logging/benchmarkingLogger";
+import { InputBenchmarkingModelParams } from "../../../benchmark/framework/structures/inputParameters/inputBenchmarkingModelParams";
 
 import { runSimpleTestExperimentWithBundle } from "./experimentRunners";
 import { BenchmarkingTestsConstants } from "./testConstants";
@@ -96,4 +97,21 @@ export async function testContextTheoremsNotContainTarget(
         .withTargets(testTarget);
 
     await runSimpleTestExperimentWithBundle(bundle);
+}
+
+export async function testProveTheoremWithRango(
+    targetTheoremFilePath: string,
+    rangoMockModel: BenchmarkingBundleWithModelsParams<InputBenchmarkingModelParams.RangoParams>
+) {
+    const testTarget = new TargetsBuilder()
+        .withWorkspaceRoot(
+            Constants.TEST_DATASET_NAME,
+            "no-special-environment"
+        )
+        .withProveTheoremTargetsFromFile(targetTheoremFilePath, "test")
+        .buildInputTargets();
+
+    await runSimpleTestExperimentWithBundle(
+        rangoMockModel.withTargets(testTarget)
+    );
 }

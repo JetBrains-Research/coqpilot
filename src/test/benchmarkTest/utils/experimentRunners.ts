@@ -23,6 +23,8 @@ export async function runSimpleTestExperiment(
         await experiment.run(createRelativeTmpDir(), {
             loggerSeverity: SeverityLevel.ERROR,
             datasetCacheUsage: DatasetCacheUsageMode.NO_CACHE_USAGE,
+            proofGenerationRetries: 1,
+            failFast: true,
         });
         hasSuccessfullyFinished = true;
     } catch (error) {
