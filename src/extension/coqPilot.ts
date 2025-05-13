@@ -17,6 +17,7 @@ import {
     CompletionContext,
     ProcessEnvironment,
     SourceFileEnvironment,
+    TargetType,
 } from "../core/completionGenerationContext";
 import { generateCompletion } from "../core/completionGenerator";
 import {
@@ -368,6 +369,7 @@ export class CoqPilot {
                 this.sessionState.coqLspClient,
                 abortSignal,
                 contextTheoremsRanker.needsUnwrappedNotations,
+                TargetType.ADMIT,
                 this.pluginContext.eventLogger
             );
 

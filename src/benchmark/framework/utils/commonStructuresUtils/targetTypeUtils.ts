@@ -1,4 +1,5 @@
-import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
+import { TargetType } from "../../../../core/completionGenerationContext";
+
 import { TargetRequestType } from "../../structures/common/inputTargets";
 
 export function toTargetType(requestType: TargetRequestType): TargetType {

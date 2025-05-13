@@ -6,6 +6,8 @@ import {
     spawn,
 } from "child_process";
 
+import { TargetType } from "../../../core/completionGenerationContext";
+
 import { throwOnAbort } from "../../../utils/async/abortUtils";
 import { PromiseExecutor, RejectType } from "../../../utils/async/promiseUtils";
 import {
@@ -39,7 +41,11 @@ import { nowTimestampMillis } from "../../../utils/time";
 import { ExternalPipelineProofGenerationContext } from "../../proofGenerationContext";
 import { DebugLogsWrappers } from "../llmServiceInternal";
 import { RangoModelParams } from "../modelParams";
-import { AuxLemma, withAuxFile } from "../utils/auxFileManager";
+import {
+    AuxFileCreationMode,
+    AuxLemma,
+    withAuxFile,
+} from "../utils/auxFileManager";
 
 import {
     RangoError,
@@ -78,8 +84,14 @@ export async function runRangoProof(
                 context.relativeSourceFilePath
             ),
             targetGoal: context.completionTargetGoal,
-            lineToCopyFileToExclusive: context.sourceTheoremStartLine,
             requestUniqueIdentifier: inFileRequestUniqueIdentifier,
+            mode:
+                context.targetType === TargetType.PROVE_THEOREM
+                    ? AuxFileCreationMode.REUSE_SOURCE_THEOREM
+                    : AuxFileCreationMode.INSERT_HELPER_LEMMA,
+            sourceTheoremName: context.sourceTheoremName,
+            sourceTheoremStatementRange: context.sourceTheoremStatementRange,
+            sourceTheoremProofRange: context.sourceTheoremProofRange,
         },
         async (auxLemma) => {
             logDebug?.event("Created aux lemma", auxLemma);

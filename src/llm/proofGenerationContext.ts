@@ -1,5 +1,7 @@
 import { ProofGoal } from "../coqLsp/coqLspTypes";
 
+import { TargetType } from "../core/completionGenerationContext";
+
 import { Theorem } from "../coqParser/parsedTypes";
 import { CodeElementRange } from "../utils/structures/codeElementPositions";
 
@@ -14,9 +16,11 @@ export interface ExternalPipelineProofGenerationContext {
     completionTargetGoal: ProofGoal;
     completionTargetRange: CodeElementRange;
 
-    // TODO (!): store more abstract theorem data here
     sourceTheoremName: string;
-    sourceTheoremStartLine: number;
+    sourceTheoremStatementRange: CodeElementRange;
+    sourceTheoremProofRange: CodeElementRange;
+
+    targetType: TargetType;
 
     relativeSourceFilePath: string;
     projectRootPath: string;

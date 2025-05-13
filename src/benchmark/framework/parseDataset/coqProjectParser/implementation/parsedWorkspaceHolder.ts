@@ -1,10 +1,11 @@
 import { ProofGoal } from "../../../../../coqLsp/coqLspTypes";
 
+import { TargetType } from "../../../../../core/completionGenerationContext";
+
 import {
     CodeElementRange,
     deserializeCodeElementRange,
 } from "../../../../../utils/structures/codeElementPositions";
-import { TargetType } from "../../../structures/benchmarkingCore/completionGenerationTask";
 import {
     ParsedCoqFileData,
     deserializeParsedCoqFile,

@@ -1,5 +1,6 @@
 import { ProofGoal } from "../../../../coqLsp/coqLspTypes";
 
+import { TargetType } from "../../../../core/completionGenerationContext";
 import {
     CompletionContext,
     SourceFileEnvironment,
@@ -37,6 +38,7 @@ export class CompletionGenerationTask
             proofGoal: this.targetGoalToProve,
             admitRange: this.targetPositionRange,
             sourceTheorem: this.sourceTheorem.sourceTheorem,
+            targetType: this.targetType,
         };
     }
 
@@ -61,9 +63,4 @@ export class CompletionGenerationTask
             this.targetPositionRange.toString()
         );
     }
-}
-
-export enum TargetType {
-    ADMIT = "ADMIT",
-    PROVE_THEOREM = "PROVE_THEOREM",
 }

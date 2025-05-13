@@ -1,6 +1,7 @@
+import { TargetType } from "../../../../../core/completionGenerationContext";
+
 import { SerializedCodeElementRange } from "../../../../../utils/structures/codeElementPositions";
 import { SerializedGoal } from "../../../utils/coqUtils/goalParser";
-import { TargetType } from "../../benchmarkingCore/completionGenerationTask";
 
 export interface LightweightCompletionGenerationTask {
     goalToProve: SerializedGoal;

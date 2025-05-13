@@ -77,8 +77,14 @@ export function buildExternalPipelineProofGenerationContext(
         completionTargetRange: fromRange(completionContext.admitRange),
 
         sourceTheoremName: completionContext.sourceTheorem.name,
-        sourceTheoremStartLine:
-            completionContext.sourceTheorem.statement_range.start.line,
+        sourceTheoremStatementRange: fromRange(
+            completionContext.sourceTheorem.statement_range
+        ),
+        sourceTheoremProofRange: fromRange(
+            completionContext.sourceTheorem.proof.getProofRange()
+        ),
+
+        targetType: completionContext.targetType,
 
         relativeSourceFilePath: relativizeAbsolutePaths(
             projectRootPath,

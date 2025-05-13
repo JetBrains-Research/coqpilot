@@ -19,6 +19,7 @@ import {
     CompletionContext,
     ProcessEnvironment,
     SourceFileEnvironment,
+    TargetType,
 } from "../../core/completionGenerationContext";
 import {
     FailureGenerationResult,
@@ -563,12 +564,14 @@ async function createCompletionTargets(
     return {
         admitTargets: await resolveProofStepsToCompletionContexts(
             admitHolesToComplete,
+            TargetType.ADMIT,
             documentVersion,
             fileUri,
             client
         ),
         theoremTargets: await resolveProofStepsToCompletionContexts(
             firstProofSteps,
+            TargetType.PROVE_THEOREM,
             documentVersion,
             fileUri,
             client
@@ -578,6 +581,7 @@ async function createCompletionTargets(
 
 async function resolveProofStepsToCompletionContexts(
     parentedProofSteps: ParentedProofStep[],
+    targetType: TargetType,
     documentVersion: number,
     fileUri: Uri,
     client: CoqLspClient
@@ -594,6 +598,7 @@ async function resolveProofStepsToCompletionContexts(
                 proofGoal: goals.val[0],
                 admitRange: parentedProofStep.proofStep.range,
                 sourceTheorem: parentedProofStep.parentTheorem,
+                targetType: targetType,
             });
         }
     }

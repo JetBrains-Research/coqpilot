@@ -3,10 +3,10 @@ import { GenerationTokens } from "../../../../llm/llmServices/commonStructures/g
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 import { SerializedLLMService } from "../../../../llm/llmServices/utils/serialization/serializedLLMService";
 
+import { TargetType } from "../../../../core/completionGenerationContext";
 import { RankerType } from "../../../../core/contextTheoremRanker/contextTheoremsRanker";
 
 import { SerializedCodeElementRange } from "../../../../utils/structures/codeElementPositions";
-import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
 import {
     CompletionGenerationTime,
     FailureMetadata,

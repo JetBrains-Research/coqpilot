@@ -15,6 +15,10 @@ export interface CompletionContext {
     proofGoal: ProofGoal;
     admitRange: Range;
     sourceTheorem: Theorem;
+
+    // TODO: remove
+    // Note: currently, it is needed only for temporary solution for `withAuxFile`
+    targetType: TargetType;
 }
 
 export interface SourceFileEnvironment {
@@ -45,4 +49,10 @@ export interface ProcessEnvironment {
      */
     theoremRanker?: ContextTheoremsRanker;
     premisesNumber?: number;
+}
+
+// Note: originally, is from `completionGenerationTask.ts`. Currently, it is needed here only for temporary solution for `withAuxFile`.
+export enum TargetType {
+    ADMIT = "ADMIT",
+    PROVE_THEOREM = "PROVE_THEOREM",
 }

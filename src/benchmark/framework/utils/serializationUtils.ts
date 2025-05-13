@@ -1,4 +1,4 @@
-import { TargetType } from "../structures/benchmarkingCore/completionGenerationTask";
+import { TargetType } from "../../../core/completionGenerationContext";
 
 export function getTargetTypeName(targetType: TargetType): string {
     switch (targetType) {

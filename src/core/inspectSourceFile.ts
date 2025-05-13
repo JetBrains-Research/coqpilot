@@ -9,6 +9,7 @@ import { Uri } from "../utils/structures/uri";
 import {
     CompletionContext,
     SourceFileEnvironment,
+    TargetType,
 } from "./completionGenerationContext";
 
 type AnalyzedFile = [CompletionContext[], SourceFileEnvironment];
@@ -21,6 +22,7 @@ export async function inspectSourceFile(
     client: CoqLspClient,
     abortSignal: AbortSignal,
     needsTheoremInitialGoals: boolean,
+    targetType: TargetType = TargetType.ADMIT,
     eventLogger?: EventLogger
 ): Promise<AnalyzedFile> {
     const sourceFileEnvironment = await createSourceFileEnvironment(
@@ -37,7 +39,8 @@ export async function inspectSourceFile(
         shouldCompleteHole,
         sourceFileEnvironment.fileTheorems,
         fileUri,
-        client
+        client,
+        targetType
     );
     const sourceFileEnvironmentWithCompleteProofs: SourceFileEnvironment = {
         ...sourceFileEnvironment,
@@ -54,7 +57,8 @@ async function createCompletionContexts(
     shouldCompleteHole: (hole: ProofStep) => boolean,
     fileTheorems: Theorem[],
     fileUri: Uri,
-    client: CoqLspClient
+    client: CoqLspClient,
+    targetType: TargetType
 ): Promise<CompletionContext[]> {
     let completionContexts: CompletionContext[] = [];
     for (const thr of fileTheorems) {
@@ -72,6 +76,7 @@ async function createCompletionContexts(
                     proofGoal: goals.val[0],
                     admitRange: hole.range,
                     sourceTheorem: thr,
+                    targetType: targetType,
                 });
             }
         }

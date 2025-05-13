@@ -1,5 +1,7 @@
 import { ProofGoal } from "../../../../coqLsp/coqLspTypes";
 
+import { TargetType } from "../../../../core/completionGenerationContext";
+
 import { ProofStep } from "../../../../coqParser/parsedTypes";
 import { groupBy, mapValues } from "../../../../utils/collectionUtils/mapUtils";
 import { invariantFailed } from "../../../../utils/errors/throwErrors";
@@ -13,7 +15,6 @@ import {
     AsOneRecordLogsBuilder,
     BenchmarkingLogger,
 } from "../../logging/benchmarkingLogger";
-import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
 import { TheoremData } from "../../structures/parsedCoqFile/theoremData";
 import { extractTheoremFisrtProofStep } from "../../utils/coqUtils/proofTargetExtractor";
 import {

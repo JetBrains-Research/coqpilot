@@ -1,5 +1,7 @@
 import { ValidateFunction } from "ajv";
 
+import { TargetType } from "../../../../core/completionGenerationContext";
+
 import {
     AjvMode,
     buildAjv,
@@ -18,7 +20,6 @@ import {
 import { getDatasetDir } from "../../../../utils/fs/rootResolvers";
 import { deserializeCodeElementRange } from "../../../../utils/structures/codeElementPositions";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
-import { TargetType } from "../../structures/benchmarkingCore/completionGenerationTask";
 import { deserializeTheoremData } from "../../structures/parsedCoqFile/theoremData";
 import { deserializeGoal } from "../../utils/coqUtils/goalParser";
 import {
