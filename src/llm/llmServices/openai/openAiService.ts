@@ -179,15 +179,10 @@ class OpenAiServiceInternal extends LLMServiceInternal<
             errorMessage
         );
         if (contextExceeded !== undefined) {
-            const [
-                modelsMaxContextLength,
-                requestedTokens,
-                requestedMessagesTokens,
-                maxTokensToGenerate,
-            ] = contextExceeded;
+            const [requestedTokens, modelsMaxContextLength] = contextExceeded;
             const intro =
                 "`tokensLimit` and `maxTokensToGenerate` are too large together";
-            const explanation = `model's maximum context length is ${modelsMaxContextLength} tokens, but was requested ${requestedTokens} tokens = ${requestedMessagesTokens} in the messages + ${maxTokensToGenerate} in the completion`;
+            const explanation = `model's maximum context length is ${modelsMaxContextLength} tokens, but was requested ${requestedTokens} tokens`;
             return new ConfigurationError(`${intro}; ${explanation}`);
         }
         if (this.matchesPattern(this.connectionErrorPattern, errorMessage)) {
@@ -220,7 +215,7 @@ class OpenAiServiceInternal extends LLMServiceInternal<
         /^401 Incorrect API key provided: (.*)\.(.*)$/;
 
     private static readonly maximumContextLengthExceededPattern =
-        /^400 This model's maximum context length is ([0-9]+) tokens\. However, you requested ([0-9]+) tokens \(([0-9]+) in the messages, ([0-9]+) in the completion\)\..*$/;
+        /^400 max_tokens is too large: ([0-9]+)\. This model supports at most ([0-9]+) completion tokens, whereas you provided ([0-9]+)\..*$/;
 
     private static readonly connectionErrorPattern = /^Connection error\.$/;
 
