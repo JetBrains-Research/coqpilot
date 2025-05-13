@@ -19,6 +19,7 @@ export class LocalProofsChecker extends AbstractProofsChecker {
         const proofsCheckResult = await CheckProofsImpl.checkProofsMeasured(
             args,
             undefined,
+            inputArgs.coqLspProvider,
             inputArgs.abortSignal
         );
         return ProofsCheckerUtils.unpackSuccessResultOrThrow(proofsCheckResult);

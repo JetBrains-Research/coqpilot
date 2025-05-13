@@ -2,6 +2,7 @@ import { withTestCoqLspClient } from "../../../../../coqLsp/coqLspBuilders";
 import { CoqLspClient } from "../../../../../coqLsp/coqLspClient";
 import { CoqLspError } from "../../../../../coqLsp/coqLspTypes";
 
+import { TargetType } from "../../../../../core/completionGenerationContext";
 import { createSourceFileEnvironment } from "../../../../../core/inspectSourceFile";
 
 import {
@@ -12,7 +13,6 @@ import { unexpectedError } from "../../../../../utils/errors/throwErrors";
 import { deserializeCodeElementPosition } from "../../../../../utils/structures/codeElementPositions";
 import { Uri } from "../../../../../utils/structures/uri";
 import { BenchmarkingLogger } from "../../../logging/benchmarkingLogger";
-import { TargetType } from "../../../structures/benchmarkingCore/completionGenerationTask";
 import { TargetRequestType } from "../../../structures/common/inputTargets";
 import { SerializedParsedCoqFile } from "../../../structures/parsedCoqFile/parsedCoqFileData";
 import {

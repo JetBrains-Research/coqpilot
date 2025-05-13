@@ -14,11 +14,14 @@ import {
     GeneratedRawContentItem,
 } from "../commonStructures/generatedRawContent";
 import { ProofVersion } from "../commonStructures/proofVersion";
+import { SchedulersProviderBuilders } from "../commonStructures/schedulersProviders";
 import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
+import { LLMServiceIdentifier } from "../llmServiceIdentifier";
 import { LLMServiceInternal } from "../llmServiceInternal";
 import { OpenAiModelParams } from "../modelParams";
 import { toO1CompatibleChatHistory } from "../utils/o1ClassModels";
+import { provideBasicSerializer } from "../utils/serialization/basicLLMServiceSerializer";
 
 import { OpenAiModelParamsResolver } from "./openAiModelParamsResolver";
 
@@ -29,13 +32,12 @@ export class OpenAiService extends LLMServiceImpl<
     OpenAiGeneratedProof,
     OpenAiServiceInternal
 > {
-    readonly serviceName = "OpenAiService";
-    protected readonly internal = new OpenAiServiceInternal(
-        this,
-        this.eventLogger,
-        this.generationsLoggerBuilder
-    );
+    readonly name = "OpenAiService";
+    readonly identifier = LLMServiceIdentifier.OPENAI;
+
+    protected readonly internal = new OpenAiServiceInternal(this);
     protected readonly modelParamsResolver = new OpenAiModelParamsResolver();
+    protected readonly serializer = provideBasicSerializer(this);
 }
 
 export class OpenAiGeneratedProof extends GeneratedProofImpl<
@@ -81,6 +83,14 @@ class OpenAiServiceInternal extends LLMServiceInternal<
             previousProofVersions
         );
     }
+
+    readonly modelsSchedulersProvider =
+        SchedulersProviderBuilders.limitParallelismForModelsWithSameKey(
+            this.serviceSetup.generationParallelism,
+            (params: OpenAiModelParams) => params.modelName,
+            this.llmService.name,
+            this.serviceSetup.enableModelsSchedulingDebugLogs
+        );
 
     async generateFromChatImpl(
         analyzedChat: AnalyzedChatHistory,
@@ -169,15 +179,10 @@ class OpenAiServiceInternal extends LLMServiceInternal<
             errorMessage
         );
         if (contextExceeded !== undefined) {
-            const [
-                modelsMaxContextLength,
-                requestedTokens,
-                requestedMessagesTokens,
-                maxTokensToGenerate,
-            ] = contextExceeded;
+            const [requestedTokens, modelsMaxContextLength] = contextExceeded;
             const intro =
                 "`tokensLimit` and `maxTokensToGenerate` are too large together";
-            const explanation = `model's maximum context length is ${modelsMaxContextLength} tokens, but was requested ${requestedTokens} tokens = ${requestedMessagesTokens} in the messages + ${maxTokensToGenerate} in the completion`;
+            const explanation = `model's maximum context length is ${modelsMaxContextLength} tokens, but was requested ${requestedTokens} tokens`;
             return new ConfigurationError(`${intro}; ${explanation}`);
         }
         if (this.matchesPattern(this.connectionErrorPattern, errorMessage)) {
@@ -210,7 +215,7 @@ class OpenAiServiceInternal extends LLMServiceInternal<
         /^401 Incorrect API key provided: (.*)\.(.*)$/;
 
     private static readonly maximumContextLengthExceededPattern =
-        /^400 This model's maximum context length is ([0-9]+) tokens\. However, you requested ([0-9]+) tokens \(([0-9]+) in the messages, ([0-9]+) in the completion\)\..*$/;
+        /^400 max_tokens is too large: ([0-9]+)\. This model supports at most ([0-9]+) completion tokens, whereas you provided ([0-9]+)\..*$/;
 
     private static readonly connectionErrorPattern = /^Connection error\.$/;
 

@@ -2,11 +2,13 @@ import { JSONSchemaType } from "ajv";
 import { expect } from "earl";
 
 import {
+    RangoUserModelParams,
     deepSeekUserModelParamsSchema,
     grazieUserModelParamsSchema,
     lmStudioUserModelParamsSchema,
     openAiUserModelParamsSchema,
     predefinedProofsUserModelParamsSchema,
+    rangoUserModelParamsSchema,
     userModelParamsSchema,
     userMultiroundProfileSchema,
 } from "../../llm/userModelParams";
@@ -85,6 +87,23 @@ suite("Parse `UserModelParams` from JSON test", () => {
         modelName: "deepseek-chat",
         temperature: 0.8,
         apiKey: "api-key",
+    };
+    const validRangoUserModelParamsComplete: RangoUserModelParams = {
+        ...validUserModelParamsCompelete,
+        mode: "mockOpenAI",
+        timeoutSeconds: 5,
+
+        mockOpenAIApiKey: "api-key",
+        enableWholeProjectDataPoints: true,
+        dataLocDirectoryPath: "/rangoDataLoc",
+
+        /**
+         * Yes, specifying he following properties is not completely okay:
+         * they are unused for the "mockOpenAI" mode and will be overriden by the resolver -
+         * but they still should be successfully read by parser.
+         */
+        localCheckpointPath: "checkpointPath",
+        mappedToRemotePort: 5001,
     };
 
     test("Validate `UserMultiroundProfile`", () => {
@@ -184,6 +203,13 @@ suite("Parse `UserModelParams` from JSON test", () => {
         isValidJSON(
             validDeepSeekUserModelParamsComplete,
             deepSeekUserModelParamsSchema
+        );
+    });
+
+    test("Validate `RangoUserModelParams`", () => {
+        isValidJSON(
+            validRangoUserModelParamsComplete,
+            rangoUserModelParamsSchema
         );
     });
 });

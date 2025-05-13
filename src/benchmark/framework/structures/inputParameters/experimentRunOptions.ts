@@ -1,3 +1,5 @@
+import { CoqLspProviderBuilder } from "../../../../coqLsp/coqLspProviders/coqLspProviderBuilders";
+
 import { SeverityLevel } from "../../logging/benchmarkingLogger";
 import { BenchmarkingOptions } from "../benchmarkingCore/benchmarkingOptions";
 
@@ -43,6 +45,20 @@ export interface ExperimentRunOptions extends BenchmarkingOptions {
 
     enableSubprocessesSchedulingDebugLogs: boolean;
     enableModelsSchedulingDebugLogs: boolean;
+
+    /**
+     * Control `coq-lsp` clients creation and usage.
+     *
+     * Use `CoqLspProviderBuilders` namespace to select one of the already implemented strategies.
+     *
+     * The default `coqLspProviderBuilder` for benchmarking frameworks is:
+     * ```
+     * CoqLspProviderBuilders.newCoqLspPerRequestWithLimitedParallelism(
+     *     BenchmarkingOptionsDefaults.DEFAULT_MAX_RUNNING_COQ_LSP_CLIENTS
+     * )
+     * ```
+     */
+    coqLspProviderBuilder: CoqLspProviderBuilder;
 }
 
 export namespace ExperimentRunOptions {
@@ -54,6 +70,8 @@ export namespace ExperimentRunOptions {
         datasetCacheDirectoryPath: string;
     }
 
-    export type AfterStartupResolution = Partial<ExperimentRunOptions> &
+    export type AfterStartupResolution = InputExperimentRunOptions &
         ResolveOnStartup;
 }
+
+export type InputExperimentRunOptions = Partial<ExperimentRunOptions>;

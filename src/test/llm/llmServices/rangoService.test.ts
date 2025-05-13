@@ -258,12 +258,24 @@ suite("[LLMService] Test `RangoService`", function () {
                          */
                         await expect(async () => {
                             try {
+                                const externalContext =
+                                    proofGenerationContext.externalPipelineContext ??
+                                    illegalState(
+                                        "`ProofGenerationContext.externalPipelineContext` is expected to be built ",
+                                        "by `testLLMServiceInSetupEnvironment`"
+                                    );
                                 await rangoService.generateProof(
                                     {
                                         ...proofGenerationContext,
                                         externalPipelineContext: {
-                                            ...proofGenerationContext.externalPipelineContext,
-                                            sourceTheoremStartLine: 100,
+                                            ...externalContext,
+                                            sourceTheoremStatementRange: {
+                                                ...externalContext.sourceTheoremProofRange,
+                                                start: {
+                                                    line: 1000,
+                                                    character: 0,
+                                                },
+                                            },
                                         } as ExternalPipelineProofGenerationContext,
                                     },
                                     resolvedParams
@@ -407,7 +419,9 @@ suite("[LLMService] Test `RangoService`", function () {
             mockOpenAIApiKey: "non-defined",
         };
         await withLLMService(
-            new RangoService(undefined, ErrorsHandlingMode.RETHROW_ERRORS),
+            new RangoService({
+                errorsHandlingMode: ErrorsHandlingMode.RETHROW_ERRORS,
+            }),
             async (rangoService) => {
                 const resolvedParams = resolveParametersOrThrow(
                     rangoService,

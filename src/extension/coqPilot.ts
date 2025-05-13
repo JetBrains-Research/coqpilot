@@ -5,7 +5,10 @@ import {
     workspace,
 } from "vscode";
 
-import { RangoInstallationOptions } from "../llm/llmServices/rango/rangoInstaller";
+import {
+    RangoInstallationOptions,
+    RangoInstaller,
+} from "../llm/llmServices/rango/rangoInstaller";
 
 import { CoqLspStartupError } from "../coqLsp/coqLspTypes";
 
@@ -14,6 +17,7 @@ import {
     CompletionContext,
     ProcessEnvironment,
     SourceFileEnvironment,
+    TargetType,
 } from "../core/completionGenerationContext";
 import { generateCompletion } from "../core/completionGenerator";
 import {
@@ -89,11 +93,10 @@ export class CoqPilot {
             executeInstallationCommand.bind(
                 null,
                 vscodeContext.extensionPath,
-                pluginContext.llmServices.rangoService.installationPath,
                 {
                     enableModelCheckpointInstallation: true,
                 } as RangoInstallationOptions,
-                pluginContext.llmServices.rangoService.installer
+                new RangoInstaller()
             )
         );
         this.registerCommand(
@@ -101,9 +104,8 @@ export class CoqPilot {
             executeUninstallationCommand.bind(
                 null,
                 vscodeContext.extensionPath,
-                pluginContext.llmServices.rangoService.installationPath,
                 {},
-                pluginContext.llmServices.rangoService.installer
+                new RangoInstaller()
             )
         );
 
@@ -334,12 +336,11 @@ export class CoqPilot {
 
         const processEnvironment: ProcessEnvironment = {
             coqProofChecker: coqProofChecker,
-            modelsParams: await readAndValidateUserModelsParams(
+            bundles: await readAndValidateUserModelsParams(
                 workspace.getConfiguration(PLUGIN_ID),
                 this.pluginContext.llmServices,
                 this.vscodeContext
             ),
-            services: this.pluginContext.llmServices,
             theoremRanker: contextTheoremsRanker,
         };
 
@@ -368,6 +369,7 @@ export class CoqPilot {
                 this.sessionState.coqLspClient,
                 abortSignal,
                 contextTheoremsRanker.needsUnwrappedNotations,
+                TargetType.ADMIT,
                 this.pluginContext.eventLogger
             );
 

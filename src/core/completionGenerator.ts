@@ -1,4 +1,7 @@
-import { LLMSequentialIterator } from "../llm/llmIterator";
+import {
+    DEFAULT_FETCHING_ORDER,
+    LLMSequentialIterator,
+} from "../llm/llmIterator";
 import { GeneratedProof } from "../llm/llmServices/generatedProof";
 
 import { CoqLspTimeoutError } from "../coqLsp/coqLspTypes";
@@ -71,15 +74,17 @@ export async function generateCompletion(
     );
     const iterator = new LLMSequentialIterator(
         context,
-        processEnvironment.modelsParams,
-        processEnvironment.services,
+        processEnvironment.bundles,
+        DEFAULT_FETCHING_ORDER, // TODO: support configuring fetching order in the settings, use the default by now
         eventLogger,
         abortSignal
     );
 
     try {
-        /** newlyGeneratedProofs = generatedProofsBatch from iterator +
-         *  + all proofs fixed at the previous iteration */
+        /**
+         * newlyGeneratedProofs = generatedProofsBatch from iterator +
+         * + all proofs fixed at the previous iteration
+         */
         let newlyGeneratedProofs: GeneratedProof[] = [];
 
         for await (const generatedProofsBatch of iterator) {
@@ -191,7 +196,9 @@ async function checkAndFixProofs(
     const fixedProofs = await fixProofs(proofsWithFeedback, abortSignal);
     eventLogger?.log(
         "core-proofs-fixed",
-        "Proofs were fixed",
+        fixedProofs.length === 0
+            ? "No proofs to be fixed"
+            : "Proofs were fixed",
         fixedProofs.map(
             (generatedProof) =>
                 `New proof: "${generatedProof.proof}" with version ${generatedProof.versionNumber}\n Previous version: ${stringifyAnyValue(generatedProof.proofVersions.slice(-2))}`

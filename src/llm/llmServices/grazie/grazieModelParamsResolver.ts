@@ -1,7 +1,7 @@
 import { GrazieUserModelParams } from "../../userModelParams";
 import { GrazieModelParams, grazieModelParamsSchema } from "../modelParams";
-import { BasicModelParamsResolver } from "../utils/paramsResolvers/basicModelParamsResolvers";
 import { ValidationRules } from "../utils/paramsResolvers/builders";
+import { BasicModelParamsResolver } from "../utils/paramsResolvers/kit/basicModelParamsResolvers";
 import { ValidParamsResolverImpl } from "../utils/paramsResolvers/paramsResolverImpl";
 
 import { GrazieService } from "./grazieService";

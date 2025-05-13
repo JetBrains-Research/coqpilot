@@ -1,23 +1,19 @@
 import { expect } from "earl";
 
 import { LLMSequentialIterator } from "../../llm/llmIterator";
-import { disposeServices } from "../../llm/llmServices";
 import { GeneratedProof } from "../../llm/llmServices/generatedProof";
+import { LLMServiceIdentifier } from "../../llm/llmServices/llmServiceIdentifier";
 import { ProofGenerationContext } from "../../llm/proofGenerationContext";
 
 import {
+    createBundles,
     createDefaultServices,
     createPredefinedProofsModel,
-    createTrivialModelsParams,
 } from "../commonTestFunctions/defaultLLMServicesBuilder";
 
 suite("LLM Iterator test", () => {
     const predefinedModel1 = createPredefinedProofsModel("first model");
     const predefinedModel2 = createPredefinedProofsModel("second model");
-    const modelsParams = createTrivialModelsParams([
-        predefinedModel1,
-        predefinedModel2,
-    ]);
     const tactics = predefinedModel1.tactics;
     expect(predefinedModel2.tactics).toEqual(tactics);
 
@@ -29,10 +25,13 @@ suite("LLM Iterator test", () => {
     test("Test `nextProof` via two predefined-proofs models", async () => {
         const services = createDefaultServices();
         try {
+            const bundles = createBundles(services, [
+                LLMServiceIdentifier.PREDEFINED_PROOFS,
+                [predefinedModel1, predefinedModel2],
+            ]);
             const iterator = new LLMSequentialIterator(
                 proofGenerationContext,
-                modelsParams,
-                services
+                bundles
             );
             for (let i = 0; i < 2; i++) {
                 for (let t = 0; t < tactics.length; t++) {
@@ -46,17 +45,20 @@ suite("LLM Iterator test", () => {
             const result = await iterator.nextProof();
             expect(result.done);
         } finally {
-            disposeServices(services);
+            services.dispose();
         }
     });
 
     test("Test `next` via two predefined-proofs models", async () => {
         const services = createDefaultServices();
         try {
+            const bundles = createBundles(services, [
+                LLMServiceIdentifier.PREDEFINED_PROOFS,
+                [predefinedModel1, predefinedModel2],
+            ]);
             const iterator = new LLMSequentialIterator(
                 proofGenerationContext,
-                modelsParams,
-                services
+                bundles
             );
             for (let i = 0; i < 2; i++) {
                 const result = await iterator.next();
@@ -70,7 +72,7 @@ suite("LLM Iterator test", () => {
             const result = await iterator.next();
             expect(result.done);
         } finally {
-            disposeServices(services);
+            services.dispose();
         }
     });
 });

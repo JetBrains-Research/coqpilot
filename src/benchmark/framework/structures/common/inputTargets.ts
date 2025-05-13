@@ -1,3 +1,5 @@
+import { TargetType } from "../../../../core/completionGenerationContext";
+
 import { EqualitySet } from "../../../../utils/collectionUtils/equalitySet";
 import {
     EqualTo,
@@ -7,7 +9,6 @@ import { getOrPut } from "../../../../utils/collectionUtils/mapUtils";
 import { illegalState } from "../../../../utils/errors/throwErrors";
 import { stringifyAnyValue } from "../../../../utils/printers";
 import { toTargetType } from "../../utils/commonStructuresUtils/targetTypeUtils";
-import { TargetType } from "../benchmarkingCore/completionGenerationTask";
 
 import { WorkspaceRoot } from "./workspaceRoot";
 

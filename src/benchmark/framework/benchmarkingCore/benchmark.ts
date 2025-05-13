@@ -1,7 +1,5 @@
-import { modelName } from "../../../llm/llmServices/utils/modelParamsAccessors";
+import { CoqLspProvider } from "../../../coqLsp/coqLspProviders/abstractCoqLspProvider";
 
-import { AsyncScheduler } from "../../../utils/async/asyncScheduler";
-import { groupBy, mapValues } from "../../../utils/collectionUtils/mapUtils";
 import { buildErrorCompleteLog } from "../../../utils/errors/errorsUtils";
 import { IllegalStateError } from "../../../utils/errors/throwErrors";
 import {
@@ -22,16 +20,13 @@ import { BenchmarkingItem } from "../structures/benchmarkingCore/benchmarkingIte
 import { BenchmarkingOptions } from "../structures/benchmarkingCore/benchmarkingOptions";
 import { BenchmarkedItem } from "../structures/benchmarkingResults/benchmarkedItem";
 import { ExperimentResults } from "../structures/benchmarkingResults/experimentResults";
-import { LLMServiceIdentifier } from "../structures/common/llmServiceIdentifier";
 import { ExperimentRunOptions } from "../structures/inputParameters/experimentRunOptions";
 import {
     abortAsCriticalError,
     abortAsFailFast,
 } from "../utils/asyncUtils/abortUtils";
-import { getShortName } from "../utils/commonStructuresUtils/llmServicesUtils";
 import { prependWithZeros } from "../utils/serializationUtils";
 import {
-    benchmarkingInvariantFailed,
     buildFailedBenchmarkingInvariant,
     throwBenchmarkingError,
 } from "../utils/throwErrors";
@@ -63,15 +58,42 @@ export async function benchmark(
         resolvedArtifactsDirPath,
         ArtifactsNames.itemsReportsDir
     );
-
-    const modelsSchedulers = ModelsSchedulers.buildModelsSchedulers(
-        benchmarkingItems,
-        experimentRunOptions
+    const experimentReportPath = joinPaths(
+        resolvedArtifactsDirPath,
+        ArtifactsNames.experimentReportFileName
     );
+
     const options = extractBenchmarkingOptions(experimentRunOptions);
     const abortController = new AbortController();
-    const abortSignal = abortController.signal;
+    const coqLspProvider = experimentRunOptions.coqLspProviderBuilder();
+    try {
+        return await benchmarkWithResources(
+            benchmarkingItems,
+            parentLogger,
+            totalTime,
+            proofsChecker,
+            itemsDirPath,
+            experimentReportPath,
+            options,
+            abortController,
+            coqLspProvider
+        );
+    } finally {
+        await coqLspProvider.dispose();
+    }
+}
 
+async function benchmarkWithResources(
+    benchmarkingItems: BenchmarkingItem[],
+    parentLogger: BenchmarkingLogger,
+    totalTime: TimeMark,
+    proofsChecker: AbstractProofsChecker,
+    itemsDirPath: string,
+    experimentReportPath: string,
+    options: BenchmarkingOptions,
+    abortController: AbortController,
+    coqLspProvider: CoqLspProvider
+): Promise<ExperimentResults> {
     const itemsPromises: Promise<BenchmarkedItem | undefined>[] = [];
     for (let i = 0; i < benchmarkingItems.length; i++) {
         const item = benchmarkingItems[i];
@@ -82,20 +104,15 @@ export async function benchmark(
         );
 
         const itemLogger = buildItemLogger(item, parentLogger);
-        const modelsScheduler = ModelsSchedulers.getScheduler(
-            modelsSchedulers,
-            item,
-            itemLogger
-        );
         itemsPromises.push(
             executeBenchmarkingTask(
                 item,
                 itemArtifactsDirPath,
                 options,
                 itemLogger,
-                modelsScheduler,
+                coqLspProvider,
                 proofsChecker,
-                abortSignal
+                abortController.signal
             )
         );
     }
@@ -118,10 +135,6 @@ export async function benchmark(
 
     const experimentResult = new ExperimentResults(benchmarkedItems);
 
-    const experimentReportPath = joinPaths(
-        resolvedArtifactsDirPath,
-        ArtifactsNames.experimentReportFileName
-    );
     writeToFile(experimentResult.asJson(), experimentReportPath, (e) =>
         parentLogger
             .asOneRecord()
@@ -189,73 +202,12 @@ async function runBenchmarkingItems(
     }
 }
 
-namespace ModelsSchedulers {
-    export type Mapping = Map<LLMServiceIdentifier, ModelNameToModelsScheduler>;
-    export type ModelNameToModelsScheduler = Map<string, AsyncScheduler>;
-
-    const NO_MODEL_NAME_KEYWORD = "";
-
-    export function getModelNameOrNoModelNameKeyword(
-        item: BenchmarkingItem
-    ): string {
-        return modelName(item.params.modelParams) ?? NO_MODEL_NAME_KEYWORD;
-    }
-
-    export function getScheduler(
-        modelsSchedulers: Mapping,
-        item: BenchmarkingItem,
-        itemLogger: BenchmarkingLogger
-    ): AsyncScheduler {
-        return (
-            modelsSchedulers
-                .get(item.params.llmServiceIdentifier)
-                ?.get(
-                    ModelsSchedulers.getModelNameOrNoModelNameKeyword(item)
-                ) ??
-            benchmarkingInvariantFailed(
-                itemLogger,
-                "no models scheduler for the benchmarking item"
-            )
-        );
-    }
-
-    export function buildModelsSchedulers(
-        benchmarkingItems: BenchmarkingItem[],
-        experimentRunOptions: ExperimentRunOptions
-    ): Mapping {
-        return mapValues(
-            groupBy(
-                benchmarkingItems,
-                (item) => item.params.llmServiceIdentifier
-            ),
-            (
-                _: LLMServiceIdentifier,
-                sameLLMServiceItems: BenchmarkingItem[]
-            ) => {
-                const sameLLMServiceItemsByModelNames = groupBy(
-                    sameLLMServiceItems,
-                    (item) => getModelNameOrNoModelNameKeyword(item)
-                );
-                return mapValues(
-                    sameLLMServiceItemsByModelNames,
-                    (modelName: string, sameModelItems: BenchmarkingItem[]) =>
-                        new AsyncScheduler(
-                            experimentRunOptions.maxParallelGenerationRequestsToModel,
-                            experimentRunOptions.enableModelsSchedulingDebugLogs,
-                            `Models Scheduler for: ${getShortName(sameModelItems[0].params.llmServiceIdentifier)}${modelName === "" ? "" : `, "${modelName}"`}`
-                        )
-                );
-            }
-        );
-    }
-}
-
 function extractBenchmarkingOptions(
     experimentRunOptions: ExperimentRunOptions
 ): BenchmarkingOptions {
     const {
         failFast,
-        logAbortingTasks: logFailFastTasksAborting,
+        logAbortingTasks,
         proofGenerationRetries,
         openDocumentTimeoutMillis,
         proofCheckTimeoutMillis,
@@ -263,7 +215,7 @@ function extractBenchmarkingOptions(
     } = experimentRunOptions;
     return {
         failFast: failFast,
-        logAbortingTasks: logFailFastTasksAborting,
+        logAbortingTasks: logAbortingTasks,
         proofGenerationRetries: proofGenerationRetries,
         openDocumentTimeoutMillis: openDocumentTimeoutMillis,
         proofCheckTimeoutMillis: proofCheckTimeoutMillis,
@@ -283,7 +235,7 @@ function buildUniqueItemReportDirName(
         item.task.sourceFilePath
     );
     const unsafeFileName = [
-        `${augmentedIndex}-${getShortName(item.params.llmServiceIdentifier)}-${modelId}`,
+        `${augmentedIndex}-${item.params.llmService.toLogString(false)}-${modelId}`,
         `-${fileIdentifier}-${item.task.sourceTheorem.name}`,
     ].join("");
     return translateToSafeFileName(unsafeFileName);

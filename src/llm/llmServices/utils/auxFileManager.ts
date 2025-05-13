@@ -23,33 +23,75 @@ export interface AuxLemma {
     auxFilePath: string;
 }
 
+export enum AuxFileCreationMode {
+    INSERT_HELPER_LEMMA,
+    /**
+     * Unfortunately, inserting helper lemma built of target goal
+     * might fail if global variables are present in the file.
+     * TODO: support making additional request to `coq-lsp` to
+     * retrieve global context and remove it from the goal.
+     *
+     * So far, in order to mitigate global variables case for benchmarking,
+     * `REUSE_SOURCE_THEOREM` can be used to leave the source theorem untouched:
+     * this way, such tools as Rango will get the original theorem as input and
+     * will generate its whole proof.
+     */
+    REUSE_SOURCE_FILE,
+}
+
 export interface AuxFileCreationArgs {
     sourceFilePath: string;
     targetGoal: ProofGoal;
-    lineToCopyFileToExclusive: number;
     requestUniqueIdentifier: string;
+
+    mode: AuxFileCreationMode;
+
+    sourceTheoremName: string;
+    sourceTheoremStatementRange: CodeElementRange;
+    sourceTheoremProofRange: CodeElementRange;
 }
 
+/**
+ * Since `CoqLspClient` rework, no aux files needed anymore to check proofs.
+ * Therefore, this wrapper's only task is to built a theorem from the target goal
+ * and to provide it to an external tool as input.
+ */
 export async function withAuxFile<T>(
     args: AuxFileCreationArgs,
     block: (auxLemma: AuxLemma) => Promise<T>
 ): Promise<T> {
-    const auxLemma = createAuxFile(args);
-    try {
+    if (args.mode === AuxFileCreationMode.REUSE_SOURCE_FILE) {
+        const auxLemma = useSourceTheorem(args);
         return await block(auxLemma);
-    } finally {
-        deleteFile(auxLemma.auxFilePath);
+    } else {
+        const auxLemma = createAuxFileWithHelperLemma(args);
+        try {
+            return await block(auxLemma);
+        } finally {
+            deleteFile(auxLemma.auxFilePath);
+        }
     }
 }
 
-function createAuxFile(args: AuxFileCreationArgs): AuxLemma {
+function useSourceTheorem(args: AuxFileCreationArgs): AuxLemma {
+    return {
+        name: args.sourceTheoremName,
+        statementRange: args.sourceTheoremStatementRange,
+        admittedProofRange: args.sourceTheoremProofRange,
+        auxFilePath: args.sourceFilePath,
+    };
+}
+
+function createAuxFileWithHelperLemma(args: AuxFileCreationArgs): AuxLemma {
+    const lineToCopyFileToExclusive =
+        args.sourceTheoremStatementRange.start.line;
     // TODO: optimize copying the file without reading it completely, use async streams
     const sourceFileContent = readFile(args.sourceFilePath, (err) =>
         throwError(`Failed to create aux file: ${getErrorMessage(err)}`)
     );
     const auxFileLines = sourceFileContent
         .split("\n")
-        .slice(0, args.lineToCopyFileToExclusive);
+        .slice(0, lineToCopyFileToExclusive);
 
     const auxLemmaContent = buildAuxLemma(args.targetGoal);
     auxFileLines.push(...auxLemmaContent.lines());
@@ -63,7 +105,7 @@ function createAuxFile(args: AuxFileCreationArgs): AuxLemma {
         throwError(`Failed to create aux file: ${getErrorMessage(err)}`);
     });
 
-    const lemmaStatementStartLine = args.lineToCopyFileToExclusive;
+    const lemmaStatementStartLine = lineToCopyFileToExclusive;
     const lemmaStatementEndLine =
         lemmaStatementStartLine + auxLemmaContent.statement.length - 1;
     const lemmaBodyStartLine = lemmaStatementEndLine + 1;

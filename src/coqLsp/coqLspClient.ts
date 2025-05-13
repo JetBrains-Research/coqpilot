@@ -117,8 +117,8 @@ export class CoqLspClientImpl implements CoqLspClient {
 
     private constructor(
         coqLspConnector: CoqLspConnector,
-        public readonly eventLogger?: EventLogger,
-        public readonly abortSignal?: AbortSignal
+        readonly eventLogger?: EventLogger,
+        readonly abortSignal?: AbortSignal
     ) {
         this.client = coqLspConnector;
         this.trackSuspiciousLspErrors();

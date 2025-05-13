@@ -16,9 +16,9 @@ import { PLUGIN_ID } from "../utils/pluginId";
 
 export async function executeInstallationCommand<InstallationOptions>(
     coqPilotPath: string,
-    installationPath: string,
     installationOptions: InstallationOptions,
-    installer: AbstractExternalServiceInstaller<InstallationOptions, any>
+    installer: AbstractExternalServiceInstaller<InstallationOptions, any>,
+    installationPath: string = installer.getDefaultInstallationPath()
 ) {
     try {
         await installer.checkPrerequisitesOrThrow();
@@ -41,9 +41,9 @@ export async function executeInstallationCommand<InstallationOptions>(
 
 export async function executeUninstallationCommand<InstallationOptions>(
     coqPilotPath: string,
-    installationPath: string,
     installationOptions: InstallationOptions,
-    installer: AbstractExternalServiceInstaller<InstallationOptions, any>
+    installer: AbstractExternalServiceInstaller<InstallationOptions, any>,
+    installationPath: string = installer.getDefaultInstallationPath()
 ) {
     try {
         return executeWithProgress(
@@ -126,9 +126,9 @@ export class UserInstallationInteractor<InstallationOptions>
     ): Promise<void> {
         return executeInstallationCommand(
             coqPilotPath,
-            installationPath,
             options,
-            this.installer
+            this.installer,
+            installationPath
         );
     }
 
@@ -139,9 +139,9 @@ export class UserInstallationInteractor<InstallationOptions>
     ): Promise<void> {
         return executeUninstallationCommand(
             coqPilotPath,
-            installationPath,
             options,
-            this.installer
+            this.installer,
+            installationPath
         );
     }
 }

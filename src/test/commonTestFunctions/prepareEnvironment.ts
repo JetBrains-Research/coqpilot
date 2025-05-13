@@ -6,6 +6,7 @@ import { CoqLspClient } from "../../coqLsp/coqLspClient";
 import {
     CompletionContext,
     SourceFileEnvironment,
+    TargetType,
 } from "../../core/completionGenerationContext";
 import { CoqProofChecker } from "../../core/coqProofChecker";
 import { buildProofGenerationContext } from "../../core/exposedCompletionGeneratorUtils";
@@ -60,7 +61,8 @@ export async function withPreparedEnvironment<T>(
                     projectRoot,
                     client,
                     new AbortController().signal,
-                    true // to support any ranker
+                    true, // to support any ranker
+                    TargetType.ADMIT // by default
                 )
             );
         const preparedEnvironment = {

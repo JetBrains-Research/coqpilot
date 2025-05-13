@@ -113,15 +113,6 @@ export interface RangoModelParams extends ModelParams {
     dataLocDirectoryPath: string;
 }
 
-export interface ModelsParams {
-    predefinedProofsModelParams: PredefinedProofsModelParams[];
-    openAiParams: OpenAiModelParams[];
-    grazieParams: GrazieModelParams[];
-    lmStudioParams: LMStudioModelParams[];
-    deepSeekParams: DeepSeekModelParams[];
-    rangoParams: RangoModelParams[];
-}
-
 export const multiroundProfileSchema: JSONSchemaType<MultiroundProfile> = {
     type: "object",
     properties: {

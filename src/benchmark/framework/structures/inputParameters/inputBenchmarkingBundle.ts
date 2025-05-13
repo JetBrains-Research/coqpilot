@@ -1,5 +1,6 @@
+import { LLMServiceProvider } from "../../../../llm/llmServices/llmServiceProvider";
+
 import { DatasetInputTargets } from "../common/inputTargets";
-import { LLMServiceIdentifier } from "../common/llmServiceIdentifier";
 
 import { InputBenchmarkingModelParams } from "./inputBenchmarkingModelParams";
 
@@ -9,7 +10,7 @@ export type InputBenchmarkingBundle =
 export interface InputBenchmarkingBundleImpl<
     InputParams extends InputBenchmarkingModelParams.Params,
 > {
-    llmServiceIdentifier: LLMServiceIdentifier;
+    llmServiceProvider: LLMServiceProvider;
     inputBenchmarkingModelsParams: InputParams[];
     requestedTargets: DatasetInputTargets;
 }

@@ -1,6 +1,6 @@
 {
   "name": "coqpilot",
-  "displayName": "СoqPilot",
+  "displayName": "CoqPilot",
   "description": "An AI-based completion extension for Coq interactive prover.",
   "icon": "etc/img/logo.ico",
   "repository": {
@@ -585,6 +585,8 @@
     "benchmark": "npm run single-workspace-benchmark",
     "prebenchmark-dev": "rm -rf benchmarksOutput",
     "benchmark-dev": "npm run benchmark",
+    "pretest-only-benchmark": "npm run preclean-test",
+    "test-only-benchmark": "npm run test-executables-unsafe -- -r=\"\\[Benchmarking Framework Tests\\] *\"",
     "preteamcity-benchmark-setup": "npm run prebenchmark",
     "teamcity-benchmark-setup": "node ./out/benchmark/teamCitySetup.js",
     "teamcity-benchmark-agent": "npm run test-executables-unsafe -- -g=\"[SourceExecutable] Team City Benchmark Agent\"",

@@ -1,7 +1,12 @@
+import { LLMServicesStorage } from "../../../llm/llmServicesStorage";
+
+import { CoqLspProviderBuilders } from "../../../coqLsp/coqLspProviders/coqLspProviderBuilders";
+
 import { AsyncScheduler } from "../../../utils/async/asyncScheduler";
 import { joinPaths, resolveAsAbsolutePath } from "../../../utils/fs/pathUtils";
 import { getRootDir } from "../../../utils/fs/rootResolvers";
 import { benchmark } from "../benchmarkingCore/benchmark";
+import { BENCHMARKING_CONTROL_PARAMS } from "../benchmarkingCore/executeBenchmarkingTask";
 import { TimeMark } from "../benchmarkingCore/singleCompletionGeneration/measureTimeUtils";
 import { AbstractProofsChecker } from "../benchmarkingCore/singleCompletionGeneration/proofsCheckers/abstractProofsChecker";
 import {
@@ -18,8 +23,12 @@ import {
     mergeInputTargets,
 } from "../structures/common/inputTargets";
 import { DatasetCacheUsageMode } from "../structures/inputParameters/datasetCaching";
-import { ExperimentRunOptions } from "../structures/inputParameters/experimentRunOptions";
+import {
+    ExperimentRunOptions,
+    InputExperimentRunOptions,
+} from "../structures/inputParameters/experimentRunOptions";
 import { InputBenchmarkingBundle } from "../structures/inputParameters/inputBenchmarkingBundle";
+import { ResolvedWithServiceBenchmarkingBundle } from "../structures/inputParameters/resolvedWithServiceBenchmarkingBundle";
 import { installDemandedExternalServices } from "../utils/installers/externalServicesInstaller";
 import { throwBenchmarkingError } from "../utils/throwErrors";
 
@@ -42,7 +51,7 @@ namespace CacheDirNames {
 export abstract class AbstractExperiment {
     constructor(
         protected readonly bundles: InputBenchmarkingBundle[] = [],
-        protected sharedRunOptions: Partial<ExperimentRunOptions> = {}
+        protected sharedRunOptions: InputExperimentRunOptions = {}
     ) {}
 
     protected abstract validateExecutionContextOrThrow(
@@ -66,7 +75,7 @@ export abstract class AbstractExperiment {
      * Changes made are applied to **all** further runs.
      * The properties that are not specified stay unchanged.
      */
-    updateRunOptions(runOptions: Partial<ExperimentRunOptions>) {
+    updateRunOptions(runOptions: InputExperimentRunOptions) {
         this.sharedRunOptions = {
             ...this.sharedRunOptions,
             ...runOptions,
@@ -116,7 +125,7 @@ export abstract class AbstractExperiment {
      */
     async run(
         artifactsDirPath: string,
-        runOptions: Partial<ExperimentRunOptions> = {}
+        runOptions: InputExperimentRunOptions = {}
     ): Promise<ExperimentResults> {
         const [requestedTargets, executionContext] =
             this.prepareExecutionContextFromInputTargets(
@@ -131,34 +140,43 @@ export abstract class AbstractExperiment {
                         logger
                     )
             );
-        const totalTime = new TimeMark();
 
-        const benchmarkingItems = await this.buildBenchmarkingItems(
-            requestedTargets,
-            executionContext
-        );
+        const [llmServices, resolvedBundles] =
+            AbstractExperiment.resolveWithServices(this.bundles);
+        try {
+            const totalTime = new TimeMark();
 
-        await installDemandedExternalServices(
-            this.bundles,
-            executionContext.logger
-        );
+            const benchmarkingItems = await this.buildBenchmarkingItems(
+                resolvedBundles,
+                requestedTargets,
+                executionContext
+            );
 
-        // Since `AbstractExperiment.run(...)` is not always called with `await`,
-        // this one might help triggering the expected behaviour
-        return await this.executeBenchmarkingItems(
-            benchmarkingItems,
-            artifactsDirPath,
-            executionContext,
-            totalTime
-        );
+            await installDemandedExternalServices(
+                resolvedBundles,
+                executionContext.logger
+            );
+
+            // Since `AbstractExperiment.run(...)` is not always called with `await`,
+            // this one might help triggering the expected behaviour
+            return await this.executeBenchmarkingItems(
+                benchmarkingItems,
+                artifactsDirPath,
+                executionContext,
+                totalTime
+            );
+        } finally {
+            llmServices.dispose();
+        }
     }
 
     protected async buildBenchmarkingItems(
+        resolvedBundles: ResolvedWithServiceBenchmarkingBundle[],
         requestedTargets: DatasetInputTargets,
         executionContext: ExecutionContext
     ): Promise<BenchmarkingItem[]> {
         const benchmarkingItems = await parseDatasetForBenchmarkingItems(
-            this.bundles,
+            resolvedBundles,
             requestedTargets,
             executionContext.resolvedRunOptions,
             executionContext.logger,
@@ -189,7 +207,7 @@ export abstract class AbstractExperiment {
     }
 
     protected prepareExecutionContextFromInputTargets(
-        runOptions: Partial<ExperimentRunOptions>,
+        runOptions: InputExperimentRunOptions,
         loggerIdentifier: string,
         buildRequestedTargets: (
             logger: BenchmarkingLogger
@@ -207,7 +225,7 @@ export abstract class AbstractExperiment {
     }
 
     protected prepareExecutionContext<T>(
-        runOptions: Partial<ExperimentRunOptions>,
+        runOptions: InputExperimentRunOptions,
         loggerIdentifier: string,
         prepareTargets: (logger: BenchmarkingLogger) => T,
         getRequestedWorkspaces: (preparedTargets: T) => string[]
@@ -265,7 +283,7 @@ export abstract class AbstractExperiment {
     }
 
     private resolveOnStartupOptions(
-        inputOptions: Partial<ExperimentRunOptions>
+        inputOptions: InputExperimentRunOptions
     ): ExperimentRunOptions.AfterStartupResolution {
         return {
             ...inputOptions,
@@ -329,6 +347,12 @@ export abstract class AbstractExperiment {
                 optionsAfterStartupResolution.enableModelsSchedulingDebugLogs ??
                 false,
 
+            coqLspProviderBuilder:
+                optionsAfterStartupResolution.coqLspProviderBuilder ??
+                CoqLspProviderBuilders.newClientPerRequestWithLimitedParallelism(
+                    ExperimentRunOptionsDefaults.DEFAULT_MAX_RUNNING_COQ_LSP_CLIENTS
+                ),
+
             failFast: optionsAfterStartupResolution.failFast ?? false,
             logAbortingTasks:
                 optionsAfterStartupResolution.logAbortingTasks ?? false,
@@ -355,4 +379,32 @@ export abstract class AbstractExperiment {
         );
         return mergedTargets;
     }
+
+    protected static resolveWithServices(
+        inputBundles: InputBenchmarkingBundle[]
+    ): [LLMServicesStorage, ResolvedWithServiceBenchmarkingBundle[]] {
+        const resolvedBundles = [];
+        const services = new LLMServicesStorage();
+        try {
+            for (const inputBundle of inputBundles) {
+                const newService = services.registerService(() =>
+                    inputBundle.llmServiceProvider(BENCHMARKING_CONTROL_PARAMS)
+                );
+                resolvedBundles.push({
+                    llmService: newService,
+                    inputBenchmarkingModelsParams:
+                        inputBundle.inputBenchmarkingModelsParams,
+                    requestedTargets: inputBundle.requestedTargets,
+                });
+            }
+            return [services, resolvedBundles];
+        } catch (e) {
+            services.dispose();
+            throw e;
+        }
+    }
+}
+
+export namespace ExperimentRunOptionsDefaults {
+    export const DEFAULT_MAX_RUNNING_COQ_LSP_CLIENTS = 30;
 }

@@ -1,45 +1,36 @@
+import { LLMServiceIdentifier } from "../../llm/llmServices/llmServiceIdentifier";
 import {
-    DeepSeekUserModelParams,
-    GrazieUserModelParams,
-    LMStudioUserModelParams,
-    OpenAiUserModelParams,
     PredefinedProofsUserModelParams,
-    RangoUserModelParams,
+    UserModelParams,
 } from "../../llm/userModelParams";
 
-export interface InputModelsParams {
-    predefinedProofsModelParams: PredefinedProofsUserModelParams[];
-    openAiParams: OpenAiUserModelParams[];
-    grazieParams: GrazieUserModelParams[];
-    lmStudioParams: LMStudioUserModelParams[];
-    deepSeekParams: DeepSeekUserModelParams[];
-    rangoParams: RangoUserModelParams[];
+export type InputModelsParams = InputModelsParamsItem<UserModelParams>[];
+
+export interface InputModelsParamsItem<T extends UserModelParams> {
+    identifier: LLMServiceIdentifier;
+    models: T[];
 }
 
-export const onlyAutoModelsParams: InputModelsParams = {
-    openAiParams: [],
-    grazieParams: [],
-    predefinedProofsModelParams: [
-        {
-            modelId: "Predefined tactic",
-            tactics: ["firstorder auto with *."],
-        },
-    ],
-    lmStudioParams: [],
-    deepSeekParams: [],
-    rangoParams: [],
-};
+export const onlyAutoModelsParams: InputModelsParams = [
+    {
+        identifier: LLMServiceIdentifier.PREDEFINED_PROOFS,
+        models: [
+            {
+                modelId: "Predefined tactic",
+                tactics: ["firstorder auto with *."],
+            },
+        ],
+    } as InputModelsParamsItem<PredefinedProofsUserModelParams>,
+];
 
-export const tacticianModelsParams: InputModelsParams = {
-    openAiParams: [],
-    grazieParams: [],
-    predefinedProofsModelParams: [
-        {
-            modelId: "Tactician",
-            tactics: ["synth."],
-        },
-    ],
-    lmStudioParams: [],
-    deepSeekParams: [],
-    rangoParams: [],
-};
+export const tacticianModelsParams: InputModelsParams = [
+    {
+        identifier: LLMServiceIdentifier.PREDEFINED_PROOFS,
+        models: [
+            {
+                modelId: "Tactician",
+                tactics: ["synth."],
+            },
+        ],
+    } as InputModelsParamsItem<PredefinedProofsUserModelParams>,
+];

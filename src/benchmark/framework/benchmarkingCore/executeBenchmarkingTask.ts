@@ -1,8 +1,10 @@
 import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
 import { LLMService } from "../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
+import { LLMServiceControlParams } from "../../../llm/llmServices/utils/llmServiceControlParams";
 
-import { AsyncScheduler } from "../../../utils/async/asyncScheduler";
+import { CoqLspProvider } from "../../../coqLsp/coqLspProviders/abstractCoqLspProvider";
+
 import {
     IllegalStateError,
     unreachable,
@@ -17,7 +19,6 @@ import {
     BenchmarkingResult,
 } from "../structures/benchmarkingResults/benchmarkedItem";
 import { throwOnAbort } from "../utils/asyncUtils/abortUtils";
-import { selectLLMServiceBuilder } from "../utils/commonStructuresUtils/llmServicesUtils";
 import { benchmarkingInvariantFailed } from "../utils/throwErrors";
 
 import { ExecuteBenchmarkingTaskErrorHandlingUtils } from "./executeBenchmarkingTaskUtils/errorHandling";
@@ -38,6 +39,11 @@ namespace ArtifactsNames {
     export const benchmarkingItemFileName = "input-task.json";
     export const resultReportFileName = "result.json";
 }
+
+export const BENCHMARKING_CONTROL_PARAMS: LLMServiceControlParams = {
+    eventLogger: undefined,
+    errorsHandlingMode: ErrorsHandlingMode.RETHROW_ERRORS,
+};
 
 /**
  * Executes the full benchmarking process for a given completion generation benchmarking task.
@@ -72,7 +78,7 @@ export async function executeBenchmarkingTask(
     saveToDirPath: string,
     options: BenchmarkingOptions,
     itemLogger: BenchmarkingLogger,
-    modelsScheduler: AsyncScheduler,
+    coqLspProvider: CoqLspProvider,
     proofsChecker: AbstractProofsChecker,
     abortSignal: AbortSignal
 ): Promise<BenchmarkedItem | undefined> {
@@ -88,10 +94,7 @@ export async function executeBenchmarkingTask(
     );
     const task = benchmarkingItem.task;
     const params = benchmarkingItem.params;
-
-    const llmService = selectLLMServiceBuilder(
-        benchmarkingItem.params.llmServiceIdentifier
-    )(undefined, ErrorsHandlingMode.RETHROW_ERRORS);
+    const llmService = benchmarkingItem.params.llmService;
 
     try {
         ArtifactsUtils.saveInputTaskToFileOrThrow(
@@ -136,7 +139,7 @@ export async function executeBenchmarkingTask(
             const result = await benchmarkSingleCompletionGeneration(
                 thisRoundGenerationArgs,
                 options,
-                modelsScheduler,
+                coqLspProvider,
                 thisRoundLogger,
                 proofsChecker,
                 abortSignal
@@ -247,7 +250,5 @@ export async function executeBenchmarkingTask(
             throw wrappedError;
         }
         return undefined;
-    } finally {
-        llmService.dispose();
     }
 }

@@ -1,14 +1,13 @@
 import { PredefinedProofsUserModelParams } from "../../userModelParams";
 import {
-    MultiroundProfile,
     PredefinedProofsModelParams,
     predefinedProofsModelParamsSchema,
 } from "../modelParams";
-import { BasicModelParamsResolver } from "../utils/paramsResolvers/basicModelParamsResolvers";
+import { DefaultNonChatBasedModelParamsResolver } from "../utils/paramsResolvers/kit/nonChatBasedModelParamsResolver";
 import { ValidParamsResolverImpl } from "../utils/paramsResolvers/paramsResolverImpl";
 
 export class PredefinedProofsModelParamsResolver
-    extends BasicModelParamsResolver<
+    extends DefaultNonChatBasedModelParamsResolver<
         PredefinedProofsUserModelParams,
         PredefinedProofsModelParams
     >
@@ -26,34 +25,11 @@ export class PredefinedProofsModelParamsResolver
         .requiredToBeConfigured()
         .validate([(value) => value.length > 0, "be non-empty"]);
 
-    readonly systemPrompt = this.resolveParam<string>(
-        "systemPrompt"
-    ).overrideWithMock(() => "");
-
     readonly maxTokensToGenerate = this.resolveParam<number>(
         "maxTokensToGenerate"
     ).overrideWithMock((inputParams) =>
         Math.max(0, ...inputParams.tactics.map((tactic) => tactic.length))
     );
-
-    readonly tokensLimit = this.resolveParam<number>(
-        "tokensLimit"
-    ).overrideWithMock(() => Number.MAX_SAFE_INTEGER);
-
-    readonly maxContextTheoremsNumber = this.resolveParam<number>(
-        "maxContextTheoremsNumber"
-    ).overrideWithMock(() => Number.MAX_SAFE_INTEGER);
-
-    readonly multiroundProfile = this.resolveParam<MultiroundProfile>(
-        "multiroundProfile"
-    ).overrideWithMock(() => {
-        return {
-            maxRoundsNumber: 1,
-            defaultProofFixChoices: 0,
-            proofFixPrompt: "",
-            maxPreviousProofVersionsNumber: 0,
-        };
-    });
 
     readonly defaultChoices = this.resolveParam<number>("choices")
         .override(

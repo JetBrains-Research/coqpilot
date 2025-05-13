@@ -136,6 +136,16 @@ export class TheoremProof {
         }
         return text;
     }
+
+    getProofRange(): Range {
+        return {
+            start:
+                this.proof_steps.length > 0
+                    ? this.proof_steps[0].range.start
+                    : this.end_pos.start,
+            end: this.end_pos.end,
+        };
+    }
 }
 
 export class Theorem {

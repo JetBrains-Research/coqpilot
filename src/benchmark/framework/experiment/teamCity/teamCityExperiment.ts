@@ -63,25 +63,32 @@ export class TeamCityExperiment extends MultiWorkspacesExperiment {
                         logger
                     )
             );
-        const benchmarkingItems = await this.buildBenchmarkingItems(
-            requestedTargets,
-            executionContext
-        );
+        const [llmServices, resolvedBundles] =
+            TeamCityExperiment.resolveWithServices(this.bundles);
+        try {
+            const benchmarkingItems = await this.buildBenchmarkingItems(
+                resolvedBundles,
+                requestedTargets,
+                executionContext
+            );
 
-        const serialization = LightweightSerializer.serializeToLightweight(
-            benchmarkingItems,
-            this.bundles
-        );
-        LightweightSerialization.logSerialization(
-            "Successfully prepared lightweight serialization:",
-            serialization,
-            executionContext.logger
-        );
-        LightweightSerializer.saveSerializationToDirectory(
-            serialization,
-            outputDirectoryPath,
-            executionContext.logger
-        );
+            const serialization = LightweightSerializer.serializeToLightweight(
+                benchmarkingItems,
+                resolvedBundles
+            );
+            LightweightSerialization.logSerialization(
+                "Successfully prepared lightweight serialization:",
+                serialization,
+                executionContext.logger
+            );
+            LightweightSerializer.saveSerializationToDirectory(
+                serialization,
+                outputDirectoryPath,
+                executionContext.logger
+            );
+        } finally {
+            llmServices.dispose();
+        }
     }
 
     /**

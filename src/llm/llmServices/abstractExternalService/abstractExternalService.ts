@@ -1,12 +1,10 @@
-import { availableParallelism } from "os";
-
 import { PLUGIN_VERSION } from "../../../extension/utils/pluginId";
-import { EventLogger } from "../../../logging/eventLogger";
 import { AsyncScheduler } from "../../../utils/async/asyncScheduler";
 import { invariantFailed } from "../../../utils/errors/throwErrors";
 import { getCoqPilotInstallationsDirPath } from "../../../utils/fs/coqPilotInstallationsDir";
 import { translateToSafeFileName } from "../../../utils/fs/fileNameUtils";
 import { joinPaths } from "../../../utils/fs/pathUtils";
+import { MessageHandler } from "../../../utils/structures/messageHandler";
 import { Time, time } from "../../../utils/time";
 import {
     ExternalPipelineProofGenerationContext,
@@ -14,22 +12,27 @@ import {
 } from "../../proofGenerationContext";
 import { UserModelParams } from "../../userModelParams";
 import { AnalyzedChatHistory } from "../commonStructures/chat";
-import { ErrorsHandlingMode } from "../commonStructures/errorsHandlingMode";
 import {
     GeneratedRawContent,
     GeneratedRawContentItem,
 } from "../commonStructures/generatedRawContent";
 import { zeroTokens } from "../commonStructures/generationTokens";
+import { InstallerProvider } from "../commonStructures/installerProvider";
 import { LLMServiceRequest } from "../commonStructures/llmServiceRequest";
 import { ProofGenerationMetadataHolder } from "../commonStructures/proofGenerationMetadata";
 import { ProofGenerationType } from "../commonStructures/proofGenerationType";
 import { ProofVersion } from "../commonStructures/proofVersion";
+import { SchedulersProviderBuilders } from "../commonStructures/schedulersProviders";
 import { GeneratedProofImpl } from "../generatedProof";
-import { LLMServiceImpl } from "../llmService";
+import { LLMService, LLMServiceImpl } from "../llmService";
 import { LLMServiceInternal } from "../llmServiceInternal";
 import { ModelParams } from "../modelParams";
 import { throwConfigurationError } from "../utils/errorUtils";
 
+import {
+    ExternalServiceParams,
+    resolveExternalServiceParamsWithDefaults,
+} from "./abstractExternalServiceParams";
 import { AbstractExternalServiceInstaller } from "./installation/abstractExternalServiceInstaller";
 
 export type ExternalService<
@@ -80,33 +83,36 @@ export abstract class AbstractExternalService<
         InstallationOptions,
         InputModelParams
     >;
+    readonly installerProvider: InstallerProvider = () => {
+        return {
+            installer: this.installer,
+            options: undefined,
+        };
+    };
+    readonly installationPath: string;
+    readonly clearProofGenerationLogsOnSuccess: boolean;
 
     protected readonly maxSubprocessesSpawnedInParallel: number;
     protected readonly subprocessesScheduler: AsyncScheduler;
 
-    // TODO: put most of the options to a separate object and pass it, resolving the defaults
     constructor(
         readonly externalProjectName: string,
         readonly defaultMaxSubprocessesParallelism: number,
-        eventLogger: EventLogger | undefined = undefined,
-        errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.RETHROW_ERRORS,
-        generationLogsFilePath: string | undefined = undefined,
-        debugLogs: boolean = false,
-        readonly installationPath: string = AbstractExternalService.getDefaultInstallationPath(
-            externalProjectName
-        ),
-        maxSubprocessesSpawnedInParallel: number | undefined = undefined,
-        readonly clearProofGenerationLogsOnSuccess: boolean = true
+        serviceParams: ExternalServiceParams = {}
     ) {
-        super(
-            eventLogger,
-            errorsHandlingMode,
-            generationLogsFilePath,
-            debugLogs
+        const resolvedServiceParams = resolveExternalServiceParamsWithDefaults(
+            serviceParams,
+            externalProjectName,
+            defaultMaxSubprocessesParallelism
         );
+        super(resolvedServiceParams);
+
+        this.installationPath = resolvedServiceParams.installationPath;
         this.maxSubprocessesSpawnedInParallel =
-            maxSubprocessesSpawnedInParallel ??
-            this.getDefaultMaxSubprocessesSpawnedInParallel();
+            resolvedServiceParams.maxSubprocessesSpawnedInParallel;
+        this.clearProofGenerationLogsOnSuccess =
+            resolvedServiceParams.clearProofGenerationLogsOnSuccess;
+
         this.subprocessesScheduler = new AsyncScheduler(
             this.maxSubprocessesSpawnedInParallel,
             true,
@@ -119,13 +125,16 @@ export abstract class AbstractExternalService<
         params: ResolvedModelParams,
         choices: number = params.defaultChoices,
         metadataHolder: ProofGenerationMetadataHolder | undefined = undefined,
-        abortSignal?: AbortSignal
+        abortSignal?: AbortSignal,
+        onSchedulerDebugLog: MessageHandler = this.internal
+            .sendDebugEventOnSchedulerLog
     ): Promise<GeneratedProofType[]> {
-        return this.internal.logGenerationAndHandleErrors(
+        return this.internal.scheduleLoggedGenerationAndHandleErrors(
             ProofGenerationType.NO_CHAT,
             params,
             choices,
             metadataHolder,
+            onSchedulerDebugLog,
             (request) =>
                 this.internal.validateGenerationRequestOrThrow(
                     request,
@@ -165,10 +174,10 @@ export abstract class AbstractExternalService<
         return time(5, "second"); // some cool-down for the subprocess spawning
     }
 
-    protected getDefaultMaxSubprocessesSpawnedInParallel(): number {
-        return Math.min(
-            availableParallelism(),
-            this.defaultMaxSubprocessesParallelism
+    isSameInstance(other: LLMService): boolean {
+        return (
+            other instanceof AbstractExternalService &&
+            this.installationPath === other.installationPath
         );
     }
 
@@ -285,12 +294,15 @@ export abstract class AbstractExternalServiceInternal<
     GeneratedProofType,
     LLMServiceInternalType
 > {
-    abstract constructGeneratedProof(
-        rawProof: GeneratedRawContentItem,
-        proofGenerationContext: ProofGenerationContext,
-        modelParams: ResolvedModelParams,
-        previousProofVersions?: ProofVersion[] | undefined
-    ): GeneratedProofType;
+    /**
+     * Note: since `AbstractExternalService` already implements mechanism to limit parallelism
+     * (by limiting max number of subprocesses spawned), no need in any additional one by default.
+     */
+    readonly modelsSchedulersProvider =
+        SchedulersProviderBuilders.unlimitedParallelism(
+            this.llmService.name,
+            this.serviceSetup.enableModelsSchedulingDebugLogs
+        );
 
     abstract performExternalProofGeneration(
         externalPipelineContext: ExternalPipelineProofGenerationContext,
@@ -326,7 +338,7 @@ export abstract class AbstractExternalServiceInternal<
         _choices: number
     ): Promise<GeneratedRawContent> {
         this.unsupportedMethod(
-            `\`${this.llmService.serviceName}\` does not support generation from chat`,
+            `\`${this.llmService.name}\` does not support generation from chat`,
             ProofGenerationType.NO_CHAT,
             _params,
             _choices

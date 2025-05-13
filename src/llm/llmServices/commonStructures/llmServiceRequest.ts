@@ -1,5 +1,4 @@
 import { LLMServiceError } from "../../llmServiceErrors";
-import { UserModelParams } from "../../userModelParams";
 import { LLMService } from "../llmService";
 import { ModelParams } from "../modelParams";
 
@@ -14,7 +13,7 @@ import { ProofGenerationType } from "./proofGenerationType";
  * In addition, interfaces derived from it can be passed to loggers to record the requests' results.
  */
 export interface LLMServiceRequest {
-    llmService: LLMService<UserModelParams, ModelParams>;
+    llmService: LLMService;
     proofGenerationType: ProofGenerationType;
     params: ModelParams;
     choices: number;

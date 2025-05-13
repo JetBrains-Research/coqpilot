@@ -9,10 +9,13 @@ import {
     GeneratedRawContentItem,
 } from "../commonStructures/generatedRawContent";
 import { ProofVersion } from "../commonStructures/proofVersion";
+import { SchedulersProviderBuilders } from "../commonStructures/schedulersProviders";
 import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
+import { LLMServiceIdentifier } from "../llmServiceIdentifier";
 import { LLMServiceInternal } from "../llmServiceInternal";
 import { LMStudioModelParams } from "../modelParams";
+import { provideBasicSerializer } from "../utils/serialization/basicLLMServiceSerializer";
 
 import { LMStudioModelParamsResolver } from "./lmStudioModelParamsResolver";
 
@@ -23,13 +26,12 @@ export class LMStudioService extends LLMServiceImpl<
     LMStudioGeneratedProof,
     LMStudioServiceInternal
 > {
-    readonly serviceName = "LMStudioService";
-    protected readonly internal = new LMStudioServiceInternal(
-        this,
-        this.eventLogger,
-        this.generationsLoggerBuilder
-    );
+    readonly name = "LMStudioService";
+    readonly identifier = LLMServiceIdentifier.LMSTUDIO;
+
+    protected readonly internal = new LMStudioServiceInternal(this);
     protected readonly modelParamsResolver = new LMStudioModelParamsResolver();
+    protected readonly serializer = provideBasicSerializer(this);
 }
 
 export class LMStudioGeneratedProof extends GeneratedProofImpl<
@@ -75,6 +77,14 @@ class LMStudioServiceInternal extends LLMServiceInternal<
             previousProofVersions
         );
     }
+
+    readonly modelsSchedulersProvider =
+        SchedulersProviderBuilders.limitParallelismForModelsWithSameKey(
+            this.serviceSetup.generationParallelism,
+            (params: LMStudioModelParams) => params.port,
+            this.llmService.name,
+            this.serviceSetup.enableModelsSchedulingDebugLogs
+        );
 
     async generateFromChatImpl(
         analyzedChat: AnalyzedChatHistory,

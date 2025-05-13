@@ -11,6 +11,8 @@ import { LLMService } from "../../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 import { ProofGenerationContext } from "../../../../llm/proofGenerationContext";
 
+import { CoqLspProvider } from "../../../../coqLsp/coqLspProviders/abstractCoqLspProvider";
+
 import {
     CompletionContext,
     SourceFileEnvironment,
@@ -22,7 +24,6 @@ import {
 } from "../../../../core/exposedCompletionGeneratorUtils";
 import { goalToTargetLemma } from "../../../../core/exposedCompletionGeneratorUtils";
 
-import { AsyncScheduler } from "../../../../utils/async/asyncScheduler";
 import { delay } from "../../../../utils/async/delay";
 import { groupByAndMap } from "../../../../utils/collectionUtils/mapUtils";
 import { buildErrorCompleteLog } from "../../../../utils/errors/errorsUtils";
@@ -123,16 +124,15 @@ export async function benchmarkSingleCompletionGeneration<
         LLMServiceType
     >,
     options: BenchmarkingOptions,
-    modelsScheduler: AsyncScheduler,
+    coqLspProvider: CoqLspProvider,
     logger: BenchmarkingLogger,
     proofsChecker: AbstractProofsChecker,
     abortSignal: AbortSignal
 ): Promise<BenchmarkingResult> {
     // generate proofs
-    const proofGenerationResult = await generateProofWithRetriesExclusively(
+    const proofGenerationResult = await generateNextRoundProofWithRetries(
         generationArgs,
         options,
-        modelsScheduler,
         logger,
         abortSignal
     );
@@ -199,6 +199,7 @@ export async function benchmarkSingleCompletionGeneration<
                 openDocumentTimeoutMillis: options.openDocumentTimeoutMillis,
                 proofCheckTimeoutMillis: options.proofCheckTimeoutMillis,
                 logger: logger,
+                coqLspProvider: coqLspProvider,
                 abortSignal: abortSignal,
             }
         );
@@ -295,16 +296,7 @@ interface ProofGenerationResult {
     effectiveElapsedTimeMillis: number;
 }
 
-/**
- * Note: scheduling could be done (in other words, "the same model semaphore" could be captured)
- * more granurarly: namely, for each generation request and not for a whole `while` proof-generation cycle with retries.
- * Such scheduling might improve performance indeed;
- * however, this improvement could be possible only if the retries algorithm is not optimal enough
- * (i.e. if the running task waits for too long despite the fact that the service is already available).
- * Thus, a more reliable approach has been chosen so far: to wait until the running task suceeds with its retries and gets the response.
- * This way, it is guaranteed that the system proceeds in general: requests are not too frequent to fail the remote service.
- */
-async function generateProofWithRetriesExclusively<
+async function generateNextRoundProofWithRetries<
     ResolvedModelParams extends ModelParams,
 >(
     generationArgs: CompletionGenerationBenchmarkArgs<
@@ -312,62 +304,58 @@ async function generateProofWithRetriesExclusively<
         LLMService<any, ResolvedModelParams>
     >,
     options: BenchmarkingOptions,
-    modelsScheduler: AsyncScheduler,
     logger: BenchmarkingLogger,
     abortSignal: AbortSignal
 ): Promise<ProofGenerationResult> {
     const benchmarkingParams = generationArgs.benchmarkingModelParams;
-    return modelsScheduler.scheduleTask(
-        async () => {
-            let generateProof:
-                | ((
-                      metadataHolder: ProofGenerationMetadataHolder
-                  ) => Promise<GeneratedProof[]>)
-                | undefined = undefined;
-            if (generationArgs.roundNumber === 1) {
-                generateProof = async (metadataHolder) => {
-                    const proofGenerationContext = buildProofGenerationContext(
-                        generationArgs.completionContext,
-                        generationArgs.sourceFileEnvironment,
-                        generationArgs.sourceTheorem.name,
-                        benchmarkingParams.theoremRanker,
-                        logger
-                    );
-                    return generationArgs.llmService.generateProof(
-                        proofGenerationContext,
-                        benchmarkingParams.modelParams,
-                        benchmarkingParams.modelParams.defaultChoices,
-                        metadataHolder,
-                        abortSignal
-                    );
-                };
-            } else {
-                generateProof = async (metadataHolder) => {
-                    const parentProof =
-                        generationArgs.parentProofToFix ??
-                        illegalState(
-                            `Proof-fix round should be performed (round number ${generationArgs.roundNumber} is > 1), `,
-                            "but `parentProofToFix` is not provided"
-                        );
-                    return await parentProof.benchmarkedProof.proofObject.fixProof(
-                        parentProof.diagnostic,
-                        benchmarkingParams.modelParams.multiroundProfile
-                            .defaultProofFixChoices,
-                        metadataHolder,
-                        abortSignal
-                    );
-                };
-            }
-            return generateProofWithRetriesMeasured(
-                generateProof,
-                generationArgs.llmService,
-                options,
-                generationArgs.roundNumber,
-                logger,
-                abortSignal
+    let generateProof:
+        | ((
+              metadataHolder: ProofGenerationMetadataHolder
+          ) => Promise<GeneratedProof[]>)
+        | undefined = undefined;
+    if (generationArgs.roundNumber === 1) {
+        generateProof = async (metadataHolder) => {
+            const proofGenerationContext = buildProofGenerationContext(
+                generationArgs.completionContext,
+                generationArgs.sourceFileEnvironment,
+                generationArgs.sourceTheorem.name,
+                benchmarkingParams.theoremRanker,
+                logger
             );
-        },
-        (message) => logger.debug(message)
+            return generationArgs.llmService.generateProof(
+                proofGenerationContext,
+                benchmarkingParams.modelParams,
+                benchmarkingParams.modelParams.defaultChoices,
+                metadataHolder,
+                abortSignal,
+                (message) => logger.debug(message)
+            );
+        };
+    } else {
+        generateProof = async (metadataHolder) => {
+            const parentProof =
+                generationArgs.parentProofToFix ??
+                illegalState(
+                    `Proof-fix round should be performed (round number ${generationArgs.roundNumber} is > 1), `,
+                    "but `parentProofToFix` is not provided"
+                );
+            return await parentProof.benchmarkedProof.proofObject.fixProof(
+                parentProof.diagnostic,
+                benchmarkingParams.modelParams.multiroundProfile
+                    .defaultProofFixChoices,
+                metadataHolder,
+                abortSignal,
+                (message) => logger.debug(message)
+            );
+        };
+    }
+    return generateProofWithRetriesMeasured(
+        generateProof,
+        generationArgs.llmService,
+        options,
+        generationArgs.roundNumber,
+        logger,
+        abortSignal
     );
 }
 
@@ -375,7 +363,7 @@ async function generateProofWithRetriesMeasured(
     generateProofs: (
         metadataHolder: ProofGenerationMetadataHolder
     ) => Promise<GeneratedProof[]>,
-    llmService: LLMService<any, any>,
+    llmService: LLMService,
     options: BenchmarkingOptions,
     roundNumber: number,
     logger: BenchmarkingLogger,

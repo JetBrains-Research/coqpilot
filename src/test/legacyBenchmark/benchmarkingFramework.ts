@@ -1,17 +1,15 @@
 import * as assert from "assert";
 import * as fs from "fs";
 
-import { LLMServices } from "../../llm/llmServices";
+import { GenerationBundlesStorage } from "../../llm/generationBundles";
+import { ErrorsHandlingMode } from "../../llm/llmServices/commonStructures/errorsHandlingMode";
 import { isLLMServiceRequestSucceeded } from "../../llm/llmServices/commonStructures/llmServiceRequest";
-import { DeepSeekService } from "../../llm/llmServices/deepSeek/deepSeekService";
-import { GrazieService } from "../../llm/llmServices/grazie/grazieService";
 import { LLMServiceImpl } from "../../llm/llmServices/llmService";
-import { LMStudioService } from "../../llm/llmServices/lmStudio/lmStudioService";
-import { ModelsParams } from "../../llm/llmServices/modelParams";
-import { OpenAiService } from "../../llm/llmServices/openai/openAiService";
-import { PredefinedProofsService } from "../../llm/llmServices/predefinedProofs/predefinedProofsService";
-import { RangoService } from "../../llm/llmServices/rango/rangoService";
+import { selectLLMServiceProvider } from "../../llm/llmServices/llmServiceProvider";
+import { ModelParams } from "../../llm/llmServices/modelParams";
+import { LLMServiceControlParams } from "../../llm/llmServices/utils/llmServiceControlParams";
 import { resolveParametersOrThrow } from "../../llm/llmServices/utils/resolveOrThrow";
+import { LLMServicesStorage } from "../../llm/llmServicesStorage";
 
 import { withDocumentOpenedByTestCoqLsp } from "../../coqLsp/coqLspBuilders";
 import { CoqLspClient } from "../../coqLsp/coqLspClient";
@@ -21,6 +19,7 @@ import {
     CompletionContext,
     ProcessEnvironment,
     SourceFileEnvironment,
+    TargetType,
 } from "../../core/completionGenerationContext";
 import {
     FailureGenerationResult,
@@ -101,17 +100,30 @@ export async function runTestBenchmark(
             workspaceRootPath: inputOptions.workspaceRootPath,
             abortSignal: abortController.signal,
         },
-        (coqLspClient) =>
-            runTestBenchmarkOnPreparedFile(
-                resolvedOptions,
-                coqLspClient,
-                fileUri,
-                resolvedOptions.workspaceRootPath === undefined
-                    ? undefined
-                    : Uri.fromPath(resolvedOptions.workspaceRootPath),
-                isNewlyCreatedFile,
-                abortController
-            )
+        async (coqLspClient) => {
+            // TODO: for more efficiency, `llmServices` should be created only once and top-level
+            const eventLogger = new EventLogger();
+            const llmServices = createLLMServices(
+                resolvedOptions.inputModelsParams,
+                eventLogger
+            );
+            try {
+                return await runTestBenchmarkOnPreparedFile(
+                    resolvedOptions,
+                    llmServices,
+                    coqLspClient,
+                    fileUri,
+                    resolvedOptions.workspaceRootPath === undefined
+                        ? undefined
+                        : Uri.fromPath(resolvedOptions.workspaceRootPath),
+                    isNewlyCreatedFile,
+                    abortController,
+                    eventLogger
+                );
+            } finally {
+                llmServices.dispose();
+            }
+        }
     );
 }
 
@@ -133,25 +145,26 @@ function getFileUriWithImports(
 
 export async function runTestBenchmarkOnPreparedFile(
     options: TestBenchmarkOptions,
+    llmServices: LLMServicesStorage,
     coqLspClient: CoqLspClient,
     fileUri: Uri,
     workspaceRootUri: Uri | undefined,
     isNewlyCreatedFile: boolean,
-    abortController: AbortController
+    abortController: AbortController,
+    eventLogger: EventLogger
 ): Promise<BenchmarkReport> {
     consoleLog(`run benchmarks for file: ${options.filePath}\n`, "blue");
     const shouldCompleteHole = (_hole: ProofStep) => true;
-    const eventLogger = new EventLogger();
 
     const [completionTargets, sourceFileEnvironment, processEnvironment] =
         await prepareForBenchmarkCompletions(
             options.inputModelsParams,
+            llmServices,
             shouldCompleteHole,
             coqLspClient,
             fileUri,
             workspaceRootUri,
-            isNewlyCreatedFile,
-            eventLogger
+            isNewlyCreatedFile
         );
     const filteredCompletionTargets = {
         admitTargets: completionTargets.admitTargets.filter(
@@ -226,14 +239,9 @@ export async function runTestBenchmarkOnPreparedFile(
 }
 
 function getSingleModelId(inputModelsParams: InputModelsParams): string {
-    const modelIds = [
-        ...inputModelsParams.predefinedProofsModelParams.map(
-            (params) => params.modelId
-        ),
-        ...inputModelsParams.openAiParams.map((params) => params.modelId),
-        ...inputModelsParams.grazieParams.map((params) => params.modelId),
-        ...inputModelsParams.lmStudioParams.map((params) => params.modelId),
-    ];
+    const modelIds = inputModelsParams
+        .flatMap((item) => item.models)
+        .map((model) => model.modelId);
     if (modelIds.length !== 1) {
         throwError(`expected exactly one model id, but got ${modelIds.length}`);
     }
@@ -442,12 +450,12 @@ function buildAuxFileUri(filePath: string, unique: boolean = true): Uri {
 
 async function prepareForBenchmarkCompletions(
     inputModelsParams: InputModelsParams,
+    llmServices: LLMServicesStorage,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     coqLspClient: CoqLspClient,
     fileUri: Uri,
     workspaceRootUri: Uri | undefined,
-    isNewlyCreatedFile: boolean,
-    eventLogger: EventLogger
+    isNewlyCreatedFile: boolean
 ): Promise<
     [BenchmarkingCompletionTargets, SourceFileEnvironment, ProcessEnvironment]
 > {
@@ -462,21 +470,14 @@ async function prepareForBenchmarkCompletions(
             coqLspClient,
             true // TODO: pass `ranker.needsUnwrappedNotations` here
         );
-    const llmServices: LLMServices = {
-        openAiService: new OpenAiService(eventLogger),
-        grazieService: new GrazieService(eventLogger),
-        predefinedProofsService: new PredefinedProofsService(eventLogger),
-        lmStudioService: new LMStudioService(eventLogger),
-        deepSeekService: new DeepSeekService(eventLogger),
-        rangoService: new RangoService(eventLogger),
-    };
+
+    const bundles = resolveParamsAndCreateBundles(
+        inputModelsParams,
+        llmServices
+    );
     const processEnvironment: ProcessEnvironment = {
         coqProofChecker: coqProofChecker,
-        modelsParams: resolveInputModelsParametersOrThrow(
-            inputModelsParams,
-            llmServices
-        ),
-        services: llmServices,
+        bundles: bundles,
     };
 
     if (isNewlyCreatedFile) {
@@ -563,12 +564,14 @@ async function createCompletionTargets(
     return {
         admitTargets: await resolveProofStepsToCompletionContexts(
             admitHolesToComplete,
+            TargetType.ADMIT,
             documentVersion,
             fileUri,
             client
         ),
         theoremTargets: await resolveProofStepsToCompletionContexts(
             firstProofSteps,
+            TargetType.PROVE_THEOREM,
             documentVersion,
             fileUri,
             client
@@ -578,6 +581,7 @@ async function createCompletionTargets(
 
 async function resolveProofStepsToCompletionContexts(
     parentedProofSteps: ParentedProofStep[],
+    targetType: TargetType,
     documentVersion: number,
     fileUri: Uri,
     client: CoqLspClient
@@ -594,38 +598,54 @@ async function resolveProofStepsToCompletionContexts(
                 proofGoal: goals.val[0],
                 admitRange: parentedProofStep.proofStep.range,
                 sourceTheorem: parentedProofStep.parentTheorem,
+                targetType: targetType,
             });
         }
     }
     return completionContexts;
 }
 
-function resolveInputModelsParametersOrThrow(
+function createLLMServices(
     inputModelsParams: InputModelsParams,
-    llmServices: LLMServices
-): ModelsParams {
-    return {
-        predefinedProofsModelParams:
-            inputModelsParams.predefinedProofsModelParams.map((inputParams) =>
-                resolveParametersOrThrow(
-                    llmServices.predefinedProofsService,
-                    inputParams
-                )
-            ),
-        openAiParams: inputModelsParams.openAiParams.map((inputParams) =>
-            resolveParametersOrThrow(llmServices.openAiService, inputParams)
-        ),
-        grazieParams: inputModelsParams.grazieParams.map((inputParams) =>
-            resolveParametersOrThrow(llmServices.grazieService, inputParams)
-        ),
-        lmStudioParams: inputModelsParams.lmStudioParams.map((inputParams) =>
-            resolveParametersOrThrow(llmServices.lmStudioService, inputParams)
-        ),
-        deepSeekParams: inputModelsParams.deepSeekParams.map((inputParams) =>
-            resolveParametersOrThrow(llmServices.deepSeekService, inputParams)
-        ),
-        rangoParams: inputModelsParams.rangoParams.map((inputParams) =>
-            resolveParametersOrThrow(llmServices.rangoService, inputParams)
-        ),
+    eventLogger: EventLogger
+): LLMServicesStorage {
+    const controlParams: LLMServiceControlParams = {
+        eventLogger: eventLogger,
+        errorsHandlingMode: ErrorsHandlingMode.RETHROW_ERRORS,
     };
+    const llmServices = new LLMServicesStorage();
+    try {
+        const requestedIdentifiers = new Set(
+            inputModelsParams.map((item) => item.identifier)
+        );
+        for (const identifier of requestedIdentifiers) {
+            llmServices.registerService(() =>
+                selectLLMServiceProvider(identifier, {})(controlParams)
+            );
+        }
+        return llmServices;
+    } catch (e) {
+        llmServices.dispose();
+        throw e;
+    }
+}
+
+function resolveParamsAndCreateBundles(
+    inputModelsParams: InputModelsParams,
+    llmServices: LLMServicesStorage
+) {
+    const bundles = new GenerationBundlesStorage<ModelParams>();
+    for (const { identifier, models } of inputModelsParams) {
+        const sameTypeLLMServices = llmServices.getServices(identifier);
+        for (const llmService of sameTypeLLMServices) {
+            const resolvedModels = models.map((inputModel) =>
+                resolveParametersOrThrow(llmService, inputModel)
+            );
+            bundles.addBundle({
+                llmService: llmService,
+                models: resolvedModels,
+            });
+        }
+    }
+    return bundles;
 }

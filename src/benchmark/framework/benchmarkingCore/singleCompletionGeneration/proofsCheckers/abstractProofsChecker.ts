@@ -1,3 +1,5 @@
+import { CoqLspProvider } from "../../../../../coqLsp/coqLspProviders/abstractCoqLspProvider";
+
 import {
     CompletionContext,
     SourceFileEnvironment,
@@ -35,6 +37,7 @@ export interface ProofsCheckArgs {
     openDocumentTimeoutMillis: number | undefined;
     proofCheckTimeoutMillis: number | undefined;
     logger: BenchmarkingLogger;
+    coqLspProvider: CoqLspProvider | undefined;
     abortSignal: AbortSignal;
 }
 

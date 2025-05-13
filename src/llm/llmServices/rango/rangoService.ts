@@ -1,4 +1,3 @@
-import { EventLogger } from "../../../logging/eventLogger";
 import {
     ExternalPipelineProofGenerationContext,
     ProofGenerationContext,
@@ -9,7 +8,7 @@ import {
     AbstractExternalService,
     AbstractExternalServiceInternal,
 } from "../abstractExternalService/abstractExternalService";
-import { ErrorsHandlingMode } from "../commonStructures/errorsHandlingMode";
+import { ExternalServiceParams } from "../abstractExternalService/abstractExternalServiceParams";
 import {
     GeneratedRawContent,
     GeneratedRawContentItem,
@@ -17,8 +16,10 @@ import {
 import { zeroTokens } from "../commonStructures/generationTokens";
 import { LLMServiceRequest } from "../commonStructures/llmServiceRequest";
 import { ProofVersion } from "../commonStructures/proofVersion";
+import { LLMServiceIdentifier } from "../llmServiceIdentifier";
 import { RangoModelParams } from "../modelParams";
 import { throwConfigurationError } from "../utils/errorUtils";
+import { provideBasicSerializer } from "../utils/serialization/basicLLMServiceSerializer";
 
 import { runRangoProof } from "./rangoCore";
 import { RangoInstallationOptions, RangoInstaller } from "./rangoInstaller";
@@ -32,37 +33,23 @@ export class RangoService extends AbstractExternalService<
     RangoGeneratedProof,
     RangoServiceInternal
 > {
-    readonly serviceName = "RangoService";
-    static readonly externalProjectName = "Rango";
+    readonly name = "RangoService";
+    readonly identifier = LLMServiceIdentifier.RANGO;
 
-    constructor(
-        eventLogger: EventLogger | undefined = undefined,
-        errorsHandlingMode: ErrorsHandlingMode = ErrorsHandlingMode.RETHROW_ERRORS,
-        generationLogsFilePath: string | undefined = undefined,
-        debugLogs: boolean = false,
-        installationPath: string | undefined = undefined,
-        maxSubprocessesSpawnedInParallel: number | undefined = undefined,
-        clearProofGenerationLogsOnSuccess: boolean = true
-    ) {
+    static readonly externalProjectName = "Rango";
+    static readonly DEFAULT_MAX_SUBPROCESSES_PARALLELISM = 3;
+
+    constructor(serviceParams: ExternalServiceParams = {}) {
         super(
             RangoService.externalProjectName,
-            3,
-            eventLogger,
-            errorsHandlingMode,
-            generationLogsFilePath,
-            debugLogs,
-            installationPath,
-            maxSubprocessesSpawnedInParallel,
-            clearProofGenerationLogsOnSuccess
+            RangoService.DEFAULT_MAX_SUBPROCESSES_PARALLELISM,
+            serviceParams
         );
     }
 
-    protected readonly internal = new RangoServiceInternal(
-        this,
-        this.eventLogger,
-        this.generationsLoggerBuilder
-    );
+    protected readonly internal = new RangoServiceInternal(this);
     protected readonly modelParamsResolver = new RangoModelParamsResolver();
+    protected readonly serializer = provideBasicSerializer(this);
 
     readonly installer = new RangoInstaller();
 }

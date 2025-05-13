@@ -1,4 +1,6 @@
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
+import { deserializeLLMService } from "../../../../llm/llmServices/utils/serialization/serializedLLMService";
+import { LLMServicesStorage } from "../../../../llm/llmServicesStorage";
 
 import { makeStringsUnique } from "../../../../utils/collectionUtils/listUtils";
 import {
@@ -12,6 +14,7 @@ import { listJsonFiles } from "../../../../utils/fs/listFiles";
 import { joinPaths } from "../../../../utils/fs/pathUtils";
 import { getDatasetDir } from "../../../../utils/fs/rootResolvers";
 import { deserializeCodeElementRange } from "../../../../utils/structures/codeElementPositions";
+import { BENCHMARKING_CONTROL_PARAMS } from "../../benchmarkingCore/executeBenchmarkingTask";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { readRequestedFilesCache } from "../../parseDataset/cacheHandlers/cacheReader";
 import { resolveInputBenchmarkingModelParams } from "../../parseDataset/core/itemsBuilder/buildBenchmarkingItems";
@@ -24,7 +27,6 @@ import { LightweightBenchmarkingItem } from "../../structures/inputParameters/li
 import { LightweightInputModelParams } from "../../structures/inputParameters/lightweight/lightweightInputModelParams";
 import { LightweightWorkspaceRoot } from "../../structures/inputParameters/lightweight/lightweightWorkspaceRoot";
 import { ParsedCoqFileData } from "../../structures/parsedCoqFile/parsedCoqFileData";
-import { createParamsResolvers } from "../../utils/commonStructuresUtils/llmServicesUtils";
 import { deserializeGoal } from "../../utils/coqUtils/goalParser";
 
 import { LightweightSerialization } from "./lightweightSerialization";
@@ -83,78 +85,87 @@ export namespace LightweightDeserializer {
         serialization: LightweightSerialization.PackedItems,
         datasetCacheDirectoryPath: string,
         logger: BenchmarkingLogger
-    ): BenchmarkingItem[] {
-        const [workspaceRootsByRelativePaths, resolvedParamsByIds] =
-            prepareResolutionMaps(serialization);
-
-        const benchmarkingItems: BenchmarkingItem[] = [];
-        const itemsByWorkspaces = groupBy(
-            serialization.items,
-            (item) => item.task.relativeWorkspacePath
-        );
-        for (const [
-            relativeWorkspacePath,
-            workspaceItems,
-        ] of itemsByWorkspaces.entries()) {
-            const workspaceRoot: WorkspaceRoot = getOrThrow(
-                workspaceRootsByRelativePaths,
-                relativeWorkspacePath,
-                `Lightweight deserialization failed, invariant has been violated: no workspace root with "${relativeWorkspacePath}" relative path`
+    ): [LLMServicesStorage, BenchmarkingItem[]] {
+        const [
+            workspaceRootsByRelativePaths,
+            resolvedParamsByIds,
+            llmServices,
+        ] = prepareResolutionMaps(serialization, logger);
+        try {
+            const benchmarkingItems: BenchmarkingItem[] = [];
+            const itemsByWorkspaces = groupBy(
+                serialization.items,
+                (item) => item.task.relativeWorkspacePath
             );
-            const restoredParsedCoqFiles = retrieveSourceFilesOfItems(
-                workspaceItems.map((item) =>
-                    joinPaths(
+            for (const [
+                relativeWorkspacePath,
+                workspaceItems,
+            ] of itemsByWorkspaces.entries()) {
+                const workspaceRoot: WorkspaceRoot = getOrThrow(
+                    workspaceRootsByRelativePaths,
+                    relativeWorkspacePath,
+                    `Lightweight deserialization failed, invariant has been violated: no workspace root with "${relativeWorkspacePath}" relative path`
+                );
+                const restoredParsedCoqFiles = retrieveSourceFilesOfItems(
+                    workspaceItems.map((item) =>
+                        joinPaths(
+                            workspaceRoot.directoryPath,
+                            item.task.relativeSourceFilePath
+                        )
+                    ),
+                    workspaceRoot,
+                    datasetCacheDirectoryPath,
+                    logger
+                );
+
+                for (const item of workspaceItems) {
+                    const sourceFilePath = joinPaths(
                         workspaceRoot.directoryPath,
                         item.task.relativeSourceFilePath
-                    )
-                ),
-                workspaceRoot,
-                datasetCacheDirectoryPath,
-                logger
-            );
-
-            for (const item of workspaceItems) {
-                const sourceFilePath = joinPaths(
-                    workspaceRoot.directoryPath,
-                    item.task.relativeSourceFilePath
-                );
-                benchmarkingItems.push(
-                    ...restoreFromLightweightItem(
-                        item,
-                        workspaceRoot,
-                        getOrThrow(
-                            restoredParsedCoqFiles,
-                            sourceFilePath,
-                            `Lightweight deserialization failed, invariant has been violated: no \`ParsedCoqFileData\` for the requested "${sourceFilePath}" file`
-                        ),
-                        resolvedParamsByIds
-                    )
-                );
+                    );
+                    benchmarkingItems.push(
+                        ...restoreFromLightweightItem(
+                            item,
+                            workspaceRoot,
+                            getOrThrow(
+                                restoredParsedCoqFiles,
+                                sourceFilePath,
+                                `Lightweight deserialization failed, invariant has been violated: no \`ParsedCoqFileData\` for the requested "${sourceFilePath}" file`
+                            ),
+                            resolvedParamsByIds
+                        )
+                    );
+                }
             }
+
+            logger
+                .asOneRecord()
+                .info(
+                    `Successfully constructed ${benchmarkingItems.length} benchmarking item(s) from lightweight one(s)`,
+                    undefined,
+                    ""
+                )
+                .debug(
+                    `:\n${logBenchmarkingItems(benchmarkingItems)}`,
+                    undefined,
+                    ""
+                )
+                .info("");
+
+            return [llmServices, benchmarkingItems];
+        } catch (e) {
+            llmServices.dispose();
+            throw e;
         }
-
-        logger
-            .asOneRecord()
-            .info(
-                `Successfully constructed ${benchmarkingItems.length} benchmarking item(s) from lightweight one(s)`,
-                undefined,
-                ""
-            )
-            .debug(
-                `:\n${logBenchmarkingItems(benchmarkingItems)}`,
-                undefined,
-                ""
-            )
-            .info("");
-
-        return benchmarkingItems;
     }
 
     function prepareResolutionMaps(
-        serialization: LightweightSerialization.PackedItems
+        serialization: LightweightSerialization.PackedItems,
+        logger: BenchmarkingLogger
     ): [
         Map<string, WorkspaceRoot>,
         Map<string, BenchmarkingModelParams<ModelParams>>,
+        LLMServicesStorage,
     ] {
         const workspaceRootsByRelativePaths = packIntoMap(
             serialization.projects,
@@ -169,20 +180,37 @@ export namespace LightweightDeserializer {
                 } as WorkspaceRoot;
             }
         );
-        const paramsResolvers = createParamsResolvers();
-        const resolvedParamsByIds = packIntoMap(
-            serialization.models,
-            (params) => params.modelId,
-            (params) => {
-                const { llmServiceIdentifier, ...inputModelParams } = params;
-                return resolveInputBenchmarkingModelParams(
-                    inputModelParams,
-                    params.llmServiceIdentifier,
-                    paramsResolvers
-                );
-            }
-        );
-        return [workspaceRootsByRelativePaths, resolvedParamsByIds];
+        const llmServices = new LLMServicesStorage();
+        try {
+            const resolvedParamsByIds = packIntoMap(
+                serialization.models,
+                (params) => params.modelId,
+                (params) => {
+                    const {
+                        serializedService: serializedLLMService,
+                        ...inputModelParams
+                    } = params;
+                    const serviceCtor =
+                        deserializeLLMService(serializedLLMService);
+                    const newService = llmServices.registerService(() =>
+                        serviceCtor(BENCHMARKING_CONTROL_PARAMS)
+                    );
+                    return resolveInputBenchmarkingModelParams(
+                        inputModelParams,
+                        newService,
+                        logger
+                    );
+                }
+            );
+            return [
+                workspaceRootsByRelativePaths,
+                resolvedParamsByIds,
+                llmServices,
+            ];
+        } catch (e) {
+            llmServices.dispose();
+            throw e;
+        }
     }
 
     function retrieveSourceFilesOfItems(

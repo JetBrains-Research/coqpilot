@@ -9,6 +9,7 @@ import {
     OpenDocumentSpec,
 } from "./coqLspClient";
 import { CoqLspClientConfig, CoqLspConfig } from "./coqLspConfig";
+import { CoqLspProviderBuilders } from "./coqLspProviders/coqLspProviderBuilders";
 
 export async function createCoqLspClient(
     coqLspServerPath: string,
@@ -64,10 +65,10 @@ export async function withDocumentOpenedByTestCoqLsp<T>(
         openedDocDiagnostic: DiagnosticMessage
     ) => Promise<T>
 ): Promise<T> {
-    return withTestCoqLspClient(options, (coqLspClient) =>
-        coqLspClient.withTextDocument(openDocumentSpec, (openedDocDiagnostic) =>
-            block(coqLspClient, openedDocDiagnostic)
-        )
+    return CoqLspProviderBuilders.newClientPerRequest()().withDocumentOpenedByTestCoqLsp(
+        openDocumentSpec,
+        options,
+        block
     );
 }
 

@@ -1,24 +1,18 @@
-import { expect } from "earl";
-
+import { BenchTestInputBenchmarkingModelParams } from "../../benchmark/framework/benchTest/benchTestModelParams";
+import { BenchTestService } from "../../benchmark/framework/benchTest/benchTestService";
 import { BenchmarkingBundle } from "../../benchmark/framework/experiment/setupDSL/benchmarkingBundleBuilder";
-import { TargetsBuilder } from "../../benchmark/framework/experiment/setupDSL/targetsBuilder";
-import { SingleWorkspaceExperiment } from "../../benchmark/framework/experiment/singleWorkspaceExperiment";
-import { SeverityLevel } from "../../benchmark/framework/logging/benchmarkingLogger";
-import { DatasetCacheUsageMode } from "../../benchmark/framework/structures/inputParameters/datasetCaching";
-import { colorize } from "../../utils/colorLogging";
-import { relativizeAbsolutePaths } from "../../utils/fs/pathUtils";
-import { createTmpDirectory } from "../../utils/fs/tmpFs";
-import { time, timeToMillis } from "../../utils/time";
-import { getRootDir } from "../commonTestFunctions/pathsResolver";
 
-suite("Benchmarking framework: regression tests", () => {
-    // TODO: ideally, some special testing workspace
-    // should be used instead of standalone files root
+import {
+    runSmokeTestExperimentWithBundle,
+    testContextTheoremsNotContainTarget,
+} from "./utils/specificTestsImpl";
+import { BenchmarkingTestsConstants } from "./utils/testConstants";
 
-    test("Smoke test: fill standalone file with `auto`", async () => {
-        const experiment = new SingleWorkspaceExperiment();
+import Constants = BenchmarkingTestsConstants;
 
-        new BenchmarkingBundle()
+suite("[Benchmarking Framework Tests] Regression tests", () => {
+    test("Smoke test: fill standalone file with predefined `auto`", async () => {
+        const autoModel = new BenchmarkingBundle()
             .withLLMService("predefined")
             .withBenchmarkingModelsParamsCommons({
                 ranker: "random",
@@ -26,36 +20,43 @@ suite("Benchmarking framework: regression tests", () => {
             .withBenchmarkingModelsParams({
                 modelId: "prove-with-auto",
                 tactics: ["auto."],
-            })
-            .withTargets(
-                new TargetsBuilder()
-                    .withStandaloneFilesRoot()
-                    .withAdmitTargetsFromFile("auto_benchmark.v", "test")
-                    .buildInputTargets()
-            )
-            .addTo(experiment);
-
-        const relativeTmpDir = relativizeAbsolutePaths(
-            getRootDir(),
-            createTmpDirectory()
-        );
-
-        let hasSuccessfullyFinished = false;
-        try {
-            await experiment.run(relativeTmpDir, {
-                loggerSeverity: SeverityLevel.ERROR,
-                datasetCacheUsage: DatasetCacheUsageMode.NO_CACHE_USAGE,
             });
-            hasSuccessfullyFinished = true;
-        } catch (error) {
-            console.error(
-                colorize(`\nExperiment pipeline has failed: ${error}\n`, "red")
+        await runSmokeTestExperimentWithBundle(autoModel);
+    }).timeout(Constants.SIMPLE_TEST_TIMEOUT);
+
+    test("Smoke test: fill standalone file via default `BenchTest`", async () => {
+        const benchTestModel = new BenchmarkingBundle()
+            .withCustomLLMService<BenchTestInputBenchmarkingModelParams>(
+                (controlParams) => new BenchTestService(controlParams)
+            )
+            .withBenchmarkingModelsParamsCommons({
+                ranker: "random",
+            })
+            .withBenchmarkingModelsParams(
+                {
+                    generationMillis: 1_000,
+                    modelId: "delayed-model",
+                    tactics: ["invalid proof", "auto."],
+                },
+                {
+                    generationMillis: 0,
+                    modelId: "immediate-model",
+                    tactics: ["invalid proof", "auto."],
+                }
             );
-        }
-        expect(hasSuccessfullyFinished).toBeTruthy();
-    }).timeout(timeToMillis(time(10, "minute")));
+        await runSmokeTestExperimentWithBundle(benchTestModel);
+    }).timeout(Constants.SIMPLE_TEST_TIMEOUT);
 
     test("Context theorems must not contain the target one", async () => {
-        // TODO
-    });
+        await testContextTheoremsNotContainTarget(
+            "test_context_admit.v",
+            "test",
+            "admit"
+        );
+        await testContextTheoremsNotContainTarget(
+            "test_context_proof.v",
+            "test",
+            "prove theorem"
+        );
+    }).timeout(Constants.SIMPLE_TEST_TIMEOUT);
 });

@@ -1,13 +1,27 @@
 import { EventLogger } from "../logging/eventLogger";
 
-import { LLMServices } from "./llmServices";
+import { ResolvedGenerationBundles } from "./generationBundles";
 import { GeneratedProof } from "./llmServices/generatedProof";
 import { LLMService } from "./llmServices/llmService";
-import { ModelParams, ModelsParams } from "./llmServices/modelParams";
+import { LLMServiceIdentifier } from "./llmServices/llmServiceIdentifier";
+import { ModelParams } from "./llmServices/modelParams";
 import { ProofGenerationContext } from "./proofGenerationContext";
 
 type GeneratedProofsBatch = GeneratedProof[];
 type ProofsGenerationHook = () => Promise<GeneratedProofsBatch>;
+
+export const DEFAULT_FETCHING_ORDER = [
+    LLMServiceIdentifier.PREDEFINED_PROOFS,
+    // Here DeepSeek service is reordered to the beginning
+    // of the list, due to it's strong performance and
+    // low costs. Refer to discussion:
+    // https://github.com/JetBrains-Research/coqpilot/pull/56#discussion_r1935180516
+    LLMServiceIdentifier.DEEPSEEK,
+    LLMServiceIdentifier.OPENAI,
+    LLMServiceIdentifier.GRAZIE,
+    LLMServiceIdentifier.LMSTUDIO,
+    LLMServiceIdentifier.RANGO,
+];
 
 export class LLMSequentialIterator
     implements AsyncIterator<GeneratedProofsBatch>
@@ -20,8 +34,8 @@ export class LLMSequentialIterator
 
     constructor(
         proofGenerationContext: ProofGenerationContext,
-        modelsParams: ModelsParams,
-        services: LLMServices,
+        bundles: ResolvedGenerationBundles,
+        servicesToFetchInOrder: LLMServiceIdentifier[] = DEFAULT_FETCHING_ORDER,
         private readonly eventLogger?: EventLogger,
         private readonly abortSignal?: AbortSignal
     ) {
@@ -29,70 +43,42 @@ export class LLMSequentialIterator
         this.insideBatchIndex = 0;
         this.proofsGenerationHook = this.createHooks(
             proofGenerationContext,
-            modelsParams,
-            services
+            servicesToFetchInOrder,
+            bundles
         );
         this.fetchedResults = new Array<GeneratedProofsBatch>(
             this.proofsGenerationHook.length
         );
     }
 
-    // TODO: Implement a smarter way of ordering the services
     private createHooks(
         proofGenerationContext: ProofGenerationContext,
-        modelsParams: ModelsParams,
-        services: LLMServices
+        servicesToFetchInOrder: LLMServiceIdentifier[],
+        bundles: ResolvedGenerationBundles
     ): ProofsGenerationHook[] {
-        return [
-            ...this.createLLMServiceHooks(
-                proofGenerationContext,
-                modelsParams.predefinedProofsModelParams,
-                services.predefinedProofsService,
-                "predefined-proofs"
-            ),
-            // Here DeepSeek service is reordered to the beginning
-            // of the list, due to it's strong performance and
-            // low costs. Refer to discussion:
-            // https://github.com/JetBrains-Research/coqpilot/pull/56#discussion_r1935180516
-            ...this.createLLMServiceHooks(
-                proofGenerationContext,
-                modelsParams.deepSeekParams,
-                services.deepSeekService,
-                "deepseek"
-            ),
-            ...this.createLLMServiceHooks(
-                proofGenerationContext,
-                modelsParams.openAiParams,
-                services.openAiService,
-                "openai"
-            ),
-            ...this.createLLMServiceHooks(
-                proofGenerationContext,
-                modelsParams.grazieParams,
-                services.grazieService,
-                "grazie"
-            ),
-            ...this.createLLMServiceHooks(
-                proofGenerationContext,
-                modelsParams.lmStudioParams,
-                services.lmStudioService,
-                "lm-studio"
-            ),
-            ...this.createLLMServiceHooks(
-                proofGenerationContext,
-                modelsParams.rangoParams,
-                services.rangoService,
-                "rango"
-            ),
-        ];
+        const hooks: ProofsGenerationHook[][] = [];
+        for (const identifier of servicesToFetchInOrder) {
+            const serviceToFetchBundles = bundles.getBundles(identifier);
+            for (const bundle of serviceToFetchBundles) {
+                hooks.push(
+                    this.createLLMServiceHooks(
+                        proofGenerationContext,
+                        bundle.models,
+                        bundle.llmService
+                    )
+                );
+            }
+        }
+        return hooks.flat();
     }
 
     private createLLMServiceHooks<ResolvedModelParams extends ModelParams>(
         proofGenerationContext: ProofGenerationContext,
         allModelParamsForService: ResolvedModelParams[],
-        llmService: LLMService<any, ResolvedModelParams>,
-        serviceLoggingName: string
+        llmService: LLMService<any, ResolvedModelParams>
     ): ProofsGenerationHook[] {
+        const serviceLoggingName =
+            LLMSequentialIterator.getServiceLoggingName(llmService);
         const hooks = [];
         for (const modelParams of allModelParamsForService) {
             hooks.push(() => {
@@ -163,5 +149,13 @@ export class LLMSequentialIterator
         this.insideBatchIndex += 1;
 
         return { done: false, value: proof };
+    }
+
+    private static getServiceLoggingName(llmService: LLMService): string {
+        const fullName = llmService.name;
+        return fullName
+            .replace(/Service$/, "")
+            .replace(/([a-z])([A-Z])/g, "$1-$2")
+            .toLowerCase();
     }
 }

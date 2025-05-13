@@ -1,7 +1,6 @@
 import { Range } from "vscode-languageclient";
 
-import { LLMServices } from "../llm/llmServices";
-import { ModelsParams } from "../llm/llmServices/modelParams";
+import { ResolvedGenerationBundles } from "../llm/generationBundles";
 
 import { ProofGoal } from "../coqLsp/coqLspTypes";
 
@@ -16,6 +15,10 @@ export interface CompletionContext {
     proofGoal: ProofGoal;
     admitRange: Range;
     sourceTheorem: Theorem;
+
+    // TODO: remove
+    // Note: currently, it is needed only for temporary solution for `withAuxFile`
+    targetType: TargetType;
 }
 
 export interface SourceFileEnvironment {
@@ -39,12 +42,17 @@ export interface SourceFileEnvironment {
 
 export interface ProcessEnvironment {
     coqProofChecker: CoqProofChecker;
-    modelsParams: ModelsParams;
-    services: LLMServices;
+    bundles: ResolvedGenerationBundles;
     /**
      * If `theoremRanker` is not provided, the default one will be used:
      * theorems would be passed sequentially in the same order as they are in the file
      */
     theoremRanker?: ContextTheoremsRanker;
     premisesNumber?: number;
+}
+
+// Note: originally, is from `completionGenerationTask.ts`. Currently, it is needed here only for temporary solution for `withAuxFile`.
+export enum TargetType {
+    ADMIT = "ADMIT",
+    PROVE_THEOREM = "PROVE_THEOREM",
 }

@@ -3,7 +3,6 @@ import {
     GenerationFailedError,
     RemoteConnectionError,
 } from "../../../llm/llmServiceErrors";
-import { LLMServices, asLLMServices } from "../../../llm/llmServices";
 import {
     LLMServiceRequest,
     LLMServiceRequestFailed,
@@ -11,16 +10,20 @@ import {
     isLLMServiceRequestFailed,
     isLLMServiceRequestSucceeded,
 } from "../../../llm/llmServices/commonStructures/llmServiceRequest";
-import { LLMServiceImpl } from "../../../llm/llmServices/llmService";
+import {
+    LLMService,
+    LLMServiceImpl,
+} from "../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../llm/llmServices/modelParams";
 import { RangoError } from "../../../llm/llmServices/rango/rangoError";
+import { LLMServicesStorage } from "../../../llm/llmServicesStorage";
 
 import { EventLogger } from "../../../logging/eventLogger";
 import { SimpleSet } from "../../../utils/collectionUtils/simpleSet";
 import { buildErrorCompleteLog } from "../../../utils/errors/errorsUtils";
 import { illegalState } from "../../../utils/errors/throwErrors";
 import { stringifyAnyValue } from "../../../utils/printers";
-import { toSettingName } from "../../settings/settingsValidationError";
+import { toSettingName } from "../../settings/settingsNames";
 import { openTextDocument } from "../documentOpener";
 
 import {
@@ -46,13 +49,13 @@ interface LLMServiceUIState {
     messagesShownState: LLMServiceMessagesShownState;
 }
 
-type LLMServiceToUIState = Map<string, LLMServiceUIState>;
+type LLMServiceToUIState = Map<LLMService, LLMServiceUIState>;
 type ModelsSet = SimpleSet<ModelParams, string>;
 
 export type UnsubscribeFromLLMServicesEventsCallback = () => void;
 
 export function subscribeToHandleLLMServicesEvents(
-    llmServices: LLMServices,
+    llmServices: LLMServicesStorage,
     eventLogger: EventLogger
 ): UnsubscribeFromLLMServicesEventsCallback {
     const llmServiceToUIState = createLLMServiceToUIState(llmServices);
@@ -85,15 +88,15 @@ export function subscribeToHandleLLMServicesEvents(
 }
 
 function createLLMServiceToUIState(
-    llmServices: LLMServices
+    llmServices: LLMServicesStorage
 ): LLMServiceToUIState {
     const initialState: LLMServiceUIState = {
         availabilityState: LLMServiceAvailablityState.AVAILABLE,
         messagesShownState: LLMServiceMessagesShownState.NO_MESSAGES_SHOWN,
     };
     return new Map(
-        asLLMServices(llmServices).map((llmService) => [
-            llmService.serviceName,
+        llmServices.allServices().map((llmService) => [
+            llmService,
             {
                 ...initialState,
             },
@@ -122,7 +125,7 @@ function reactToRequestSucceededEvent(
             ) {
                 showMessageToUser(
                     EditorMessages.serviceIsAvailableAgain(
-                        requestSucceeded.llmService.serviceName
+                        requestSucceeded.llmService.name
                     ),
                     "info"
                 );
@@ -159,7 +162,7 @@ function reactToRequestFailedEvent(
                     llmServiceError.message
                 ),
                 "error",
-                toSettingName(requestFailed.llmService)
+                toSettingName(requestFailed.llmService.identifier)
             );
             return;
         }
@@ -184,7 +187,7 @@ function reactToRequestFailedEvent(
                 uiState.messagesShownState ===
                 LLMServiceMessagesShownState.NO_MESSAGES_SHOWN
             ) {
-                const serviceName = requestFailed.llmService.serviceName;
+                const serviceName = requestFailed.llmService.name;
                 if (llmServiceError instanceof GenerationFailedError) {
                     handleGenerationFailedError(
                         serviceName,
@@ -216,10 +219,10 @@ function parseLLMServiceRequestEvent<T extends LLMServiceRequest>(
     if (!checkType(data)) {
         illegalState(`${errorMessage}, but data = ${stringifyAnyValue(data)}`);
     }
-    const serviceName = data.llmService.serviceName;
-    const uiState = llmServiceToUIState.get(serviceName);
+    const llmService = data.llmService;
+    const uiState = llmServiceToUIState.get(llmService);
     if (uiState === undefined) {
-        illegalState(`no UI state for \`${serviceName}\``);
+        illegalState(`no UI state for \`${llmService.toLogString(false)}\``);
     }
     return [data, uiState];
 }

@@ -92,7 +92,7 @@ export namespace BasicJsonSerialization {
         return {
             theoremRanker: params.theoremRanker.type,
             modelParams: params.modelParams,
-            llmServiceIdentifier: params.llmServiceIdentifier,
+            serializedService: params.llmService.serialize(),
         };
     }
 

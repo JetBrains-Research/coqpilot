@@ -1,19 +1,8 @@
 import { expect } from "earl";
 
-import {
-    ResolutionActionDetailedResult,
-    ResolutionActionResult,
-    SingleParamResolutionResult,
-} from "../../../llm/llmServices/utils/paramsResolvers/abstractResolvers";
+import { SingleParamResolutionResult } from "../../../llm/llmServices/utils/paramsResolvers/abstractResolvers";
 
-export interface ResolutionResultAddOns<T> {
-    inputParamName?: string;
-    resultValue?: T;
-    isInvalidCause?: string;
-    inputReadCorrectly?: ResolutionActionResult<T>;
-    overriden?: ResolutionActionDetailedResult<T>;
-    resolvedWithDefault?: ResolutionActionResult<T>;
-}
+export type ResolutionResultAddOns<T> = Partial<SingleParamResolutionResult<T>>;
 
 /**
  * All values of `actualResolutionResult` are checked for equality to
@@ -30,14 +19,19 @@ export function expectParamResolutionResult<T>(
         inputParamName: inputParamName,
         resultValue: undefined,
         isInvalidCause: undefined,
+        // `inputReadCorrectly` is false only if the input value is invalid
         inputReadCorrectly: {
-            wasPerformed: false,
+            wasPerformed: true,
             withValue: undefined,
         },
         overriden: {
             wasPerformed: false,
             withValue: undefined,
             message: undefined,
+        },
+        overridenWithMock: {
+            wasPerformed: false,
+            withValue: undefined,
         },
         resolvedWithDefault: {
             wasPerformed: false,
@@ -66,6 +60,12 @@ export function expectParamResolutionResult<T>(
     );
     expect(actualResolutionResult.overriden.withValue).toEqual(
         expectedResolutionResult.overriden.withValue
+    );
+    expect(actualResolutionResult.overridenWithMock.wasPerformed).toEqual(
+        expectedResolutionResult.overridenWithMock.wasPerformed
+    );
+    expect(actualResolutionResult.overridenWithMock.withValue).toEqual(
+        expectedResolutionResult.overridenWithMock.withValue
     );
     expectMessageValue(
         actualResolutionResult.overriden.message,

@@ -1,7 +1,6 @@
 export interface LengthMetrics {
-    inSteps?: number;
     inSymbols?: number;
-    inTokens?: number;
+    inStepsEstimated?: number;
 }
 
 export interface EstimatedChatTokens {

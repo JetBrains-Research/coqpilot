@@ -48,8 +48,7 @@ abstract class AbstractBenchmarkedProof {
 export function measureLength(proof: string): LengthMetrics {
     return {
         inSymbols: proof.length,
-        inSteps: proof.split(".").length, // TODO: check and perform more accurately
-        inTokens: undefined, // TODO
+        inStepsEstimated: Math.max(1, proof.split(".").length - 1),
     };
 }
 

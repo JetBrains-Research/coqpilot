@@ -1,56 +1,25 @@
-import { AbstractExternalServiceInstaller } from "../../../../llm/llmServices/abstractExternalService/installation/abstractExternalServiceInstaller";
 import { provideDefaultInstallationForRequest } from "../../../../llm/llmServices/abstractExternalService/installation/wrappers";
-import { RangoInstaller } from "../../../../llm/llmServices/rango/rangoInstaller";
+import { InstallerWithOptions } from "../../../../llm/llmServices/commonStructures/installerProvider";
 import { UserModelParams } from "../../../../llm/userModelParams";
 
-import { groupBy } from "../../../../utils/collectionUtils/mapUtils";
 import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { logBySeverityLevelName } from "../../logging/wrappers";
-import { LLMServiceIdentifier } from "../../structures/common/llmServiceIdentifier";
-import { InputBenchmarkingBundle } from "../../structures/inputParameters/inputBenchmarkingBundle";
-
-interface InstallerWithOptions<InstallationOptions> {
-    installer: AbstractExternalServiceInstaller<InstallationOptions, any>;
-    options?: InstallationOptions;
-}
-
-const EXTERNAL_SERVICES_TO_INSTALLERS_WITH_OPTIONS: Map<
-    LLMServiceIdentifier,
-    () => InstallerWithOptions<any>
-> = new Map([
-    [
-        LLMServiceIdentifier.RANGO,
-        () => {
-            return {
-                installer: new RangoInstaller(),
-                options: undefined,
-            };
-        },
-    ],
-]);
+import { ResolvedWithServiceBenchmarkingBundle } from "../../structures/inputParameters/resolvedWithServiceBenchmarkingBundle";
 
 export async function installDemandedExternalServices(
-    inputBundles: InputBenchmarkingBundle[],
+    resolvedBundles: ResolvedWithServiceBenchmarkingBundle[],
     logger: BenchmarkingLogger
 ) {
-    const bundlesByService = groupBy(
-        inputBundles,
-        (bundle) => bundle.llmServiceIdentifier
-    );
-    for (const [
-        llmServiceIdentifier,
-        serviceBundles,
-    ] of bundlesByService.entries()) {
-        const installerProvider =
-            EXTERNAL_SERVICES_TO_INSTALLERS_WITH_OPTIONS.get(
-                llmServiceIdentifier
-            );
+    /**
+     * Note: no check for duplicate installations needed, since each of the `llmService` instances
+     * of `resolvedBundles` is unique.
+     */
+    for (const bundle of resolvedBundles) {
+        const installerProvider = bundle.llmService.installerProvider;
         if (installerProvider === undefined) {
             continue;
         }
-        const allInputParams = serviceBundles.flatMap(
-            (bundle) => bundle.inputBenchmarkingModelsParams
-        );
+        const allInputParams = bundle.inputBenchmarkingModelsParams;
         await checkInstallationIsSufficientOrInstall(
             installerProvider(),
             allInputParams,

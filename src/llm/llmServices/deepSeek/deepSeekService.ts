@@ -10,11 +10,14 @@ import {
     GeneratedRawContentItem,
 } from "../commonStructures/generatedRawContent";
 import { ProofVersion } from "../commonStructures/proofVersion";
+import { SchedulersProviderBuilders } from "../commonStructures/schedulersProviders";
 import { GeneratedProofImpl } from "../generatedProof";
 import { LLMServiceImpl } from "../llmService";
+import { LLMServiceIdentifier } from "../llmServiceIdentifier";
 import { LLMServiceInternal } from "../llmServiceInternal";
 import { DeepSeekModelParams } from "../modelParams";
 import { toO1CompatibleChatHistory } from "../utils/o1ClassModels";
+import { provideBasicSerializer } from "../utils/serialization/basicLLMServiceSerializer";
 
 import { DeepSeekModelParamsResolver } from "./deepSeekModelParamsResolver";
 
@@ -25,13 +28,12 @@ export class DeepSeekService extends LLMServiceImpl<
     DeepSeekGeneratedProof,
     DeepSeekServiceInternal
 > {
-    readonly serviceName = "DeepSeekService";
-    protected readonly internal = new DeepSeekServiceInternal(
-        this,
-        this.eventLogger,
-        this.generationsLoggerBuilder
-    );
+    readonly name = "DeepSeekService";
+    readonly identifier = LLMServiceIdentifier.DEEPSEEK;
+
+    protected readonly internal = new DeepSeekServiceInternal(this);
     protected readonly modelParamsResolver = new DeepSeekModelParamsResolver();
+    protected readonly serializer = provideBasicSerializer(this);
 }
 
 export class DeepSeekGeneratedProof extends GeneratedProofImpl<
@@ -79,6 +81,14 @@ class DeepSeekServiceInternal extends LLMServiceInternal<
             previousProofVersions
         );
     }
+
+    readonly modelsSchedulersProvider =
+        SchedulersProviderBuilders.limitParallelismForModelsWithSameKey(
+            this.serviceSetup.generationParallelism,
+            (params: DeepSeekModelParams) => params.modelName,
+            this.llmService.name,
+            this.serviceSetup.enableModelsSchedulingDebugLogs
+        );
 
     async generateFromChatImpl(
         analyzedChat: AnalyzedChatHistory,
