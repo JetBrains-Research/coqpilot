@@ -1,6 +1,6 @@
-import { LLMServicesStorage } from "../../../../llm/llmServices";
 import { ModelParams } from "../../../../llm/llmServices/modelParams";
 import { deserializeLLMService } from "../../../../llm/llmServices/utils/serialization/serializedLLMService";
+import { LLMServicesStorage } from "../../../../llm/llmServicesStorage";
 
 import { makeStringsUnique } from "../../../../utils/collectionUtils/listUtils";
 import {
@@ -153,8 +153,9 @@ export namespace LightweightDeserializer {
                 .info("");
 
             return [llmServices, benchmarkingItems];
-        } finally {
+        } catch (e) {
             llmServices.dispose();
+            throw e;
         }
     }
 
@@ -206,8 +207,9 @@ export namespace LightweightDeserializer {
                 resolvedParamsByIds,
                 llmServices,
             ];
-        } finally {
+        } catch (e) {
             llmServices.dispose();
+            throw e;
         }
     }
 

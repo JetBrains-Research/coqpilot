@@ -1,5 +1,4 @@
 import { unreachable } from "../../utils/errors/throwErrors";
-import { UserModelParams } from "../userModelParams";
 
 import { DeepSeekService } from "./deepSeek/deepSeekService";
 import { GrazieService } from "./grazie/grazieService";
@@ -9,7 +8,6 @@ import {
     LLMServiceIdentifier,
 } from "./llmServiceIdentifier";
 import { LMStudioService } from "./lmStudio/lmStudioService";
-import { ModelParams } from "./modelParams";
 import { OpenAiService } from "./openai/openAiService";
 import { PredefinedProofsService } from "./predefinedProofs/predefinedProofsService";
 import { RangoService } from "./rango/rangoService";
@@ -17,7 +15,7 @@ import { LLMServiceControlParams } from "./utils/llmServiceControlParams";
 
 export type LLMServiceProvider = (
     controlParams: LLMServiceControlParams
-) => LLMService<UserModelParams, ModelParams>;
+) => LLMService;
 
 export function selectLLMServiceProvider<T extends LLMServiceIdentifier>(
     serviceIdentifier: T,
@@ -26,7 +24,7 @@ export function selectLLMServiceProvider<T extends LLMServiceIdentifier>(
     function createProvider(
         serviceCtor: new (
             inputServiceParams?: CorrespondingInputServiceParams<T>
-        ) => LLMService<UserModelParams, ModelParams>
+        ) => LLMService
     ): LLMServiceProvider {
         return (controlParams) =>
             new serviceCtor({

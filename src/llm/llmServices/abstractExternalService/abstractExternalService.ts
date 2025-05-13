@@ -174,7 +174,7 @@ export abstract class AbstractExternalService<
         return time(5, "second"); // some cool-down for the subprocess spawning
     }
 
-    isSameInstance(other: LLMService<any, any>): boolean {
+    isSameInstance(other: LLMService): boolean {
         return (
             other instanceof AbstractExternalService &&
             this.installationPath === other.installationPath

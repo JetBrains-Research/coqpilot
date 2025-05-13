@@ -4,10 +4,8 @@ import {
     throwError,
     unreachable,
 } from "../../../../utils/errors/throwErrors";
-import { UserModelParams } from "../../../userModelParams";
 import { LLMService } from "../../llmService";
 import { LLMServiceProvider } from "../../llmServiceProvider";
-import { ModelParams } from "../../modelParams";
 import { LLMServiceControlParams } from "../llmServiceControlParams";
 
 import { SerializedLLMService } from "./serializedLLMService";
@@ -47,7 +45,7 @@ export abstract class LLMServiceSerializer {
      */
     abstract constructService(
         controlParams: LLMServiceControlParams
-    ): LLMService<UserModelParams, ModelParams>;
+    ): LLMService;
 
     /**
      * Pretty output to show in logs.

@@ -363,7 +363,7 @@ async function generateProofWithRetriesMeasured(
     generateProofs: (
         metadataHolder: ProofGenerationMetadataHolder
     ) => Promise<GeneratedProof[]>,
-    llmService: LLMService<any, any>,
+    llmService: LLMService,
     options: BenchmarkingOptions,
     roundNumber: number,
     logger: BenchmarkingLogger,

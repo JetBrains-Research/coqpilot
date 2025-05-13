@@ -33,8 +33,8 @@ import { SerializedLLMService } from "./utils/serialization/serializedLLMService
  * Thus, `LLMServiceImpl` should be resolved with `any` for the implementation generic types, when used outside.
  */
 export type LLMService<
-    InputModelParams extends UserModelParams,
-    ResolvedModelParams extends ModelParams,
+    InputModelParams extends UserModelParams = UserModelParams,
+    ResolvedModelParams extends ModelParams = ModelParams,
 > = LLMServiceImpl<InputModelParams, ResolvedModelParams, any, any, any>;
 
 /**
@@ -310,7 +310,7 @@ export abstract class LLMServiceImpl<
      * one instance of `LLMService` per execution. Return `false` if you want to provide more flexibility,
      * but do it carefully checking the setup.
      */
-    isSameInstance(_other: LLMService<any, any>): boolean {
+    isSameInstance(_other: LLMService): boolean {
         return true;
     }
 }

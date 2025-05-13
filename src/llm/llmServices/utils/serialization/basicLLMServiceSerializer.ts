@@ -1,11 +1,9 @@
 import { illegalState } from "../../../../utils/errors/throwErrors";
-import { UserModelParams } from "../../../userModelParams";
 import { LLMService } from "../../llmService";
 import { CorrespondingInputServiceParams } from "../../llmServiceIdentifier";
 import { LLMServiceIdentifier } from "../../llmServiceIdentifier";
 import { LLMServiceParams } from "../../llmServiceParams";
 import { selectLLMServiceProvider } from "../../llmServiceProvider";
-import { ModelParams } from "../../modelParams";
 import { LLMServiceControlParams } from "../llmServiceControlParams";
 
 import { LLMServiceSerializer } from "./llmServiceSerializer";
@@ -13,7 +11,7 @@ import { getShortName } from "./toLog";
 import { toOneLineLogString } from "./toLog";
 
 export function provideBasicSerializer(
-    llmService: LLMService<any, any>
+    llmService: LLMService
 ): BasicLLMServiceSerializer {
     return new BasicLLMServiceSerializer(
         llmService.identifier ??
@@ -43,9 +41,7 @@ export class BasicLLMServiceSerializer extends LLMServiceSerializer {
         );
     }
 
-    constructService(
-        controlParams: LLMServiceControlParams
-    ): LLMService<UserModelParams, ModelParams> {
+    constructService(controlParams: LLMServiceControlParams): LLMService {
         const serviceCtor = selectLLMServiceProvider(
             this.serviceIdentifier,
             this.serviceParams

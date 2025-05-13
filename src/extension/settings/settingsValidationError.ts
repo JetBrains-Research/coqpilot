@@ -1,6 +1,3 @@
-import { switchByLLMServiceType } from "../../llm/llmServices";
-import { LLMService } from "../../llm/llmServices/llmService";
-
 import {
     UIChoiceItemWithCallback,
     UIMessageSeverity,
@@ -32,17 +29,4 @@ export class SettingsValidationError extends Error {
             ...this.otherChoiceItemsWithCallbacks
         );
     }
-}
-
-export function toSettingName(llmService: LLMService<any, any>): string {
-    const serviceNameInSettings = switchByLLMServiceType(
-        llmService,
-        () => "predefinedProofs",
-        () => "openAi",
-        () => "grazie",
-        () => "lmStudio",
-        () => "deepSeek",
-        () => "rango"
-    );
-    return `${PLUGIN_ID}.${serviceNameInSettings}ModelsParameters`;
 }

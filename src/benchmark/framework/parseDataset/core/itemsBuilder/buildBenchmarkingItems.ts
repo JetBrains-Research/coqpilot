@@ -2,7 +2,6 @@ import { ConfigurationError } from "../../../../../llm/llmServiceErrors";
 import { LLMService } from "../../../../../llm/llmServices/llmService";
 import { ModelParams } from "../../../../../llm/llmServices/modelParams";
 import { buildParamsResolutionMessages } from "../../../../../llm/llmServices/utils/paramsResolvers/kit/paramsResolutionAnalysis";
-import { UserModelParams } from "../../../../../llm/userModelParams";
 
 import { EqualitySet } from "../../../../../utils/collectionUtils/equalitySet";
 import { getOrPut } from "../../../../../utils/collectionUtils/mapUtils";
@@ -81,7 +80,7 @@ function buildTasksAndResolveParams(
 
 export function resolveInputBenchmarkingModelParams(
     inputParams: InputBenchmarkingModelParams.Params,
-    llmService: LLMService<UserModelParams, ModelParams>,
+    llmService: LLMService,
     logger: BenchmarkingLogger
 ): BenchmarkingModelParams<ModelParams> {
     const { ranker, ...pureInputModelParams } = inputParams;

@@ -1,4 +1,4 @@
-import { LLMServicesStorage } from "../../../llm/llmServices";
+import { LLMServicesStorage } from "../../../llm/llmServicesStorage";
 
 import { CoqLspProviderBuilders } from "../../../coqLsp/coqLspProviders/coqLspProviderBuilders";
 
@@ -398,8 +398,9 @@ export abstract class AbstractExperiment {
                 });
             }
             return [services, resolvedBundles];
-        } finally {
+        } catch (e) {
             services.dispose();
+            throw e;
         }
     }
 }

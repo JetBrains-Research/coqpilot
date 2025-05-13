@@ -2,24 +2,44 @@ import * as fs from "fs";
 import * as path from "path";
 import { Disposable, WorkspaceConfiguration, window, workspace } from "vscode";
 
-import { LLMServices, disposeServices } from "../llm/llmServices";
 import { ErrorsHandlingMode } from "../llm/llmServices/commonStructures/errorsHandlingMode";
-import { DeepSeekService } from "../llm/llmServices/deepSeek/deepSeekService";
-import { GrazieService } from "../llm/llmServices/grazie/grazieService";
+import {
+    CorrespondingInputServiceParams,
+    LLMServiceIdentifier,
+} from "../llm/llmServices/llmServiceIdentifier";
 import { LLMServiceParams } from "../llm/llmServices/llmServiceParams";
-import { LMStudioService } from "../llm/llmServices/lmStudio/lmStudioService";
-import { OpenAiService } from "../llm/llmServices/openai/openAiService";
-import { PredefinedProofsService } from "../llm/llmServices/predefinedProofs/predefinedProofsService";
-import { RangoService } from "../llm/llmServices/rango/rangoService";
+import { selectLLMServiceProvider } from "../llm/llmServices/llmServiceProvider";
+import {
+    BasicLLMServiceCustomizationParams,
+    LLMServiceControlParams,
+} from "../llm/llmServices/utils/llmServiceControlParams";
+import { getShortName } from "../llm/llmServices/utils/serialization/toLog";
+import { LLMServicesStorage } from "../llm/llmServicesStorage";
 
 import { EventLogger, Severity } from "../logging/eventLogger";
 import { illegalState } from "../utils/errors/throwErrors";
+import {
+    addExtension,
+    translateToSafeFileName,
+} from "../utils/fs/fileNameUtils";
 import { createTmpDirectory } from "../utils/fs/tmpFs";
 import { ProjectRoot } from "../utils/structures/projectRoot";
 
 import VSCodeLogWriter from "./ui/vscodeLogWriter";
 import { PLUGIN_ID } from "./utils/pluginId";
 import { inferProjectRoot } from "./utils/projectRootGetter";
+
+type ServiceEntry<T extends LLMServiceIdentifier> = [
+    T,
+    CorrespondingInputServiceParams<T>,
+];
+
+function serviceEntry<T extends LLMServiceIdentifier>(
+    serviceId: T,
+    customParams: CorrespondingInputServiceParams<T> = {} as any
+): ServiceEntry<T> {
+    return [serviceId, customParams];
+}
 
 export class PluginContext implements Disposable {
     readonly eventLogger: EventLogger = new EventLogger();
@@ -30,6 +50,12 @@ export class PluginContext implements Disposable {
     readonly logOutputChannel = window.createOutputChannel(
         "CoqPilot: coq-lsp events"
     );
+
+    readonly llmServices: LLMServicesStorage = new LLMServicesStorage();
+
+    constructor() {
+        this.registerServices();
+    }
 
     // TODO: support a way in the UI to reconfigure it manually
     private _projectRoot: ProjectRoot | undefined = inferProjectRoot();
@@ -42,12 +68,19 @@ export class PluginContext implements Disposable {
         this._projectRoot = projectRoot;
     }
 
+    dispose(): void {
+        this.llmServices.dispose();
+        this.logWriter.dispose();
+        fs.rmSync(this.llmServicesLogsDir, { recursive: true, force: true });
+        this.logOutputChannel.dispose();
+    }
+
     readonly llmServicesLogsDir = path.join(
         createTmpDirectory(),
         "llm-services-logs"
     );
 
-    private readonly llmServicesSetup: LLMServiceParams = {
+    private readonly llmServicesControlParams: LLMServiceControlParams = {
         /**
          * Must be defined to provide UI with proof generation event to show to the user.
          */
@@ -59,70 +92,65 @@ export class PluginContext implements Disposable {
          * (even though it is protected from any errors being thrown at the user).
          */
         errorsHandlingMode: ErrorsHandlingMode.SWALLOW_ERRORS,
-
-        /**
-         * Use the safest option by default: this way,
-         * the overall progress is guaranteed
-         * (although potentially slowing down the whole process).
-         */
-        generationParallelism: 1,
-
-        /**
-         * Could be turned on if debug is needed.
-         */
-        debugLogs: false,
     };
 
-    readonly llmServices: LLMServices = {
-        predefinedProofsService: new PredefinedProofsService({
-            ...this.llmServicesSetup,
-            generationLogsFilePath: path.join(
-                this.llmServicesLogsDir,
-                "predefined-proofs-logs.txt"
-            ),
+    private readonly llmServicesCustomizationParams: BasicLLMServiceCustomizationParams =
+        {
+            /**
+             * Use the safest option by default: this way,
+             * the overall progress is guaranteed
+             * (although potentially slowing down the whole process).
+             */
+            generationParallelism: 1,
+
+            /**
+             * Could be turned on if debug is needed.
+             */
+            debugLogs: false,
+        };
+
+    private readonly servicesToRegister = [
+        serviceEntry(LLMServiceIdentifier.PREDEFINED_PROOFS),
+        serviceEntry(LLMServiceIdentifier.OPENAI, {
+            generationParallelism: 5, // In practice, `OpenAI` is capable of processing multiple requests.
         }),
-        openAiService: new OpenAiService({
-            ...this.llmServicesSetup,
-            // In practice, `OpenAI` is capable of processing multiple requests.
-            generationParallelism: 5,
-            generationLogsFilePath: path.join(
-                this.llmServicesLogsDir,
-                "openai-logs.txt"
-            ),
-        }),
-        grazieService: new GrazieService({
-            ...this.llmServicesSetup,
-            generationParallelism: 5,
-            generationLogsFilePath: path.join(
-                this.llmServicesLogsDir,
-                "grazie-logs.txt"
-            ),
-        }),
-        lmStudioService: new LMStudioService({
-            ...this.llmServicesSetup,
-            generationLogsFilePath: path.join(
-                this.llmServicesLogsDir,
-                "lmstudio-logs.txt"
-            ),
-        }),
-        deepSeekService: new DeepSeekService({
-            ...this.llmServicesSetup,
-            generationLogsFilePath: path.join(
-                this.llmServicesLogsDir,
-                "deepseek-logs.txt"
-            ),
-        }),
-        rangoService: new RangoService({
-            ...this.llmServicesSetup,
-            generationLogsFilePath: path.join(
-                this.llmServicesLogsDir,
-                "rango-logs.txt"
-            ),
+        serviceEntry(LLMServiceIdentifier.GRAZIE),
+        serviceEntry(LLMServiceIdentifier.LMSTUDIO),
+        serviceEntry(LLMServiceIdentifier.DEEPSEEK),
+        serviceEntry(LLMServiceIdentifier.RANGO, {
             installationPath: undefined, // use the default one
             maxSubprocessesSpawnedInParallel: undefined, // use the default number
             clearProofGenerationLogsOnSuccess: true, // do not pollute the target directory
         }),
-    };
+    ];
+
+    private registerServices() {
+        try {
+            for (const [serviceId, customParams] of this.servicesToRegister) {
+                const serviceParams: LLMServiceParams = {
+                    ...this.llmServicesCustomizationParams,
+                    generationLogsFilePath: path.join(
+                        this.llmServicesLogsDir,
+                        addExtension(
+                            translateToSafeFileName(
+                                `${getShortName(serviceId)}-logs`
+                            ),
+                            ".txt"
+                        )
+                    ),
+                    ...customParams,
+                };
+                this.llmServices.registerService(() =>
+                    selectLLMServiceProvider(
+                        serviceId,
+                        serviceParams
+                    )(this.llmServicesControlParams)
+                );
+            }
+        } finally {
+            this.dispose();
+        }
+    }
 
     private parseLoggingVerbosity(config: WorkspaceConfiguration): Severity {
         const verbosity = config.get("loggingVerbosity");
@@ -134,12 +162,5 @@ export class PluginContext implements Disposable {
             default:
                 illegalState(`unknown logging verbosity: ${verbosity}`);
         }
-    }
-
-    dispose(): void {
-        disposeServices(this.llmServices);
-        this.logWriter.dispose();
-        fs.rmSync(this.llmServicesLogsDir, { recursive: true, force: true });
-        this.logOutputChannel.dispose();
     }
 }

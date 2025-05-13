@@ -1,7 +1,6 @@
 import { Range } from "vscode-languageclient";
 
-import { LLMServices } from "../llm/llmServices";
-import { ModelsParams } from "../llm/llmServices/modelParams";
+import { ResolvedGenerationBundles } from "../llm/generationBundles";
 
 import { ProofGoal } from "../coqLsp/coqLspTypes";
 
@@ -39,8 +38,7 @@ export interface SourceFileEnvironment {
 
 export interface ProcessEnvironment {
     coqProofChecker: CoqProofChecker;
-    modelsParams: ModelsParams;
-    services: LLMServices;
+    bundles: ResolvedGenerationBundles;
     /**
      * If `theoremRanker` is not provided, the default one will be used:
      * theorems would be passed sequentially in the same order as they are in the file

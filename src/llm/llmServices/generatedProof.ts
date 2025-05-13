@@ -23,7 +23,7 @@ import { buildProofFixChat } from "./utils/chatFactory";
 
 export type GeneratedProof = GeneratedProofImpl<
     ModelParams,
-    LLMService<UserModelParams, ModelParams>,
+    LLMService,
     GeneratedProof,
     any
 >;

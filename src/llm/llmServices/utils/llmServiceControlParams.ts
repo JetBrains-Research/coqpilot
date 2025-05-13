@@ -23,3 +23,6 @@ export interface LLMServiceControlParams {
 export type LLMServiceCustomizationParams<
     ServiceParams extends LLMServiceParams,
 > = Without<ServiceParams, LLMServiceControlParams>;
+
+export type BasicLLMServiceCustomizationParams =
+    LLMServiceCustomizationParams<LLMServiceParams>;

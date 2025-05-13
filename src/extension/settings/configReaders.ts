@@ -5,21 +5,18 @@ import {
     workspace,
 } from "vscode";
 
-import { LLMServices } from "../../llm/llmServices";
 import {
-    AbstractExternalService,
-    ExternalService,
-} from "../../llm/llmServices/abstractExternalService/abstractExternalService";
+    GenerationBundle,
+    GenerationBundlesStorage,
+    ResolvedGenerationBundles,
+} from "../../llm/generationBundles";
 import { LLMService } from "../../llm/llmServices/llmService";
-import { ModelParams, ModelsParams } from "../../llm/llmServices/modelParams";
+import { LLMServiceIdentifier } from "../../llm/llmServices/llmServiceIdentifier";
+import { ModelParams } from "../../llm/llmServices/modelParams";
 import { buildParamsResolutionMessages } from "../../llm/llmServices/utils/paramsResolvers/kit/paramsResolutionAnalysis";
+import { getShortName } from "../../llm/llmServices/utils/serialization/toLog";
+import { LLMServicesStorage } from "../../llm/llmServicesStorage";
 import {
-    DeepSeekUserModelParams,
-    GrazieUserModelParams,
-    LMStudioUserModelParams,
-    OpenAiUserModelParams,
-    PredefinedProofsUserModelParams,
-    RangoUserModelParams,
     UserModelParams,
     deepSeekUserModelParamsSchema,
     grazieUserModelParamsSchema,
@@ -36,6 +33,7 @@ import { ContextTheoremsRanker } from "../../core/contextTheoremRanker/contextTh
 
 import { AjvMode, buildAjv } from "../../utils/ajvErrorsHandling";
 import { findFirstDuplicate } from "../../utils/collectionUtils/listUtils";
+import { groupByAndMap, mapValues } from "../../utils/collectionUtils/mapUtils";
 import { illegalState, throwError } from "../../utils/errors/throwErrors";
 import { stringifyAnyValue, stringifyDefinedValue } from "../../utils/printers";
 import { UserInstallationInteractor } from "../installers/abstractUserInstallation";
@@ -45,10 +43,8 @@ import {
 } from "../ui/messages/editorMessages";
 import { PLUGIN_ID } from "../utils/pluginId";
 
-import {
-    SettingsValidationError,
-    toSettingName,
-} from "./settingsValidationError";
+import { toSettingName } from "./settingsNames";
+import { SettingsValidationError } from "./settingsValidationError";
 
 export function parseCoqLspServerPath(): string {
     const workspaceConfig = workspace.getConfiguration(PLUGIN_ID);
@@ -80,9 +76,187 @@ export function buildTheoremsRankerFromConfig(): ContextTheoremsRanker {
 
 export async function readAndValidateUserModelsParams(
     config: WorkspaceConfiguration,
-    llmServices: LLMServices,
+    llmServices: LLMServicesStorage,
     vscodeContext: VSCodeContext
-): Promise<ModelsParams> {
+): Promise<ResolvedGenerationBundles> {
+    const inputParamsWithIdentifiers = parseUserModelParams(config);
+    const inputParamsByIdentifier: Map<
+        LLMServiceIdentifier,
+        UserModelParams[]
+    > = mapValues(
+        groupByAndMap(
+            inputParamsWithIdentifiers,
+            (item) => item.identifier,
+            (item) => item.inputParams
+        ),
+        (_, params: UserModelParams[][]) => params.flat()
+    );
+    const allInputParams = inputParamsWithIdentifiers.flatMap(
+        (item) => item.inputParams
+    );
+
+    const inputBundles = new GenerationBundlesStorage<UserModelParams>();
+    for (const { inputParams, identifier } of inputParamsWithIdentifiers) {
+        const servicesOfType = llmServices.getServices(identifier);
+        for (const service of servicesOfType) {
+            inputBundles.addBundle({
+                llmService: service,
+                models: inputParams,
+            });
+        }
+    }
+
+    await provideServicesInstallations(
+        vscodeContext.extensionPath,
+        inputBundles.allBundles()
+    );
+
+    validateIdsAreUnique(allInputParams);
+    validateApiKeysAreProvided(inputParamsByIdentifier, [
+        LLMServiceIdentifier.OPENAI,
+        LLMServiceIdentifier.GRAZIE,
+        LLMServiceIdentifier.DEEPSEEK,
+        LLMServiceIdentifier.RANGO,
+    ]);
+
+    const resolvedBundles = new GenerationBundlesStorage<ModelParams>();
+    for (const inputBundle of inputBundles.allBundles()) {
+        const resolvedParams = resolveParamsAndShowResolutionLogs<
+            UserModelParams,
+            ModelParams
+        >(inputBundle.llmService, inputBundle.models);
+        resolvedBundles.addBundle({
+            llmService: inputBundle.llmService,
+            models: resolvedParams,
+        });
+    }
+    validateModelsArePresent(resolvedBundles.allBundles());
+
+    return resolvedBundles;
+}
+
+// TODO: skip service's models if the user declines its installation, don't throw
+async function provideServicesInstallations(
+    coqPilotPath: string,
+    inputBundles: GenerationBundle<UserModelParams>[]
+) {
+    for (const { llmService, models } of inputBundles) {
+        const installerProvider = llmService.installerProvider;
+        if (installerProvider === undefined) {
+            continue;
+        }
+        const { installer, options } = installerProvider();
+        await installer.provideInstallationForRequest(
+            models,
+            coqPilotPath,
+            undefined,
+            options,
+            new UserInstallationInteractor(installer)
+        );
+    }
+}
+
+function validateIdsAreUnique(allModels: UserModelParams[]) {
+    const modelIds = allModels.map((params) => params.modelId);
+    const duplicateModelId = findFirstDuplicate(modelIds);
+    if (duplicateModelId !== undefined) {
+        throw new SettingsValidationError(
+            `models' identifiers are not unique: several models have \`modelId: "${duplicateModelId}"\``,
+            EditorMessages.modelsIdsAreNotUnique(duplicateModelId)
+        );
+    }
+}
+
+function validateApiKeysAreProvided(
+    inputParamsByIdentifier: Map<LLMServiceIdentifier, UserModelParams[]>,
+    identifiersToValidate: LLMServiceIdentifier[]
+) {
+    function throwBuildApiKeyError(
+        serviceName: string,
+        serviceSettingsName: string
+    ) {
+        throw new SettingsValidationError(
+            `at least one of the ${serviceName} models has \`apiKey: "None"\``,
+            EditorMessages.apiKeyIsNotSet(serviceName),
+            `${PLUGIN_ID}.${serviceSettingsName}ModelsParameters`,
+            "info"
+        );
+    }
+
+    function checkApiKeyIsNone(params: any): boolean {
+        return params.apiKey === "None" || params.mockOpenAIApiKey === "None";
+    }
+
+    for (const identifier of identifiersToValidate) {
+        const inputModels =
+            inputParamsByIdentifier.get(LLMServiceIdentifier.GRAZIE) ?? [];
+        if (inputModels.some(checkApiKeyIsNone)) {
+            throwBuildApiKeyError(
+                getShortName(identifier),
+                toSettingName(identifier)
+            );
+        }
+    }
+}
+
+function validateModelsArePresent<T>(allModels: T[]) {
+    if (allModels.length === 0) {
+        throw new SettingsValidationError(
+            "no models specified for proof generation",
+            EditorMessages.noValidModelsAreChosen,
+            PLUGIN_ID,
+            "warning"
+        );
+    }
+}
+
+function resolveParamsAndShowResolutionLogs<
+    InputModelParams extends UserModelParams,
+    ResolvedModelParams extends ModelParams,
+>(
+    llmService: LLMService<InputModelParams, ResolvedModelParams>,
+    inputParamsList: InputModelParams[]
+): ResolvedModelParams[] {
+    const settingName = toSettingName(llmService.identifier);
+    const resolvedParamsList: ResolvedModelParams[] = [];
+
+    for (const inputParams of inputParamsList) {
+        const resolutionResult = llmService.resolveParameters(inputParams);
+        const resolutionMessages = buildParamsResolutionMessages(
+            resolutionResult,
+            inputParams.modelId
+        );
+        if (resolutionMessages.invalidConfigurationMessage !== undefined) {
+            showMessageToUserWithSettingsHint(
+                EditorMessages.modelConfiguredIncorrectly(
+                    inputParams.modelId,
+                    resolutionMessages.invalidConfigurationMessage
+                ),
+                "error",
+                settingName
+            );
+        } else if (resolutionMessages.warningMessage !== undefined) {
+            showMessageToUserWithSettingsHint(
+                resolutionMessages.warningMessage,
+                "warning",
+                settingName
+            );
+        }
+        if (resolutionResult.resolved !== undefined) {
+            resolvedParamsList.push(resolutionResult.resolved);
+        }
+    }
+    return resolvedParamsList;
+}
+
+interface InputParamsWithIdentifier<T extends UserModelParams> {
+    inputParams: T[];
+    identifier: LLMServiceIdentifier;
+}
+
+function parseUserModelParams(
+    config: WorkspaceConfiguration
+): InputParamsWithIdentifier<UserModelParams>[] {
     /*
      * Although the messages might become too verbose because of reporting all errors at once
      * (unfortuantely, vscode notifications do not currently support formatting);
@@ -90,112 +264,73 @@ export async function readAndValidateUserModelsParams(
      * to move on to clearer messages and generating completions faster.
      */
     const jsonSchemaValidator = buildAjv(AjvMode.COLLECT_ALL_ERRORS);
-
-    const predefinedProofsUserParams: PredefinedProofsUserModelParams[] =
-        config.predefinedProofsModelsParameters.map((params: any) =>
-            validateAndParseJson(
-                params,
-                predefinedProofsUserModelParamsSchema,
-                jsonSchemaValidator
-            )
-        );
-    const openAiUserParams: OpenAiUserModelParams[] =
-        config.openAiModelsParameters.map((params: any) =>
-            validateAndParseJson(
-                params,
-                openAiUserModelParamsSchema,
-                jsonSchemaValidator
-            )
-        );
-    const grazieUserParams: GrazieUserModelParams[] =
-        config.grazieModelsParameters.map((params: any) =>
-            validateAndParseJson(
-                params,
-                grazieUserModelParamsSchema,
-                jsonSchemaValidator
-            )
-        );
-    const lmStudioUserParams: LMStudioUserModelParams[] =
-        config.lmStudioModelsParameters.map((params: any) =>
-            validateAndParseJson(
-                params,
-                lmStudioUserModelParamsSchema,
-                jsonSchemaValidator
-            )
-        );
-    const deepSeekUserParams: DeepSeekUserModelParams[] =
-        config.deepSeekModelsParameters.map((params: any) =>
-            validateAndParseJson(
-                params,
-                deepSeekUserModelParamsSchema,
-                jsonSchemaValidator
-            )
-        );
-    const rangoUserParams: RangoUserModelParams[] =
-        config.rangoModelsParameters.map((params: any) =>
-            validateAndParseJson(
-                params,
-                rangoUserModelParamsSchema,
-                jsonSchemaValidator
-            )
-        );
-
-    await provideExternalServicesInstallations(vscodeContext.extensionPath, [
-        [llmServices.rangoService, rangoUserParams],
-    ]);
-
-    validateIdsAreUnique([
-        ...predefinedProofsUserParams,
-        ...openAiUserParams,
-        ...grazieUserParams,
-        ...lmStudioUserParams,
-        ...deepSeekUserParams,
-        ...rangoUserParams,
-    ]);
-    validateApiKeysAreProvided(
-        openAiUserParams,
-        grazieUserParams,
-        deepSeekUserParams,
-        rangoUserParams
-    );
-
-    const modelsParams: ModelsParams = {
-        predefinedProofsModelParams: resolveParamsAndShowResolutionLogs(
-            llmServices.predefinedProofsService,
-            predefinedProofsUserParams
-        ),
-        openAiParams: resolveParamsAndShowResolutionLogs(
-            llmServices.openAiService,
-            openAiUserParams
-        ),
-        grazieParams: resolveParamsAndShowResolutionLogs(
-            llmServices.grazieService,
-            grazieUserParams
-        ),
-        lmStudioParams: resolveParamsAndShowResolutionLogs(
-            llmServices.lmStudioService,
-            lmStudioUserParams
-        ),
-        deepSeekParams: resolveParamsAndShowResolutionLogs(
-            llmServices.deepSeekService,
-            deepSeekUserParams
-        ),
-        rangoParams: resolveParamsAndShowResolutionLogs(
-            llmServices.rangoService,
-            rangoUserParams
-        ),
-    };
-
-    validateModelsArePresent([
-        ...modelsParams.predefinedProofsModelParams,
-        ...modelsParams.openAiParams,
-        ...modelsParams.grazieParams,
-        ...modelsParams.lmStudioParams,
-        ...modelsParams.deepSeekParams,
-        ...modelsParams.rangoParams,
-    ]);
-
-    return modelsParams;
+    const inputParamsWithIdentifiers: InputParamsWithIdentifier<UserModelParams>[] =
+        [
+            {
+                inputParams: config.predefinedProofsModelsParameters.map(
+                    (params: any) =>
+                        validateAndParseJson(
+                            params,
+                            predefinedProofsUserModelParamsSchema,
+                            jsonSchemaValidator
+                        )
+                ),
+                identifier: LLMServiceIdentifier.PREDEFINED_PROOFS,
+            },
+            {
+                inputParams: config.openAiModelsParameters.map((params: any) =>
+                    validateAndParseJson(
+                        params,
+                        openAiUserModelParamsSchema,
+                        jsonSchemaValidator
+                    )
+                ),
+                identifier: LLMServiceIdentifier.OPENAI,
+            },
+            {
+                inputParams: config.grazieModelsParameters.map((params: any) =>
+                    validateAndParseJson(
+                        params,
+                        grazieUserModelParamsSchema,
+                        jsonSchemaValidator
+                    )
+                ),
+                identifier: LLMServiceIdentifier.GRAZIE,
+            },
+            {
+                inputParams: config.lmStudioModelsParameters.map(
+                    (params: any) =>
+                        validateAndParseJson(
+                            params,
+                            lmStudioUserModelParamsSchema,
+                            jsonSchemaValidator
+                        )
+                ),
+                identifier: LLMServiceIdentifier.LMSTUDIO,
+            },
+            {
+                inputParams: config.deepSeekModelsParameters.map(
+                    (params: any) =>
+                        validateAndParseJson(
+                            params,
+                            deepSeekUserModelParamsSchema,
+                            jsonSchemaValidator
+                        )
+                ),
+                identifier: LLMServiceIdentifier.DEEPSEEK,
+            },
+            {
+                inputParams: config.rangoModelsParameters.map((params: any) =>
+                    validateAndParseJson(
+                        params,
+                        rangoUserModelParamsSchema,
+                        jsonSchemaValidator
+                    )
+                ),
+                identifier: LLMServiceIdentifier.RANGO,
+            },
+        ];
+    return inputParamsWithIdentifiers;
 }
 
 function validateAndParseJson<T>(
@@ -231,126 +366,4 @@ function validateAndParseJson<T>(
         );
     }
     return instance;
-}
-
-// TODO: skip service's models if the user declines its installation, don't throw
-// TODO: this method could be made more abstract, handling any `llmService`
-async function provideExternalServicesInstallations(
-    coqPilotPath: string,
-    externalServicesWithUserParams: [
-        ExternalService<UserModelParams, any, any>,
-        UserModelParams[],
-    ][]
-) {
-    for (const [llmService, userParams] of externalServicesWithUserParams) {
-        if (llmService instanceof AbstractExternalService) {
-            const { installer, options } = llmService.installerProvider();
-            await installer.provideInstallationForRequest(
-                userParams,
-                coqPilotPath,
-                llmService.installationPath,
-                options,
-                new UserInstallationInteractor(llmService.installer)
-            );
-        }
-    }
-}
-
-function validateIdsAreUnique(allModels: UserModelParams[]) {
-    const modelIds = allModels.map((params) => params.modelId);
-    const duplicateModelId = findFirstDuplicate(modelIds);
-    if (duplicateModelId !== undefined) {
-        throw new SettingsValidationError(
-            `models' identifiers are not unique: several models have \`modelId: "${duplicateModelId}"\``,
-            EditorMessages.modelsIdsAreNotUnique(duplicateModelId)
-        );
-    }
-}
-
-function validateApiKeysAreProvided(
-    openAiUserParams: OpenAiUserModelParams[],
-    grazieUserParams: GrazieUserModelParams[],
-    deepSeekUserParams: DeepSeekUserModelParams[],
-    rangoUserParams: RangoUserModelParams[]
-) {
-    const buildApiKeyError = (
-        serviceName: string,
-        serviceSettingsName: string
-    ) => {
-        return new SettingsValidationError(
-            `at least one of the ${serviceName} models has \`apiKey: "None"\``,
-            EditorMessages.apiKeyIsNotSet(serviceName),
-            `${PLUGIN_ID}.${serviceSettingsName}ModelsParameters`,
-            "info"
-        );
-    };
-
-    if (openAiUserParams.some((params) => params.apiKey === "None")) {
-        throw buildApiKeyError("Open Ai", "openAi");
-    }
-    if (grazieUserParams.some((params) => params.apiKey === "None")) {
-        throw buildApiKeyError("Grazie", "grazie");
-    }
-    if (deepSeekUserParams.some((params) => params.apiKey === "None")) {
-        throw buildApiKeyError("Deep Seek", "deepSeek");
-    }
-    if (
-        rangoUserParams.some(
-            (params) =>
-                params.mode === "mockOpenAI" &&
-                params.mockOpenAIApiKey === "None"
-        )
-    ) {
-        throw buildApiKeyError("Rango", "rango");
-    }
-}
-
-function validateModelsArePresent<T>(allModels: T[]) {
-    if (allModels.length === 0) {
-        throw new SettingsValidationError(
-            "no models specified for proof generation",
-            EditorMessages.noValidModelsAreChosen,
-            PLUGIN_ID,
-            "warning"
-        );
-    }
-}
-
-function resolveParamsAndShowResolutionLogs<
-    InputModelParams extends UserModelParams,
-    ResolvedModelParams extends ModelParams,
->(
-    llmService: LLMService<InputModelParams, ResolvedModelParams>,
-    inputParamsList: InputModelParams[]
-): ResolvedModelParams[] {
-    const settingName = toSettingName(llmService);
-    const resolvedParamsList: ResolvedModelParams[] = [];
-
-    for (const inputParams of inputParamsList) {
-        const resolutionResult = llmService.resolveParameters(inputParams);
-        const resolutionMessages = buildParamsResolutionMessages(
-            resolutionResult,
-            inputParams.modelId
-        );
-        if (resolutionMessages.invalidConfigurationMessage !== undefined) {
-            showMessageToUserWithSettingsHint(
-                EditorMessages.modelConfiguredIncorrectly(
-                    inputParams.modelId,
-                    resolutionMessages.invalidConfigurationMessage
-                ),
-                "error",
-                settingName
-            );
-        } else if (resolutionMessages.warningMessage !== undefined) {
-            showMessageToUserWithSettingsHint(
-                resolutionMessages.warningMessage,
-                "warning",
-                settingName
-            );
-        }
-        if (resolutionResult.resolved !== undefined) {
-            resolvedParamsList.push(resolutionResult.resolved);
-        }
-    }
-    return resolvedParamsList;
 }

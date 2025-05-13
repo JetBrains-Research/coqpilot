@@ -1,7 +1,5 @@
 import { expect } from "earl";
 
-import { disposeServices } from "../../llm/llmServices";
-
 import { ProcessEnvironment } from "../../core/completionGenerationContext";
 import {
     FailureGenerationResult,
@@ -13,7 +11,7 @@ import { SuccessGenerationResult } from "../../core/completionGenerator";
 
 import {
     createDefaultServices,
-    createPredefinedProofsModelsParams,
+    createPredefinedProofsBundles,
 } from "../commonTestFunctions/defaultLLMServicesBuilder";
 import {
     ProjectRootDir,
@@ -30,11 +28,13 @@ suite("Completion generation tests", () => {
             resourcePath,
             projectRootDir,
             async (environment) => {
+                const services = createDefaultServices();
                 const processEnvironment: ProcessEnvironment = {
                     coqProofChecker: environment.coqProofChecker,
-                    modelsParams:
-                        createPredefinedProofsModelsParams(predefinedProofs),
-                    services: createDefaultServices(),
+                    bundles: createPredefinedProofsBundles(
+                        services,
+                        predefinedProofs
+                    ),
                 };
                 try {
                     return await environment.coqLspClient.withTextDocument(
@@ -55,7 +55,7 @@ suite("Completion generation tests", () => {
                             )
                     );
                 } finally {
-                    disposeServices(processEnvironment.services);
+                    services.dispose();
                 }
             }
         );
