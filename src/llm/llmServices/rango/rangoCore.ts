@@ -77,6 +77,19 @@ export async function runRangoProof(
     const inFileRequestUniqueIdentifier = buildInFileRequestUniqueIdentifier(
         context.completionTargetRange
     );
+    /**
+     * WARNING: be careful with data points possibly cached at the dataloc.
+     * For the real-world case with filling "admit" - everything is safe.
+     * However, when it comes to benchmarking, additional care should be taken
+     * to make sure Rango does not read the original theorem (most likely, proved)
+     * from the original source file - or its cached data point.
+     *
+     * Now this problem is solved: `AuxFileCreationMode.REUSE_SOURCE_FILE` guarantees
+     * no new file is created, so Rango is expected to perform its standard way
+     * to eliminate target theorem from the context.
+     * However, once `AuxFileCreationMode.REUSE_SOURCE_FILE` will be no longer supported,
+     * some manipulations with the original source file and its data point will be needed.
+     */
     return await withAuxFile(
         {
             sourceFilePath: joinPaths(
@@ -87,7 +100,7 @@ export async function runRangoProof(
             requestUniqueIdentifier: inFileRequestUniqueIdentifier,
             mode:
                 context.targetType === TargetType.PROVE_THEOREM
-                    ? AuxFileCreationMode.REUSE_SOURCE_THEOREM
+                    ? AuxFileCreationMode.REUSE_SOURCE_FILE
                     : AuxFileCreationMode.INSERT_HELPER_LEMMA,
             sourceTheoremName: context.sourceTheoremName,
             sourceTheoremStatementRange: context.sourceTheoremStatementRange,

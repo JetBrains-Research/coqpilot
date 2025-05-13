@@ -36,7 +36,7 @@ export enum AuxFileCreationMode {
      * this way, such tools as Rango will get the original theorem as input and
      * will generate its whole proof.
      */
-    REUSE_SOURCE_THEOREM,
+    REUSE_SOURCE_FILE,
 }
 
 export interface AuxFileCreationArgs {
@@ -60,46 +60,25 @@ export async function withAuxFile<T>(
     args: AuxFileCreationArgs,
     block: (auxLemma: AuxLemma) => Promise<T>
 ): Promise<T> {
-    const auxLemma = createAuxFile(args);
-    try {
+    if (args.mode === AuxFileCreationMode.REUSE_SOURCE_FILE) {
+        const auxLemma = useSourceTheorem(args);
         return await block(auxLemma);
-    } finally {
-        deleteFile(auxLemma.auxFilePath);
-    }
-}
-
-function createAuxFile(args: AuxFileCreationArgs): AuxLemma {
-    if (args.mode === AuxFileCreationMode.INSERT_HELPER_LEMMA) {
-        return createAuxFileWithHelperLemma(args);
     } else {
-        return createAuxFileWithSourceTheorem(args);
+        const auxLemma = createAuxFileWithHelperLemma(args);
+        try {
+            return await block(auxLemma);
+        } finally {
+            deleteFile(auxLemma.auxFilePath);
+        }
     }
 }
 
-function createAuxFileWithSourceTheorem(args: AuxFileCreationArgs): AuxLemma {
-    // TODO: optimize copying the file without reading it completely, use async streams
-    const lineToCopyFileToExclusive = args.sourceTheoremProofRange.end.line + 1;
-    const sourceFileContent = readFile(args.sourceFilePath, (err) =>
-        throwError(`Failed to create aux file: ${getErrorMessage(err)}`)
-    );
-    const auxFileLines = sourceFileContent
-        .split("\n")
-        .slice(0, lineToCopyFileToExclusive);
-
-    const parsedSourcePath = parsePath(args.sourceFilePath);
-    const auxFilePath = resolveAuxFilePath(
-        parsedSourcePath,
-        args.requestUniqueIdentifier
-    );
-    writeToFile(auxFileLines.join("\n"), auxFilePath, (err) => {
-        throwError(`Failed to create aux file: ${getErrorMessage(err)}`);
-    });
-
+function useSourceTheorem(args: AuxFileCreationArgs): AuxLemma {
     return {
         name: args.sourceTheoremName,
         statementRange: args.sourceTheoremStatementRange,
         admittedProofRange: args.sourceTheoremProofRange,
-        auxFilePath: auxFilePath,
+        auxFilePath: args.sourceFilePath,
     };
 }
 

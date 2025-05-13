@@ -9,8 +9,7 @@ import { BenchmarkingTestsConstants } from "./utils/testConstants";
 
 import Constants = BenchmarkingTestsConstants;
 
-// suite("[Benchmarking Framework Tests] Benchmark Rango", function () {
-suite("Benchmark Rango", function () {
+suite("[Benchmarking Framework Tests] Benchmark Rango", function () {
     const openAIApiKey = process.env.OPENAI_API_KEY;
 
     const enableTests = openAIApiKey !== undefined;
