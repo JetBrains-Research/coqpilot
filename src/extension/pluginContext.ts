@@ -45,35 +45,13 @@ export class PluginContext implements Disposable {
     readonly eventLogger: EventLogger = new EventLogger();
     readonly logWriter: VSCodeLogWriter = new VSCodeLogWriter(
         this.eventLogger,
-        this.parseLoggingVerbosity(workspace.getConfiguration(PLUGIN_ID))
+        PluginContext.parseLoggingVerbosity(
+            workspace.getConfiguration(PLUGIN_ID)
+        )
     );
     readonly logOutputChannel = window.createOutputChannel(
         "CoqPilot: coq-lsp events"
     );
-
-    readonly llmServices: LLMServicesStorage = new LLMServicesStorage();
-
-    constructor() {
-        this.registerServices();
-    }
-
-    // TODO: support a way in the UI to reconfigure it manually
-    private _projectRoot: ProjectRoot | undefined = inferProjectRoot();
-
-    getProjectRoot(): ProjectRoot | undefined {
-        return this._projectRoot;
-    }
-
-    selectProjectRoot(projectRoot: ProjectRoot) {
-        this._projectRoot = projectRoot;
-    }
-
-    dispose(): void {
-        this.llmServices.dispose();
-        this.logWriter.dispose();
-        fs.rmSync(this.llmServicesLogsDir, { recursive: true, force: true });
-        this.logOutputChannel.dispose();
-    }
 
     readonly llmServicesLogsDir = path.join(
         createTmpDirectory(),
@@ -94,7 +72,30 @@ export class PluginContext implements Disposable {
         errorsHandlingMode: ErrorsHandlingMode.SWALLOW_ERRORS,
     };
 
-    private readonly llmServicesCustomizationParams: BasicLLMServiceCustomizationParams =
+    readonly llmServices: LLMServicesStorage = PluginContext.registerServices(
+        this.llmServicesLogsDir,
+        this.llmServicesControlParams
+    );
+
+    // TODO: support a way in the UI to reconfigure it manually
+    private _projectRoot: ProjectRoot | undefined = inferProjectRoot();
+
+    getProjectRoot(): ProjectRoot | undefined {
+        return this._projectRoot;
+    }
+
+    selectProjectRoot(projectRoot: ProjectRoot) {
+        this._projectRoot = projectRoot;
+    }
+
+    dispose(): void {
+        this.llmServices.dispose();
+        this.logWriter.dispose();
+        fs.rmSync(this.llmServicesLogsDir, { recursive: true, force: true });
+        this.logOutputChannel.dispose();
+    }
+
+    private static readonly llmServicesCustomizationParams: BasicLLMServiceCustomizationParams =
         {
             /**
              * Use the safest option by default: this way,
@@ -109,7 +110,7 @@ export class PluginContext implements Disposable {
             debugLogs: false,
         };
 
-    private readonly servicesToRegister = [
+    private static readonly servicesToRegister = [
         serviceEntry(LLMServiceIdentifier.PREDEFINED_PROOFS),
         serviceEntry(LLMServiceIdentifier.OPENAI, {
             generationParallelism: 5, // In practice, `OpenAI` is capable of processing multiple requests.
@@ -124,13 +125,17 @@ export class PluginContext implements Disposable {
         }),
     ];
 
-    private registerServices() {
+    private static registerServices(
+        llmServicesLogsDir: string,
+        llmServicesControlParams: LLMServiceControlParams
+    ): LLMServicesStorage {
+        const llmServices = new LLMServicesStorage();
         try {
             for (const [serviceId, customParams] of this.servicesToRegister) {
                 const serviceParams: LLMServiceParams = {
                     ...this.llmServicesCustomizationParams,
                     generationLogsFilePath: path.join(
-                        this.llmServicesLogsDir,
+                        llmServicesLogsDir,
                         addExtension(
                             translateToSafeFileName(
                                 `${getShortName(serviceId)}-logs`
@@ -140,19 +145,23 @@ export class PluginContext implements Disposable {
                     ),
                     ...customParams,
                 };
-                this.llmServices.registerService(() =>
+                llmServices.registerService(() =>
                     selectLLMServiceProvider(
                         serviceId,
                         serviceParams
-                    )(this.llmServicesControlParams)
+                    )(llmServicesControlParams)
                 );
             }
-        } finally {
-            this.dispose();
+            return llmServices;
+        } catch (e) {
+            llmServices.dispose();
+            throw e;
         }
     }
 
-    private parseLoggingVerbosity(config: WorkspaceConfiguration): Severity {
+    private static parseLoggingVerbosity(
+        config: WorkspaceConfiguration
+    ): Severity {
         const verbosity = config.get("loggingVerbosity");
         switch (verbosity) {
             case "info":

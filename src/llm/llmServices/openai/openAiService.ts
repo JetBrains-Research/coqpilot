@@ -33,7 +33,7 @@ export class OpenAiService extends LLMServiceImpl<
     OpenAiServiceInternal
 > {
     readonly name = "OpenAiService";
-    readonly identifier = LLMServiceIdentifier.LMSTUDIO;
+    readonly identifier = LLMServiceIdentifier.OPENAI;
 
     protected readonly internal = new OpenAiServiceInternal(this);
     protected readonly modelParamsResolver = new OpenAiModelParamsResolver();
