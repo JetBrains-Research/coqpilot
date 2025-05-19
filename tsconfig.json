@@ -8,6 +8,7 @@
 			"ES2020", "DOM"
 		],
 		"sourceMap": true,				 				 /* Generates corresponding '.map' file. */
+		"inlineSources": true,
 		"rootDir": "src",
 		"allowSyntheticDefaultImports": true,
 		"allowJs": true,
