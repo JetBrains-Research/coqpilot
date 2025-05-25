@@ -1,19 +1,19 @@
-import { LLMService } from "../../../llm/llmServices/llmService";
-import { LLMServiceControlParams } from "../../../llm/llmServices/utils/llmServiceControlParams";
-import { LLMServiceSerializer } from "../../../llm/llmServices/utils/serialization/llmServiceSerializer";
-import { toOneLineLogString } from "../../../llm/llmServices/utils/serialization/toLog";
+import { ProofProvider } from "../../../proofProviders/impl/proofProvider";
+import { ProofProviderControlParams } from "../../../proofProviders/impl/utils/proofProviderControlParams";
+import { ProofProviderSerializer } from "../../../proofProviders/impl/utils/serialization/proofProviderSerializer";
+import { toOneLineLogString } from "../../../proofProviders/impl/utils/serialization/toLog";
 
 import { unsupported } from "../../../utils/errors/throwErrors";
 
 import { BenchTestService } from "./benchTestService";
 import { ResolvedBenchTestServiceParams } from "./benchTestServiceParams";
 
-export class BenchTestServiceSerializer extends LLMServiceSerializer {
+export class BenchTestServiceSerializer extends ProofProviderSerializer {
     protected selfClass = BenchTestServiceSerializer;
 
     static readonly serializationType = "benchTest";
     static {
-        LLMServiceSerializer.registerSelfSerialization(
+        ProofProviderSerializer.registerSelfSerialization(
             this.serializationType,
             BenchTestServiceSerializer
         );
@@ -27,7 +27,9 @@ export class BenchTestServiceSerializer extends LLMServiceSerializer {
         super();
     }
 
-    constructService(controlParams: LLMServiceControlParams): LLMService {
+    constructProofProvider(
+        controlParams: ProofProviderControlParams
+    ): ProofProvider {
         return new BenchTestService({
             ...this.resolvedServiceParams,
             ...controlParams,
@@ -46,7 +48,7 @@ export class BenchTestServiceSerializer extends LLMServiceSerializer {
         return {};
     }
 
-    static deserialize(_serializedProviderData: any): LLMServiceSerializer {
+    static deserialize(_serializedProviderData: any): ProofProviderSerializer {
         unsupported(
             "Deserialization of `BenchTestService` is currently unsupported"
         );

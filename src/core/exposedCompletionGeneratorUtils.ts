@@ -3,7 +3,7 @@ import { Position } from "vscode-languageclient";
 import {
     ExternalPipelineProofGenerationContext,
     ProofGenerationContext,
-} from "../llm/proofGenerationContext";
+} from "../proofProviders/proofGenerationContext";
 
 import { Hyp, PpString, ProofGoal } from "../coqLsp/coqLspTypes";
 

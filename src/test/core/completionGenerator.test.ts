@@ -10,9 +10,9 @@ import {
 import { SuccessGenerationResult } from "../../core/completionGenerator";
 
 import {
-    createDefaultServices,
+    createDefaultProofProviders,
     createPredefinedProofsBundles,
-} from "../commonTestFunctions/defaultLLMServicesBuilder";
+} from "../commonTestFunctions/defaultProofProvidersBuilder";
 import {
     ProjectRootDir,
     withPreparedEnvironment,
@@ -28,11 +28,11 @@ suite("Completion generation tests", () => {
             resourcePath,
             projectRootDir,
             async (environment) => {
-                const services = createDefaultServices();
+                const proofProviders = createDefaultProofProviders();
                 const processEnvironment: ProcessEnvironment = {
                     coqProofChecker: environment.coqProofChecker,
                     bundles: createPredefinedProofsBundles(
-                        services,
+                        proofProviders,
                         predefinedProofs
                     ),
                 };
@@ -55,7 +55,7 @@ suite("Completion generation tests", () => {
                             )
                     );
                 } finally {
-                    services.dispose();
+                    proofProviders.dispose();
                 }
             }
         );

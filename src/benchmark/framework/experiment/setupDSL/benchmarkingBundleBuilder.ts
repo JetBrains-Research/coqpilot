@@ -1,12 +1,12 @@
-import { ConfigurationError } from "../../../../llm/llmServiceErrors";
+import { selectProofProviderConstructor } from "../../../../proofProviders/impl/proofProviderConstructor";
+import { ProofProviderConstructor } from "../../../../proofProviders/impl/proofProviderConstructor";
 import {
     CorrespondingIdentifier,
-    CorrespondingInputServiceParams,
-    LLMServiceStringIdentifier,
+    CorrespondingInputProofProviderParams,
+    ProofProviderStringIdentifier,
     toEnumIdentifier,
-} from "../../../../llm/llmServices/llmServiceIdentifier";
-import { selectLLMServiceProvider } from "../../../../llm/llmServices/llmServiceProvider";
-import { LLMServiceProvider } from "../../../../llm/llmServices/llmServiceProvider";
+} from "../../../../proofProviders/impl/proofProviderIdentifier";
+import { ConfigurationError } from "../../../../proofProviders/proofProviderErrors";
 
 import { findFirstDuplicate } from "../../../../utils/collectionUtils/listUtils";
 import {
@@ -22,33 +22,40 @@ import { AbstractExperiment } from "../abstractExperiment";
 export class BenchmarkingBundle {
     constructor() {}
 
-    withLLMService<T extends LLMServiceStringIdentifier>(
-        llmServiceStringIdentifier: T,
-        serviceParams?: CorrespondingInputServiceParams<
+    withProofProvider<T extends ProofProviderStringIdentifier>(
+        proofProviderStringIdentifier: T,
+        proofProviderParams?: CorrespondingInputProofProviderParams<
             CorrespondingIdentifier<T>
         >
-    ): BenchmarkingBundleWithLLMService<
+    ): BenchmarkingBundleWithProofProvider<
         CorrespondingInputParams<CorrespondingIdentifier<T>>
     > {
-        const identifier = toEnumIdentifier(llmServiceStringIdentifier);
-        return new BenchmarkingBundleWithLLMService(
-            selectLLMServiceProvider(identifier, serviceParams ?? {})
+        const identifier = toEnumIdentifier(proofProviderStringIdentifier);
+        return new BenchmarkingBundleWithProofProvider(
+            selectProofProviderConstructor(
+                identifier,
+                proofProviderParams ?? {}
+            )
         );
     }
 
-    withCustomLLMService<
+    withCustomProofProvider<
         InputParams extends InputBenchmarkingModelParams.Params,
     >(
-        llmServiceProvider: LLMServiceProvider
-    ): BenchmarkingBundleWithLLMService<InputParams> {
-        return new BenchmarkingBundleWithLLMService(llmServiceProvider);
+        proofProviderConstructor: ProofProviderConstructor
+    ): BenchmarkingBundleWithProofProvider<InputParams> {
+        return new BenchmarkingBundleWithProofProvider(
+            proofProviderConstructor
+        );
     }
 }
 
-export class BenchmarkingBundleWithLLMService<
+export class BenchmarkingBundleWithProofProvider<
     InputParams extends InputBenchmarkingModelParams.Params,
 > {
-    constructor(private readonly llmServiceProvider: LLMServiceProvider) {}
+    constructor(
+        private readonly proofProviderConstructor: ProofProviderConstructor
+    ) {}
 
     withBenchmarkingModelsParamsCommons<
         InputParamsCommons extends Partial<InputParams>,
@@ -64,7 +71,7 @@ export class BenchmarkingBundleWithLLMService<
     ): BenchmarkingBundleWithModelsParams<InputParams> {
         this.throwOnDuplicateModelIds(inputParams);
         return new BenchmarkingBundleWithModelsParams(
-            this.llmServiceProvider,
+            this.proofProviderConstructor,
             inputParams
         );
     }
@@ -90,7 +97,7 @@ export class BenchmarkingBundleWithModelsParamsCommons<
     InputParamsCommons extends Partial<InputParams>,
 > {
     constructor(
-        private readonly parentBundle: BenchmarkingBundleWithLLMService<InputParams>,
+        private readonly parentBundle: BenchmarkingBundleWithProofProvider<InputParams>,
         private readonly modelsParamsCommons: InputParamsCommons
     ) {}
 
@@ -118,7 +125,7 @@ export class BenchmarkingBundleWithModelsParams<
     InputParams extends InputBenchmarkingModelParams.Params,
 > {
     constructor(
-        private readonly llmServiceProvider: LLMServiceProvider,
+        private readonly proofProviderConstructor: ProofProviderConstructor,
         private readonly inputBenchmarkingModelsParams: InputParams[]
     ) {}
 
@@ -126,7 +133,7 @@ export class BenchmarkingBundleWithModelsParams<
         ...targets: DatasetInputTargets[]
     ): BenchmarkingBundleWithTargets<InputParams> {
         return new BenchmarkingBundleWithTargets(
-            this.llmServiceProvider,
+            this.proofProviderConstructor,
             this.inputBenchmarkingModelsParams,
             targets
         );
@@ -137,14 +144,14 @@ export class BenchmarkingBundleWithTargets<
     InputParams extends InputBenchmarkingModelParams.Params,
 > {
     constructor(
-        private readonly llmServiceProvider: LLMServiceProvider,
+        private readonly proofProviderConstructor: ProofProviderConstructor,
         private readonly inputBenchmarkingModelsParams: InputParams[],
         private readonly targets: DatasetInputTargets[]
     ) {}
 
     addTo(experiment: AbstractExperiment) {
         experiment.addBundle({
-            llmServiceProvider: this.llmServiceProvider,
+            proofProviderConstructor: this.proofProviderConstructor,
             inputBenchmarkingModelsParams: this.inputBenchmarkingModelsParams,
             requestedTargets: mergeInputTargets(this.targets).resolveRequests(),
         });

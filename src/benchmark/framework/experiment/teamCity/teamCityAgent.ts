@@ -80,7 +80,7 @@ export class TeamCityAgent extends SingleWorkspaceExperiment {
             );
         }
 
-        const [llmServices, benchmarkingItems] =
+        const [proofProviders, benchmarkingItems] =
             LightweightDeserializer.restoreBenchmarkingItems(
                 serialization,
                 executionContext.resolvedRunOptions.datasetCacheDirectoryPath,
@@ -101,7 +101,7 @@ export class TeamCityAgent extends SingleWorkspaceExperiment {
                 totalTime
             );
         } finally {
-            llmServices.dispose();
+            proofProviders.dispose();
         }
     }
 

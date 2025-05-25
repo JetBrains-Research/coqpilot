@@ -4,5 +4,5 @@
   "tactics": [
     "auto."
   ],
-  "llmServiceIdentifier": 0
+  "proofProviderIdentifier": 0
 }

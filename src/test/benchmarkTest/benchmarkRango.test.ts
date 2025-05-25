@@ -17,7 +17,7 @@ suite("[Benchmarking Framework Tests] Benchmark Rango", function () {
     const suiteName = this.title;
 
     const rangoMockModel = new BenchmarkingBundle()
-        .withLLMService("rango")
+        .withProofProvider("rango")
         .withBenchmarkingModelsParamsCommons({
             ranker: "random",
         })
@@ -35,7 +35,7 @@ suite("[Benchmarking Framework Tests] Benchmark Rango", function () {
         enableTests,
         testWillBeSkippedCause,
         suiteName,
-        'Run in "mockOpenAI" mode: basic admitted theorem`',
+        'Run in "mockOpenAI" mode: basic admitted theorem',
         async () => runSmokeTestExperimentWithBundle(rangoMockModel)
     )?.timeout(Constants.SIMPLE_TEST_TIMEOUT);
 
@@ -43,7 +43,7 @@ suite("[Benchmarking Framework Tests] Benchmark Rango", function () {
         enableTests,
         testWillBeSkippedCause,
         suiteName,
-        'Run in "mockOpenAI" mode: whole theorem`',
+        'Run in "mockOpenAI" mode: whole theorem',
         async () =>
             testProveTheoremWithRango("test_whole_proof.v", rangoMockModel)
     )?.timeout(Constants.SIMPLE_TEST_TIMEOUT);
@@ -52,7 +52,7 @@ suite("[Benchmarking Framework Tests] Benchmark Rango", function () {
         enableTests,
         testWillBeSkippedCause,
         suiteName,
-        'Run in "mockOpenAI" mode: whole theorem with global variables & indent`',
+        'Run in "mockOpenAI" mode: whole theorem with global variables & indent',
         async () =>
             testProveTheoremWithRango(
                 "test_whole_proof_global_variables_with_indent.v",

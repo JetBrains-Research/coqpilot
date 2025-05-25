@@ -10,7 +10,7 @@ import { DatasetCacheUsageMode } from "./framework/structures/inputParameters/da
 const experiment = new TeamCityExperiment();
 
 new BenchmarkingBundle()
-    .withLLMService("predefined")
+    .withProofProvider("predefined")
     .withBenchmarkingModelsParamsCommons({
         ranker: "random",
     })

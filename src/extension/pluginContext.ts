@@ -2,19 +2,19 @@ import * as fs from "fs";
 import * as path from "path";
 import { Disposable, WorkspaceConfiguration, window, workspace } from "vscode";
 
-import { ErrorsHandlingMode } from "../llm/llmServices/commonStructures/errorsHandlingMode";
+import { ErrorsHandlingMode } from "../proofProviders/impl/commonStructures/errorsHandlingMode";
+import { selectProofProviderConstructor } from "../proofProviders/impl/proofProviderConstructor";
 import {
-    CorrespondingInputServiceParams,
-    LLMServiceIdentifier,
-} from "../llm/llmServices/llmServiceIdentifier";
-import { getShortName } from "../llm/llmServices/llmServiceIdentifier";
-import { LLMServiceParams } from "../llm/llmServices/llmServiceParams";
-import { selectLLMServiceProvider } from "../llm/llmServices/llmServiceProvider";
+    CorrespondingInputProofProviderParams,
+    ProofProviderIdentifier,
+} from "../proofProviders/impl/proofProviderIdentifier";
+import { getShortName } from "../proofProviders/impl/proofProviderIdentifier";
+import { ProofProviderParams } from "../proofProviders/impl/proofProviderParams";
 import {
-    BasicLLMServiceCustomizationParams,
-    LLMServiceControlParams,
-} from "../llm/llmServices/utils/llmServiceControlParams";
-import { LLMServicesStorage } from "../llm/llmServicesStorage";
+    BasicProofProviderCustomizationParams,
+    ProofProviderControlParams,
+} from "../proofProviders/impl/utils/proofProviderControlParams";
+import { ProofProvidersStorage } from "../proofProviders/proofProvidersStorage";
 
 import { EventLogger, Severity } from "../logging/eventLogger";
 import { illegalState } from "../utils/errors/throwErrors";
@@ -29,16 +29,16 @@ import VSCodeLogWriter from "./ui/vscodeLogWriter";
 import { PLUGIN_ID } from "./utils/pluginId";
 import { inferProjectRoot } from "./utils/projectRootGetter";
 
-type ServiceEntry<T extends LLMServiceIdentifier> = [
+type ProofProviderEntry<T extends ProofProviderIdentifier> = [
     T,
-    CorrespondingInputServiceParams<T>,
+    CorrespondingInputProofProviderParams<T>,
 ];
 
-function serviceEntry<T extends LLMServiceIdentifier>(
-    serviceId: T,
-    customParams: CorrespondingInputServiceParams<T> = {} as any
-): ServiceEntry<T> {
-    return [serviceId, customParams];
+function proofProviderEntry<T extends ProofProviderIdentifier>(
+    proofProviderId: T,
+    customParams: CorrespondingInputProofProviderParams<T> = {} as any
+): ProofProviderEntry<T> {
+    return [proofProviderId, customParams];
 }
 
 export class PluginContext implements Disposable {
@@ -53,12 +53,12 @@ export class PluginContext implements Disposable {
         "CoqPilot: coq-lsp events"
     );
 
-    readonly llmServicesLogsDir = path.join(
+    readonly proofProvidersLogsDir = path.join(
         createTmpDirectory(),
-        "llm-services-logs"
+        "proof-providers-logs"
     );
 
-    private readonly llmServicesControlParams: LLMServiceControlParams = {
+    private readonly proofProvidersControlParams: ProofProviderControlParams = {
         /**
          * Must be defined to provide UI with proof generation event to show to the user.
          */
@@ -72,10 +72,11 @@ export class PluginContext implements Disposable {
         errorsHandlingMode: ErrorsHandlingMode.SWALLOW_ERRORS,
     };
 
-    readonly llmServices: LLMServicesStorage = PluginContext.registerServices(
-        this.llmServicesLogsDir,
-        this.llmServicesControlParams
-    );
+    readonly proofProviders: ProofProvidersStorage =
+        PluginContext.registerProofProviders(
+            this.proofProvidersLogsDir,
+            this.proofProvidersControlParams
+        );
 
     // TODO: support a way in the UI to reconfigure it manually
     private _projectRoot: ProjectRoot | undefined = inferProjectRoot();
@@ -89,13 +90,13 @@ export class PluginContext implements Disposable {
     }
 
     dispose(): void {
-        this.llmServices.dispose();
+        this.proofProviders.dispose();
         this.logWriter.dispose();
-        fs.rmSync(this.llmServicesLogsDir, { recursive: true, force: true });
+        fs.rmSync(this.proofProvidersLogsDir, { recursive: true, force: true });
         this.logOutputChannel.dispose();
     }
 
-    private static readonly llmServicesCustomizationParams: BasicLLMServiceCustomizationParams =
+    private static readonly proofProvidersCustomizationParams: BasicProofProviderCustomizationParams =
         {
             /**
              * Use the safest option by default: this way,
@@ -110,51 +111,52 @@ export class PluginContext implements Disposable {
             debugLogs: false,
         };
 
-    private static readonly servicesToRegister = [
-        serviceEntry(LLMServiceIdentifier.PREDEFINED_PROOFS),
-        serviceEntry(LLMServiceIdentifier.OPENAI, {
+    private static readonly proofProvidersToRegister = [
+        proofProviderEntry(ProofProviderIdentifier.PREDEFINED_PROOFS),
+        proofProviderEntry(ProofProviderIdentifier.OPENAI, {
             generationParallelism: 5, // In practice, `OpenAI` is capable of processing multiple requests.
         }),
-        serviceEntry(LLMServiceIdentifier.GRAZIE),
-        serviceEntry(LLMServiceIdentifier.LMSTUDIO),
-        serviceEntry(LLMServiceIdentifier.DEEPSEEK),
-        serviceEntry(LLMServiceIdentifier.RANGO, {
+        proofProviderEntry(ProofProviderIdentifier.GRAZIE),
+        proofProviderEntry(ProofProviderIdentifier.LMSTUDIO),
+        proofProviderEntry(ProofProviderIdentifier.DEEPSEEK),
+        proofProviderEntry(ProofProviderIdentifier.RANGO, {
             installationPath: undefined, // use the default one
             maxSubprocessesSpawnedInParallel: undefined, // use the default number
             clearProofGenerationLogsOnSuccess: true, // do not pollute the target directory
         }),
     ];
 
-    private static registerServices(
-        llmServicesLogsDir: string,
-        llmServicesControlParams: LLMServiceControlParams
-    ): LLMServicesStorage {
-        const llmServices = new LLMServicesStorage();
+    private static registerProofProviders(
+        proofProvidersLogsDir: string,
+        proofProvidersControlParams: ProofProviderControlParams
+    ): ProofProvidersStorage {
+        const proofProviders = new ProofProvidersStorage();
         try {
-            for (const [serviceId, customParams] of this.servicesToRegister) {
-                const serviceParams: LLMServiceParams = {
-                    ...this.llmServicesCustomizationParams,
+            for (const [proofProviderId, customParams] of this
+                .proofProvidersToRegister) {
+                const proofProviderParams: ProofProviderParams = {
+                    ...this.proofProvidersCustomizationParams,
                     generationLogsFilePath: path.join(
-                        llmServicesLogsDir,
+                        proofProvidersLogsDir,
                         addExtension(
                             translateToSafeFileName(
-                                `${getShortName(serviceId)}-logs`
+                                `${getShortName(proofProviderId)}-logs`
                             ),
                             ".txt"
                         )
                     ),
                     ...customParams,
                 };
-                llmServices.registerService(() =>
-                    selectLLMServiceProvider(
-                        serviceId,
-                        serviceParams
-                    )(llmServicesControlParams)
+                proofProviders.registerProofProvider(() =>
+                    selectProofProviderConstructor(
+                        proofProviderId,
+                        proofProviderParams
+                    )(proofProvidersControlParams)
                 );
             }
-            return llmServices;
+            return proofProviders;
         } catch (e) {
-            llmServices.dispose();
+            proofProviders.dispose();
             throw e;
         }
     }

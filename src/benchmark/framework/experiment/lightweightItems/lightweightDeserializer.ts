@@ -1,6 +1,6 @@
-import { ModelParams } from "../../../../llm/llmServices/modelParams";
-import { deserializeLLMService } from "../../../../llm/llmServices/utils/serialization/serializedLLMService";
-import { LLMServicesStorage } from "../../../../llm/llmServicesStorage";
+import { ModelParams } from "../../../../proofProviders/impl/modelParams";
+import { deserializeProofProvider } from "../../../../proofProviders/impl/utils/serialization/serializedProofProvider";
+import { ProofProvidersStorage } from "../../../../proofProviders/proofProvidersStorage";
 
 import { makeStringsUnique } from "../../../../utils/collectionUtils/listUtils";
 import {
@@ -85,11 +85,11 @@ export namespace LightweightDeserializer {
         serialization: LightweightSerialization.PackedItems,
         datasetCacheDirectoryPath: string,
         logger: BenchmarkingLogger
-    ): [LLMServicesStorage, BenchmarkingItem[]] {
+    ): [ProofProvidersStorage, BenchmarkingItem[]] {
         const [
             workspaceRootsByRelativePaths,
             resolvedParamsByIds,
-            llmServices,
+            proofProviders,
         ] = prepareResolutionMaps(serialization, logger);
         try {
             const benchmarkingItems: BenchmarkingItem[] = [];
@@ -152,9 +152,9 @@ export namespace LightweightDeserializer {
                 )
                 .info("");
 
-            return [llmServices, benchmarkingItems];
+            return [proofProviders, benchmarkingItems];
         } catch (e) {
-            llmServices.dispose();
+            proofProviders.dispose();
             throw e;
         }
     }
@@ -165,7 +165,7 @@ export namespace LightweightDeserializer {
     ): [
         Map<string, WorkspaceRoot>,
         Map<string, BenchmarkingModelParams<ModelParams>>,
-        LLMServicesStorage,
+        ProofProvidersStorage,
     ] {
         const workspaceRootsByRelativePaths = packIntoMap(
             serialization.projects,
@@ -180,24 +180,26 @@ export namespace LightweightDeserializer {
                 } as WorkspaceRoot;
             }
         );
-        const llmServices = new LLMServicesStorage();
+        const proofProviders = new ProofProvidersStorage();
         try {
             const resolvedParamsByIds = packIntoMap(
                 serialization.models,
                 (params) => params.modelId,
                 (params) => {
                     const {
-                        serializedService: serializedLLMService,
+                        serializedProofProvider: serializedProofProvider,
                         ...inputModelParams
                     } = params;
-                    const serviceCtor =
-                        deserializeLLMService(serializedLLMService);
-                    const newService = llmServices.registerService(() =>
-                        serviceCtor(BENCHMARKING_CONTROL_PARAMS)
+                    const proofProviderCtor = deserializeProofProvider(
+                        serializedProofProvider
                     );
+                    const newProofProvider =
+                        proofProviders.registerProofProvider(() =>
+                            proofProviderCtor(BENCHMARKING_CONTROL_PARAMS)
+                        );
                     return resolveInputBenchmarkingModelParams(
                         inputModelParams,
-                        newService,
+                        newProofProvider,
                         logger
                     );
                 }
@@ -205,10 +207,10 @@ export namespace LightweightDeserializer {
             return [
                 workspaceRootsByRelativePaths,
                 resolvedParamsByIds,
-                llmServices,
+                proofProviders,
             ];
         } catch (e) {
-            llmServices.dispose();
+            proofProviders.dispose();
             throw e;
         }
     }

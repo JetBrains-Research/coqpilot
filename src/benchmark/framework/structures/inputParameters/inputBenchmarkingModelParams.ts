@@ -1,4 +1,4 @@
-import { LLMServiceIdentifier } from "../../../../llm/llmServices/llmServiceIdentifier";
+import { ProofProviderIdentifier } from "../../../../proofProviders/impl/proofProviderIdentifier";
 import {
     DeepSeekUserModelParams,
     GrazieUserModelParams,
@@ -7,7 +7,7 @@ import {
     PredefinedProofsUserModelParams,
     RangoUserModelParams,
     UserModelParams,
-} from "../../../../llm/userModelParams";
+} from "../../../../proofProviders/userModelParams";
 
 import { RankerType } from "../../../../core/contextTheoremRanker/contextTheoremsRanker";
 
@@ -31,17 +31,17 @@ export namespace InputBenchmarkingModelParams {
     export interface RangoParams extends RangoUserModelParams, Params {}
 }
 
-export type CorrespondingInputParams<T extends LLMServiceIdentifier> =
-    T extends LLMServiceIdentifier.PREDEFINED_PROOFS
+export type CorrespondingInputParams<T extends ProofProviderIdentifier> =
+    T extends ProofProviderIdentifier.PREDEFINED_PROOFS
         ? InputBenchmarkingModelParams.PredefinedProofsParams
-        : T extends LLMServiceIdentifier.OPENAI
+        : T extends ProofProviderIdentifier.OPENAI
           ? InputBenchmarkingModelParams.OpenAiParams
-          : T extends LLMServiceIdentifier.GRAZIE
+          : T extends ProofProviderIdentifier.GRAZIE
             ? InputBenchmarkingModelParams.GrazieParams
-            : T extends LLMServiceIdentifier.LMSTUDIO
+            : T extends ProofProviderIdentifier.LMSTUDIO
               ? InputBenchmarkingModelParams.LMStudioParams
-              : T extends LLMServiceIdentifier.DEEPSEEK
+              : T extends ProofProviderIdentifier.DEEPSEEK
                 ? InputBenchmarkingModelParams.DeepSeekParams
-                : T extends LLMServiceIdentifier.RANGO
+                : T extends ProofProviderIdentifier.RANGO
                   ? InputBenchmarkingModelParams.RangoParams
                   : never;

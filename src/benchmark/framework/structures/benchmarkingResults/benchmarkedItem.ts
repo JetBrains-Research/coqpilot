@@ -1,4 +1,4 @@
-import { GenerationTokens } from "../../../../llm/llmServices/commonStructures/generationTokens";
+import { GenerationTokens } from "../../../../proofProviders/impl/commonStructures/generationTokens";
 
 import { addToTotalTime } from "../../benchmarkingCore/singleCompletionGeneration/measureTimeUtils";
 import { ProofsCheckFailureType } from "../../benchmarkingCore/singleCompletionGeneration/proofsCheckers/abstractProofsChecker";

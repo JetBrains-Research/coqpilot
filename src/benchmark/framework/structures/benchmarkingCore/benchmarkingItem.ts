@@ -1,4 +1,4 @@
-import { ModelParams } from "../../../../llm/llmServices/modelParams";
+import { ModelParams } from "../../../../proofProviders/impl/modelParams";
 
 import { BenchmarkingModelParams } from "./benchmarkingModelParams";
 import { CompletionGenerationTask } from "./completionGenerationTask";

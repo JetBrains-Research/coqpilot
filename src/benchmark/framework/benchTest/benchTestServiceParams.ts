@@ -1,13 +1,13 @@
-import { AnalyzedChatHistory } from "../../../llm/llmServices/commonStructures/chat";
+import { AnalyzedChatHistory } from "../../../proofProviders/impl/commonStructures/chat";
 import {
     SchedulersProvider,
     SchedulersProviderBuilders,
-} from "../../../llm/llmServices/commonStructures/schedulersProviders";
-import { LLMServiceInternal } from "../../../llm/llmServices/llmServiceInternal";
+} from "../../../proofProviders/impl/commonStructures/schedulersProviders";
+import { ProofProviderInternal } from "../../../proofProviders/impl/proofProviderInternal";
 import {
-    ResolvedLLMServiceParams,
-    resolveServiceParamsWithDefaults,
-} from "../../../llm/llmServices/llmServiceParams";
+    ResolvedProofProviderParams,
+    resolveProofProviderParamsWithDefaults,
+} from "../../../proofProviders/impl/proofProviderParams";
 
 import { delay } from "../../../utils/async/delay";
 import {
@@ -29,30 +29,32 @@ export type GenerateRawProofsType = (
 export type BenchTestServiceParams = Partial<ResolvedBenchTestServiceParams>;
 
 export interface ResolvedBenchTestServiceParams
-    extends ResolvedLLMServiceParams {
+    extends ResolvedProofProviderParams {
     logger: BenchmarkingLogger;
     generateRawProofs: GenerateRawProofsType;
-    getSchedulersProvider: (service: BenchTestService) => SchedulersProvider;
+    getSchedulersProvider: (
+        proofProvider: BenchTestService
+    ) => SchedulersProvider;
 }
 
 export function resolveBenchTestServiceParamsWithDefaults(
-    serviceParams: BenchTestServiceParams
+    proofProviderParams: BenchTestServiceParams
 ): ResolvedBenchTestServiceParams {
     return {
-        ...resolveServiceParamsWithDefaults(serviceParams),
+        ...resolveProofProviderParamsWithDefaults(proofProviderParams),
         logger:
-            serviceParams.logger ??
+            proofProviderParams.logger ??
             new BenchmarkingLoggerImpl(
                 SeverityLevel.DEBUG,
                 undefined,
                 "[Benchmarking Test Service]"
             ),
         generateRawProofs:
-            serviceParams.generateRawProofs ??
+            proofProviderParams.generateRawProofs ??
             BenchTestDefaults.generateRawProofs,
-        getSchedulersProvider: (service: BenchTestService) =>
+        getSchedulersProvider: (proofProvider: BenchTestService) =>
             SchedulersProviderBuilders.unlimitedParallelism<BenchTestModelParams>(
-                service.name,
+                proofProvider.name,
                 false
             ),
     };
@@ -64,7 +66,7 @@ export namespace BenchTestDefaults {
         params: BenchTestModelParams,
         choices: number
     ): Promise<string[]> {
-        LLMServiceInternal.validateChoices(choices);
+        ProofProviderInternal.validateChoices(choices);
         if (params.generationMillis !== 0) {
             await delay(params.generationMillis);
         }

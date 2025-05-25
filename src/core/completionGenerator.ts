@@ -1,8 +1,4 @@
-import {
-    DEFAULT_FETCHING_ORDER,
-    LLMSequentialIterator,
-} from "../llm/llmIterator";
-import { GeneratedProof } from "../llm/llmServices/generatedProof";
+import { GeneratedProof } from "../proofProviders/impl/generatedProof";
 
 import { CoqLspTimeoutError } from "../coqLsp/coqLspTypes";
 
@@ -25,6 +21,10 @@ import {
     buildProofGenerationContext,
     prepareProofToCheck,
 } from "./exposedCompletionGeneratorUtils";
+import {
+    DEFAULT_FETCHING_ORDER,
+    ModelsSequentialIterator,
+} from "./modelsIterator";
 
 export interface GenerationResult {}
 
@@ -72,7 +72,7 @@ export async function generateCompletion(
         "Ranked theorems for proof generation",
         context.contextTheorems.map((thr) => thr.name)
     );
-    const iterator = new LLMSequentialIterator(
+    const iterator = new ModelsSequentialIterator(
         context,
         processEnvironment.bundles,
         DEFAULT_FETCHING_ORDER, // TODO: support configuring fetching order in the settings, use the default by now

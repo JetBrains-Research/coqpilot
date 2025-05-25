@@ -2,7 +2,7 @@ import { BenchmarkingLogger } from "../../logging/benchmarkingLogger";
 import { BenchmarkingItem } from "../../structures/benchmarkingCore/benchmarkingItem";
 import { DatasetInputTargets } from "../../structures/common/inputTargets";
 import { ExperimentRunOptions } from "../../structures/inputParameters/experimentRunOptions";
-import { ResolvedWithServiceBenchmarkingBundle } from "../../structures/inputParameters/resolvedWithServiceBenchmarkingBundle";
+import { ResolvedWithProofProviderBenchmarkingBundle } from "../../structures/inputParameters/resolvedWithProofProviderBenchmarkingBundle";
 import { DatasetCacheHolder } from "../cacheStructures/cacheHolders";
 import { AbstractCoqProjectParser } from "../coqProjectParser/abstractCoqProjectParser";
 import { logBenchmarkingItems } from "../utils/logBenchmarkingItems";
@@ -35,7 +35,7 @@ import { saveBuiltCache } from "./saveBuiltCache";
  *   (updating the old cache), if it is requested.
  */
 export async function parseDatasetForBenchmarkingItems(
-    resolvedBundles: ResolvedWithServiceBenchmarkingBundle[],
+    resolvedBundles: ResolvedWithProofProviderBenchmarkingBundle[],
     mergedRequestedTargets: DatasetInputTargets,
     runOptions: ExperimentRunOptions, // TODO: extract dataset-parsing options into separate interface
     logger: BenchmarkingLogger,

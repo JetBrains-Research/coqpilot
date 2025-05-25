@@ -9,13 +9,13 @@ import {
     GenerationBundle,
     GenerationBundlesStorage,
     ResolvedGenerationBundles,
-} from "../../llm/generationBundles";
-import { LLMService } from "../../llm/llmServices/llmService";
-import { LLMServiceIdentifier } from "../../llm/llmServices/llmServiceIdentifier";
-import { getShortName } from "../../llm/llmServices/llmServiceIdentifier";
-import { ModelParams } from "../../llm/llmServices/modelParams";
-import { buildParamsResolutionMessages } from "../../llm/llmServices/utils/paramsResolvers/kit/paramsResolutionAnalysis";
-import { LLMServicesStorage } from "../../llm/llmServicesStorage";
+} from "../../proofProviders/generationBundles";
+import { ModelParams } from "../../proofProviders/impl/modelParams";
+import { ProofProvider } from "../../proofProviders/impl/proofProvider";
+import { ProofProviderIdentifier } from "../../proofProviders/impl/proofProviderIdentifier";
+import { getShortName } from "../../proofProviders/impl/proofProviderIdentifier";
+import { buildParamsResolutionMessages } from "../../proofProviders/impl/utils/paramsResolvers/kit/paramsResolutionAnalysis";
+import { ProofProvidersStorage } from "../../proofProviders/proofProvidersStorage";
 import {
     UserModelParams,
     deepSeekUserModelParamsSchema,
@@ -24,7 +24,7 @@ import {
     openAiUserModelParamsSchema,
     predefinedProofsUserModelParamsSchema,
     rangoUserModelParamsSchema,
-} from "../../llm/userModelParams";
+} from "../../proofProviders/userModelParams";
 
 import { DistanceContextTheoremsRanker } from "../../core/contextTheoremRanker/actualRankers/distanceContextTheoremsRanker";
 import { JaccardIndexContextTheoremsRanker } from "../../core/contextTheoremRanker/actualRankers/jaccardIndexContextTheoremsRanker";
@@ -76,12 +76,12 @@ export function buildTheoremsRankerFromConfig(): ContextTheoremsRanker {
 
 export async function readAndValidateUserModelsParams(
     config: WorkspaceConfiguration,
-    llmServices: LLMServicesStorage,
+    proofProviders: ProofProvidersStorage,
     vscodeContext: VSCodeContext
 ): Promise<ResolvedGenerationBundles> {
     const inputParamsWithIdentifiers = parseUserModelParams(config);
     const inputParamsByIdentifier: Map<
-        LLMServiceIdentifier,
+        ProofProviderIdentifier,
         UserModelParams[]
     > = mapValues(
         groupByAndMap(
@@ -97,26 +97,27 @@ export async function readAndValidateUserModelsParams(
 
     const inputBundles = new GenerationBundlesStorage<UserModelParams>();
     for (const { inputParams, identifier } of inputParamsWithIdentifiers) {
-        const servicesOfType = llmServices.getServices(identifier);
-        for (const service of servicesOfType) {
+        const proofProvidersOfType =
+            proofProviders.getProofProviders(identifier);
+        for (const proofProvider of proofProvidersOfType) {
             inputBundles.addBundle({
-                llmService: service,
+                proofProvider: proofProvider,
                 models: inputParams,
             });
         }
     }
 
-    await provideServicesInstallations(
+    await provideProofProvidersInstallations(
         vscodeContext.extensionPath,
         inputBundles.allBundles()
     );
 
     validateIdsAreUnique(allInputParams);
     validateApiKeysAreProvided(inputParamsByIdentifier, [
-        LLMServiceIdentifier.OPENAI,
-        LLMServiceIdentifier.GRAZIE,
-        LLMServiceIdentifier.DEEPSEEK,
-        LLMServiceIdentifier.RANGO,
+        ProofProviderIdentifier.OPENAI,
+        ProofProviderIdentifier.GRAZIE,
+        ProofProviderIdentifier.DEEPSEEK,
+        ProofProviderIdentifier.RANGO,
     ]);
 
     const resolvedBundles = new GenerationBundlesStorage<ModelParams>();
@@ -124,9 +125,9 @@ export async function readAndValidateUserModelsParams(
         const resolvedParams = resolveParamsAndShowResolutionLogs<
             UserModelParams,
             ModelParams
-        >(inputBundle.llmService, inputBundle.models);
+        >(inputBundle.proofProvider, inputBundle.models);
         resolvedBundles.addBundle({
-            llmService: inputBundle.llmService,
+            proofProvider: inputBundle.proofProvider,
             models: resolvedParams,
         });
     }
@@ -135,13 +136,13 @@ export async function readAndValidateUserModelsParams(
     return resolvedBundles;
 }
 
-// TODO: skip service's models if the user declines its installation, don't throw
-async function provideServicesInstallations(
+// TODO: skip proofProvider's models if the user declines its installation, don't throw
+async function provideProofProvidersInstallations(
     coqPilotPath: string,
     inputBundles: GenerationBundle<UserModelParams>[]
 ) {
-    for (const { llmService, models } of inputBundles) {
-        const installerProvider = llmService.installerProvider;
+    for (const { proofProvider, models } of inputBundles) {
+        const installerProvider = proofProvider.installerProvider;
         if (installerProvider === undefined) {
             continue;
         }
@@ -168,13 +169,16 @@ function validateIdsAreUnique(allModels: UserModelParams[]) {
 }
 
 function validateApiKeysAreProvided(
-    inputParamsByIdentifier: Map<LLMServiceIdentifier, UserModelParams[]>,
-    identifiersToValidate: LLMServiceIdentifier[]
+    inputParamsByIdentifier: Map<ProofProviderIdentifier, UserModelParams[]>,
+    identifiersToValidate: ProofProviderIdentifier[]
 ) {
-    function throwBuildApiKeyError(serviceName: string, settingName: string) {
+    function throwBuildApiKeyError(
+        proofProviderName: string,
+        settingName: string
+    ) {
         throw new SettingsValidationError(
-            `at least one of the ${serviceName} models has \`apiKey: "None"\``,
-            EditorMessages.apiKeyIsNotSet(serviceName),
+            `at least one of the ${proofProviderName} models has \`apiKey: "None"\``,
+            EditorMessages.apiKeyIsNotSet(proofProviderName),
             settingName,
             "info"
         );
@@ -210,14 +214,14 @@ function resolveParamsAndShowResolutionLogs<
     InputModelParams extends UserModelParams,
     ResolvedModelParams extends ModelParams,
 >(
-    llmService: LLMService<InputModelParams, ResolvedModelParams>,
+    proofProvider: ProofProvider<InputModelParams, ResolvedModelParams>,
     inputParamsList: InputModelParams[]
 ): ResolvedModelParams[] {
-    const settingName = toSettingName(llmService.identifier);
+    const settingName = toSettingName(proofProvider.identifier);
     const resolvedParamsList: ResolvedModelParams[] = [];
 
     for (const inputParams of inputParamsList) {
-        const resolutionResult = llmService.resolveParameters(inputParams);
+        const resolutionResult = proofProvider.resolveParameters(inputParams);
         const resolutionMessages = buildParamsResolutionMessages(
             resolutionResult,
             inputParams.modelId
@@ -247,7 +251,7 @@ function resolveParamsAndShowResolutionLogs<
 
 interface InputParamsWithIdentifier<T extends UserModelParams> {
     inputParams: T[];
-    identifier: LLMServiceIdentifier;
+    identifier: ProofProviderIdentifier;
 }
 
 function parseUserModelParams(
@@ -271,7 +275,7 @@ function parseUserModelParams(
                             jsonSchemaValidator
                         )
                 ),
-                identifier: LLMServiceIdentifier.PREDEFINED_PROOFS,
+                identifier: ProofProviderIdentifier.PREDEFINED_PROOFS,
             },
             {
                 inputParams: config.openAiModelsParameters.map((params: any) =>
@@ -281,7 +285,7 @@ function parseUserModelParams(
                         jsonSchemaValidator
                     )
                 ),
-                identifier: LLMServiceIdentifier.OPENAI,
+                identifier: ProofProviderIdentifier.OPENAI,
             },
             {
                 inputParams: config.grazieModelsParameters.map((params: any) =>
@@ -291,7 +295,7 @@ function parseUserModelParams(
                         jsonSchemaValidator
                     )
                 ),
-                identifier: LLMServiceIdentifier.GRAZIE,
+                identifier: ProofProviderIdentifier.GRAZIE,
             },
             {
                 inputParams: config.lmStudioModelsParameters.map(
@@ -302,7 +306,7 @@ function parseUserModelParams(
                             jsonSchemaValidator
                         )
                 ),
-                identifier: LLMServiceIdentifier.LMSTUDIO,
+                identifier: ProofProviderIdentifier.LMSTUDIO,
             },
             {
                 inputParams: config.deepSeekModelsParameters.map(
@@ -313,7 +317,7 @@ function parseUserModelParams(
                             jsonSchemaValidator
                         )
                 ),
-                identifier: LLMServiceIdentifier.DEEPSEEK,
+                identifier: ProofProviderIdentifier.DEEPSEEK,
             },
             {
                 inputParams: config.rangoModelsParameters.map((params: any) =>
@@ -323,7 +327,7 @@ function parseUserModelParams(
                         jsonSchemaValidator
                     )
                 ),
-                identifier: LLMServiceIdentifier.RANGO,
+                identifier: ProofProviderIdentifier.RANGO,
             },
         ];
     return inputParamsWithIdentifiers;

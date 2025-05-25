@@ -18,7 +18,7 @@ function logBenchmarkingItem(benchmarkingItem: BenchmarkingItem): string {
     const targetLog = `* target: ${getTargetTypeName(task.targetType)}, goal \`${task.targetGoalToProveAsString}\``;
     const sourceLog = `* source: ${task.targetPositionRange} of theorem "${task.sourceTheorem.name}" from "${task.sourceFilePath}"`;
     const paramsLog = `* model id: "${benchmarkingItem.params.modelParams.modelId}"`;
-    const llmServiceLog = `* LLM service: ${benchmarkingItem.params.llmService.toLogString(true)}`;
+    const proofProviderLog = `* Proof Provider: ${benchmarkingItem.params.proofProvider.toLogString(true)}`;
     const rankerLog = `* theorems ranker: "${benchmarkingItem.params.theoremRanker.type}"`;
-    return `${targetLog}\n${sourceLog}\n${paramsLog}\n${llmServiceLog}\n${rankerLog}`;
+    return `${targetLog}\n${sourceLog}\n${paramsLog}\n${proofProviderLog}\n${rankerLog}`;
 }

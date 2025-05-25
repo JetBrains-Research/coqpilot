@@ -12,7 +12,7 @@ suite("[SourceExecutable] Single Workspace Benchmark", () => {
         const experiment = new SingleWorkspaceExperiment();
 
         new BenchmarkingBundle()
-            .withLLMService("predefined")
+            .withProofProvider("predefined")
             .withBenchmarkingModelsParamsCommons({
                 ranker: "random",
             })

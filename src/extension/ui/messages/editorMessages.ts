@@ -52,30 +52,30 @@ export namespace EditorMessages {
             `object was thrown as error, ${stringifyAnyValue(e)}`
         );
 
-    export const serviceBecameUnavailable = (
-        serviceName: string,
+    export const proofProviderBecameUnavailable = (
+        proofProviderName: string,
         errorMessage: string,
         expectedTimeToBecomeAvailable: Time
     ) => {
         const formattedExpectedTime = formatTimeToUIString(
             expectedTimeToBecomeAvailable
         );
-        const becameUnavailableMessage = `\`${serviceName}\` became unavailable for this generation.`;
+        const becameUnavailableMessage = `\`${proofProviderName}\` became unavailable for this generation.`;
         const tryAgainMessage = `If you want to use it, try again in ~ ${formattedExpectedTime}. Caused by error: "${errorMessage}".`;
         return `${becameUnavailableMessage} ${tryAgainMessage}`;
     };
 
-    export const failedToReachRemoteService = (
-        serviceName: string,
+    export const failedToReachRemoteProofProvider = (
+        proofProviderName: string,
         message: string
     ) => {
-        const serviceFailureMessage = `\`${serviceName}\` became unavailable for this generation: ${message}.`;
+        const proofProviderFailureMessage = `\`${proofProviderName}\` became unavailable for this generation: ${message}.`;
         const tryAgainMessage = `Check your internet connection and try again.`;
-        return `${serviceFailureMessage} ${tryAgainMessage}`;
+        return `${proofProviderFailureMessage} ${tryAgainMessage}`;
     };
 
-    export const serviceIsAvailableAgain = (serviceName: string) =>
-        `\`${serviceName}\` is available again!`;
+    export const proofProviderIsAvailableAgain = (proofProviderName: string) =>
+        `\`${proofProviderName}\` is available again!`;
 
     const modelWillBeSkippedForThisRun = (modelId: string) =>
         `Thus, "${modelId}" will be skipped for this run. Please fix the model's configuration in the settings.`;
@@ -103,8 +103,8 @@ export namespace EditorMessages {
     export const modelsIdsAreNotUnique = (modelId: string) =>
         `Please make identifiers of the models unique ("${modelId}" is not unique).`;
 
-    export const apiKeyIsNotSet = (serviceName: string) =>
-        `Please set your ${serviceName} API key in the settings.`;
+    export const apiKeyIsNotSet = (proofProviderName: string) =>
+        `Please set your ${proofProviderName} API key in the settings.`;
 
     export const noValidModelsAreChosen =
         "No valid models are chosen. Please specify at least one in the settings.";

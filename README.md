@@ -42,13 +42,15 @@
 
 ## Brief technical overview
 
-`CoqPilot` fetches proofs from multiple completion services. Now we support: 
-- a service that always returns a list of pre-defined in the settings tactics/coq sentances.
-- an [OpenAI](https://openai.com) gpt service.
-- a service that fetches completions from the model, running locally in LM Studio.
-- a service that uses Grazie platform (only for JetBrains employees for now).
+`CoqPilot` fetches proofs from multiple proof providers. Now we support: 
+- a provider that always returns a list of pre-defined in the settings tactics/coq sentances.
+- an [OpenAI](https://openai.com) gpt provider.
+- a provider that fetches completions from the model, running locally in LM Studio.
+- a provider that uses Grazie platform (only for JetBrains employees for now).
+- a [DeepSeek](https://www.deepseek.com/en) provider.
+- a provider that installs and executes [Rango](https://github.com/GlebSolovev/rango) external project.
 
-For each service, an array of models could be defined through the settings. Each model will be used for generation independantly. This brings freedom to the user to experiment with different model parameters, e.g. temperature, prompt, etc.
+For each proof provider, an array of models could be defined through the settings. Each model will be used for generation independantly. This brings freedom to the user to experiment with different model parameters, e.g. temperature, prompt, etc.
 
 When `CoqPilot` completion command is issued, it parses the currently opened file, extracts theorems that have complete proofs and processes them into a message history for the LLM. It helps LLM to keep the style and hallucinate less. 
 
@@ -56,9 +58,9 @@ For each `admit.` present in the file, an independent completion process is issu
 
 As soon as at least one valid proof is found, it is substituted in the editor and the process is finished.
 
-**Notice:** By default, CoqPilot sets only `PredefinedProofs` and `OpenAI` services. The first one tries `auto.` tactic and the second one has one model -- `gpt-3.5`. By default the `apiKey` for OpenAI is not set, i.e. set to `None`. Do not forget to change that in the settings before using this service.
+**Notice:** By default, CoqPilot sets only `PredefinedProofs` and `OpenAI` providers. The first one tries `auto.` tactic and the second one has one model -- `gpt-3.5`. By default the `apiKey` for OpenAI is not set, i.e. set to `None`. Do not forget to change that in the settings before using this provider.
 
-**Notice:** File `settings.json` declares not all the settings, but those that are overriden from the defaults. Keep that in mind, if you want, for example, to turn off the `OpenAI` service. For that, you would need to override the corresponding setting with an empty array, but not delete this property from the file.
+**Notice:** File `settings.json` declares not all the settings, but those that are overriden from the defaults. Keep that in mind, if you want, for example, to turn off the `OpenAI` provider. For that, you would need to override the corresponding setting with an empty array, but not delete this property from the file.
 
 ## Example usage
 
@@ -140,7 +142,7 @@ This extension contributes the following settings:
 
 * `coqpilot.predefinedProofsModelsParameters`, `coqpilot.openAiModelsParameters`, `coqpilot.grazieModelsParameters` and `coqpilot.lmStudioModelsParameters`:
 
-Each of these settings are modified in `settings.json` and contain an array of models from this service. Each model will be used for generation independantly. Multiple models for a single service could be defined. For example, you can define parameters for two OpenAI gpt models. One would be using `gpt-3.5` and the other one `gpt-4`. CoqPilot will first try to generate proofs using the first model, and if it doesn't succeed, it will try the second one. This way CoqPilot iterates over all services (currently 4 of them) and for each service it iterates over all models. 
+Each of these settings are modified in `settings.json` and contain an array of models from this proof provider. Each model will be used for generation independantly. Multiple models for a single proof provider could be defined. For example, you can define parameters for two OpenAI gpt models. One would be using `gpt-3.5` and the other one `gpt-4`. CoqPilot will first try to generate proofs using the first model, and if it doesn't succeed, it will try the second one. This way CoqPilot iterates over all proof providers (currently 6 of them) and for each proof provider it iterates over all models. 
 
 ## Guide to Model Configuration
 
@@ -156,13 +158,13 @@ From that moment and until you completely remove this field from the `settings.j
 
 ### Model configuration
 
-As mentioned in the previous section, at the moment, four services are supported. 
+As mentioned in the previous section, at the moment, six proof providers are supported. 
 
-By default, only `PredefinedProofs` and `OpenAI` services are enabled. The first one tries `auto.` tactic and the second one has one model -- `gpt-3.5`. Models for other services are defaulted with empty arrays. That denotes that we do not create any models from these services. 
+By default, only `PredefinedProofs` and `OpenAI` providers are enabled. The first one tries `auto.` tactic and the second one has one model -- `gpt-3.5`. Models for other proof providers are defaulted with empty arrays. That denotes that we do not create any models from these providers. 
 
-Each and every service is configured with an array of independent models. This was made to easily experiment with different models and their parameters. 
+Each and every provider is configured with an array of independent models. This was made to easily experiment with different models and their parameters. 
 
-The simplest service to configure is `PredefinedProofs`: 
+The simplest provider to configure is `PredefinedProofs`: 
 ```json
 {
     "coqpilot.predefinedProofsModelsParameters": [
@@ -179,7 +181,7 @@ The simplest service to configure is `PredefinedProofs`:
 ```
 The `modelId` property may be any string you like, but it should be unique for each model. This way, CoqPilot will be able to correctly tell you which model might have configuration issues.
 
-The most commonly used service is `OpenAI` (`Grazie` and `LmStudio` are configured very similarly). 
+The most commonly used provider is `OpenAI` (`Grazie` and `LmStudio` are configured very similarly). 
 ```json
 {
     "coqpilot.openAiModelsParameters": [

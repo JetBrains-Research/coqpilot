@@ -64,13 +64,15 @@ export class BenchmarkReportHolder {
     generateMarkdown() {
         const report = this.parseReport();
 
-        const services = new Set<string>();
+        const proofProviders = new Set<string>();
         for (const results of Object.values(report)) {
-            results.forEach((result) => services.add(result.modelId));
+            results.forEach((result) => proofProviders.add(result.modelId));
         }
 
-        const serviceL = Array.from(services);
-        const serviceList = serviceL.filter((service) => service !== "NOPROOF");
+        const proofProviderL = Array.from(proofProviders);
+        const proofProviderList = proofProviderL.filter(
+            (proofProvider) => proofProvider !== "NOPROOF"
+        );
 
         let markdownContent = "## Results\n\n";
         markdownContent +=
@@ -78,8 +80,8 @@ export class BenchmarkReportHolder {
 
         let header = "| Group | File | Theorem Name ";
         let separator = "|-------|------|--------------";
-        serviceList.forEach((service) => {
-            header += `| ${service} `;
+        proofProviderList.forEach((proofProvider) => {
+            header += `| ${proofProvider} `;
             separator += "|------------------";
         });
         header += "|\n";
@@ -96,8 +98,8 @@ export class BenchmarkReportHolder {
                         filePath: "&#x2717;",
                         theoremName: theoremName,
                     };
-                    serviceList.forEach((service) => {
-                        rowTemplate[service] = "&#x2717;";
+                    proofProviderList.forEach((proofProvider) => {
+                        rowTemplate[proofProvider] = "&#x2717;";
                     });
 
                     results.forEach((result) => {
@@ -110,8 +112,8 @@ export class BenchmarkReportHolder {
                     });
 
                     let row = `| ${rowTemplate.group} | ${rowTemplate.filePath} | \`${rowTemplate.theoremName}\` `;
-                    serviceList.forEach((service) => {
-                        row += `| ${rowTemplate[service]} `;
+                    proofProviderList.forEach((proofProvider) => {
+                        row += `| ${rowTemplate[proofProvider]} `;
                     });
                     row += "|\n";
                     markdownContent += row;

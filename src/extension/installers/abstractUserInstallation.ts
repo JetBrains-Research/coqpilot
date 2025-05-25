@@ -1,9 +1,9 @@
-import { AbstractExternalServiceInstaller } from "../../llm/llmServices/abstractExternalService/installation/abstractExternalServiceInstaller";
+import { AbstractProofProviderInstaller } from "../../proofProviders/impl/abstractExternalProofProvider/installation/abstractProofProviderInstaller";
 import {
     InstallationInteractor,
     InteractorChoiceItemWithCallback,
     InteractorMessageSeverity,
-} from "../../llm/llmServices/abstractExternalService/installation/installationInteractor";
+} from "../../proofProviders/impl/abstractExternalProofProvider/installation/installationInteractor";
 
 import { SettingsValidationError } from "../settings/settingsValidationError";
 import {
@@ -17,7 +17,7 @@ import { PLUGIN_ID } from "../utils/pluginId";
 export async function executeInstallationCommand<InstallationOptions>(
     coqPilotPath: string,
     installationOptions: InstallationOptions,
-    installer: AbstractExternalServiceInstaller<InstallationOptions, any>,
+    installer: AbstractProofProviderInstaller<InstallationOptions, any>,
     installationPath: string = installer.getDefaultInstallationPath()
 ) {
     try {
@@ -42,7 +42,7 @@ export async function executeInstallationCommand<InstallationOptions>(
 export async function executeUninstallationCommand<InstallationOptions>(
     coqPilotPath: string,
     installationOptions: InstallationOptions,
-    installer: AbstractExternalServiceInstaller<InstallationOptions, any>,
+    installer: AbstractProofProviderInstaller<InstallationOptions, any>,
     installationPath: string = installer.getDefaultInstallationPath()
 ) {
     try {
@@ -67,7 +67,7 @@ export class UserInstallationInteractor<InstallationOptions>
     implements InstallationInteractor<InstallationOptions>
 {
     constructor(
-        private readonly installer: AbstractExternalServiceInstaller<
+        private readonly installer: AbstractProofProviderInstaller<
             InstallationOptions,
             any
         >

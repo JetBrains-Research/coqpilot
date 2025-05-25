@@ -13,7 +13,7 @@ import Constants = BenchmarkingTestsConstants;
 suite("[Benchmarking Framework Tests] Regression tests", () => {
     test("Smoke test: fill standalone file with predefined `auto`", async () => {
         const autoModel = new BenchmarkingBundle()
-            .withLLMService("predefined")
+            .withProofProvider("predefined")
             .withBenchmarkingModelsParamsCommons({
                 ranker: "random",
             })
@@ -26,7 +26,7 @@ suite("[Benchmarking Framework Tests] Regression tests", () => {
 
     test("Smoke test: fill standalone file via default `BenchTest`", async () => {
         const benchTestModel = new BenchmarkingBundle()
-            .withCustomLLMService<BenchTestInputBenchmarkingModelParams>(
+            .withCustomProofProvider<BenchTestInputBenchmarkingModelParams>(
                 (controlParams) => new BenchTestService(controlParams)
             )
             .withBenchmarkingModelsParamsCommons({
