@@ -24,7 +24,7 @@
         "sourceTheoremName": "test"
     },
     "inputParams": {
-        "llmServiceIdentifier": 0,
+        "proofProviderIdentifier": 0,
         "inputBenchmarkingModelsParams": {
             "ranker": "random",
             "modelId": "prove-with-auto",

@@ -1,5 +1,5 @@
-import { LLMService } from "../../../../llm/llmServices/llmService";
-import { ModelParams } from "../../../../llm/llmServices/modelParams";
+import { ModelParams } from "../../../../proofProviders/impl/modelParams";
+import { ProofProvider } from "../../../../proofProviders/impl/proofProvider";
 
 import { ContextTheoremsRanker } from "../../../../core/contextTheoremRanker/contextTheoremsRanker";
 
@@ -8,5 +8,5 @@ export interface BenchmarkingModelParams<
 > {
     theoremRanker: ContextTheoremsRanker;
     modelParams: ResolvedModelParams;
-    llmService: LLMService;
+    proofProvider: ProofProvider;
 }

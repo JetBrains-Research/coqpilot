@@ -1,4 +1,4 @@
-import { LLMServicesStorage } from "../../../llm/llmServicesStorage";
+import { ProofProvidersStorage } from "../../../proofProviders/proofProvidersStorage";
 
 import { CoqLspProviderBuilders } from "../../../coqLsp/coqLspProviders/coqLspProviderBuilders";
 
@@ -28,8 +28,8 @@ import {
     InputExperimentRunOptions,
 } from "../structures/inputParameters/experimentRunOptions";
 import { InputBenchmarkingBundle } from "../structures/inputParameters/inputBenchmarkingBundle";
-import { ResolvedWithServiceBenchmarkingBundle } from "../structures/inputParameters/resolvedWithServiceBenchmarkingBundle";
-import { installDemandedExternalServices } from "../utils/installers/externalServicesInstaller";
+import { ResolvedWithProofProviderBenchmarkingBundle } from "../structures/inputParameters/resolvedWithProofProviderBenchmarkingBundle";
+import { installDemandedExternalProofProviders } from "../utils/installers/externalProofProvidersInstaller";
 import { throwBenchmarkingError } from "../utils/throwErrors";
 
 import {
@@ -141,8 +141,8 @@ export abstract class AbstractExperiment {
                     )
             );
 
-        const [llmServices, resolvedBundles] =
-            AbstractExperiment.resolveWithServices(this.bundles);
+        const [proofProviders, resolvedBundles] =
+            AbstractExperiment.resolveWithProofProviders(this.bundles);
         try {
             const totalTime = new TimeMark();
 
@@ -152,7 +152,7 @@ export abstract class AbstractExperiment {
                 executionContext
             );
 
-            await installDemandedExternalServices(
+            await installDemandedExternalProofProviders(
                 resolvedBundles,
                 executionContext.logger
             );
@@ -166,12 +166,12 @@ export abstract class AbstractExperiment {
                 totalTime
             );
         } finally {
-            llmServices.dispose();
+            proofProviders.dispose();
         }
     }
 
     protected async buildBenchmarkingItems(
-        resolvedBundles: ResolvedWithServiceBenchmarkingBundle[],
+        resolvedBundles: ResolvedWithProofProviderBenchmarkingBundle[],
         requestedTargets: DatasetInputTargets,
         executionContext: ExecutionContext
     ): Promise<BenchmarkingItem[]> {
@@ -380,26 +380,29 @@ export abstract class AbstractExperiment {
         return mergedTargets;
     }
 
-    protected static resolveWithServices(
+    protected static resolveWithProofProviders(
         inputBundles: InputBenchmarkingBundle[]
-    ): [LLMServicesStorage, ResolvedWithServiceBenchmarkingBundle[]] {
+    ): [ProofProvidersStorage, ResolvedWithProofProviderBenchmarkingBundle[]] {
         const resolvedBundles = [];
-        const services = new LLMServicesStorage();
+        const proofProviders = new ProofProvidersStorage();
         try {
             for (const inputBundle of inputBundles) {
-                const newService = services.registerService(() =>
-                    inputBundle.llmServiceProvider(BENCHMARKING_CONTROL_PARAMS)
+                const newProofProvider = proofProviders.registerProofProvider(
+                    () =>
+                        inputBundle.proofProviderConstructor(
+                            BENCHMARKING_CONTROL_PARAMS
+                        )
                 );
                 resolvedBundles.push({
-                    llmService: newService,
+                    proofProvider: newProofProvider,
                     inputBenchmarkingModelsParams:
                         inputBundle.inputBenchmarkingModelsParams,
                     requestedTargets: inputBundle.requestedTargets,
                 });
             }
-            return [services, resolvedBundles];
+            return [proofProviders, resolvedBundles];
         } catch (e) {
-            services.dispose();
+            proofProviders.dispose();
             throw e;
         }
     }

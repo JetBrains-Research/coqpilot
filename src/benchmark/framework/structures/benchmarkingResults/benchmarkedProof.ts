@@ -1,5 +1,5 @@
-import { GenerationTokens } from "../../../../llm/llmServices/commonStructures/generationTokens";
-import { GeneratedProof } from "../../../../llm/llmServices/generatedProof";
+import { GenerationTokens } from "../../../../proofProviders/impl/commonStructures/generationTokens";
+import { GeneratedProof } from "../../../../proofProviders/impl/generatedProof";
 
 import { ProofCheckResult } from "../../../../core/coqProofChecker";
 

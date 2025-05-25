@@ -402,7 +402,7 @@
                 "temperature": {
                   "type": "number",
                   "description": "Temperature of the DeepSeek model. Should be in range [0, 2], otherwise an error will be produced. According to the API [documentation](https://api-docs.deepseek.com/quick_start/parameter_settings) the recommended value for Coding/Math is 0.0.",
-                  "default": 0.0
+                  "default": 0
                 },
                 "apiKey": {
                   "type": "string",
@@ -483,7 +483,11 @@
                 },
                 "mode": {
                   "type": "string",
-                  "enum": ["local", "remote", "mockOpenAI"],
+                  "enum": [
+                    "local",
+                    "remote",
+                    "mockOpenAI"
+                  ],
                   "markdownDescription": "Defines how proof generation is performed.\n* `local` runs the internal model locally, requiring CUDA support.\n* `remote` runs the internal model by sending requests to a server on the specified port, where the model is actually executed.\n* `mockOpenAI` is a mock mode that accesses the OpenAI API via Rango, which can be useful for testing the Rango setup.",
                   "default": "local"
                 },
@@ -577,6 +581,8 @@
     "rebuild-test-resources": "cd ./src/test/resources/coqProj && make clean && make",
     "preclean-test": "npm run clean && npm run rebuild-test-resources && npm run compile && npm run lint",
     "clean-test": "npm run test-only",
+    "preclean-test:coverage": "rm -rf coverage",
+    "clean-test:coverage": "c8 npm run clean-test",
     "prebenchmark": "npm run preclean-test",
     "premulti-workspaces-benchmark": "npm run prebenchmark",
     "multi-workspaces-benchmark": "node ./out/benchmark/multiWorkspacesSetup.js",
@@ -596,6 +602,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.15.0",
+    "@istanbuljs/nyc-config-typescript": "^1.0.2",
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
     "@types/cli-progress": "^3.11.6",
     "@types/event-source-polyfill": "^1.0.5",

@@ -8,7 +8,7 @@ import {
 import {
     RangoInstallationOptions,
     RangoInstaller,
-} from "../llm/llmServices/rango/rangoInstaller";
+} from "../proofProviders/impl/rango/rangoInstaller";
 
 import { CoqLspStartupError } from "../coqLsp/coqLspTypes";
 
@@ -52,7 +52,7 @@ import {
     showMessageToUser,
     showMessageToUserWithSettingsHint,
 } from "./ui/messages/editorMessages";
-import { subscribeToHandleLLMServicesEvents } from "./ui/messages/llmServicesEventsHandler";
+import { subscribeToHandleProofProvidersEvents } from "./ui/messages/proofProvidersEventsHandler";
 import { PluginStatusIndicator } from "./ui/pluginStatusIndicator";
 import { reportErrorToUser } from "./utils/errorHandlers";
 import { PLUGIN_ID } from "./utils/pluginId";
@@ -227,9 +227,9 @@ export class CoqPilot {
             return;
         }
 
-        const unsubscribeFromLLMServicesEventsCallback =
-            subscribeToHandleLLMServicesEvents(
-                this.pluginContext.llmServices,
+        const unsubscribeFromProofProvidersEventsCallback =
+            subscribeToHandleProofProvidersEvents(
+                this.pluginContext.proofProviders,
                 this.pluginContext.eventLogger
             );
 
@@ -248,7 +248,7 @@ export class CoqPilot {
 
             await Promise.all(completionPromises);
         } finally {
-            unsubscribeFromLLMServicesEventsCallback();
+            unsubscribeFromProofProvidersEventsCallback();
         }
     }
 
@@ -338,7 +338,7 @@ export class CoqPilot {
             coqProofChecker: coqProofChecker,
             bundles: await readAndValidateUserModelsParams(
                 workspace.getConfiguration(PLUGIN_ID),
-                this.pluginContext.llmServices,
+                this.pluginContext.proofProviders,
                 this.vscodeContext
             ),
             theoremRanker: contextTheoremsRanker,

@@ -1,4 +1,4 @@
-import { AUX_FILE_SUBSTRING } from "../../llm/llmServices/utils/auxFileManager";
+import { AUX_FILE_SUBSTRING } from "../../proofProviders/impl/utils/auxFileManager";
 
 import { getExtensionName } from "./pathUtils";
 import { getThisPathStats } from "./stats";

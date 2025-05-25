@@ -1,4 +1,4 @@
-import { LLMServiceProvider } from "../../../../llm/llmServices/llmServiceProvider";
+import { ProofProviderConstructor } from "../../../../proofProviders/impl/proofProviderConstructor";
 
 import { DatasetInputTargets } from "../common/inputTargets";
 
@@ -10,7 +10,7 @@ export type InputBenchmarkingBundle =
 export interface InputBenchmarkingBundleImpl<
     InputParams extends InputBenchmarkingModelParams.Params,
 > {
-    llmServiceProvider: LLMServiceProvider;
+    proofProviderConstructor: ProofProviderConstructor;
     inputBenchmarkingModelsParams: InputParams[];
     requestedTargets: DatasetInputTargets;
 }

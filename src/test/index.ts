@@ -2,6 +2,8 @@ import { globSync } from "glob";
 import * as Mocha from "mocha";
 import * as path from "path";
 
+import { orderTestFiles } from "./testsOrder";
+
 export function run(): Promise<void> {
     // Create the mocha test
     const mocha = new Mocha({
@@ -13,12 +15,21 @@ export function run(): Promise<void> {
         invert: process.env["TEST_ARG-i"] === "true",
     });
 
+    // Do not ignore unhandled rejected promises
+    process.on("unhandledRejection", (err) => {
+        throw err;
+    });
+
     const testsRoot = path.resolve(__dirname);
 
     return new Promise((c, e) => {
         try {
             const files = globSync("**/**.test.js", { cwd: testsRoot });
-            files.forEach((f) => mocha.addFile(path.resolve(testsRoot, f)));
+            const orderedFiles = orderTestFiles(files);
+
+            orderedFiles.forEach((f) =>
+                mocha.addFile(path.resolve(testsRoot, f))
+            );
 
             mocha.run((failures) => {
                 if (failures > 0) {

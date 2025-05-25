@@ -16,7 +16,7 @@ export function writeSystemMessageToConsole(message: string) {
 }
 
 /**
- * Source: https://www.jetbrains.com/help/teamcity/service-messages.html#Reporting+Build+Statistics
+ * Source: https://www.jetbrains.com/help/teamcity/proofProvider-messages.html#Reporting+Build+Statistics
  */
 export function writeTeamCityStatisticsValue(key: string, value: number) {
     writeSystemMessageToConsole(

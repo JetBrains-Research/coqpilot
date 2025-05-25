@@ -4,5 +4,5 @@
   "tactics": [
     "a."
   ],
-  "llmServiceIdentifier": 0
+  "proofProviderIdentifier": 0
 }

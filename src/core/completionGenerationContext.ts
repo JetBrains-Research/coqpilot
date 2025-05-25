@@ -1,6 +1,6 @@
 import { Range } from "vscode-languageclient";
 
-import { ResolvedGenerationBundles } from "../llm/generationBundles";
+import { ResolvedGenerationBundles } from "../proofProviders/generationBundles";
 
 import { ProofGoal } from "../coqLsp/coqLspTypes";
 

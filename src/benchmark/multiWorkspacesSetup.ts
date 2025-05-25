@@ -21,7 +21,7 @@ const standaloneTargets = new TargetsBuilder()
 //     .buildInputTargets();
 
 new BenchmarkingBundle()
-    .withLLMService("predefined")
+    .withProofProvider("predefined")
     .withBenchmarkingModelsParamsCommons({
         ranker: "random",
     })

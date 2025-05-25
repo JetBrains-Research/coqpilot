@@ -1,31 +1,33 @@
-import { LLMServiceIdentifier } from "../../llm/llmServices/llmServiceIdentifier";
+import { ProofProviderIdentifier } from "../../proofProviders/impl/proofProviderIdentifier";
 
 import { unsupported } from "../../utils/errors/throwErrors";
 import { PLUGIN_ID } from "../utils/pluginId";
 
 export function toSettingName(
-    identifier: LLMServiceIdentifier | undefined
+    identifier: ProofProviderIdentifier | undefined
 ): string {
     const settingPrefix = toSettingPrefix(
         identifier ??
-            unsupported("custom `LLMService`-s are not supported in the UI yet")
+            unsupported(
+                "custom `ProofProvider`-s are not supported in the UI yet"
+            )
     );
     return `${PLUGIN_ID}.${settingPrefix}ModelsParameters`;
 }
 
-function toSettingPrefix(identifier: LLMServiceIdentifier): string {
+function toSettingPrefix(identifier: ProofProviderIdentifier): string {
     switch (identifier) {
-        case LLMServiceIdentifier.PREDEFINED_PROOFS:
+        case ProofProviderIdentifier.PREDEFINED_PROOFS:
             return "predefinedProofs";
-        case LLMServiceIdentifier.OPENAI:
+        case ProofProviderIdentifier.OPENAI:
             return "openAi";
-        case LLMServiceIdentifier.GRAZIE:
+        case ProofProviderIdentifier.GRAZIE:
             return "grazie";
-        case LLMServiceIdentifier.LMSTUDIO:
+        case ProofProviderIdentifier.LMSTUDIO:
             return "lmStudio";
-        case LLMServiceIdentifier.DEEPSEEK:
+        case ProofProviderIdentifier.DEEPSEEK:
             return "deepSeek";
-        case LLMServiceIdentifier.RANGO:
+        case ProofProviderIdentifier.RANGO:
             return "rango";
     }
 }

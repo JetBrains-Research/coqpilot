@@ -1,7 +1,7 @@
-import { ErrorsHandlingMode } from "../../../llm/llmServices/commonStructures/errorsHandlingMode";
-import { LLMService } from "../../../llm/llmServices/llmService";
-import { ModelParams } from "../../../llm/llmServices/modelParams";
-import { LLMServiceControlParams } from "../../../llm/llmServices/utils/llmServiceControlParams";
+import { ErrorsHandlingMode } from "../../../proofProviders/impl/commonStructures/errorsHandlingMode";
+import { ModelParams } from "../../../proofProviders/impl/modelParams";
+import { ProofProvider } from "../../../proofProviders/impl/proofProvider";
+import { ProofProviderControlParams } from "../../../proofProviders/impl/utils/proofProviderControlParams";
 
 import { CoqLspProvider } from "../../../coqLsp/coqLspProviders/abstractCoqLspProvider";
 
@@ -40,7 +40,7 @@ namespace ArtifactsNames {
     export const resultReportFileName = "result.json";
 }
 
-export const BENCHMARKING_CONTROL_PARAMS: LLMServiceControlParams = {
+export const BENCHMARKING_CONTROL_PARAMS: ProofProviderControlParams = {
     eventLogger: undefined,
     errorsHandlingMode: ErrorsHandlingMode.RETHROW_ERRORS,
 };
@@ -94,7 +94,7 @@ export async function executeBenchmarkingTask(
     );
     const task = benchmarkingItem.task;
     const params = benchmarkingItem.params;
-    const llmService = benchmarkingItem.params.llmService;
+    const proofProvider = benchmarkingItem.params.proofProvider;
 
     try {
         ArtifactsUtils.saveInputTaskToFileOrThrow(
@@ -104,7 +104,7 @@ export async function executeBenchmarkingTask(
 
         const generationArgs: CompletionGenerationBenchmarkArgs<
             ModelParams,
-            LLMService<any, ModelParams>
+            ProofProvider<any, ModelParams>
         > = {
             completionContext: task.getCompletionContext(),
             sourceTheorem: task.sourceTheorem,
@@ -113,7 +113,7 @@ export async function executeBenchmarkingTask(
             parentProofToFix: undefined,
             nextGeneratedProofId: 0,
             roundNumber: 1,
-            llmService: llmService,
+            proofProvider: proofProvider,
             parsedSourceFileData: task.parsedSourceFileData,
             workspaceRoot: task.workspaceRoot,
         };

@@ -1,15 +1,15 @@
+import { GenerationTokens } from "../../../../proofProviders/impl/commonStructures/generationTokens";
+import { ProofGenerationMetadataHolder } from "../../../../proofProviders/impl/commonStructures/proofGenerationMetadata";
+import { GeneratedProof } from "../../../../proofProviders/impl/generatedProof";
+import { ModelParams } from "../../../../proofProviders/impl/modelParams";
+import { ProofProvider } from "../../../../proofProviders/impl/proofProvider";
+import { ProofGenerationContext } from "../../../../proofProviders/proofGenerationContext";
 import {
     ConfigurationError,
     GenerationFailedError,
-    LLMServiceError,
+    ProofProviderError,
     RemoteConnectionError,
-} from "../../../../llm/llmServiceErrors";
-import { GenerationTokens } from "../../../../llm/llmServices/commonStructures/generationTokens";
-import { ProofGenerationMetadataHolder } from "../../../../llm/llmServices/commonStructures/proofGenerationMetadata";
-import { GeneratedProof } from "../../../../llm/llmServices/generatedProof";
-import { LLMService } from "../../../../llm/llmServices/llmService";
-import { ModelParams } from "../../../../llm/llmServices/modelParams";
-import { ProofGenerationContext } from "../../../../llm/proofGenerationContext";
+} from "../../../../proofProviders/proofProviderErrors";
 
 import { CoqLspProvider } from "../../../../coqLsp/coqLspProviders/abstractCoqLspProvider";
 
@@ -71,7 +71,7 @@ import {
 
 export interface CompletionGenerationBenchmarkArgs<
     ResolvedModelParams extends ModelParams,
-    LLMServiceType extends LLMService<any, ResolvedModelParams>,
+    ProofProviderType extends ProofProvider<any, ResolvedModelParams>,
 > {
     completionContext: CompletionContext;
     sourceTheorem: TheoremData;
@@ -85,7 +85,7 @@ export interface CompletionGenerationBenchmarkArgs<
      * and `GeneratedProof.versionNumber()` for more details.
      */
     roundNumber: number;
-    llmService: LLMServiceType;
+    proofProvider: ProofProviderType;
     parsedSourceFileData: ParsedCoqFileData;
     workspaceRoot: WorkspaceRoot;
 }
@@ -99,9 +99,9 @@ export interface ParentProofToFix {
  * Executes a _single_ round of completion generation and records the associated metrics.
  * This function performs only one iteration of a multiround generation process at a time.
  *
- * If proof generation fails due to the `llmService` being unavailable or unreachable (e.g., connection error),
+ * If proof generation fails due to the `proofProvider` being unavailable or unreachable (e.g., connection error),
  * the function will retry indefinitely by default or until `options.proofGenerationRetries` are reached / abort signal is sent.
- * The retries will occur with delays as specified in `LLMService.estimateTimeToBecomeAvailable` and `RemoteConnectionErrorDelays`,
+ * The retries will occur with delays as specified in `ProofProvider.estimateTimeToBecomeAvailable` and `RemoteConnectionErrorDelays`,
  * until a response with proofs is received.
  *
  * The function handles errors as follows:
@@ -117,11 +117,11 @@ export interface ParentProofToFix {
  */
 export async function benchmarkSingleCompletionGeneration<
     ResolvedModelParams extends ModelParams,
-    LLMServiceType extends LLMService<any, ResolvedModelParams>,
+    ProofProviderType extends ProofProvider<any, ResolvedModelParams>,
 >(
     generationArgs: CompletionGenerationBenchmarkArgs<
         ResolvedModelParams,
-        LLMServiceType
+        ProofProviderType
     >,
     options: BenchmarkingOptions,
     coqLspProvider: CoqLspProvider,
@@ -301,7 +301,7 @@ async function generateNextRoundProofWithRetries<
 >(
     generationArgs: CompletionGenerationBenchmarkArgs<
         ResolvedModelParams,
-        LLMService<any, ResolvedModelParams>
+        ProofProvider<any, ResolvedModelParams>
     >,
     options: BenchmarkingOptions,
     logger: BenchmarkingLogger,
@@ -322,7 +322,7 @@ async function generateNextRoundProofWithRetries<
                 benchmarkingParams.theoremRanker,
                 logger
             );
-            return generationArgs.llmService.generateProof(
+            return generationArgs.proofProvider.generateProof(
                 proofGenerationContext,
                 benchmarkingParams.modelParams,
                 benchmarkingParams.modelParams.defaultChoices,
@@ -351,7 +351,7 @@ async function generateNextRoundProofWithRetries<
     }
     return generateProofWithRetriesMeasured(
         generateProof,
-        generationArgs.llmService,
+        generationArgs.proofProvider,
         options,
         generationArgs.roundNumber,
         logger,
@@ -363,7 +363,7 @@ async function generateProofWithRetriesMeasured(
     generateProofs: (
         metadataHolder: ProofGenerationMetadataHolder
     ) => Promise<GeneratedProof[]>,
-    llmService: LLMService,
+    proofProvider: ProofProvider,
     options: BenchmarkingOptions,
     roundNumber: number,
     logger: BenchmarkingLogger,
@@ -428,27 +428,27 @@ async function generateProofWithRetriesMeasured(
 
             return result;
         } catch (e) {
-            if (!(e instanceof LLMServiceError)) {
+            if (!(e instanceof ProofProviderError)) {
                 illegalState(
-                    "`LLMService` is expected to throw only `LLMServiceError`-s ",
+                    "`ProofProvider` is expected to throw only `ProofProviderError`-s ",
                     `but got:\n${buildErrorCompleteLog(e)}`
                 );
             }
-            const llmServiceError = e as LLMServiceError;
+            const proofProviderError = e as ProofProviderError;
 
-            if (llmServiceError instanceof ConfigurationError) {
+            if (proofProviderError instanceof ConfigurationError) {
                 attemptLogger.error(
-                    `Configuration error: ${llmServiceError.message}`,
+                    `Configuration error: ${proofProviderError.message}`,
                     "default"
                 );
-                throw llmServiceError;
+                throw proofProviderError;
             }
-            if (llmServiceError instanceof GenerationFailedError) {
-                if (llmServiceError.cause instanceof AbortError) {
+            if (proofProviderError instanceof GenerationFailedError) {
+                if (proofProviderError.cause instanceof AbortError) {
                     throwOnAbort(abortSignal);
                 }
                 const estimatedTime =
-                    llmService.estimateTimeToBecomeAvailable();
+                    proofProvider.estimateTimeToBecomeAvailable();
                 delayMillis = Math.max(
                     timeToMillis(estimatedTime),
                     minDelayMillis
@@ -456,12 +456,12 @@ async function generateProofWithRetriesMeasured(
                 attemptLogger
                     .asOneRecord()
                     .debug(
-                        `Generation failed error: ${llmServiceError.message}`
+                        `Generation failed error: ${proofProviderError.message}`
                     )
                     .debug(
                         `Estimated time to become available: ${timeToString(estimatedTime)}`
                     );
-            } else if (llmServiceError instanceof RemoteConnectionError) {
+            } else if (proofProviderError instanceof RemoteConnectionError) {
                 if (prevFailureIsConnectionError) {
                     delayMillis *=
                         RemoteConnectionErrorDelays.exponentialMultiplier;
@@ -473,13 +473,13 @@ async function generateProofWithRetriesMeasured(
                 attemptLogger
                     .asOneRecord()
                     .debug(
-                        `Remote connection error: ${stringifyAnyValue(llmServiceError.message)}`
+                        `Remote connection error: ${stringifyAnyValue(proofProviderError.message)}`
                     )
                     .debug(`Delay to wait for: ${millisToString(delayMillis)}`);
             } else {
                 illegalState(
-                    `unknown \`LLMServiceError\` type: ${llmServiceError.name};\n`,
-                    buildErrorCompleteLog(llmServiceError)
+                    `unknown \`ProofProviderError\` type: ${proofProviderError.name};\n`,
+                    buildErrorCompleteLog(proofProviderError)
                 );
             }
             // wait and try again

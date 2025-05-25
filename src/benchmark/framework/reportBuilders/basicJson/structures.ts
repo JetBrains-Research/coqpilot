@@ -1,7 +1,7 @@
-import { GeneratedRawContentItem } from "../../../../llm/llmServices/commonStructures/generatedRawContent";
-import { GenerationTokens } from "../../../../llm/llmServices/commonStructures/generationTokens";
-import { ModelParams } from "../../../../llm/llmServices/modelParams";
-import { SerializedLLMService } from "../../../../llm/llmServices/utils/serialization/serializedLLMService";
+import { GeneratedRawContentItem } from "../../../../proofProviders/impl/commonStructures/generatedRawContent";
+import { GenerationTokens } from "../../../../proofProviders/impl/commonStructures/generationTokens";
+import { ModelParams } from "../../../../proofProviders/impl/modelParams";
+import { SerializedProofProvider } from "../../../../proofProviders/impl/utils/serialization/serializedProofProvider";
 
 import { TargetType } from "../../../../core/completionGenerationContext";
 import { RankerType } from "../../../../core/contextTheoremRanker/contextTheoremsRanker";
@@ -47,7 +47,7 @@ export namespace BasicJsonSerializationStructures {
     > {
         theoremRanker: RankerType;
         modelParams: ResolvedModelParams;
-        serializedService: SerializedLLMService;
+        serializedProofProvider: SerializedProofProvider;
     }
 
     export type SerializedBenchmarkingResult =

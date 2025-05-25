@@ -1,6 +1,6 @@
-import { GeneratedProof } from "../../../../llm/llmServices/generatedProof";
-import { ModelParams } from "../../../../llm/llmServices/modelParams";
-import { ProofGenerationContext } from "../../../../llm/proofGenerationContext";
+import { GeneratedProof } from "../../../../proofProviders/impl/generatedProof";
+import { ModelParams } from "../../../../proofProviders/impl/modelParams";
+import { ProofGenerationContext } from "../../../../proofProviders/proofGenerationContext";
 
 import { LightweightSerializer } from "../../experiment/lightweightItems/lightweightSerializer";
 import { BenchmarkingItem } from "../../structures/benchmarkingCore/benchmarkingItem";
@@ -92,7 +92,7 @@ export namespace BasicJsonSerialization {
         return {
             theoremRanker: params.theoremRanker.type,
             modelParams: params.modelParams,
-            serializedService: params.llmService.serialize(),
+            serializedProofProvider: params.proofProvider.serialize(),
         };
     }
 

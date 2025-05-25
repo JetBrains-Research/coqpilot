@@ -1,4 +1,4 @@
-import { ModelParams } from "../../../../llm/llmServices/modelParams";
+import { ModelParams } from "../../../../proofProviders/impl/modelParams";
 
 import { makeElementsUniqueByStringKeys } from "../../../../utils/collectionUtils/listUtils";
 import {
@@ -32,7 +32,7 @@ import { LightweightBenchmarkingItem } from "../../structures/inputParameters/li
 import { LightweightCompletionGenerationTask } from "../../structures/inputParameters/lightweight/lightweightCompletionGenerationTask";
 import { LightweightInputModelParams } from "../../structures/inputParameters/lightweight/lightweightInputModelParams";
 import { LightweightWorkspaceRoot } from "../../structures/inputParameters/lightweight/lightweightWorkspaceRoot";
-import { ResolvedWithServiceBenchmarkingBundle } from "../../structures/inputParameters/resolvedWithServiceBenchmarkingBundle";
+import { ResolvedWithProofProviderBenchmarkingBundle } from "../../structures/inputParameters/resolvedWithProofProviderBenchmarkingBundle";
 import { serializeGoal } from "../../utils/coqUtils/goalParser";
 import { prependWithZeros } from "../../utils/serializationUtils";
 
@@ -41,7 +41,7 @@ import { LightweightSerialization } from "./lightweightSerialization";
 export namespace LightweightSerializer {
     export function serializeToLightweight(
         benchmarkingItems: BenchmarkingItem[],
-        resolvedBundles: ResolvedWithServiceBenchmarkingBundle[]
+        resolvedBundles: ResolvedWithProofProviderBenchmarkingBundle[]
     ): LightweightSerialization.PackedItems {
         const inputModels = resolvedBundles.flatMap(
             (bundle) => bundle.inputBenchmarkingModelsParams
@@ -72,7 +72,7 @@ export namespace LightweightSerializer {
                         params.modelParams.modelId,
                         `Lightweight serialization failed, invariant has been violated: no input model with "${params.modelParams.modelId}" model id`
                     ) as InputBenchmarkingModelParams.Params),
-                    serializedService: params.llmService.serialize(),
+                    serializedProofProvider: params.proofProvider.serialize(),
                 };
             }
         );

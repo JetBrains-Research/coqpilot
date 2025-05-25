@@ -1,14 +1,14 @@
-import { AnalyzedChatHistory } from "../../../llm/llmServices/commonStructures/chat";
+import { AnalyzedChatHistory } from "../../../proofProviders/impl/commonStructures/chat";
 import {
     GeneratedRawContent,
     GeneratedRawContentItem,
-} from "../../../llm/llmServices/commonStructures/generatedRawContent";
-import { ProofVersion } from "../../../llm/llmServices/commonStructures/proofVersion";
-import { SchedulersProvider } from "../../../llm/llmServices/commonStructures/schedulersProviders";
-import { GeneratedProofImpl } from "../../../llm/llmServices/generatedProof";
-import { LLMServiceImpl } from "../../../llm/llmServices/llmService";
-import { LLMServiceInternal } from "../../../llm/llmServices/llmServiceInternal";
-import { ProofGenerationContext } from "../../../llm/proofGenerationContext";
+} from "../../../proofProviders/impl/commonStructures/generatedRawContent";
+import { ProofVersion } from "../../../proofProviders/impl/commonStructures/proofVersion";
+import { SchedulersProvider } from "../../../proofProviders/impl/commonStructures/schedulersProviders";
+import { GeneratedProof } from "../../../proofProviders/impl/generatedProof";
+import { ProofProvider } from "../../../proofProviders/impl/proofProvider";
+import { ProofProviderInternal } from "../../../proofProviders/impl/proofProviderInternal";
+import { ProofGenerationContext } from "../../../proofProviders/proofGenerationContext";
 
 import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
 
@@ -25,7 +25,7 @@ import {
 } from "./benchTestServiceParams";
 import { BenchTestServiceSerializer } from "./benchTestServiceSerializer";
 
-export class BenchTestService extends LLMServiceImpl<
+export class BenchTestService extends ProofProvider<
     BenchTestUserModelParams,
     BenchTestModelParams,
     BenchTestService,
@@ -41,13 +41,13 @@ export class BenchTestService extends LLMServiceImpl<
     protected readonly serializer;
 
     constructor(
-        serviceParams: BenchTestServiceParams = {},
+        proofProviderParams: BenchTestServiceParams = {},
         resolveServiceParamsWithDefaults: (
-            serviceParams: BenchTestServiceParams
+            proofProviderParams: BenchTestServiceParams
         ) => ResolvedBenchTestServiceParams = resolveBenchTestServiceParamsWithDefaults
     ) {
         const resolvedServiceParams =
-            resolveServiceParamsWithDefaults(serviceParams);
+            resolveServiceParamsWithDefaults(proofProviderParams);
         super(resolvedServiceParams);
         this.internal = new BenchTestServiceInternal(
             this,
@@ -59,7 +59,7 @@ export class BenchTestService extends LLMServiceImpl<
     }
 }
 
-export class BenchTestGeneratedProof extends GeneratedProofImpl<
+export class BenchTestGeneratedProof extends GeneratedProof<
     BenchTestModelParams,
     BenchTestService,
     BenchTestGeneratedProof,
@@ -69,32 +69,32 @@ export class BenchTestGeneratedProof extends GeneratedProofImpl<
         rawProof: GeneratedRawContentItem,
         proofGenerationContext: ProofGenerationContext,
         modelParams: BenchTestModelParams,
-        llmServiceInternal: BenchTestServiceInternal
+        proofProviderInternal: BenchTestServiceInternal
     ) {
         super(
             rawProof,
             proofGenerationContext,
             modelParams,
-            llmServiceInternal
+            proofProviderInternal
         );
     }
 }
 
-class BenchTestServiceInternal extends LLMServiceInternal<
+class BenchTestServiceInternal extends ProofProviderInternal<
     BenchTestModelParams,
     BenchTestService,
     BenchTestGeneratedProof,
     BenchTestServiceInternal
 > {
     constructor(
-        readonly llmService: BenchTestService,
+        readonly proofProvider: BenchTestService,
         private readonly logger: BenchmarkingLogger,
         private readonly generateRawProofs: GenerateRawProofsType,
         private readonly getSchedulersProvider: (
-            service: BenchTestService
+            proofProvider: BenchTestService
         ) => SchedulersProvider
     ) {
-        super(llmService);
+        super(proofProvider);
     }
 
     constructGeneratedProof(
@@ -112,7 +112,7 @@ class BenchTestServiceInternal extends LLMServiceInternal<
     }
 
     readonly modelsSchedulersProvider = this.getSchedulersProvider(
-        this.llmService
+        this.proofProvider
     );
 
     async generateFromChatImpl(
@@ -126,7 +126,7 @@ class BenchTestServiceInternal extends LLMServiceInternal<
             choices,
             this.logger
         );
-        return LLMServiceInternal.aggregateToGeneratedRawContent(
+        return ProofProviderInternal.aggregateToGeneratedRawContent(
             rawContentItems,
             analyzedChat.estimatedTokens.messagesTokens,
             undefined

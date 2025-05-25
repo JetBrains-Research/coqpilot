@@ -1,6 +1,6 @@
 import { expect } from "earl";
 
-import { AnalyzedChatHistory } from "../../../llm/llmServices/commonStructures/chat";
+import { AnalyzedChatHistory } from "../../../proofProviders/impl/commonStructures/chat";
 
 import {
     BenchTestInputBenchmarkingModelParams,
@@ -56,7 +56,7 @@ export async function testContextTheoremsNotContainTarget(
     ).buildInputTargets();
 
     const bundle = new BenchmarkingBundle()
-        .withCustomLLMService<BenchTestInputBenchmarkingModelParams>(
+        .withCustomProofProvider<BenchTestInputBenchmarkingModelParams>(
             (controlParams) =>
                 new BenchTestService({
                     ...controlParams,

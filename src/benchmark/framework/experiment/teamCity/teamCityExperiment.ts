@@ -63,8 +63,8 @@ export class TeamCityExperiment extends MultiWorkspacesExperiment {
                         logger
                     )
             );
-        const [llmServices, resolvedBundles] =
-            TeamCityExperiment.resolveWithServices(this.bundles);
+        const [proofProviders, resolvedBundles] =
+            TeamCityExperiment.resolveWithProofProviders(this.bundles);
         try {
             const benchmarkingItems = await this.buildBenchmarkingItems(
                 resolvedBundles,
@@ -87,7 +87,7 @@ export class TeamCityExperiment extends MultiWorkspacesExperiment {
                 executionContext.logger
             );
         } finally {
-            llmServices.dispose();
+            proofProviders.dispose();
         }
     }
 

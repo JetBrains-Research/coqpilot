@@ -1,5 +1,5 @@
-import { ConfigurationError } from "../../../../llm/llmServiceErrors";
-import { ModelParams } from "../../../../llm/llmServices/modelParams";
+import { ModelParams } from "../../../../proofProviders/impl/modelParams";
+import { ConfigurationError } from "../../../../proofProviders/proofProviderErrors";
 
 import {
     buildErrorCompleteLog,

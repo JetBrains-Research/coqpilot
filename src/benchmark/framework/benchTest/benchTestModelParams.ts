@@ -4,11 +4,11 @@ import { PropertiesSchema } from "ajv/dist/types/json-schema";
 import {
     ModelParams,
     modelParamsSchema,
-} from "../../../llm/llmServices/modelParams";
-import { ValidationRules } from "../../../llm/llmServices/utils/paramsResolvers/builders";
-import { BasicModelParamsResolver } from "../../../llm/llmServices/utils/paramsResolvers/kit/basicModelParamsResolvers";
-import { ValidParamsResolverImpl } from "../../../llm/llmServices/utils/paramsResolvers/paramsResolverImpl";
-import { UserModelParams } from "../../../llm/userModelParams";
+} from "../../../proofProviders/impl/modelParams";
+import { ValidationRules } from "../../../proofProviders/impl/utils/paramsResolvers/builders";
+import { BasicModelParamsResolver } from "../../../proofProviders/impl/utils/paramsResolvers/kit/basicModelParamsResolvers";
+import { ValidParamsResolverImpl } from "../../../proofProviders/impl/utils/paramsResolvers/paramsResolverImpl";
+import { UserModelParams } from "../../../proofProviders/userModelParams";
 
 import { InputBenchmarkingModelParams } from "../structures/inputParameters/inputBenchmarkingModelParams";
 

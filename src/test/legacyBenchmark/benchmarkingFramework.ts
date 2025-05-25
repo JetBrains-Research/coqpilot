@@ -1,15 +1,15 @@
 import * as assert from "assert";
 import * as fs from "fs";
 
-import { GenerationBundlesStorage } from "../../llm/generationBundles";
-import { ErrorsHandlingMode } from "../../llm/llmServices/commonStructures/errorsHandlingMode";
-import { isLLMServiceRequestSucceeded } from "../../llm/llmServices/commonStructures/llmServiceRequest";
-import { LLMServiceImpl } from "../../llm/llmServices/llmService";
-import { selectLLMServiceProvider } from "../../llm/llmServices/llmServiceProvider";
-import { ModelParams } from "../../llm/llmServices/modelParams";
-import { LLMServiceControlParams } from "../../llm/llmServices/utils/llmServiceControlParams";
-import { resolveParametersOrThrow } from "../../llm/llmServices/utils/resolveOrThrow";
-import { LLMServicesStorage } from "../../llm/llmServicesStorage";
+import { GenerationBundlesStorage } from "../../proofProviders/generationBundles";
+import { ErrorsHandlingMode } from "../../proofProviders/impl/commonStructures/errorsHandlingMode";
+import { isProofProviderRequestSucceeded } from "../../proofProviders/impl/commonStructures/proofProviderRequest";
+import { ModelParams } from "../../proofProviders/impl/modelParams";
+import { ProofProvider } from "../../proofProviders/impl/proofProvider";
+import { selectProofProviderConstructor } from "../../proofProviders/impl/proofProviderConstructor";
+import { ProofProviderControlParams } from "../../proofProviders/impl/utils/proofProviderControlParams";
+import { resolveParametersOrThrow } from "../../proofProviders/impl/utils/resolveOrThrow";
+import { ProofProvidersStorage } from "../../proofProviders/proofProvidersStorage";
 
 import { withDocumentOpenedByTestCoqLsp } from "../../coqLsp/coqLspBuilders";
 import { CoqLspClient } from "../../coqLsp/coqLspClient";
@@ -101,16 +101,16 @@ export async function runTestBenchmark(
             abortSignal: abortController.signal,
         },
         async (coqLspClient) => {
-            // TODO: for more efficiency, `llmServices` should be created only once and top-level
+            // TODO: for more efficiency, `proofProviders` should be created only once and top-level
             const eventLogger = new EventLogger();
-            const llmServices = createLLMServices(
+            const proofProviders = createProofProviders(
                 resolvedOptions.inputModelsParams,
                 eventLogger
             );
             try {
                 return await runTestBenchmarkOnPreparedFile(
                     resolvedOptions,
-                    llmServices,
+                    proofProviders,
                     coqLspClient,
                     fileUri,
                     resolvedOptions.workspaceRootPath === undefined
@@ -121,7 +121,7 @@ export async function runTestBenchmark(
                     eventLogger
                 );
             } finally {
-                llmServices.dispose();
+                proofProviders.dispose();
             }
         }
     );
@@ -145,7 +145,7 @@ function getFileUriWithImports(
 
 export async function runTestBenchmarkOnPreparedFile(
     options: TestBenchmarkOptions,
-    llmServices: LLMServicesStorage,
+    proofProviders: ProofProvidersStorage,
     coqLspClient: CoqLspClient,
     fileUri: Uri,
     workspaceRootUri: Uri | undefined,
@@ -159,7 +159,7 @@ export async function runTestBenchmarkOnPreparedFile(
     const [completionTargets, sourceFileEnvironment, processEnvironment] =
         await prepareForBenchmarkCompletions(
             options.inputModelsParams,
-            llmServices,
+            proofProviders,
             shouldCompleteHole,
             coqLspClient,
             fileUri,
@@ -347,11 +347,11 @@ async function benchmarkCompletionGeneration(
 
     const contextTheorems: ContextTheoremsHolder = {};
     const succeededSubscriptionId = eventLogger.subscribeToLogicEvent(
-        LLMServiceImpl.requestSucceededEvent,
+        ProofProvider.requestSucceededEvent,
         reactToRequestEvent(contextTheorems)
     );
     const failedSubscriptionId = eventLogger.subscribeToLogicEvent(
-        LLMServiceImpl.requestFailedEvent,
+        ProofProvider.requestFailedEvent,
         reactToRequestEvent(contextTheorems)
     );
 
@@ -399,11 +399,11 @@ async function benchmarkCompletionGeneration(
     }
 
     eventLogger.unsubscribe(
-        LLMServiceImpl.requestSucceededEvent,
+        ProofProvider.requestSucceededEvent,
         succeededSubscriptionId
     );
     eventLogger.unsubscribe(
-        LLMServiceImpl.requestFailedEvent,
+        ProofProvider.requestFailedEvent,
         failedSubscriptionId
     );
 
@@ -424,10 +424,10 @@ function reactToRequestEvent(
     contextTheorems: ContextTheoremsHolder
 ): (data: any) => void {
     return (data: any) => {
-        if (!isLLMServiceRequestSucceeded(data)) {
+        if (!isProofProviderRequestSucceeded(data)) {
             illegalState(
-                `data of the ${LLMServiceImpl.requestSucceededEvent} event `,
-                "should be a `LLMServiceRequestSucceeded` object, but got: ",
+                `data of the ${ProofProvider.requestSucceededEvent} event `,
+                "should be a `ProofProviderRequestSucceeded` object, but got: ",
                 stringifyAnyValue(data)
             );
         }
@@ -450,7 +450,7 @@ function buildAuxFileUri(filePath: string, unique: boolean = true): Uri {
 
 async function prepareForBenchmarkCompletions(
     inputModelsParams: InputModelsParams,
-    llmServices: LLMServicesStorage,
+    proofProviders: ProofProvidersStorage,
     shouldCompleteHole: (hole: ProofStep) => boolean,
     coqLspClient: CoqLspClient,
     fileUri: Uri,
@@ -473,7 +473,7 @@ async function prepareForBenchmarkCompletions(
 
     const bundles = resolveParamsAndCreateBundles(
         inputModelsParams,
-        llmServices
+        proofProviders
     );
     const processEnvironment: ProcessEnvironment = {
         coqProofChecker: coqProofChecker,
@@ -605,44 +605,45 @@ async function resolveProofStepsToCompletionContexts(
     return completionContexts;
 }
 
-function createLLMServices(
+function createProofProviders(
     inputModelsParams: InputModelsParams,
     eventLogger: EventLogger
-): LLMServicesStorage {
-    const controlParams: LLMServiceControlParams = {
+): ProofProvidersStorage {
+    const controlParams: ProofProviderControlParams = {
         eventLogger: eventLogger,
         errorsHandlingMode: ErrorsHandlingMode.RETHROW_ERRORS,
     };
-    const llmServices = new LLMServicesStorage();
+    const proofProviders = new ProofProvidersStorage();
     try {
         const requestedIdentifiers = new Set(
             inputModelsParams.map((item) => item.identifier)
         );
         for (const identifier of requestedIdentifiers) {
-            llmServices.registerService(() =>
-                selectLLMServiceProvider(identifier, {})(controlParams)
+            proofProviders.registerProofProvider(() =>
+                selectProofProviderConstructor(identifier, {})(controlParams)
             );
         }
-        return llmServices;
+        return proofProviders;
     } catch (e) {
-        llmServices.dispose();
+        proofProviders.dispose();
         throw e;
     }
 }
 
 function resolveParamsAndCreateBundles(
     inputModelsParams: InputModelsParams,
-    llmServices: LLMServicesStorage
+    proofProviders: ProofProvidersStorage
 ) {
     const bundles = new GenerationBundlesStorage<ModelParams>();
     for (const { identifier, models } of inputModelsParams) {
-        const sameTypeLLMServices = llmServices.getServices(identifier);
-        for (const llmService of sameTypeLLMServices) {
+        const sameTypeProofProviders =
+            proofProviders.getProofProviders(identifier);
+        for (const proofProvider of sameTypeProofProviders) {
             const resolvedModels = models.map((inputModel) =>
-                resolveParametersOrThrow(llmService, inputModel)
+                resolveParametersOrThrow(proofProvider, inputModel)
             );
             bundles.addBundle({
-                llmService: llmService,
+                proofProvider: proofProvider,
                 models: resolvedModels,
             });
         }

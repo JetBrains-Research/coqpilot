@@ -12,15 +12,15 @@ Below are more details about each step.
 # Table of Contents
 
 - ⚡️ [Benchmarking Framework Guide](#benchmarking-framework-guide)
-  - [About Dataset](#about-dataset)
-  - [Select & Run Experiment](#select--run-experiment)
-    - 🏠 [`SingleWorkspaceExperiment`](#singleworkspaceexperiment)
-    - 🌍 [`MultiWorkspacesExperiment`](#multiworkspacesexperiment)
-    - 👽 [TeamCity Experiment (coming soon)](#teamcity-experiment-coming-soon)
-  - [Setting Up the Experiment Pipeline](#setting-up-the-experiment-pipeline)
-    - 🪁 [Example Pipeline Explained](#example-pipeline-explained)
-    - ⛹️ [Run Options](#run-options)
-  - [Framework Maintenance](#framework-maintenance)
+    - [About Dataset](#about-dataset)
+    - [Select & Run Experiment](#select--run-experiment)
+        - 🏠 [`SingleWorkspaceExperiment`](#singleworkspaceexperiment)
+        - 🌍 [`MultiWorkspacesExperiment`](#multiworkspacesexperiment)
+        - 👽 [TeamCity Experiment (coming soon)](#teamcity-experiment-coming-soon)
+    - [Setting Up the Experiment Pipeline](#setting-up-the-experiment-pipeline)
+        - 🪁 [Example Pipeline Explained](#example-pipeline-explained)
+        - ⛹️ [Run Options](#run-options)
+    - [Framework Maintenance](#framework-maintenance)
 
 ## About Dataset
 
@@ -65,8 +65,8 @@ Benchmarks can also be run in TeamCity, which is ideal for large-scale experimen
 
 Each experiment type has a corresponding setup file:
 
--   [singleWorkspaceSetup.test.ts](../../../src/test/benchmark/singleWorkspaceSetup.test.ts) for the single-workspace experiments;
--   [multiWorkspacesSetup.ts](../../../src/benchmark/multiWorkspacesSetup.ts) for the multi-workspaces experiments.
+- [singleWorkspaceSetup.test.ts](../../../src/test/benchmark/singleWorkspaceSetup.test.ts) for the single-workspace experiments;
+- [multiWorkspacesSetup.ts](../../../src/benchmark/multiWorkspacesSetup.ts) for the multi-workspaces experiments.
 
 Modify the relevant file to configure the experiment. Example pipelines are provided in these files for reference.
 
@@ -104,7 +104,7 @@ const immTargets = new TargetsBuilder()
 
 ```TypeScript
 new BenchmarkingBundle()
-    .withLLMService("predefined")
+    .withProofProvider("predefined")
     .withBenchmarkingModelsParamsCommons({
         // here you can specify any properties of the model parameters
         // that will be used as default ones for the models below
@@ -222,10 +222,10 @@ The benchmarking framework is still in the testing phase, so bugs and missing fe
 
 _Upcoming improvements:_
 
--   multiround proof-generation support;
--   results reporting configuration;
--   CoqHammer and Tactician support;
--   experiment recovery (after failure or interruption);
--   large-scale experiment in TeamCity;
--   mutlispaces experiment optimization: more efficient subproccesses architecture;
--   arbitrary theorem proof steps as benchmarking targets.
+- multiround proof-generation support;
+- results reporting configuration;
+- CoqHammer and Tactician support;
+- experiment recovery (after failure or interruption);
+- large-scale experiment in TeamCity;
+- mutlispaces experiment optimization: more efficient subproccesses architecture;
+- arbitrary theorem proof steps as benchmarking targets.

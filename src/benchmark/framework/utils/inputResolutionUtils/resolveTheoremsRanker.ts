@@ -1,9 +1,9 @@
+import { CosineContextTheoremsRanker } from "../../../../core/contextTheoremRanker/actualRankers/cosineContextTheoremRanker";
 import { DistanceContextTheoremsRanker } from "../../../../core/contextTheoremRanker/actualRankers/distanceContextTheoremsRanker";
 import { EuclidContextTheoremsRanker } from "../../../../core/contextTheoremRanker/actualRankers/euclidContextTheoremRanker";
 import { JaccardIndexContextTheoremsRanker } from "../../../../core/contextTheoremRanker/actualRankers/jaccardIndexContextTheoremsRanker";
 import { RandomContextTheoremsRanker } from "../../../../core/contextTheoremRanker/actualRankers/randomContextTheoremsRanker";
 import { WeightedJaccardIndexContextTheoremsRanker } from "../../../../core/contextTheoremRanker/actualRankers/weightedJaccardIndexTheoremRanker";
-import { CosineContextTheoremsRanker } from "../../../../core/contextTheoremRanker/actualRankers/сosineContextTheoremRanker";
 import {
     ContextTheoremsRanker,
     RankerType,

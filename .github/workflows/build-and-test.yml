@@ -101,6 +101,7 @@ jobs:
           COQ_LSP_PATH: ${{ env.coqlsp-path }}
       run: |
         eval $(opam env)
+        export DISABLE_UI_TESTS="true"
         xvfb-run -a npm run clean-test
 
     - name: Test not on Linux
@@ -109,6 +110,7 @@ jobs:
           COQ_LSP_PATH: ${{ env.coqlsp-path }}
       run: |
         eval $(opam env)
+        export DISABLE_UI_TESTS="true"
         npm run clean-test
     
     - name: Package Extension

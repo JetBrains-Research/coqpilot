@@ -74,6 +74,7 @@ export function copyFile(
     destPath: string,
     throwOnExisting: boolean
 ): string {
+    // TODO: known bug, `isDirectory` fails on non-existing path
     let destFilePath = isDirectory(destPath)
         ? joinPaths(destPath, parsePath(sourceFilePath).base)
         : destPath;

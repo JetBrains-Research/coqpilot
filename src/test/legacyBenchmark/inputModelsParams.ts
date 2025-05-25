@@ -1,19 +1,19 @@
-import { LLMServiceIdentifier } from "../../llm/llmServices/llmServiceIdentifier";
+import { ProofProviderIdentifier } from "../../proofProviders/impl/proofProviderIdentifier";
 import {
     PredefinedProofsUserModelParams,
     UserModelParams,
-} from "../../llm/userModelParams";
+} from "../../proofProviders/userModelParams";
 
 export type InputModelsParams = InputModelsParamsItem<UserModelParams>[];
 
 export interface InputModelsParamsItem<T extends UserModelParams> {
-    identifier: LLMServiceIdentifier;
+    identifier: ProofProviderIdentifier;
     models: T[];
 }
 
 export const onlyAutoModelsParams: InputModelsParams = [
     {
-        identifier: LLMServiceIdentifier.PREDEFINED_PROOFS,
+        identifier: ProofProviderIdentifier.PREDEFINED_PROOFS,
         models: [
             {
                 modelId: "Predefined tactic",
@@ -25,7 +25,7 @@ export const onlyAutoModelsParams: InputModelsParams = [
 
 export const tacticianModelsParams: InputModelsParams = [
     {
-        identifier: LLMServiceIdentifier.PREDEFINED_PROOFS,
+        identifier: ProofProviderIdentifier.PREDEFINED_PROOFS,
         models: [
             {
                 modelId: "Tactician",

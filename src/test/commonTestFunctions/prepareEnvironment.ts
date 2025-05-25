@@ -1,4 +1,4 @@
-import { ProofGenerationContext } from "../../llm/proofGenerationContext";
+import { ProofGenerationContext } from "../../proofProviders/proofGenerationContext";
 
 import { createTestCoqLspClient } from "../../coqLsp/coqLspBuilders";
 import { CoqLspClient } from "../../coqLsp/coqLspClient";

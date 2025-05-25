@@ -25,7 +25,10 @@ async function main() {
         await runTests({
             extensionDevelopmentPath,
             extensionTestsPath,
-            extensionTestsEnv: envVals,
+            extensionTestsEnv: {
+                ...envVals,
+                NODE_V8_COVERAGE: process.env.NODE_V8_COVERAGE,
+            },
         });
     } catch (err) {
         console.error("Failed to run tests", err);

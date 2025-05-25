@@ -1,0 +1,20 @@
+{
+    "extends": "@istanbuljs/nyc-config-typescript",
+  
+    "all": true,
+
+    "include": [
+        "out/**/*.js",
+        "src/**/*.ts"
+    ],
+  
+    "exclude": [
+        "src/test/**/*.*",
+        "out/test/**/*.*"
+    ],
+  
+    "exclude-after-remap": false,
+  
+    "reporter": ["html", "text", "text-summary"],
+    "report-dir": "coverage"
+}

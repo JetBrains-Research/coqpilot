@@ -11,7 +11,7 @@ import { AbstractExperiment, ExecutionContext } from "./abstractExperiment";
  * Due to the overhead of managing subprocesses, `MultiWorkspacesExperiment` is generally slower
  * than `SingleWorkspaceExperiment`. However, since the subprocesses are created within the contexts
  * of of the target workspaces, this experiment can benchmark all of them in a single run
- * (including any LLMService, their models, and task scheduling across the selected workspaces).
+ * (including any ProofProvider, their models, and task scheduling across the selected workspaces).
  *
  * Future versions of `MultiWorkspacesExperiment` will aim to reduce subprocess overhead,
  * potentially making it an even more efficient option for large-scale benchmarks.

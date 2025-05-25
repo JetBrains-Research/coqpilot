@@ -1,4 +1,4 @@
-import { ModelParams } from "../../llm/llmServices/modelParams";
+import { ModelParams } from "../../proofProviders/impl/modelParams";
 
 import { Theorem } from "../../coqParser/parsedTypes";
 
@@ -10,16 +10,18 @@ export namespace Results {
 
     export class ApproachBenchmarkingSummary {
         constructor(
-            readonly taskToLLMServicesResults: Map<
+            readonly taskToProofProvidersResults: Map<
                 CompletionGenerationTask,
-                Map<string, LLMServiceBenchmarkingResult<ModelParams>>
+                Map<string, ProofProviderBenchmarkingResult<ModelParams>>
             >
         ) {}
 
         readonly benchmarkingResults = [
-            ...this.taskToLLMServicesResults.values(),
+            ...this.taskToProofProvidersResults.values(),
         ]
-            .flatMap((servicesResults) => [...servicesResults.values()])
+            .flatMap((proofProvidersResults) => [
+                ...proofProvidersResults.values(),
+            ])
             .flatMap((modelParamsResults) => [...modelParamsResults.values()]);
 
         readonly successfulBenchmarkingResults =
@@ -36,7 +38,7 @@ export namespace Results {
         }
     }
 
-    export type LLMServiceBenchmarkingResult<
+    export type ProofProviderBenchmarkingResult<
         ResolvedModelParams extends ModelParams,
     > = Map<ResolvedModelParams, BenchmarkingResult<ResolvedModelParams>>;
 
@@ -44,7 +46,7 @@ export namespace Results {
         ResolvedModelParams extends ModelParams,
     > {
         task: CompletionGenerationTask;
-        llmServiceName: string;
+        proofProviderName: string;
         modelParams: ResolvedModelParams;
         result: CompletionGenerationResult;
     }
