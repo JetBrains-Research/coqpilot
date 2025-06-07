@@ -4,7 +4,7 @@ import { ProofProvider } from "../../../../proofProviders/impl/proofProvider";
 import { ContextTheoremsRanker } from "../../../../core/contextTheoremRanker/contextTheoremsRanker";
 
 export interface BenchmarkingModelParams<
-    ResolvedModelParams extends ModelParams,
+    ResolvedModelParams extends ModelParams = ModelParams,
 > {
     theoremRanker: ContextTheoremsRanker;
     modelParams: ResolvedModelParams;

@@ -1,4 +1,3 @@
-import { ModelParams } from "../../../../../proofProviders/impl/modelParams";
 import { ProofProvider } from "../../../../../proofProviders/impl/proofProvider";
 import { buildParamsResolutionMessages } from "../../../../../proofProviders/impl/utils/paramsResolvers/kit/paramsResolutionAnalysis";
 import { ConfigurationError } from "../../../../../proofProviders/proofProviderErrors";
@@ -37,14 +36,12 @@ function buildTasksAndResolveParams(
     logger: BenchmarkingLogger
 ): [
     Map<string, CompletionGenerationTask[]>,
-    Map<string, BenchmarkingModelParams<ModelParams>>,
+    Map<string, BenchmarkingModelParams>,
 ] {
     const modelIdToRequestedTasks: Map<string, CompletionGenerationTask[]> =
         new Map();
-    const modelIdToResolvedParams: Map<
-        string,
-        BenchmarkingModelParams<ModelParams>
-    > = new Map();
+    const modelIdToResolvedParams: Map<string, BenchmarkingModelParams> =
+        new Map();
 
     for (const bundle of resolvedBundles) {
         const bundleTasks: CompletionGenerationTask[] =
@@ -82,7 +79,7 @@ export function resolveInputBenchmarkingModelParams(
     inputParams: InputBenchmarkingModelParams.Params,
     proofProvider: ProofProvider,
     logger: BenchmarkingLogger
-): BenchmarkingModelParams<ModelParams> {
+): BenchmarkingModelParams {
     const { ranker, ...pureInputModelParams } = inputParams;
 
     const resolutionResult =
@@ -117,7 +114,7 @@ export function resolveInputBenchmarkingModelParams(
 
 function constructBenchmarkingItems(
     modelIdToRequestedTasks: Map<string, CompletionGenerationTask[]>,
-    modelIdToResolvedParams: Map<string, BenchmarkingModelParams<ModelParams>>
+    modelIdToResolvedParams: Map<string, BenchmarkingModelParams>
 ): BenchmarkingItem[] {
     const benchmarkingItems: BenchmarkingItem[] = [];
     for (const [modelId, requestedTasks] of modelIdToRequestedTasks.entries()) {

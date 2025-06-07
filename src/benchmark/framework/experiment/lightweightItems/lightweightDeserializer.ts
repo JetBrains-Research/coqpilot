@@ -1,4 +1,3 @@
-import { ModelParams } from "../../../../proofProviders/impl/modelParams";
 import { deserializeProofProvider } from "../../../../proofProviders/impl/utils/serialization/serializedProofProvider";
 import { ProofProvidersStorage } from "../../../../proofProviders/proofProvidersStorage";
 
@@ -164,7 +163,7 @@ export namespace LightweightDeserializer {
         logger: BenchmarkingLogger
     ): [
         Map<string, WorkspaceRoot>,
-        Map<string, BenchmarkingModelParams<ModelParams>>,
+        Map<string, BenchmarkingModelParams>,
         ProofProvidersStorage,
     ] {
         const workspaceRootsByRelativePaths = packIntoMap(
@@ -251,7 +250,7 @@ export namespace LightweightDeserializer {
         item: LightweightBenchmarkingItem,
         workspaceRoot: WorkspaceRoot,
         parsedSourceFile: ParsedCoqFileData,
-        resolvedParamsByIds: Map<string, BenchmarkingModelParams<ModelParams>>
+        resolvedParamsByIds: Map<string, BenchmarkingModelParams>
     ): BenchmarkingItem[] {
         const task = item.task;
         const completionGenerationTask = new CompletionGenerationTask(

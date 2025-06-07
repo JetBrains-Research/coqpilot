@@ -1,5 +1,3 @@
-import { ModelParams } from "../../../../proofProviders/impl/modelParams";
-
 import { makeElementsUniqueByStringKeys } from "../../../../utils/collectionUtils/listUtils";
 import {
     getOrThrow,
@@ -59,7 +57,7 @@ export namespace LightweightSerializer {
             (workspaceRoot) => workspaceRoot.relativeDirectoryPath
         );
         const selectedLightweightModelsByIds = reduceToMap<
-            BenchmarkingModelParams<ModelParams>,
+            BenchmarkingModelParams,
             string,
             LightweightInputModelParams
         >(

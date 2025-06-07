@@ -87,7 +87,7 @@ export namespace BasicJsonSerialization {
     }
 
     export function serializedBenchmarkingModelParams(
-        params: BenchmarkingModelParams<ModelParams>
+        params: BenchmarkingModelParams
     ): Structures.SerializedBenchmarkingModelParams<ModelParams> {
         return {
             theoremRanker: params.theoremRanker.type,

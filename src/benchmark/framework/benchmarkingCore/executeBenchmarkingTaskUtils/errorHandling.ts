@@ -1,4 +1,3 @@
-import { ModelParams } from "../../../../proofProviders/impl/modelParams";
 import { ConfigurationError } from "../../../../proofProviders/proofProviderErrors";
 
 import {
@@ -40,7 +39,7 @@ export namespace ExecuteBenchmarkingTaskErrorHandlingUtils {
     export function logErrorIfNeeded(
         wrappedError: ExpectedError,
         itemLogger: BenchmarkingLogger,
-        params: BenchmarkingModelParams<ModelParams>,
+        params: BenchmarkingModelParams,
         options: BenchmarkingOptions,
         abortSignal: AbortSignal
     ) {
@@ -75,7 +74,7 @@ export namespace ExecuteBenchmarkingTaskErrorHandlingUtils {
     function logCommonError(
         error: BenchmarkingError | ConfigurationError | IllegalStateError,
         itemLogger: BenchmarkingLogger,
-        params: BenchmarkingModelParams<ModelParams>,
+        params: BenchmarkingModelParams,
         options: BenchmarkingOptions,
         abortSignal: AbortSignal
     ) {
