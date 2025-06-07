@@ -1,6 +1,6 @@
 import { toFormattedJsonString } from "../../../../utils/printers";
 import { BenchmarkedItem } from "../../structures/benchmarkingResults/benchmarkedItem";
-import { AbstractReport } from "../abstractReport";
+import { AbstractReport } from "../utils/abstractReport";
 
 import { BasicJsonSerialization } from "./serialization";
 

@@ -21,6 +21,10 @@ export function stringifyDefinedValue(
     return stringifyAnyValue(value, space);
 }
 
+export function stringifyList(list: any[]): string {
+    return `[${list.map(stringifyAnyValue).join(", ")}]`;
+}
+
 export function toFormattedJsonString(object: any): string {
     return toJsonString(object, JsonSpacing.DEFAULT_FORMATTED);
 }

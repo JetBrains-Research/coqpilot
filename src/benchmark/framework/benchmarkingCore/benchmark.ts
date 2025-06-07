@@ -16,6 +16,7 @@ import { getDatasetDir } from "../../../utils/fs/rootResolvers";
 import { stringifyAnyValue } from "../../../utils/printers";
 import { millisToString } from "../../../utils/time";
 import { BenchmarkingLogger } from "../logging/benchmarkingLogger";
+import { ReportBuilders } from "../reportBuilders/reportBuilders";
 import { BenchmarkingItem } from "../structures/benchmarkingCore/benchmarkingItem";
 import { BenchmarkingOptions } from "../structures/benchmarkingCore/benchmarkingOptions";
 import { BenchmarkedItem } from "../structures/benchmarkingResults/benchmarkedItem";
@@ -135,13 +136,16 @@ async function benchmarkWithResources(
 
     const experimentResult = new ExperimentResults(benchmarkedItems);
 
-    writeToFile(experimentResult.asJson(), experimentReportPath, (e) =>
-        parentLogger
-            .asOneRecord()
-            .error(
-                `Failed to save experiment results into ${experimentReportPath}`
-            )
-            .debug(`Cause: ${stringifyAnyValue(e)}`)
+    writeToFile(
+        ReportBuilders.toBasicJson(experimentResult),
+        experimentReportPath,
+        (e) =>
+            parentLogger
+                .asOneRecord()
+                .error(
+                    `Failed to save experiment results into ${experimentReportPath}`
+                )
+                .debug(`Cause: ${stringifyAnyValue(e)}`)
     );
 
     return experimentResult;

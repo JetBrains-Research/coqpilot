@@ -6,6 +6,6 @@ export class ReportBuilderError extends Error {
     }
 }
 
-export function throwReportBuilderError(...errorMessage: string[]): never {
+export function reportBuilderFailed(...errorMessage: string[]): never {
     throw new ReportBuilderError(errorMessage.join(""));
 }

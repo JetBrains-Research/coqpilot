@@ -1,15 +1,14 @@
-import { BenchmarkedItem } from "../structures/benchmarkingResults/benchmarkedItem";
 import { ExperimentResults } from "../structures/benchmarkingResults/experimentResults";
 
 import { outputBasicJson } from "./basicJson/report";
-import { ModelsToAggregatedGroupsTable } from "./modelsToAggregatedGroupsTable/report";
+import { ModelsToAggregatedGroups } from "./modelsToAggregatedGroupsTable/report";
 
-export namespace ReportsBuilders {
+export namespace ReportBuilders {
     export function modelsToAggregatedGroupsTable(
         results: ExperimentResults,
-        options: Partial<ModelsToAggregatedGroupsTable.Options>
-    ): ModelsToAggregatedGroupsTable.Report {
-        return new ModelsToAggregatedGroupsTable.Report(
+        options: Partial<ModelsToAggregatedGroups.Options> = {}
+    ): ModelsToAggregatedGroups.Report {
+        return new ModelsToAggregatedGroups.Report(
             results.getBenchmarkedItems(),
             options
         );

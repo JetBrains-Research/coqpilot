@@ -30,6 +30,30 @@ export function lastElement<T extends Exclude<unknown, undefined | null>>(
     return elements[elements.length - 1];
 }
 
+export function joinList<T>(
+    elements: T[],
+    separator: string = "",
+    prefix: string = "",
+    suffix: string = ""
+): string {
+    return `${prefix}${elements.join(separator)}${suffix}`;
+}
+
+export function joinListAndWrap<T>(
+    elements: T[],
+    separator: string = "",
+    wrapper: string = ""
+): string {
+    return joinList(elements, separator, wrapper, wrapper);
+}
+
+export function joinListWrapped<T>(
+    elements: T[],
+    wrapper: string = ""
+): string {
+    return joinList(elements, wrapper, wrapper, wrapper);
+}
+
 export function removeElement(
     elements: string[],
     elementToRemove: string,
@@ -52,6 +76,19 @@ export function removeElementAndReturn(
     } else {
         return undefined;
     }
+}
+
+export function sort<T>(items: T[]): T[] {
+    return [...items].sort();
+}
+
+export function isPermutation(actual: string[], candidate: string[]) {
+    // TODO: implement more efficient solution with `Map`
+    return areEqualLists(sort(actual), sort(candidate));
+}
+
+export function areEqualLists(a: string[], b: string[]): boolean {
+    return a.length === b.length && a.every((v, i) => v === b[i]);
 }
 
 export function makeElementsUnique<T extends EqualTo<T>>(elements: T[]) {

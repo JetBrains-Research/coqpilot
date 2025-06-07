@@ -1,8 +1,11 @@
-import { getErrorMessage } from "../../../utils/errors/errorsUtils";
-import { writeToFile } from "../../../utils/fs/fileUtils";
-import { resolveAsAbsoluteOrRootRelativePath } from "../../../utils/fs/rootResolvers";
+import { getErrorMessage } from "../../../../utils/errors/errorsUtils";
+import {
+    createFileWithParentDirectories,
+    writeToFile,
+} from "../../../../utils/fs/fileUtils";
+import { resolveAsAbsoluteOrRootRelativePath } from "../../../../utils/fs/rootResolvers";
 
-import { throwReportBuilderError } from "./errors";
+import { reportBuilderFailed } from "./errors";
 
 export abstract class AbstractReport<MarkdownOptions, LatexOptions> {
     protected abstract toMarkdownString(options: MarkdownOptions): string;
@@ -16,8 +19,8 @@ export abstract class AbstractReport<MarkdownOptions, LatexOptions> {
     ): LatexOptions;
 
     toMarkdown(
-        options: Partial<MarkdownOptions> = {},
-        outputFilePath?: string
+        outputFilePath?: string,
+        options: Partial<MarkdownOptions> = {}
     ): string {
         const resolvedOptions = this.resolveMarkdownOptions(options);
         const content = this.toMarkdownString(resolvedOptions);
@@ -25,8 +28,8 @@ export abstract class AbstractReport<MarkdownOptions, LatexOptions> {
     }
 
     toLatex(
-        options: Partial<LatexOptions> = {},
-        outputFilePath?: string
+        outputFilePath?: string,
+        options: Partial<LatexOptions> = {}
     ): string {
         const resolvedOptions = this.resolveLatexOptions(options);
         const content = this.toLatexString(resolvedOptions);
@@ -40,10 +43,12 @@ export abstract class AbstractReport<MarkdownOptions, LatexOptions> {
         if (outputFilePath === undefined) {
             return content;
         }
-        const resolvedFilePath =
-            resolveAsAbsoluteOrRootRelativePath(outputFilePath);
+        const resolvedFilePath = createFileWithParentDirectories(
+            "throw",
+            resolveAsAbsoluteOrRootRelativePath(outputFilePath)
+        );
         writeToFile(content, resolvedFilePath, (err) =>
-            throwReportBuilderError(
+            reportBuilderFailed(
                 `failed to save content to file ${resolvedFilePath}, `,
                 `cause: ${getErrorMessage(err)}`
             )
