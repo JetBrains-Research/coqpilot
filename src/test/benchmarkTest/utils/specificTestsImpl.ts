@@ -1,6 +1,7 @@
 import { expect } from "earl";
 
 import { AnalyzedChatHistory } from "../../../proofProviders/impl/commonStructures/chat";
+import { PredefinedProofsUserModelParams } from "../../../proofProviders/userModelParams";
 
 import {
     BenchTestInputBenchmarkingModelParams,
@@ -17,16 +18,20 @@ import {
     BenchmarkingLoggerImpl,
     SeverityLevel,
 } from "../../../benchmark/framework/logging/benchmarkingLogger";
+import { ExperimentResults } from "../../../benchmark/framework/structures/benchmarkingResults/experimentResults";
 import { InputBenchmarkingModelParams } from "../../../benchmark/framework/structures/inputParameters/inputBenchmarkingModelParams";
 
-import { runSimpleTestExperimentWithBundle } from "./experimentRunners";
+import {
+    runSimpleTestExperimentWithBundles,
+    runSimpleTestExperimentWithTargetsAndModels,
+} from "./experimentRunners";
 import { BenchmarkingTestsConstants } from "./testConstants";
 import { TestTargetType, withTargetsFromFile } from "./testTargetTypeUtils";
 
 import Constants = BenchmarkingTestsConstants;
 
 export async function runSmokeTestExperimentWithBundle(
-    modelsBundle: BenchmarkingBundleWithModelsParams<any>
+    models: BenchmarkingBundleWithModelsParams<any>
 ) {
     const testTarget = new TargetsBuilder()
         .withWorkspaceRoot(
@@ -35,8 +40,7 @@ export async function runSmokeTestExperimentWithBundle(
         )
         .withAdmitTargetsFromFile("test.v", "test")
         .buildInputTargets();
-    const completeBundle = modelsBundle.withTargets(testTarget);
-    await runSimpleTestExperimentWithBundle(completeBundle);
+    await runSimpleTestExperimentWithTargetsAndModels(testTarget, models);
 }
 
 export async function testContextTheoremsNotContainTarget(
@@ -96,7 +100,7 @@ export async function testContextTheoremsNotContainTarget(
         })
         .withTargets(testTarget);
 
-    await runSimpleTestExperimentWithBundle(bundle);
+    await runSimpleTestExperimentWithBundles(bundle);
 }
 
 export async function testProveTheoremWithRango(
@@ -111,7 +115,32 @@ export async function testProveTheoremWithRango(
         .withProveTheoremTargetsFromFile(targetTheoremFilePath, "test")
         .buildInputTargets();
 
-    await runSimpleTestExperimentWithBundle(
-        rangoMockModel.withTargets(testTarget)
+    await runSimpleTestExperimentWithTargetsAndModels(
+        testTarget,
+        rangoMockModel
+    );
+}
+
+export async function runReportsBuilderExperiment(
+    models: PredefinedProofsUserModelParams[]
+): Promise<ExperimentResults> {
+    const testTargets = new TargetsBuilder()
+        .withWorkspaceRoot(
+            Constants.TEST_DATASET_NAME,
+            "no-special-environment"
+        )
+        .withProveTheoremTargetsFromFile("test_report_builders.v")
+        .buildInputTargets();
+
+    const predefinedModels = new BenchmarkingBundle()
+        .withProofProvider("predefined")
+        .withBenchmarkingModelsParamsCommons({
+            ranker: "random",
+        })
+        .withBenchmarkingModelsParams(...models);
+
+    return await runSimpleTestExperimentWithTargetsAndModels(
+        testTargets,
+        predefinedModels
     );
 }

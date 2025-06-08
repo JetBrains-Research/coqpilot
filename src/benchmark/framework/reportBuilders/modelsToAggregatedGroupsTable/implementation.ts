@@ -1,3 +1,4 @@
+import { EqualitySet } from "../../../../utils/collectionUtils/equalitySet";
 import {
     isPermutation,
     makeElementsUnique,
@@ -11,6 +12,7 @@ import {
     unreachable,
 } from "../../../../utils/errors/throwErrors";
 import { stringifyList } from "../../../../utils/printers";
+import { CompletionGenerationTask } from "../../structures/benchmarkingCore/completionGenerationTask";
 import { BenchmarkedItem } from "../../structures/benchmarkingResults/benchmarkedItem";
 import { reportBuilderFailed } from "../utils/errors";
 import { TableSerialization } from "../utils/tableSerialization";
@@ -24,7 +26,7 @@ export namespace ModelsToAggregatedGroupsImpl {
     import Structs = TableSerialization;
     export type AggregatedTable = Structs.Table<string>;
 
-    export const GROUPS_ROW_TITLE = "Groups";
+    export const CORNER_TITLE = "Methods / Groups";
     export const TOTAL_COLUMN_NAME = "Total";
     export const ALL_METHODS_TOGETHER_ROW_TITLE = "All methods together";
 
@@ -121,18 +123,6 @@ export namespace ModelsToAggregatedGroupsImpl {
         return sortedColumns;
     }
 
-    function prepareRowsToAdd(options: Options): AggregatedRow[] {
-        const rowsToAdd: AggregatedRow[] = [...options.extraAggregatedRows];
-        if (options.enableAllMethodsTogetherRow) {
-            rowsToAdd.push({
-                name: ALL_METHODS_TOGETHER_ROW_TITLE,
-                shouldAggregateModel: (params) =>
-                    options.modelsMapper(params) !== undefined,
-            });
-        }
-        return rowsToAdd;
-    }
-
     function calculateColumnsTotalValues(
         columnToItems: Map<string, BenchmarkedItem[]>,
         sortedColumns: string[]
@@ -149,6 +139,28 @@ export namespace ModelsToAggregatedGroupsImpl {
         );
     }
 
+    function prepareRowsToAdd(options: Options): AggregatedRow[] {
+        const rowsToAdd: AggregatedRow[] = [...options.extraAggregatedRows];
+        if (options.enableAllMethodsTogetherRow) {
+            rowsToAdd.push({
+                name: ALL_METHODS_TOGETHER_ROW_TITLE,
+                shouldAggregateModel: (params) =>
+                    options.modelsMapper(params) !== undefined,
+            });
+        }
+        return rowsToAdd;
+    }
+
+    function buildTasksTrackingRow(
+        columnsNumber: number
+    ): EqualitySet<CompletionGenerationTask>[] {
+        const row = [];
+        for (let i = 0; i < columnsNumber; i++) {
+            row.push(new EqualitySet<CompletionGenerationTask>());
+        }
+        return row;
+    }
+
     function buildRows(
         columnToItems: Map<string, BenchmarkedItem[]>,
         sortedColumns: string[],
@@ -161,9 +173,19 @@ export namespace ModelsToAggregatedGroupsImpl {
             columnTitleToIndex.set(columnTitle, index)
         );
 
-        const rowTitleToValues = new Map<string, number[]>(
-            rowsToAdd.map((row) => [row.name, Array(columnsNumber).fill(0)])
-        );
+        /**
+         * Note: `rowToAdd` might containt aggregation of several models;
+         * that requires calculating **only unique** successful completions explicitly.
+         */
+        const rowsToAddOkTasksByColumns: [
+            AggregatedRow,
+            EqualitySet<CompletionGenerationTask>[],
+        ][] = rowsToAdd.map((rowToAdd) => [
+            rowToAdd,
+            buildTasksTrackingRow(columnsNumber),
+        ]);
+
+        const rowTitleToValues = new Map<string, number[]>();
         for (const [columnTitle, items] of columnToItems.entries()) {
             const columnIndex =
                 columnTitleToIndex.get(columnTitle) ??
@@ -171,18 +193,18 @@ export namespace ModelsToAggregatedGroupsImpl {
                     `unexpected column title "${columnTitle}" after passed permutation check`
                 );
             for (const item of items) {
-                const successPoint = item.result.isSuccessfulCompletion()
-                    ? 1
-                    : 0;
+                const isOkTask = item.result.isSuccessfulCompletion();
 
-                for (const row of rowsToAdd) {
-                    if (!row.shouldAggregateModel(item.item.params)) {
+                for (const [
+                    rowToAdd,
+                    tasksByColumns,
+                ] of rowsToAddOkTasksByColumns) {
+                    if (!rowToAdd.shouldAggregateModel(item.item.params)) {
                         continue;
                     }
-                    const rowValues =
-                        rowTitleToValues.get(row.name) ??
-                        unreachable("rows to add are already initialized");
-                    rowValues[columnIndex] += successPoint;
+                    if (isOkTask) {
+                        tasksByColumns[columnIndex].add(item.item.task);
+                    }
                 }
 
                 const model = options.modelsMapper(item.item.params);
@@ -192,9 +214,17 @@ export namespace ModelsToAggregatedGroupsImpl {
                 const modelRow = getOrPut(rowTitleToValues, model, () =>
                     Array(columnsNumber).fill(0)
                 );
-                modelRow[columnIndex] += successPoint;
+                modelRow[columnIndex] += isOkTask ? 1 : 0;
             }
         }
+
+        for (const [rowToAdd, tasksByColumns] of rowsToAddOkTasksByColumns) {
+            rowTitleToValues.set(
+                rowToAdd.name,
+                tasksByColumns.map((columnOkTasks) => columnOkTasks.size())
+            );
+        }
+
         return rowTitleToValues;
     }
 
@@ -236,7 +266,7 @@ export namespace ModelsToAggregatedGroupsImpl {
         options: Options
     ) {
         const table = Structs.Table.fromColumnsNames<string>(
-            GROUPS_ROW_TITLE,
+            CORNER_TITLE,
             sortedColumns
         );
         for (const rowTitle of sortedRows) {

@@ -149,7 +149,7 @@ export namespace ModelsToAggregatedGroups {
                 ) => {
                     const percentage =
                         (theoremsProvedInGroup / totalTheoremsInGroup) * 100;
-                    return `${percentage.toPrecision(2)}%`;
+                    return `${+percentage.toPrecision(2)}%`;
                 }),
 
             extraAggregatedRows: inputOptions.extraAggregatedRows ?? [],
