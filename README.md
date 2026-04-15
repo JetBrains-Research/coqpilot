@@ -32,6 +32,9 @@
 
 ## Related papers
 
+- **[AAMAS'26]** *RocqStar: Leveraging Similarity-driven Retrieval and Agentic Systems for Rocq generation*
+  <br />
+  [[arXiv](https://arxiv.org/abs/2505.22846)]
 - **[ASE Demo'24]** *CoqPilot, a plugin for LLM-based generation of proofs*
   <br />
   [[Paper](https://dl.acm.org/doi/10.1145/3691620.3695357) | [arXiv](https://arxiv.org/abs/2410.19605) | [Video (5min)](https://www.youtube.com/watch?v=oB1Lx-So9Lo) | [Video (10min)](https://www.youtube.com/watch?v=P-LHXf7vntM)]
